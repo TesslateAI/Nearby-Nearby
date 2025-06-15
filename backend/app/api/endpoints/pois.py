@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import List
 import uuid
@@ -11,7 +11,6 @@ router = APIRouter()
 
 @router.post("/pois/", response_model=schemas.PointOfInterest, status_code=201)
 def create_poi(poi: schemas.PointOfInterestCreate, db: Session = Depends(get_db)):
-    # Simple check to ensure subtype data matches poi_type
     if poi.poi_type == 'business' and not poi.business:
         raise HTTPException(status_code=400, detail="Business data required for poi_type 'business'")
     if poi.poi_type == 'outdoors' and not poi.outdoors:
@@ -19,7 +18,6 @@ def create_poi(poi: schemas.PointOfInterestCreate, db: Session = Depends(get_db)
     if poi.poi_type == 'event' and not poi.event:
         raise HTTPException(status_code=400, detail="Event data required for poi_type 'event'")
 
-    # Notice the call is now simpler: crud.create_poi instead of crud.crud_poi.create_poi
     return crud.create_poi(db=db, poi=poi)
 
 
@@ -29,12 +27,32 @@ def read_pois(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     return pois
 
 
+@router.get("/pois/search", response_model=List[schemas.PointOfInterest], summary="Search for POIs by text")
+def search_pois_endpoint(q: str = Query(..., min_length=3, description="Search query string"), db: Session = Depends(get_db)):
+    return crud.search_pois(db=db, query_str=q)
+
+@router.get("/pois/search-by-location", response_model=List[schemas.PointOfInterest], summary="Search for POIs by location text")
+def search_pois_by_location_endpoint(q: str = Query(..., min_length=3, description="Search location string"), db: Session = Depends(get_db)):
+    return crud.search_pois_by_location(db=db, location_str=q)
+
+
 @router.get("/pois/{poi_id}", response_model=schemas.PointOfInterest)
 def read_poi(poi_id: uuid.UUID, db: Session = Depends(get_db)):
     db_poi = crud.get_poi(db, poi_id=poi_id)
     if db_poi is None:
         raise HTTPException(status_code=404, detail="Point of Interest not found")
     return db_poi
+
+
+@router.get("/pois/{poi_id}/nearby", response_model=List[schemas.PointOfInterest], summary="Find nearby POIs")
+def get_nearby_pois_endpoint(
+    poi_id: uuid.UUID, 
+    distance_km: float = Query(5.0, description="Search radius in kilometers"), 
+    limit: int = Query(12, description="Maximum number of results to return"), 
+    db: Session = Depends(get_db)
+):
+    return crud.get_pois_nearby(db=db, poi_id=poi_id, distance_km=distance_km, limit=limit)
+
 
 @router.put("/pois/{poi_id}", response_model=schemas.PointOfInterest)
 def update_poi(poi_id: uuid.UUID, poi_in: schemas.PointOfInterestUpdate, db: Session = Depends(get_db)):

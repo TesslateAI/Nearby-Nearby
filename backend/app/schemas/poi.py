@@ -4,11 +4,9 @@ from datetime import datetime
 from typing import Optional, List, Any, Literal
 
 from pydantic import BaseModel, field_validator, model_validator
-# FIX: Import tools to handle GeoAlchemy2's WKBElement
 from geoalchemy2.elements import WKBElement
 from geoalchemy2.shape import to_shape
 
-# Import the new category schema to be used in POI schema
 from .category import Category
 
 # Helper for slug generation
@@ -30,15 +28,12 @@ class PointGeometry(BaseModel):
             raise ValueError('Coordinates must be a list of two floats [longitude, latitude]')
         return v
 
-    # FIX: Add a validator to handle the WKBElement from the database
     @model_validator(mode='before')
     @classmethod
     def parse_wkb(cls, v):
         if isinstance(v, WKBElement):
-            # Convert WKBElement to a shapely geometry, then extract coordinates
             point = to_shape(v)
             return {"type": "Point", "coordinates": list(point.coords)[0]}
-        # If it's already a dict (from a POST request), pass it through
         return v
 
 # Location Schemas
@@ -57,15 +52,12 @@ class LocationCreate(LocationBase):
 
 class Location(LocationBase):
     id: uuid.UUID
-
-    class Config:
-        from_attributes = True
+    class Config: from_attributes = True
 
 # Business Schemas
 LISTING_TYPES = Literal['free', 'paid', 'paid_founding', 'sponsor']
 
 class BusinessBase(BaseModel):
-    price_range: Optional[str] = None
     listing_type: LISTING_TYPES = 'free'
     contact_name: Optional[str] = None
     contact_email: Optional[str] = None
@@ -73,43 +65,29 @@ class BusinessBase(BaseModel):
     is_service_business: bool = False
     attributes: Optional[dict] = None
 
-class BusinessCreate(BusinessBase):
-    pass
-
+class BusinessCreate(BusinessBase): pass
 class Business(BusinessBase):
     poi_id: uuid.UUID
-
-    class Config:
-        from_attributes = True
+    class Config: from_attributes = True
 
 # Outdoors Schemas
 class OutdoorsBase(BaseModel):
-    outdoor_specific_type: Optional[str] = None
-    facilities: Optional[Any] = None
-    trail_length_km: Optional[float] = None
+    attributes: Optional[dict] = None
 
-class OutdoorsCreate(OutdoorsBase):
-    pass
-
+class OutdoorsCreate(OutdoorsBase): pass
 class Outdoors(OutdoorsBase):
     poi_id: uuid.UUID
-
-    class Config:
-        from_attributes = True
+    class Config: from_attributes = True
 
 # Event Schemas
 class EventBase(BaseModel):
     start_datetime: datetime
     end_datetime: Optional[datetime] = None
 
-class EventCreate(EventBase):
-    pass
-
+class EventCreate(EventBase): pass
 class Event(EventBase):
     poi_id: uuid.UUID
-
-    class Config:
-        from_attributes = True
+    class Config: from_attributes = True
 
 # Point of Interest Schemas
 STATUS_TYPES = Literal[
@@ -146,13 +124,11 @@ class PointOfInterestCreate(PointOfInterestBase):
     @model_validator(mode='before')
     @classmethod
     def generate_slug_from_name(cls, values):
-        if isinstance(values, dict):
-             if not values.get('slug') and values.get('name'):
-                values['slug'] = generate_slug(values['name'])
+        if isinstance(values, dict) and not values.get('slug') and values.get('name'):
+            values['slug'] = generate_slug(values['name'])
         return values
 
 class PointOfInterestUpdate(BaseModel):
-    # Make all fields optional for PATCH-like behavior
     name: Optional[str] = None
     description: Optional[str] = None
     poi_type: Optional[str] = None
@@ -169,9 +145,7 @@ class PointOfInterestUpdate(BaseModel):
     event: Optional[EventCreate] = None
     category_ids: Optional[List[uuid.UUID]] = None
 
-    class Config:
-        from_attributes = True
-
+    class Config: from_attributes = True
 
 class PointOfInterest(PointOfInterestBase):
     id: uuid.UUID
@@ -183,5 +157,4 @@ class PointOfInterest(PointOfInterestBase):
     categories: List[Category] = []
     updated_at: datetime
     
-    class Config:
-        from_attributes = True
+    class Config: from_attributes = True

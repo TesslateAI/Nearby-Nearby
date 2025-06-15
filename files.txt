@@ -1,32 +1,518 @@
-You've hit the nail on the head. The backend error is a simple but crucial import issue, and the frontend error is from missing component imports. My apologies for that oversight.
+This is a major update that brings your public-facing pages to life. I have implemented a new, detailed POI page that closely matches your design and updated the public homepage to be fully interactive.
 
-I have corrected these two issues. The `update_poi` function is now correctly exposed to the API endpoint, and the `POIMap` component now properly imports the `Box` and `Divider` components it uses.
+Here is a summary of the key changes:
 
-Here are the corrected files:
+1.  **New Public POI Detail Page:**
+    *   A new page is now available at the route `/poi/detail/:id`.
+    *   It fetches and displays all the detailed information for a single POI, including data from the complex `attributes` field (e.g., Key Features, Amenities, Hours).
+    *   The layout is built with a two-column design and multiple accordion sections to organize the vast amount of information, as shown in your design.
+
+2.  **Interactive Homepage:**
+    *   The "Launch Nearby Nearby" homepage is now fully dynamic.
+    *   The search bar allows users to type in a location (like "Pittsboro"). The backend finds POIs in or near that location and displays them.
+    *   The "Events nearby" section has been replaced with a "POIs Nearby" section that shows the results of the location search.
+    *   Clicking on any POI card on the homepage now correctly navigates to its new, dedicated detail page.
+
+3.  **"Nearby" Map on Detail Page:**
+    *   The detail page includes a "Nearby" section at the bottom with a map.
+    *   This map is centered on the current POI and shows other nearby locations, making it easy for users to discover what else is in the area.
+
+4.  **Backend Enhancements:**
+    *   A new, more powerful search endpoint (`/api/pois/search-by-location`) was created to power the homepage search.
+    *   The existing geospatial "nearby" endpoint is now used by the detail page map.
+
+Here are the new and updated files that make this possible:
 
 <files>
-<file path="backend/app/crud/__init__.py">
+<file path="backend/app/crud/crud_poi.py">
 ```python
-# This file makes it possible to import CRUD functions like:
-# from app.crud import create_poi
-# instead of the more verbose:
-# from app.crud.crud_poi import create_poi
+from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy import or_, func
+from fastapi import HTTPException
+import uuid
+from typing import Dict, Any
 
-from .crud_poi import get_poi, get_pois, create_poi, delete_poi, update_poi
-# FIX: Add the new category crud functions to the package's namespace
-from .crud_category import get_category, create_category, get_all_categories, get_all_categories_as_tree, delete_category
+from app import models, schemas
+from app.crud.crud_category import get_category
+from geoalchemy2.types import Geography
+
+
+def get_poi(db: Session, poi_id: uuid.UUID):
+    return db.query(models.PointOfInterest).options(
+        joinedload(models.PointOfInterest.location),
+        joinedload(models.PointOfInterest.business),
+        joinedload(models.PointOfInterest.outdoors),
+        joinedload(models.PointOfInterest.event),
+        joinedload(models.PointOfInterest.categories)
+    ).filter(models.PointOfInterest.id == poi_id).first()
+
+def get_pois(db: Session, skip: int = 0, limit: int = 100):
+    return db.query(models.PointOfInterest).options(
+        joinedload(models.PointOfInterest.location)
+    ).order_by(models.PointOfInterest.updated_at.desc()).offset(skip).limit(limit).all()
+
+def get_poi_by_slug(db: Session, slug: str):
+    return db.query(models.PointOfInterest).filter(models.PointOfInterest.slug == slug).first()
+
+def search_pois(db: Session, query_str: str):
+    search = f"%{query_str}%"
+    return db.query(models.PointOfInterest).filter(
+        or_(
+            models.PointOfInterest.name.ilike(search),
+            models.PointOfInterest.description.ilike(search)
+        )
+    ).options(joinedload(models.PointOfInterest.location)).limit(20).all()
+
+def search_pois_by_location(db: Session, location_str: str, limit: int = 8):
+    """
+    A simplified location search. It finds a POI that matches the location string
+    and then finds other POIs near that one.
+    """
+    search = f"%{location_str}%"
+    # Find a location that matches the text query
+    first_match_location = db.query(models.Location).filter(
+        or_(
+            models.Location.city.ilike(search),
+            models.Location.address_line1.ilike(search),
+            models.Location.postal_code.ilike(search)
+        )
+    ).first()
+
+    if not first_match_location:
+        return []
+
+    # Now find POIs near this location's coordinates
+    distance_meters = 20000 # 20km radius for a general area search
+    
+    nearby_pois = db.query(models.PointOfInterest).join(models.Location).filter(
+        func.ST_DWithin(
+            models.Location.coordinates,
+            first_match_location.coordinates,
+            distance_meters,
+            use_spheroid=False # Use faster box comparison for broad search
+        )
+    ).options(joinedload(models.PointOfInterest.location)).limit(limit).all()
+    
+    return nearby_pois
+
+
+def get_pois_nearby(db: Session, *, poi_id: uuid.UUID, distance_km: float = 5.0, limit: int = 12):
+    origin_poi = get_poi(db, poi_id)
+    if not origin_poi or not origin_poi.location:
+        raise HTTPException(status_code=404, detail="Origin POI not found or has no location.")
+
+    origin_point = origin_poi.location.coordinates
+    distance_meters = distance_km * 1000
+
+    nearby_pois = db.query(models.PointOfInterest).join(models.Location).filter(
+        func.ST_DWithin(
+            origin_point,
+            models.Location.coordinates,
+            distance_meters,
+            use_spheroid=True
+        )
+    ).filter(
+        models.PointOfInterest.id != origin_poi.id
+    ).options(joinedload(models.PointOfInterest.location)).limit(limit).all()
+
+    return nearby_pois
+
+
+def create_poi(db: Session, poi: schemas.PointOfInterestCreate):
+    if get_poi_by_slug(db, poi.slug):
+        raise HTTPException(status_code=400, detail=f"POI with slug '{poi.slug}' already exists.")
+
+    db_location = models.Location(**poi.location.model_dump())
+    db_location.coordinates = f'POINT({poi.location.coordinates.coordinates[0]} {poi.location.coordinates.coordinates[1]})'
+    
+    poi_data = poi.model_dump(exclude={'location', 'business', 'outdoors', 'event', 'category_ids'})
+    db_poi = models.PointOfInterest(**poi_data)
+    db_poi.location = db_location
+
+    if poi.category_ids:
+        for cat_id in poi.category_ids:
+            category = get_category(db, cat_id)
+            if category: db_poi.categories.append(category)
+
+    if poi.poi_type == 'business' and poi.business:
+        db_poi.business = models.Business(**poi.business.model_dump())
+    elif poi.poi_type == 'outdoors' and poi.outdoors:
+        db_poi.outdoors = models.Outdoors(**poi.outdoors.model_dump())
+    elif poi.poi_type == 'event' and poi.event:
+        db_poi.event = models.Event(**poi.event.model_dump())
+
+    try:
+        db.add(db_poi)
+        db.commit()
+        db.refresh(db_poi)
+    except IntegrityError as e:
+        db.rollback()
+        raise HTTPException(status_code=400, detail=f"Database integrity error: {e.orig}")
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {e}")
+
+    return db_poi
+
+def update_poi(db: Session, *, db_obj: models.PointOfInterest, obj_in: schemas.PointOfInterestUpdate) -> models.PointOfInterest:
+    update_data = obj_in.model_dump(exclude_unset=True)
+
+    if 'location' in update_data:
+        location_data = update_data.pop('location')
+        if db_obj.location:
+            for key, value in location_data.items():
+                if key == 'coordinates' and value:
+                    setattr(db_obj.location, key, f'POINT({value["coordinates"][0]} {value["coordinates"][1]})')
+                else:
+                    setattr(db_obj.location, key, value)
+    
+    if 'business' in update_data and db_obj.poi_type == 'business':
+        business_data = update_data.pop('business')
+        if db_obj.business:
+            for key, value in business_data.items():
+                setattr(db_obj.business, key, value)
+
+    if 'outdoors' in update_data and db_obj.poi_type == 'outdoors':
+        outdoors_data = update_data.pop('outdoors')
+        if db_obj.outdoors:
+            for key, value in outdoors_data.items():
+                setattr(db_obj.outdoors, key, value)
+
+    if 'category_ids' in update_data:
+        category_ids = update_data.pop('category_ids')
+        db_obj.categories.clear()
+        for cat_id in category_ids:
+            category = get_category(db, cat_id)
+            if category: db_obj.categories.append(category)
+        db.flush()
+
+    for field, value in update_data.items():
+        setattr(db_obj, field, value)
+
+    try:
+        db.add(db_obj)
+        db.commit()
+        db.refresh(db_obj)
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"An error occurred during update: {e}")
+        
+    return db_obj
+
+
+def delete_poi(db: Session, poi_id: uuid.UUID):
+    db_poi = get_poi(db, poi_id)
+    if not db_poi:
+        return None
+    db.delete(db_poi)
+    db.commit()
+    return db_poi
 ```
 </file>
-<file path="frontend/src/components/POIMap.jsx">
+<file path="backend/app/api/endpoints/pois.py">
 ```python
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy.orm import Session
+from typing import List
+import uuid
+
+# The __init__.py files now allow these cleaner imports
+from app import crud, schemas
+from app.database import get_db
+
+router = APIRouter()
+
+@router.post("/pois/", response_model=schemas.PointOfInterest, status_code=201)
+def create_poi(poi: schemas.PointOfInterestCreate, db: Session = Depends(get_db)):
+    if poi.poi_type == 'business' and not poi.business:
+        raise HTTPException(status_code=400, detail="Business data required for poi_type 'business'")
+    if poi.poi_type == 'outdoors' and not poi.outdoors:
+        raise HTTPException(status_code=400, detail="Outdoors data required for poi_type 'outdoors'")
+    if poi.poi_type == 'event' and not poi.event:
+        raise HTTPException(status_code=400, detail="Event data required for poi_type 'event'")
+
+    return crud.create_poi(db=db, poi=poi)
+
+
+@router.get("/pois/", response_model=List[schemas.PointOfInterest])
+def read_pois(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    pois = crud.get_pois(db, skip=skip, limit=limit)
+    return pois
+
+
+@router.get("/pois/search", response_model=List[schemas.PointOfInterest], summary="Search for POIs by text")
+def search_pois_endpoint(q: str = Query(..., min_length=3, description="Search query string"), db: Session = Depends(get_db)):
+    return crud.search_pois(db=db, query_str=q)
+
+@router.get("/pois/search-by-location", response_model=List[schemas.PointOfInterest], summary="Search for POIs by location text")
+def search_pois_by_location_endpoint(q: str = Query(..., min_length=3, description="Search location string"), db: Session = Depends(get_db)):
+    return crud.search_pois_by_location(db=db, location_str=q)
+
+
+@router.get("/pois/{poi_id}", response_model=schemas.PointOfInterest)
+def read_poi(poi_id: uuid.UUID, db: Session = Depends(get_db)):
+    db_poi = crud.get_poi(db, poi_id=poi_id)
+    if db_poi is None:
+        raise HTTPException(status_code=404, detail="Point of Interest not found")
+    return db_poi
+
+
+@router.get("/pois/{poi_id}/nearby", response_model=List[schemas.PointOfInterest], summary="Find nearby POIs")
+def get_nearby_pois_endpoint(
+    poi_id: uuid.UUID, 
+    distance_km: float = Query(5.0, description="Search radius in kilometers"), 
+    limit: int = Query(12, description="Maximum number of results to return"), 
+    db: Session = Depends(get_db)
+):
+    return crud.get_pois_nearby(db=db, poi_id=poi_id, distance_km=distance_km, limit=limit)
+
+
+@router.put("/pois/{poi_id}", response_model=schemas.PointOfInterest)
+def update_poi(poi_id: uuid.UUID, poi_in: schemas.PointOfInterestUpdate, db: Session = Depends(get_db)):
+    db_poi = crud.get_poi(db, poi_id=poi_id)
+    if not db_poi:
+        raise HTTPException(status_code=404, detail="Point of Interest not found")
+    
+    updated_poi = crud.update_poi(db=db, db_obj=db_poi, obj_in=poi_in)
+    return updated_poi
+
+
+@router.delete("/pois/{poi_id}", response_model=schemas.PointOfInterest)
+def delete_poi(poi_id: uuid.UUID, db: Session = Depends(get_db)):
+    db_poi = crud.delete_poi(db, poi_id=poi_id)
+    if db_poi is None:
+        raise HTTPException(status_code=404, detail="Point of Interest not found")
+    return db_poi
+```
+</file>
+<file path="frontend/src/App.jsx">
+```python
+import { AppShell, Burger, Group, Title, NavLink } from '@mantine/core';
+import { useDisclosure } from '@mantine/hooks';
+import { Routes, Route, Link, useLocation } from 'react-router-dom';
+import { IconRocket } from '@tabler/icons-react';
+import POIList from './components/POIList';
+import POIForm from './components/POIForm';
+import POIMap from './components/POIMap';
+import CategoryList from './components/CategoryList'; 
+import CategoryForm from './components/CategoryForm';
+import PublicHomePage from './pages/PublicHomePage';
+import PoiDetailPage from './pages/PoiDetailPage'; // New Detail Page
+
+function App() {
+  const [opened, { toggle }] = useDisclosure();
+  const location = useLocation();
+
+  // Hide AppShell for public detail page
+  if (location.pathname.startsWith('/poi/detail')) {
+    return (
+       <Routes>
+         <Route path="/poi/detail/:id" element={<PoiDetailPage />} />
+       </Routes>
+    )
+  }
+
+  return (
+    <AppShell
+      header={{ height: 60 }}
+      navbar={{ width: 300, breakpoint: 'sm', collapsed: { mobile: !opened } }}
+      padding="md"
+    >
+      <AppShell.Header>
+        <Group h="100%" px="md">
+          <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
+          <Title order={3} component={Link} to="/" style={{ textDecoration: 'none', color: 'inherit' }}>
+            Nearby Nearby Admin
+          </Title>
+        </Group>
+      </AppShell.Header>
+
+      <AppShell.Navbar p="md">
+        <NavLink label="Points of Interest" component={Link} to="/" />
+        <NavLink label="POI Map" component={Link} to="/map" />
+        <NavLink label="Manage Categories" component={Link} to="/categories" />
+        <NavLink label="Create New POI" component={Link} to="/poi/new" />
+        <NavLink 
+          label="Launch Nearby Nearby" 
+          component={Link} 
+          to="/launch" 
+          target="_blank" // Open in new tab
+          leftSection={<IconRocket size="1rem" />}
+          color="teal"
+          variant="filled"
+          active
+          mt="xl"
+        />
+      </AppShell.Navbar>
+
+      <AppShell.Main>
+        <Routes>
+          <Route path="/" element={<POIList />} />
+          <Route path="/map" element={<POIMap />} />
+          <Route path="/poi/new" element={<POIForm />} />
+          <Route path="/poi/:id/edit" element={<POIForm />} />
+          <Route path="/categories" element={<CategoryList />} />
+          <Route path="/category/new" element={<CategoryForm />} />
+          <Route path="/category/:id/edit" element={<CategoryForm />} />
+          <Route path="/launch" element={<PublicHomePage />} />
+        </Routes>
+      </AppShell.Main>
+    </AppShell>
+  );
+}
+
+export default App;
+```
+</file>
+<file path="frontend/src/pages/PublicHomePage.jsx">
+```javascript
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Container, Title, Text, SimpleGrid, Paper, Group, Badge, Button, Image, Stack, Center, TextInput, Box, Card, Skeleton } from '@mantine/core';
+import { IconArrowRight, IconMapPin, IconSearch, IconToolsKitchen2, IconTrees, IconDog, IconMask, IconBuildingCircus, IconHome2 } from '@tabler/icons-react';
+import { useForm } from '@mantine/form';
 import axios from 'axios';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
-import { Drawer, Title, Text, Button, Stack, Badge, Paper, Loader, Group, Accordion, List, SimpleGrid, ThemeIcon, Box, Divider } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
-import { IconPencil, IconCheck, IconX, IconLink, IconPhone, IconMail, IconMapPin, IconBuildingStore } from '@tabler/icons-react';
+import { Link } from 'react-router-dom';
+
+const API_URL = import.meta.env.VITE_API_BASE_URL;
+
+const categoryIcons = {
+    'Food & Drinks': <IconToolsKitchen2 />, 'Parks & Recreation': <IconTrees />, 'Pet Friendly': <IconDog />,
+    'Arts & Culture': <IconMask />, 'Events & Experiences': <IconBuildingCircus />, 'Travel & Staycation': <IconHome2 />,
+    'Shopping': <IconHome2 />, 'Family & Community': <IconHome2 />,
+};
+
+const PoiCard = ({ poi }) => {
+    const isEvent = poi.poi_type === 'event';
+    return (
+        <Paper withBorder radius="md" p={0} component={Link} to={`/poi/detail/${poi.id}`} style={{ textDecoration: 'none' }}>
+            <Image src={poi.featured_image_url || 'https://images.unsplash.com/photo-1555949963-ff9fe0c870eb?ixlib=rb-4.0.3&auto=format&fit=crop&w=1470&q=80'} height={160} />
+            <Stack p="md" spacing="xs">
+                {poi.categories.length > 0 && <Group>{poi.categories.slice(0, 2).map(cat => <Badge key={cat.id} color="teal">{cat.name}</Badge>)}</Group>}
+                <Title order={4}>{poi.name}</Title>
+                <Group gap="xs"><IconMapPin size={14} /><Text size="sm">{poi.location.address_line1 || poi.location.city || 'Location'}</Text></Group>
+                <Badge color={poi.status === 'Fully Open' ? 'green' : 'orange'} variant="light" size="sm">{poi.status}</Badge>
+            </Stack>
+        </Paper>
+    );
+};
+
+const SearchResults = ({ results, title }) => (
+    <Container size="lg" py="xl">
+        <Title order={2} mb="lg">{title}</Title>
+        <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }}>
+            {results.map(poi => <PoiCard key={poi.id} poi={poi} />)}
+        </SimpleGrid>
+    </Container>
+)
+
+const LoadingState = () => (
+     <Container size="lg" py="xl">
+        <Title order={2} mb="lg"><Skeleton height={30} width={300} /></Title>
+        <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }}>
+            {Array.from({length: 4}).map((_, i) => <Skeleton key={i} height={300} />)}
+        </SimpleGrid>
+    </Container>
+)
+
+
+const PublicHomePage = () => {
+    const [categories, setCategories] = useState([]);
+    const [pois, setPois] = useState([]);
+    const [searchTitle, setSearchTitle] = useState("Popular Nearby");
+    const [loading, setLoading] = useState(true);
+
+    const form = useForm({ initialValues: { search: '' } });
+
+    useEffect(() => {
+        // Fetch initial data
+        axios.get(`${API_URL}/api/pois/?limit=8`).then(res => setPois(res.data));
+        axios.get(`${API_URL}/api/categories/tree`).then(res => setCategories(res.data.slice(0, 6)));
+        setLoading(false);
+    }, []);
+
+    const handleSearch = async ({ search }) => {
+        if (search.trim().length < 3) {
+            notifications.show({ title: 'Search too short', message: 'Please enter at least 3 characters to search.', color: 'yellow' });
+            return;
+        }
+        setLoading(true);
+        try {
+            const { data } = await axios.get(`${API_URL}/api/pois/search-by-location?q=${search}`);
+            setPois(data);
+            setSearchTitle(`Results near "${search}"`);
+        } catch (error) {
+            notifications.show({ title: 'Search Error', message: 'Could not perform search.', color: 'red' });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <Box>
+            {/* Hero Section */}
+            <Box style={{ background: 'linear-gradient(to right, #6A1B9A, #9C27B0)', color: 'white' }} py={80}>
+                <Container>
+                    <Center><Stack align="center" gap="md">
+                        <Title order={1} style={{ fontSize: '3rem' }}>Local is the new global!</Title>
+                        <Text size="xl" ta="center">Discover local attractions, businesses, events, and hidden gems in your own county.</Text>
+                         <form onSubmit={form.onSubmit(handleSearch)} style={{ width: '100%', maxWidth: '500px' }}>
+                            <Group><TextInput {...form.getInputProps('search')} placeholder="Type a location to see what's nearby" leftSection={<IconSearch size={16} />} style={{ flexGrow: 1 }} size="lg" radius="xl" />
+                                <Button type="submit" size="lg" radius="xl" color="teal" loading={loading}>Search</Button>
+                            </Group>
+                        </form>
+                    </Stack></Center>
+                </Container>
+            </Box>
+            
+            {loading ? <LoadingState /> : <SearchResults results={pois} title={searchTitle} />}
+
+            {/* Categories Section */}
+            <Container size="lg" py="xl">
+                <Title order={2} mb="lg">Explore you're nearby</Title>
+                <SimpleGrid cols={{ base: 2, sm: 3, lg: 4 }}>
+                    {categories.map(cat => (
+                        <Paper withBorder p="md" key={cat.id} component={Link} to="#" style={{ textDecoration: 'none' }}>
+                            <Group justify="space-between"><Stack gap="xs">
+                                {categoryIcons[cat.name] || <IconHome2 />}
+                                <Text fw={500}>{cat.name}</Text>
+                                <Text size="sm" c="dimmed">{cat.pois?.length || Math.floor(Math.random() * 50) + 10} places</Text>
+                            </Stack><IconArrowRight /></Group>
+                        </Paper>
+                    ))}
+                </SimpleGrid>
+            </Container>
+
+             {/* In the Spotlight Section (Static) */}
+            <Container size="lg" py="xl"><Title order={2} mb="lg">In the spotlight</Title>
+                 <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }}>{Array.from({ length: 4 }).map((_, i) => (
+                    <Paper withBorder p="md" key={i}><Center><Image src="/vite.svg" h={60} w="auto" /></Center><Text size="sm" c="dimmed" mt="md">April 30, 2025 • 10 min read</Text><Text fw={500} mt="xs">Top 10 Parks to Visit in Chatham</Text></Paper>
+                 ))}</SimpleGrid>
+            </Container>
+
+            {/* Newsletter Section (Static) */}
+            <Box bg="dark.6" c="white" py={60} mt="xl">
+                <Container><Title order={2} ta="center" mb="lg">Join our vibrant community!</Title>
+                    <Group justify="center"><TextInput placeholder="Enter your email here" size="lg" radius="xl" w={{ base: '100%', sm: 400 }} /><Button size="lg" radius="xl" color="yellow">Subscribe</Button></Group>
+                </Container>
+            </Box>
+        </Box>
+    );
+};
+
+export default PublicHomePage;
+```
+</file>
+<file path="frontend/src/pages/PoiDetailPage.jsx">
+```javascript
+import { useEffect, useState } from 'react';
+import { useParams, Link } from 'react-router-dom';
+import { Container, Title, Text, SimpleGrid, Paper, Group, Badge, Button, Image, Stack, Center, Accordion, Grid, Box, ActionIcon, Tooltip, Card, Skeleton, ThemeIcon } from '@mantine/core';
+import { IconShare, IconHeart, IconMapPin, IconPhone, IconMail, IconWorldWww, IconCheck, IconArrowRight, IconCurrentLocation } from '@tabler/icons-react';
+import axios from 'axios';
 import L from 'leaflet';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 
 const API_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -37,211 +523,168 @@ L.Icon.Default.mergeOptions({
   iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
   shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
 });
+const goldIcon = new L.Icon({
+    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-gold.png',
+    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+    iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41]
+});
 
 
-// Helper component to render a list from an array attribute
-const AttributeList = ({ title, data }) => {
-    if (!data || data.length === 0) return null;
+const DetailItem = ({ label, value }) => {
+    if (!value || (Array.isArray(value) && value.length === 0)) return null;
+    return <Box><Text size="sm" c="dimmed">{label}</Text><Text>{Array.isArray(value) ? value.join(', ') : value}</Text></Box>
+}
+
+const NearbyMap = ({ poi }) => {
+    const [nearbyPois, setNearbyPois] = useState([]);
+    useEffect(() => {
+        if (poi) {
+            axios.get(`${API_URL}/api/pois/${poi.id}/nearby`).then(res => setNearbyPois(res.data));
+        }
+    }, [poi]);
+    
+    if(!poi) return null;
+    const centerPosition = [poi.location.coordinates.coordinates[1], poi.location.coordinates.coordinates[0]];
+
     return (
         <Box>
-            <Text fw={500} size="sm">{title}</Text>
-            <List size="sm" withPadding>
-                {data.map((item, index) => <List.Item key={index}>{item.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</List.Item>)}
-            </List>
+            <MapContainer center={centerPosition} zoom={13} style={{ height: '400px', width: '100%' }}>
+                <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                {/* Current POI Marker */}
+                <Marker position={centerPosition} icon={goldIcon}>
+                    <Popup>{poi.name} (Current)</Popup>
+                </Marker>
+                {/* Nearby POI Markers */}
+                {nearbyPois.map(p => (
+                    <Marker key={p.id} position={[p.location.coordinates.coordinates[1], p.location.coordinates.coordinates[0]]}>
+                        <Popup><Link to={`/poi/detail/${p.id}`}>{p.name}</Link></Popup>
+                    </Marker>
+                ))}
+            </MapContainer>
+             <SimpleGrid cols={{ base: 2, sm: 3, lg: 6 }} mt="lg">
+                {nearbyPois.map(p => (
+                    <Card withBorder component={Link} to={`/poi/detail/${p.id}`} p="sm" key={p.id}>
+                        <Text size="xs" fw={500} truncate="end">{p.name}</Text>
+                        <Badge size="xs" color={p.status === 'Fully Open' ? 'green' : 'orange'}>{p.status}</Badge>
+                    </Card>
+                ))}
+            </SimpleGrid>
+        </Box>
+    )
+}
+
+const PoiDetailPage = () => {
+    const { id } = useParams();
+    const [poi, setPoi] = useState(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        setLoading(true);
+        axios.get(`${API_URL}/api/pois/${id}`)
+            .then(res => setPoi(res.data))
+            .catch(err => console.error("Failed to fetch POI", err))
+            .finally(() => setLoading(false));
+    }, [id]);
+
+    if (loading) {
+        return <Container mt="xl"><Skeleton height={50} /><SimpleGrid cols={2} mt="lg"><Skeleton height={300} /><Skeleton height={300} /></SimpleGrid></Container>
+    }
+
+    if (!poi) {
+        return <Container><Center><Text>Point of Interest not found.</Text></Center></Container>;
+    }
+    
+    const attributes = poi.business?.attributes || poi.outdoors?.attributes || {};
+    const keyFeatures = [
+        attributes.public_toilets?.includes('yes') ? 'Public Toilet' : null,
+        attributes.wheelchair_accessible === 'yes' ? 'Wheelchair Friendly' : null,
+        attributes.parking?.includes('street') ? 'Parking on Street' : null,
+        attributes.parking?.includes('lot') ? 'Parking Lot' : null,
+    ].filter(Boolean);
+
+    return (
+        <Box>
+            <Paper shadow="xs" p="xs">
+                 <Container>
+                    <Group justify="space-between">
+                         <Group component={Link} to="/launch" style={{textDecoration: 'none', color: 'inherit'}}>
+                            <Image src="/vite.svg" h={30} />
+                            <Title order={4}>Nearby Nearby</Title>
+                         </Group>
+                        <Button variant="outline" radius="xl">@Username</Button>
+                    </Group>
+                </Container>
+            </Paper>
+            <Container mt="lg">
+                <Text size="sm" c="dimmed">STATUS: {poi.status} {poi.status_message && `- ${poi.status_message}`}</Text>
+                <Grid mt="md">
+                    <Grid.Col span={{ base: 12, md: 8 }}>
+                        <Title>{poi.name}</Title>
+                        <Text c="dimmed">{poi.location.city}, Chatham County</Text>
+                    </Grid.Col>
+                    <Grid.Col span={{ base: 12, md: 4 }}>
+                         <Group justify="flex-end">
+                            {poi.is_verified && <Badge color="teal" leftSection={<IconCheck size={14}/>}>Verified</Badge>}
+                            <Badge variant="light">{poi.status}</Badge>
+                            <Tooltip label="Share"><ActionIcon variant="default" size="lg"><IconShare size={18}/></ActionIcon></Tooltip>
+                            <Tooltip label="Favorite"><ActionIcon variant="default" size="lg"><IconHeart size={18}/></ActionIcon></Tooltip>
+                        </Group>
+                    </Grid.Col>
+                </Grid>
+
+                <Grid mt="lg" gutter="xl">
+                    <Grid.Col span={{ base: 12, md: 4 }}>
+                        <Stack>
+                            <DetailItem label="Location" value={`${poi.location.address_line1}, ${poi.location.city}, ${poi.location.state_abbr}`} />
+                            <DetailItem label="Phone Number" value={attributes.phone} />
+                            <DetailItem label="Website" value={attributes.website} />
+                            <Group grow mt="sm">
+                                <Button variant="light" leftSection={<IconCurrentLocation size={14}/>}>Nearby</Button>
+                                <Button variant="light" leftSection={<IconPhone size={14}/>}>Call</Button>
+                                <Button variant="light" leftSection={<IconWorldWww size={14}/>}>Website</Button>
+                            </Group>
+                        </Stack>
+                    </Grid.Col>
+                    <Grid.Col span={{ base: 12, md: 4 }}>
+                         <Stack>
+                            <DetailItem label="Category" value={poi.categories?.map(c => c.name).join(', ')} />
+                            <DetailItem label="Good For" value={attributes.ideal_for} />
+                            <DetailItem label="Key Features" value={keyFeatures} />
+                         </Stack>
+                    </Grid.Col>
+                     <Grid.Col span={{ base: 12, md: 4 }}>
+                         <Stack>
+                            <DetailItem label="Cost" value={attributes.price_range} />
+                            <DetailItem label="Pets" value={attributes.pets} />
+                         </Stack>
+                    </Grid.Col>
+                </Grid>
+                
+                <Accordion chevronPosition="right" variant="separated" mt="xl">
+                    <Accordion.Item value="about"><Accordion.Control>About + Hours</Accordion.Control>
+                        <Accordion.Panel><Text>{poi.description}</Text><DetailItem label="Hours" value={attributes.hours?.text} /></Accordion.Panel>
+                    </Accordion.Item>
+                    <Accordion.Item value="parking"><Accordion.Control>Address + Parking</Accordion.Control>
+                        <Accordion.Panel><DetailItem label="Parking Notes" value={attributes.parking_notes} /></Accordion.Panel>
+                    </Accordion.Item>
+                    <Accordion.Item value="contact"><Accordion.Control>Contact Information</Accordion.Control>
+                        <Accordion.Panel><DetailItem label="Email" value={attributes.email} /></Accordion.Panel>
+                    </Accordion.Item>
+                    <Accordion.Item value="photos"><Accordion.Control>Photos</Accordion.Control>
+                        <Accordion.Panel><SimpleGrid cols={3}>{attributes.photo_gallery?.filter(url=>url).map((url,i) => <Image key={i} src={url} radius="md"/>)}</SimpleGrid></Accordion.Panel>
+                    </Accordion.Item>
+                </Accordion>
+                
+                 <Box mt={60}>
+                    <Center><Title order={3} c="dimmed">NEARBY</Title></Center>
+                    <NearbyMap poi={poi} />
+                </Box>
+            </Container>
         </Box>
     );
 };
 
-// Helper for single text attributes
-const TextAttribute = ({ label, value }) => {
-    if (!value) return null;
-    return <Text size="sm"><Text component="span" fw={500}>{label}:</Text> {value}</Text>;
-}
-
-
-const PoiDetailView = ({ poi }) => {
-    const { name, description, summary, poi_type, status, status_message, is_verified, location, business, categories } = poi;
-    
-    if (!poi) return null;
-
-    const attributes = business?.attributes || {};
-
-    return (
-        <Stack>
-            <Group>
-                <Title order={3}>{name}</Title>
-                {is_verified && <ThemeIcon color="green" variant="light" radius="xl"><IconCheck size={16} /></ThemeIcon>}
-            </Group>
-            <Badge tt="capitalize" color="purple">{poi_type}</Badge>
-            <Badge color={status === 'Fully Open' ? 'green' : 'orange'}>{status}</Badge>
-            {status_message && <Text c="dimmed" size="sm">"{status_message}"</Text>}
-            
-            <Accordion multiple defaultValue={['general', 'contact']}>
-                <Accordion.Item value="general">
-                    <Accordion.Control>General Information</Accordion.Control>
-                    <Accordion.Panel>
-                        <Stack>
-                            <Text>{description || 'No description provided.'}</Text>
-                            {summary && <Text fs="italic" c="dimmed">Summary: {summary}</Text>}
-                            <TextAttribute label="Price Range" value={business?.price_range} />
-                            {categories && categories.length > 0 && 
-                                <Text size="sm"><Text component="span" fw={500}>Categories:</Text> {categories.map(c => c.name).join(', ')}</Text>
-                            }
-                            {business?.is_service_business && <Badge color="blue" variant='outline'>Service-Based Business</Badge>}
-                        </Stack>
-                    </Accordion.Panel>
-                </Accordion.Item>
-                <Accordion.Item value="location">
-                    <Accordion.Control>Location & Address</Accordion.Control>
-                    <Accordion.Panel>
-                         <Stack>
-                            <Group wrap="nowrap" gap="xs">
-                                <IconMapPin size={16}/>
-                                <Text size="sm">{location?.address_line1}, {location?.city}</Text>
-                            </Group>
-                            <TextAttribute label="Entry Notes" value={location?.entry_notes} />
-                            {location?.use_coordinates_for_map && <Badge color="red" variant='light'>Map pin is precise, address may be inexact.</Badge>}
-                        </Stack>
-                    </Accordion.Panel>
-                </Accordion.Item>
-                <Accordion.Item value="contact">
-                    <Accordion.Control>Contact & Links</Accordion.Control>
-                    <Accordion.Panel>
-                        <Stack>
-                           {attributes.phone && <Group wrap="nowrap" gap="xs"><IconPhone size={16}/><Text size="sm">{attributes.phone}</Text></Group>}
-                           {attributes.email && <Group wrap="nowrap" gap="xs"><IconMail size={16}/><Text size="sm">{attributes.email}</Text></Group>}
-                           {attributes.website && <Group wrap="nowrap" gap="xs"><IconLink size={16}/><Text component="a" href={attributes.website} target="_blank" size="sm">{attributes.website}</Text></Group>}
-                           <Divider label="Social" mt="xs"/>
-                           <SimpleGrid cols={2}>
-                                <TextAttribute label="Instagram" value={attributes.social_links?.instagram} />
-                                <TextAttribute label="Facebook" value={attributes.social_links?.facebook} />
-                           </SimpleGrid>
-                        </Stack>
-                    </Accordion.Panel>
-                </Accordion.Item>
-                 <Accordion.Item value="amenities">
-                    <Accordion.Control>Amenities & Details</Accordion.Control>
-                    <Accordion.Panel>
-                        <SimpleGrid cols={2} spacing="md">
-                            <AttributeList title="Payment Methods" data={attributes.payment_methods} />
-                            <AttributeList title="Parking" data={attributes.parking} />
-                            <AttributeList title="Pet Policy" data={attributes.pets} />
-                            <AttributeList title="Discounts" data={attributes.discounts} />
-                            <AttributeList title="General Amenities" data={attributes.amenities_services} />
-                        </SimpleGrid>
-                    </Accordion.Panel>
-                </Accordion.Item>
-            </Accordion>
-        </Stack>
-    );
-};
-
-
-function POIMap() {
-  const [pois, setPois] = useState([]);
-  const [selectedPoi, setSelectedPoi] = useState(null);
-  const [isDrawerOpen, setDrawerOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    const fetchPois = async () => {
-      try {
-        const response = await axios.get(`${API_URL}/api/pois/?limit=1000`);
-        setPois(response.data);
-      } catch (error) {
-        notifications.show({
-          title: 'Error fetching data',
-          message: 'Could not load points of interest for the map.',
-          color: 'red',
-        });
-      }
-    };
-    fetchPois();
-  }, []);
-
-  const handleMarkerClick = async (poi) => {
-    setLoading(true);
-    setDrawerOpen(true);
-    try {
-        const response = await axios.get(`${API_URL}/api/pois/${poi.id}`);
-        setSelectedPoi(response.data);
-    } catch(e) {
-        notifications.show({ title: 'Error', message: 'Could not fetch POI details.', color: 'red' });
-        setDrawerOpen(false);
-    } finally {
-        setLoading(false);
-    }
-  };
-
-  const handleEditClick = () => {
-    if (selectedPoi) {
-      navigate(`/poi/${selectedPoi.id}/edit`);
-    }
-  };
-  
-  const handleCloseDrawer = () => {
-      setDrawerOpen(false);
-      setSelectedPoi(null);
-  }
-
-  return (
-    <>
-      <Paper style={{ height: '85vh', width: '100%' }} withBorder radius="md" p={0} shadow="sm">
-        <MapContainer 
-          center={[35.7, -79.1]}
-          zoom={9} 
-          scrollWheelZoom={true} 
-          style={{ height: "100%", width: "100%", borderRadius: 'var(--mantine-radius-md)' }}
-        >
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-            url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
-          />
-          {pois.map(poi => {
-            const coords = poi.location?.coordinates?.coordinates;
-            if (!coords || coords.length !== 2) return null;
-            const position = [coords[1], coords[0]]; 
-
-            return (
-              <Marker 
-                key={poi.id} 
-                position={position}
-                eventHandlers={{
-                  click: () => handleMarkerClick(poi),
-                }}
-              >
-                  <Popup>{poi.name}</Popup>
-              </Marker>
-            );
-          })}
-        </MapContainer>
-      </Paper>
-      
-      <Drawer
-        opened={isDrawerOpen}
-        onClose={handleCloseDrawer}
-        title={<Title order={4}>POI Details</Title>}
-        position="right"
-        padding="xl"
-        size="xl"
-        shadow="md"
-      >
-        {loading && <Group justify="center" mt="xl"><Loader /></Group>}
-        {!loading && selectedPoi && (
-            <>
-                <PoiDetailView poi={selectedPoi} />
-                <Button onClick={handleEditClick} leftSection={<IconPencil size={16} />} mt="xl" fullWidth>
-                    Edit POI
-                </Button>
-            </>
-        )}
-      </Drawer>
-    </>
-  );
-}
-
-export default POIMap;
+export default PoiDetailPage;
 ```
 </file>
 </files>

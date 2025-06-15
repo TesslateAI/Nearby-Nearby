@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
-import { Drawer, Title, Text, Button, Stack, Badge, Paper, Loader, Group, Accordion, List, SimpleGrid, ThemeIcon, Box, Divider } from '@mantine/core';
+import { Drawer, Title, Text, Button, Stack, Badge, Paper, Loader, Group, Accordion, List, SimpleGrid, ThemeIcon, Box, Divider, Card } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
-import { IconPencil, IconCheck, IconX, IconLink, IconPhone, IconMail, IconMapPin, IconBuildingStore } from '@tabler/icons-react';
+import { IconPencil, IconCheck, IconLink, IconPhone, IconMail, IconMapPin, IconArrowRight } from '@tabler/icons-react';
 import L from 'leaflet';
 
 const API_URL = import.meta.env.VITE_API_BASE_URL;
@@ -38,12 +38,48 @@ const TextAttribute = ({ label, value }) => {
 }
 
 
+const NearbyPoiList = ({ poiId }) => {
+    const [nearby, setNearby] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        if (!poiId) return;
+        const fetchNearby = async () => {
+            setLoading(true);
+            try {
+                const { data } = await axios.get(`${API_URL}/api/pois/${poiId}/nearby`);
+                setNearby(data);
+            } catch (error) {
+                console.error("Failed to fetch nearby POIs", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchNearby();
+    }, [poiId]);
+
+    if (loading) return <Loader />;
+    if (nearby.length === 0) return <Text size="sm" c="dimmed">No other POIs found within 5km.</Text>;
+
+    return (
+        <Stack>
+            {nearby.map(poi => (
+                <Card withBorder p="sm" key={poi.id}>
+                    <Text fw={500}>{poi.name}</Text>
+                    <Text size="xs" c="dimmed">{poi.location.address_line1}</Text>
+                </Card>
+            ))}
+        </Stack>
+    );
+};
+
+
 const PoiDetailView = ({ poi }) => {
-    const { name, description, summary, poi_type, status, status_message, is_verified, location, business, categories } = poi;
+    const { id, name, description, poi_type, status, status_message, is_verified, location, business, categories } = poi;
     
     if (!poi) return null;
 
-    const attributes = business?.attributes || {};
+    const attributes = business?.attributes || poi.outdoors?.attributes || {};
 
     return (
         <Stack>
@@ -55,18 +91,14 @@ const PoiDetailView = ({ poi }) => {
             <Badge color={status === 'Fully Open' ? 'green' : 'orange'}>{status}</Badge>
             {status_message && <Text c="dimmed" size="sm">"{status_message}"</Text>}
             
-            <Accordion multiple defaultValue={['general', 'contact']}>
+            <Accordion multiple defaultValue={['general', 'contact', 'nearby']}>
                 <Accordion.Item value="general">
                     <Accordion.Control>General Information</Accordion.Control>
                     <Accordion.Panel>
                         <Stack>
                             <Text>{description || 'No description provided.'}</Text>
-                            {summary && <Text fs="italic" c="dimmed">Summary: {summary}</Text>}
-                            <TextAttribute label="Price Range" value={business?.price_range} />
-                            {categories && categories.length > 0 && 
-                                <Text size="sm"><Text component="span" fw={500}>Categories:</Text> {categories.map(c => c.name).join(', ')}</Text>
-                            }
-                            {business?.is_service_business && <Badge color="blue" variant='outline'>Service-Based Business</Badge>}
+                            <TextAttribute label="Price Range" value={attributes?.price_range} />
+                            {categories && categories.length > 0 && <Text size="sm"><Text component="span" fw={500}>Categories:</Text> {categories.map(c => c.name).join(', ')}</Text>}
                         </Stack>
                     </Accordion.Panel>
                 </Accordion.Item>
@@ -74,10 +106,7 @@ const PoiDetailView = ({ poi }) => {
                     <Accordion.Control>Location & Address</Accordion.Control>
                     <Accordion.Panel>
                          <Stack>
-                            <Group wrap="nowrap" gap="xs">
-                                <IconMapPin size={16}/>
-                                <Text size="sm">{location?.address_line1}, {location?.city}</Text>
-                            </Group>
+                            <Group wrap="nowrap" gap="xs"><IconMapPin size={16}/><Text size="sm">{location?.address_line1}, {location?.city}</Text></Group>
                             <TextAttribute label="Entry Notes" value={location?.entry_notes} />
                             {location?.use_coordinates_for_map && <Badge color="red" variant='light'>Map pin is precise, address may be inexact.</Badge>}
                         </Stack>
@@ -90,11 +119,6 @@ const PoiDetailView = ({ poi }) => {
                            {attributes.phone && <Group wrap="nowrap" gap="xs"><IconPhone size={16}/><Text size="sm">{attributes.phone}</Text></Group>}
                            {attributes.email && <Group wrap="nowrap" gap="xs"><IconMail size={16}/><Text size="sm">{attributes.email}</Text></Group>}
                            {attributes.website && <Group wrap="nowrap" gap="xs"><IconLink size={16}/><Text component="a" href={attributes.website} target="_blank" size="sm">{attributes.website}</Text></Group>}
-                           <Divider label="Social" mt="xs"/>
-                           <SimpleGrid cols={2}>
-                                <TextAttribute label="Instagram" value={attributes.social_links?.instagram} />
-                                <TextAttribute label="Facebook" value={attributes.social_links?.facebook} />
-                           </SimpleGrid>
                         </Stack>
                     </Accordion.Panel>
                 </Accordion.Item>
@@ -104,10 +128,15 @@ const PoiDetailView = ({ poi }) => {
                         <SimpleGrid cols={2} spacing="md">
                             <AttributeList title="Payment Methods" data={attributes.payment_methods} />
                             <AttributeList title="Parking" data={attributes.parking} />
-                            <AttributeList title="Pet Policy" data={attributes.pets} />
-                            <AttributeList title="Discounts" data={attributes.discounts} />
                             <AttributeList title="General Amenities" data={attributes.amenities_services} />
+                             <AttributeList title="Facilities" data={attributes.facilities} />
                         </SimpleGrid>
+                    </Accordion.Panel>
+                </Accordion.Item>
+                <Accordion.Item value="nearby">
+                    <Accordion.Control>What's Nearby?</Accordion.Control>
+                    <Accordion.Panel>
+                       <NearbyPoiList poiId={id} />
                     </Accordion.Panel>
                 </Accordion.Item>
             </Accordion>
@@ -129,11 +158,7 @@ function POIMap() {
         const response = await axios.get(`${API_URL}/api/pois/?limit=1000`);
         setPois(response.data);
       } catch (error) {
-        notifications.show({
-          title: 'Error fetching data',
-          message: 'Could not load points of interest for the map.',
-          color: 'red',
-        });
+        notifications.show({ title: 'Error fetching data', message: 'Could not load points of interest for the map.', color: 'red' });
       }
     };
     fetchPois();
@@ -167,29 +192,15 @@ function POIMap() {
   return (
     <>
       <Paper style={{ height: '85vh', width: '100%' }} withBorder radius="md" p={0} shadow="sm">
-        <MapContainer 
-          center={[35.7, -79.1]}
-          zoom={9} 
-          scrollWheelZoom={true} 
-          style={{ height: "100%", width: "100%", borderRadius: 'var(--mantine-radius-md)' }}
-        >
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-            url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
-          />
+        <MapContainer center={[35.7, -79.1]} zoom={9} scrollWheelZoom={true} style={{ height: "100%", width: "100%", borderRadius: 'var(--mantine-radius-md)' }}>
+          <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
           {pois.map(poi => {
             const coords = poi.location?.coordinates?.coordinates;
             if (!coords || coords.length !== 2) return null;
             const position = [coords[1], coords[0]]; 
 
             return (
-              <Marker 
-                key={poi.id} 
-                position={position}
-                eventHandlers={{
-                  click: () => handleMarkerClick(poi),
-                }}
-              >
+              <Marker key={poi.id} position={position} eventHandlers={{ click: () => handleMarkerClick(poi) }} >
                   <Popup>{poi.name}</Popup>
               </Marker>
             );
@@ -197,15 +208,7 @@ function POIMap() {
         </MapContainer>
       </Paper>
       
-      <Drawer
-        opened={isDrawerOpen}
-        onClose={handleCloseDrawer}
-        title={<Title order={4}>POI Details</Title>}
-        position="right"
-        padding="xl"
-        size="xl"
-        shadow="md"
-      >
+      <Drawer opened={isDrawerOpen} onClose={handleCloseDrawer} title={<Title order={4}>POI Details</Title>} position="right" padding="xl" size="xl" shadow="md">
         {loading && <Group justify="center" mt="xl"><Loader /></Group>}
         {!loading && selectedPoi && (
             <>
