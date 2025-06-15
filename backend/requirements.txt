@@ -1,0 +1,14 @@
+fastapi
+uvicorn[standard]
+sqlalchemy
+psycopg2-binary
+pydantic[email]
+pydantic-settings
+alembic
+python-dotenv
+# FIX: Include the optional shapely dependency
+GeoAlchemy2[shapely]
+
+# Test dependencies
+pytest
+httpx

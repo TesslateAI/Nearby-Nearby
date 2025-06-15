@@ -1,0 +1,209 @@
+import { useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useForm } from '@mantine/form';
+import { TextInput, Button, Group, Box, Title, Select, Textarea, NumberInput, Paper, SimpleGrid, Divider, Text } from '@mantine/core';
+import { DateTimePicker } from '@mantine/dates';
+import axios from 'axios';
+import { notifications } from '@mantine/notifications';
+import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from 'react-leaflet';
+
+const API_URL = import.meta.env.VITE_API_BASE_URL;
+
+// --- Map Component Logic ---
+// This sub-component handles updating the map view when coordinates change.
+function ChangeView({ center, zoom }) {
+  const map = useMap();
+  useEffect(() => {
+    map.setView(center, zoom);
+  }, [center, zoom, map]);
+  return null;
+}
+
+// This sub-component renders the draggable marker and handles map events.
+function DraggableMarker({ position, onPositionChange }) {
+  const map = useMap();
+
+  useMapEvents({
+    click(e) {
+      onPositionChange(e.latlng);
+      map.flyTo(e.latlng, map.getZoom());
+    },
+  });
+
+  const handleDragEnd = (event) => {
+    const marker = event.target;
+    if (marker != null) {
+      onPositionChange(marker.getLatLng());
+    }
+  };
+
+  return (
+    <Marker
+      draggable={true}
+      eventHandlers={{ dragend: handleDragEnd }}
+      position={position}
+    />
+  );
+}
+// --- End Map Component Logic ---
+
+function POIForm() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const isEditing = Boolean(id);
+
+  const form = useForm({
+    initialValues: {
+      name: '', description: '', poi_type: 'business', status: 'active',
+      address_line1: '', city: '', state_abbr: 'NC', postal_code: '',
+      longitude: -79.17, latitude: 35.72,
+      price_range: '', outdoor_specific_type: 'park',
+      start_datetime: null, end_datetime: null,
+    },
+    validate: {
+      name: (value) => (value.length < 2 ? 'Name must have at least 2 characters' : null),
+      longitude: (value) => (value === null || value === undefined ? 'Longitude is required' : null),
+      latitude: (value) => (value === null || value === undefined ? 'Latitude is required' : null),
+      start_datetime: (value, values) => (values.poi_type === 'event' && !value ? 'Start date/time is required for events' : null),
+    },
+  });
+
+  useEffect(() => {
+    if (isEditing) {
+      axios.get(`${API_URL}/api/pois/${id}`)
+        .then(response => {
+          const poi = response.data;
+          form.setValues({
+            name: poi.name || '',
+            description: poi.description || '',
+            poi_type: poi.poi_type || 'business',
+            status: poi.status || 'active',
+            address_line1: poi.location?.address_line1 || '',
+            city: poi.location?.city || '',
+            state_abbr: poi.location?.state_abbr || 'NC',
+            postal_code: poi.location?.postal_code || '',
+            longitude: poi.location?.coordinates?.coordinates[0] ?? -79.17,
+            latitude: poi.location?.coordinates?.coordinates[1] ?? 35.72,
+            price_range: poi.business?.price_range || '',
+            outdoor_specific_type: poi.outdoors?.outdoor_specific_type || 'park',
+            start_datetime: poi.event?.start_datetime ? new Date(poi.event.start_datetime) : null,
+            end_datetime: poi.event?.end_datetime ? new Date(poi.event.end_datetime) : null,
+          });
+        })
+        .catch(error => {
+          notifications.show({ title: 'Error', message: 'Failed to fetch POI data.', color: 'red' });
+        });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, isEditing]);
+
+  const handleSubmit = async (values) => {
+    const payload = {
+      name: values.name, description: values.description, poi_type: values.poi_type,
+      status: values.status,
+      location: {
+        address_line1: values.address_line1, city: values.city, state_abbr: values.state_abbr,
+        postal_code: values.postal_code,
+        coordinates: { type: "Point", coordinates: [values.longitude, values.latitude] },
+      },
+    };
+    if (values.poi_type === 'business') payload.business = { price_range: values.price_range };
+    if (values.poi_type === 'outdoors') payload.outdoors = { outdoor_specific_type: values.outdoor_specific_type };
+    if (values.poi_type === 'event') payload.event = { start_datetime: values.start_datetime?.toISOString(), end_datetime: values.end_datetime?.toISOString() };
+
+    if (isEditing) {
+      notifications.show({ title: 'Info', message: 'Editing is not fully implemented. Please delete and recreate.', color: 'blue' });
+      return;
+    }
+    try {
+      await axios.post(`${API_URL}/api/pois/`, payload);
+      notifications.show({ title: 'Success!', message: `POI "${values.name}" created!`, color: 'green' });
+      navigate('/');
+    } catch (error) {
+      const errorMessage = error.response?.data?.detail ? JSON.stringify(error.response.data.detail) : 'Failed to create POI.';
+      notifications.show({ title: 'Submission Error', message: errorMessage, color: 'red', autoClose: 7000 });
+      console.error("Submission error:", error.response?.data || error.message);
+    }
+  };
+  
+  const currentPosition = [form.values.latitude, form.values.longitude];
+  const handlePositionChange = (latlng) => {
+    form.setFieldValue('latitude', latlng.lat);
+    form.setFieldValue('longitude', latlng.lng);
+  };
+
+  const currentPoiType = form.values.poi_type;
+
+  return (
+    <Paper maw={800} mx="auto">
+      <Title order={2} c="deep-purple.7" mb="xl">
+        {isEditing ? `Editing: ${form.values.name || 'POI'}` : 'Create New Point of Interest'}
+      </Title>
+
+      <form onSubmit={form.onSubmit(handleSubmit)}>
+        <Divider my="lg" label={<Text fw={500} size="lg">Core Information</Text>} labelPosition="left" />
+        <TextInput withAsterisk label="Name" placeholder="e.g., The Local Pizzeria" {...form.getInputProps('name')} />
+        <Textarea label="Description" placeholder="A brief description of the place" {...form.getInputProps('description')} mt="md" minRows={3} />
+        <Select label="POI Type" withAsterisk data={['business', 'outdoors', 'event']} {...form.getInputProps('poi_type')} mt="md" />
+
+        {currentPoiType === 'business' && (
+          <Box mt="md" p="md" bg="gray.0" style={{ borderRadius: 'var(--mantine-radius-md)' }}>
+            <Text fw={500} size="lg" mb="sm">Business Details</Text>
+            <Select label="Price Range" placeholder="e.g., $$" data={['$', '$$', '$$$', '$$$$']} {...form.getInputProps('price_range')} />
+          </Box>
+        )}
+        {currentPoiType === 'outdoors' && (
+          <Box mt="md" p="md" bg="gray.0" style={{ borderRadius: 'var(--mantine-radius-md)' }}>
+            <Text fw={500} size="lg" mb="sm">Outdoors Details</Text>
+            <Select label="Outdoor Specific Type" data={['park', 'trail']} {...form.getInputProps('outdoor_specific_type')} />
+          </Box>
+        )}
+        {currentPoiType === 'event' && (
+          <Box mt="md" p="md" bg="gray.0" style={{ borderRadius: 'var(--mantine-radius-md)' }}>
+            <Text fw={500} size="lg" mb="sm">Event Details</Text>
+            <SimpleGrid cols={{ base: 1, sm: 2 }}>
+              <DateTimePicker withAsterisk valueFormat="MMM D, YYYY h:mm A" label="Start Time" {...form.getInputProps('start_datetime')} />
+              <DateTimePicker valueFormat="MMM D, YYYY h:mm A" label="End Time" {...form.getInputProps('end_datetime')} />
+            </SimpleGrid>
+          </Box>
+        )}
+
+        <Divider my="xl" label={<Text fw={500} size="lg">Location</Text>} labelPosition="left" />
+        <Text c="dimmed" size="sm" mb="xs">Click on the map or drag the marker to set the precise location.</Text>
+
+        <Box style={{ height: '350px', width: '100%', borderRadius: 'var(--mantine-radius-md)', overflow: 'hidden', border: '1px solid var(--mantine-color-gray-3)' }} mb="md">
+          <MapContainer center={currentPosition} zoom={13} style={{ height: '100%', width: '100%' }}>
+            <ChangeView center={currentPosition} zoom={13} />
+            <TileLayer
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            />
+            <DraggableMarker position={currentPosition} onPositionChange={handlePositionChange} />
+          </MapContainer>
+        </Box>
+
+        <SimpleGrid cols={{ base: 1, sm: 2 }} mt="md">
+          <NumberInput withAsterisk label="Latitude" readOnly {...form.getInputProps('latitude')} precision={6} />
+          <NumberInput withAsterisk label="Longitude" readOnly {...form.getInputProps('longitude')} precision={6} />
+        </SimpleGrid>
+        <SimpleGrid cols={{ base: 1, sm: 2 }} mt="md">
+          <TextInput label="Address (Optional)" placeholder="123 Main St" {...form.getInputProps('address_line1')} />
+          <TextInput label="City (Optional)" placeholder="Pittsboro" {...form.getInputProps('city')} />
+        </SimpleGrid>
+        <SimpleGrid cols={{ base: 1, sm: 2 }} mt="md">
+          <TextInput label="State" placeholder="NC" {...form.getInputProps('state_abbr')} />
+          <TextInput label="Postal Code" placeholder="27312" {...form.getInputProps('postal_code')} />
+        </SimpleGrid>
+
+        <Group justify="flex-end" mt="xl">
+          <Button variant="default" onClick={() => navigate('/')}>Cancel</Button>
+          <Button type="submit" size="md">
+            {isEditing ? 'Update POI' : 'Create POI'}
+          </Button>
+        </Group>
+      </form>
+    </Paper>
+  );
+}
+
+export default POIForm;
