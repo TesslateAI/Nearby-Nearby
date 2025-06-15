@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.endpoints import pois
+from app.api.endpoints import pois, categories # Import categories
 from app.database import engine, Base
 
 # This line can be used to create tables if not using Alembic,
@@ -26,6 +26,7 @@ app.add_middleware(
 )
 
 app.include_router(pois.router, prefix="/api", tags=["Points of Interest"])
+app.include_router(categories.router, prefix="/api/categories", tags=["Categories"]) # Add category router
 
 @app.get("/")
 def read_root():

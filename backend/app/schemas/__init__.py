@@ -4,3 +4,5 @@
 # from app.schemas.poi import PointOfInterest
 
 from .poi import PointOfInterest, PointOfInterestCreate, PointOfInterestUpdate, Location, LocationCreate
+# FIX: Add the new category schemas to the package's namespace
+from .category import Category, CategoryCreate, CategoryWithChildren

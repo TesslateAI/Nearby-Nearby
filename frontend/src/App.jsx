@@ -3,7 +3,9 @@ import { useDisclosure } from '@mantine/hooks';
 import { Routes, Route, Link } from 'react-router-dom';
 import POIList from './components/POIList';
 import POIForm from './components/POIForm';
-import POIMap from './components/POIMap'; // Import the map component
+import POIMap from './components/POIMap';
+import CategoryList from './components/CategoryList'; // Import new component
+import CategoryForm from './components/CategoryForm'; // Import new component
 
 function App() {
   const [opened, { toggle }] = useDisclosure();
@@ -26,7 +28,8 @@ function App() {
       <AppShell.Navbar p="md">
         <NavLink label="Points of Interest" component={Link} to="/" />
         <NavLink label="POI Map" component={Link} to="/map" />
-        <NavLink label="Create New POI" component={Link} to="/poi/new" /> {/* This is now the third item */}
+        <NavLink label="Manage Categories" component={Link} to="/categories" />
+        <NavLink label="Create New POI" component={Link} to="/poi/new" />
       </AppShell.Navbar>
 
       <AppShell.Main>
@@ -35,6 +38,9 @@ function App() {
           <Route path="/map" element={<POIMap />} />
           <Route path="/poi/new" element={<POIForm />} />
           <Route path="/poi/:id/edit" element={<POIForm />} />
+          <Route path="/categories" element={<CategoryList />} />
+          <Route path="/category/new" element={<CategoryForm />} />
+          <Route path="/category/:id/edit" element={<CategoryForm />} />
         </Routes>
       </AppShell.Main>
     </AppShell>

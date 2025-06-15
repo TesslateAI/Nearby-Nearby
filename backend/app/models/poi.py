@@ -1,10 +1,12 @@
 import uuid
-from sqlalchemy import Column, String, Text, ForeignKey, Numeric, TIMESTAMP
+from sqlalchemy import Column, String, Text, ForeignKey, Numeric, TIMESTAMP, Boolean
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import relationship
+from sqlalchemy.sql import func
 from geoalchemy2 import Geometry
 
 from app.database import Base
+from app.models.category import poi_category_association # Import the association table
 
 # Note: For the MVP, we are focusing on the POI-related models.
 # The `users` and `categories` tables from the schema can be implemented here
@@ -19,6 +21,14 @@ class Location(Base):
     state_abbr = Column(String(2))
     postal_code = Column(String)
     coordinates = Column(Geometry(geometry_type='POINT', srid=4326), nullable=False)
+    
+    # NEW: For cases where the map pin should be trusted over the address
+    use_coordinates_for_map = Column(Boolean, nullable=False, default=False)
+    # NEW: Note for directions at the location
+    entry_notes = Column(Text, nullable=True)
+    # NEW: URL for a photo of the business entrance
+    entrance_photo_url = Column(String, nullable=True)
+
 
 class PointOfInterest(Base):
     __tablename__ = "points_of_interest"
@@ -26,12 +36,22 @@ class PointOfInterest(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = Column(String, nullable=False)
     slug = Column(String, unique=True, nullable=False, index=True)
-    description = Column(Text)
+    description = Column(Text) # Unlimited for paid, limited on frontend for free
     poi_type = Column(String, nullable=False) # 'business', 'park', 'trail', 'event'
-    status = Column(String, nullable=False, default='active')
+    status = Column(String, nullable=False, default='Fully Open')
     
+    # NEW Fields
+    summary = Column(String(200), nullable=True) # 200 char summary for SEO
+    status_message = Column(String(80), nullable=True) # Extra details on status
+    is_verified = Column(Boolean, nullable=False, default=False)
+    featured_image_url = Column(String, nullable=True)
+    updated_at = Column(TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now())
+
     location_id = Column(UUID(as_uuid=True), ForeignKey("locations.id"))
     
+    # NEW: For parent-child relationships (e.g., business in a shopping center)
+    parent_poi_id = Column(UUID(as_uuid=True), ForeignKey('points_of_interest.id'), nullable=True)
+
     location = relationship("Location")
 
     # Relationships to subtypes (one-to-one)
@@ -52,13 +72,37 @@ class PointOfInterest(Base):
     # A POI can be a venue for many events.
     hosted_events = relationship("Event", back_populates="venue", foreign_keys="Event.venue_poi_id")
 
+    # NEW: Relationship for parent POI
+    parent = relationship("PointOfInterest", remote_side=[id], backref="children")
+
+    # NEW: Many-to-many relationship with Category
+    categories = relationship(
+        "Category",
+        secondary=poi_category_association,
+        backref="pois" # Use backref here for simplicity on the other side
+    )
+
 
 class Business(Base):
     __tablename__ = "businesses"
     
     poi_id = Column(UUID(as_uuid=True), ForeignKey("points_of_interest.id"), primary_key=True)
     price_range = Column(String)
-    amenities = Column(JSONB)
+    
+    # UPDATED: Listing type for Free, Paid, etc.
+    listing_type = Column(String, nullable=False, default='free') # 'free', 'paid', 'paid_founding', 'sponsor'
+    
+    # NEW: Non-public contact info
+    contact_name = Column(String, nullable=True)
+    contact_email = Column(String, nullable=True)
+    contact_phone = Column(String, nullable=True)
+
+    # NEW: Flag for service-based businesses
+    is_service_business = Column(Boolean, nullable=False, default=False)
+    
+    # Existing JSONB field for all other flexible attributes
+    amenities = Column(JSONB) # OBSOLETE: Replaced by `attributes` for consistency
+    attributes = Column(JSONB)
 
     poi = relationship("PointOfInterest", back_populates="business")
 

@@ -1,341 +1,247 @@
-Of course. Replacing the coordinate inputs with a fully-featured, mobile-friendly map picker is an excellent way to improve the user experience. I will also ensure the entire form page is responsive.
+You've hit the nail on the head. The backend error is a simple but crucial import issue, and the frontend error is from missing component imports. My apologies for that oversight.
 
-Here are the necessary changes across three files to implement the map-based location picker and ensure the UI is fully mobile-optimized.
+I have corrected these two issues. The `update_poi` function is now correctly exposed to the API endpoint, and the `POIMap` component now properly imports the `Box` and `Divider` components it uses.
 
-### 1. Update `package.json`
-
-First, we need to add the `leaflet` and `react-leaflet` libraries to the project's dependencies.
+Here are the corrected files:
 
 <files>
+<file path="backend/app/crud/__init__.py">
+```python
+# This file makes it possible to import CRUD functions like:
+# from app.crud import create_poi
+# instead of the more verbose:
+# from app.crud.crud_poi import create_poi
 
-### 2. Import Leaflet CSS
-
-Next, we need to import the required CSS for Leaflet maps to render correctly. This is done once in the main application entry point.
-
-<file path="frontend/src/main.jsx">
-```jsx
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import App from './App.jsx';
-import { MantineProvider, createTheme } from '@mantine/core';
-import { Notifications } from '@mantine/notifications';
-import { BrowserRouter } from 'react-router-dom';
-
-// Import CSS files
-import 'leaflet/dist/leaflet.css';
-import '@mantine/core/styles.css';
-import '@mantine/dates/styles.css';
-import '@mantine/notifications/styles.css';
-import './animations.css'; // Import our new animations
-
-// Define the theme based on the "Nearby Nearby" site
-const theme = createTheme({
-  colors: {
-    'deep-purple': [
-      '#F3E5F5', '#E1BEE7', '#CE93D8', '#BA68C8', '#AB47BC', '#9C27B0',
-      '#8E24AA', '#5A2C6C', '#6A1B9A', '#4A148C',
-    ],
-    'brand-green': [
-      '#E4F8F0', '#B4EAD7', '#86DDC4', '#58CFB1', '#34BE82', '#2BAA74',
-      '#239566', '#1B8158', '#146D4A', '#0D583C',
-    ],
-  },
-  
-  primaryColor: 'deep-purple',
-  primaryShade: 7,
-
-  fontFamily: 'Poppins, sans-serif',
-  headings: {
-    fontFamily: 'Poppins, sans-serif',
-    fontWeight: '600',
-  },
-  
-  defaultRadius: 'md',
-
-  components: {
-    Button: {
-      defaultProps: {
-        color: 'brand-green.4',
-      },
-      styles: {
-        root: {
-          transition: 'transform 0.1s ease-in-out, background-color 0.2s ease',
-          '&:hover': {
-            transform: 'scale(1.02)',
-          },
-        },
-      },
-    },
-    Paper: {
-        defaultProps: {
-            withBorder: true,
-            shadow: 'sm',
-            p: 'xl',
-            radius: 'lg',
-        },
-        styles: {
-            root: {
-                position: 'relative',
-                zIndex: 1,
-            }
-        }
-    },
-    NavLink: {
-        styles: (theme) => ({
-            root: {
-                borderRadius: theme.radius.md,
-                transition: 'background-color 0.2s ease, color 0.2s ease',
-                '&[data-active]': {
-                    backgroundColor: theme.colors['deep-purple'][0],
-                    color: theme.colors['deep-purple'][8],
-                },
-            },
-            label: {
-                fontWeight: 500,
-            },
-        }),
-    },
-    Table: {
-        styles: (theme) => ({
-            thead: {
-                backgroundColor: theme.colors.gray[0],
-            },
-            th: {
-                fontWeight: 600,
-            }
-        })
-    }
-  },
-});
-
-ReactDOM.createRoot(document.getElementById('root')).render(
-  <React.StrictMode>
-    <MantineProvider theme={theme}>
-      <Notifications position="top-right" />
-      <BrowserRouter>
-        <App />
-      </BrowserRouter>
-    </MantineProvider>
-  </React.StrictMode>
-);
+from .crud_poi import get_poi, get_pois, create_poi, delete_poi, update_poi
+# FIX: Add the new category crud functions to the package's namespace
+from .crud_category import get_category, create_category, get_all_categories, get_all_categories_as_tree, delete_category
 ```
 </file>
-
-### 3. Overhaul the POI Form
-
-Finally, this is the complete overhaul of `POIForm.jsx`. It now includes the interactive map, is fully responsive, and removes the trail length input for outdoor POIs as requested.
-
-<file path="frontend/src/components/POIForm.jsx">
-```jsx
-import { useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { useForm } from '@mantine/form';
-import { TextInput, Button, Group, Box, Title, Select, Textarea, NumberInput, Paper, SimpleGrid, Divider, Text } from '@mantine/core';
-import { DateTimePicker } from '@mantine/dates';
+<file path="frontend/src/components/POIMap.jsx">
+```python
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { Drawer, Title, Text, Button, Stack, Badge, Paper, Loader, Group, Accordion, List, SimpleGrid, ThemeIcon, Box, Divider } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
-import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from 'react-leaflet';
+import { IconPencil, IconCheck, IconX, IconLink, IconPhone, IconMail, IconMapPin, IconBuildingStore } from '@tabler/icons-react';
+import L from 'leaflet';
 
 const API_URL = import.meta.env.VITE_API_BASE_URL;
 
-// --- Map Component Logic ---
-// This sub-component handles updating the map view when coordinates change.
-function ChangeView({ center, zoom }) {
-  const map = useMap();
-  useEffect(() => {
-    map.setView(center, zoom);
-  }, [center, zoom, map]);
-  return null;
+// Fix for default Leaflet icon path issue with bundlers like Vite
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
+  iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
+});
+
+
+// Helper component to render a list from an array attribute
+const AttributeList = ({ title, data }) => {
+    if (!data || data.length === 0) return null;
+    return (
+        <Box>
+            <Text fw={500} size="sm">{title}</Text>
+            <List size="sm" withPadding>
+                {data.map((item, index) => <List.Item key={index}>{item.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</List.Item>)}
+            </List>
+        </Box>
+    );
+};
+
+// Helper for single text attributes
+const TextAttribute = ({ label, value }) => {
+    if (!value) return null;
+    return <Text size="sm"><Text component="span" fw={500}>{label}:</Text> {value}</Text>;
 }
 
-// This sub-component renders the draggable marker and handles map events.
-function DraggableMarker({ position, onPositionChange }) {
-  const map = useMap();
 
-  useMapEvents({
-    click(e) {
-      onPositionChange(e.latlng);
-      map.flyTo(e.latlng, map.getZoom());
-    },
-  });
+const PoiDetailView = ({ poi }) => {
+    const { name, description, summary, poi_type, status, status_message, is_verified, location, business, categories } = poi;
+    
+    if (!poi) return null;
 
-  const handleDragEnd = (event) => {
-    const marker = event.target;
-    if (marker != null) {
-      onPositionChange(marker.getLatLng());
+    const attributes = business?.attributes || {};
+
+    return (
+        <Stack>
+            <Group>
+                <Title order={3}>{name}</Title>
+                {is_verified && <ThemeIcon color="green" variant="light" radius="xl"><IconCheck size={16} /></ThemeIcon>}
+            </Group>
+            <Badge tt="capitalize" color="purple">{poi_type}</Badge>
+            <Badge color={status === 'Fully Open' ? 'green' : 'orange'}>{status}</Badge>
+            {status_message && <Text c="dimmed" size="sm">"{status_message}"</Text>}
+            
+            <Accordion multiple defaultValue={['general', 'contact']}>
+                <Accordion.Item value="general">
+                    <Accordion.Control>General Information</Accordion.Control>
+                    <Accordion.Panel>
+                        <Stack>
+                            <Text>{description || 'No description provided.'}</Text>
+                            {summary && <Text fs="italic" c="dimmed">Summary: {summary}</Text>}
+                            <TextAttribute label="Price Range" value={business?.price_range} />
+                            {categories && categories.length > 0 && 
+                                <Text size="sm"><Text component="span" fw={500}>Categories:</Text> {categories.map(c => c.name).join(', ')}</Text>
+                            }
+                            {business?.is_service_business && <Badge color="blue" variant='outline'>Service-Based Business</Badge>}
+                        </Stack>
+                    </Accordion.Panel>
+                </Accordion.Item>
+                <Accordion.Item value="location">
+                    <Accordion.Control>Location & Address</Accordion.Control>
+                    <Accordion.Panel>
+                         <Stack>
+                            <Group wrap="nowrap" gap="xs">
+                                <IconMapPin size={16}/>
+                                <Text size="sm">{location?.address_line1}, {location?.city}</Text>
+                            </Group>
+                            <TextAttribute label="Entry Notes" value={location?.entry_notes} />
+                            {location?.use_coordinates_for_map && <Badge color="red" variant='light'>Map pin is precise, address may be inexact.</Badge>}
+                        </Stack>
+                    </Accordion.Panel>
+                </Accordion.Item>
+                <Accordion.Item value="contact">
+                    <Accordion.Control>Contact & Links</Accordion.Control>
+                    <Accordion.Panel>
+                        <Stack>
+                           {attributes.phone && <Group wrap="nowrap" gap="xs"><IconPhone size={16}/><Text size="sm">{attributes.phone}</Text></Group>}
+                           {attributes.email && <Group wrap="nowrap" gap="xs"><IconMail size={16}/><Text size="sm">{attributes.email}</Text></Group>}
+                           {attributes.website && <Group wrap="nowrap" gap="xs"><IconLink size={16}/><Text component="a" href={attributes.website} target="_blank" size="sm">{attributes.website}</Text></Group>}
+                           <Divider label="Social" mt="xs"/>
+                           <SimpleGrid cols={2}>
+                                <TextAttribute label="Instagram" value={attributes.social_links?.instagram} />
+                                <TextAttribute label="Facebook" value={attributes.social_links?.facebook} />
+                           </SimpleGrid>
+                        </Stack>
+                    </Accordion.Panel>
+                </Accordion.Item>
+                 <Accordion.Item value="amenities">
+                    <Accordion.Control>Amenities & Details</Accordion.Control>
+                    <Accordion.Panel>
+                        <SimpleGrid cols={2} spacing="md">
+                            <AttributeList title="Payment Methods" data={attributes.payment_methods} />
+                            <AttributeList title="Parking" data={attributes.parking} />
+                            <AttributeList title="Pet Policy" data={attributes.pets} />
+                            <AttributeList title="Discounts" data={attributes.discounts} />
+                            <AttributeList title="General Amenities" data={attributes.amenities_services} />
+                        </SimpleGrid>
+                    </Accordion.Panel>
+                </Accordion.Item>
+            </Accordion>
+        </Stack>
+    );
+};
+
+
+function POIMap() {
+  const [pois, setPois] = useState([]);
+  const [selectedPoi, setSelectedPoi] = useState(null);
+  const [isDrawerOpen, setDrawerOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchPois = async () => {
+      try {
+        const response = await axios.get(`${API_URL}/api/pois/?limit=1000`);
+        setPois(response.data);
+      } catch (error) {
+        notifications.show({
+          title: 'Error fetching data',
+          message: 'Could not load points of interest for the map.',
+          color: 'red',
+        });
+      }
+    };
+    fetchPois();
+  }, []);
+
+  const handleMarkerClick = async (poi) => {
+    setLoading(true);
+    setDrawerOpen(true);
+    try {
+        const response = await axios.get(`${API_URL}/api/pois/${poi.id}`);
+        setSelectedPoi(response.data);
+    } catch(e) {
+        notifications.show({ title: 'Error', message: 'Could not fetch POI details.', color: 'red' });
+        setDrawerOpen(false);
+    } finally {
+        setLoading(false);
     }
   };
 
-  return (
-    <Marker
-      draggable={true}
-      eventHandlers={{ dragend: handleDragEnd }}
-      position={position}
-    />
-  );
-}
-// --- End Map Component Logic ---
-
-function POIForm() {
-  const { id } = useParams();
-  const navigate = useNavigate();
-  const isEditing = Boolean(id);
-
-  const form = useForm({
-    initialValues: {
-      name: '', description: '', poi_type: 'business', status: 'active',
-      address_line1: '', city: '', state_abbr: 'NC', postal_code: '',
-      longitude: -79.17, latitude: 35.72,
-      price_range: '', outdoor_specific_type: 'park',
-      start_datetime: null, end_datetime: null,
-    },
-    validate: {
-      name: (value) => (value.length < 2 ? 'Name must have at least 2 characters' : null),
-      longitude: (value) => (value === null || value === undefined ? 'Longitude is required' : null),
-      latitude: (value) => (value === null || value === undefined ? 'Latitude is required' : null),
-      start_datetime: (value, values) => (values.poi_type === 'event' && !value ? 'Start date/time is required for events' : null),
-    },
-  });
-
-  useEffect(() => {
-    if (isEditing) {
-      axios.get(`${API_URL}/api/pois/${id}`)
-        .then(response => {
-          const poi = response.data;
-          form.setValues({
-            name: poi.name || '',
-            description: poi.description || '',
-            poi_type: poi.poi_type || 'business',
-            status: poi.status || 'active',
-            address_line1: poi.location?.address_line1 || '',
-            city: poi.location?.city || '',
-            state_abbr: poi.location?.state_abbr || 'NC',
-            postal_code: poi.location?.postal_code || '',
-            longitude: poi.location?.coordinates?.coordinates[0] ?? -79.17,
-            latitude: poi.location?.coordinates?.coordinates[1] ?? 35.72,
-            price_range: poi.business?.price_range || '',
-            outdoor_specific_type: poi.outdoors?.outdoor_specific_type || 'park',
-            start_datetime: poi.event?.start_datetime ? new Date(poi.event.start_datetime) : null,
-            end_datetime: poi.event?.end_datetime ? new Date(poi.event.end_datetime) : null,
-          });
-        })
-        .catch(error => {
-          notifications.show({ title: 'Error', message: 'Failed to fetch POI data.', color: 'red' });
-        });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id, isEditing]);
-
-  const handleSubmit = async (values) => {
-    const payload = {
-      name: values.name, description: values.description, poi_type: values.poi_type,
-      status: values.status,
-      location: {
-        address_line1: values.address_line1, city: values.city, state_abbr: values.state_abbr,
-        postal_code: values.postal_code,
-        coordinates: { type: "Point", coordinates: [values.longitude, values.latitude] },
-      },
-    };
-    if (values.poi_type === 'business') payload.business = { price_range: values.price_range };
-    if (values.poi_type === 'outdoors') payload.outdoors = { outdoor_specific_type: values.outdoor_specific_type };
-    if (values.poi_type === 'event') payload.event = { start_datetime: values.start_datetime?.toISOString(), end_datetime: values.end_datetime?.toISOString() };
-
-    if (isEditing) {
-      notifications.show({ title: 'Info', message: 'Editing is not fully implemented. Please delete and recreate.', color: 'blue' });
-      return;
-    }
-    try {
-      await axios.post(`${API_URL}/api/pois/`, payload);
-      notifications.show({ title: 'Success!', message: `POI "${values.name}" created!`, color: 'green' });
-      navigate('/');
-    } catch (error) {
-      const errorMessage = error.response?.data?.detail ? JSON.stringify(error.response.data.detail) : 'Failed to create POI.';
-      notifications.show({ title: 'Submission Error', message: errorMessage, color: 'red', autoClose: 7000 });
-      console.error("Submission error:", error.response?.data || error.message);
+  const handleEditClick = () => {
+    if (selectedPoi) {
+      navigate(`/poi/${selectedPoi.id}/edit`);
     }
   };
   
-  const currentPosition = [form.values.latitude, form.values.longitude];
-  const handlePositionChange = (latlng) => {
-    form.setFieldValue('latitude', latlng.lat);
-    form.setFieldValue('longitude', latlng.lng);
-  };
-
-  const currentPoiType = form.values.poi_type;
+  const handleCloseDrawer = () => {
+      setDrawerOpen(false);
+      setSelectedPoi(null);
+  }
 
   return (
-    <Paper maw={800} mx="auto">
-      <Title order={2} c="deep-purple.7" mb="xl">
-        {isEditing ? `Editing: ${form.values.name || 'POI'}` : 'Create New Point of Interest'}
-      </Title>
+    <>
+      <Paper style={{ height: '85vh', width: '100%' }} withBorder radius="md" p={0} shadow="sm">
+        <MapContainer 
+          center={[35.7, -79.1]}
+          zoom={9} 
+          scrollWheelZoom={true} 
+          style={{ height: "100%", width: "100%", borderRadius: 'var(--mantine-radius-md)' }}
+        >
+          <TileLayer
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+            url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+          />
+          {pois.map(poi => {
+            const coords = poi.location?.coordinates?.coordinates;
+            if (!coords || coords.length !== 2) return null;
+            const position = [coords[1], coords[0]]; 
 
-      <form onSubmit={form.onSubmit(handleSubmit)}>
-        <Divider my="lg" label={<Text fw={500} size="lg">Core Information</Text>} labelPosition="left" />
-        <TextInput withAsterisk label="Name" placeholder="e.g., The Local Pizzeria" {...form.getInputProps('name')} />
-        <Textarea label="Description" placeholder="A brief description of the place" {...form.getInputProps('description')} mt="md" minRows={3} />
-        <Select label="POI Type" withAsterisk data={['business', 'outdoors', 'event']} {...form.getInputProps('poi_type')} mt="md" />
-
-        {currentPoiType === 'business' && (
-          <Box mt="md" p="md" bg="gray.0" style={{ borderRadius: 'var(--mantine-radius-md)' }}>
-            <Text fw={500} size="lg" mb="sm">Business Details</Text>
-            <Select label="Price Range" placeholder="e.g., $$" data={['$', '$$', '$$$', '$$$$']} {...form.getInputProps('price_range')} />
-          </Box>
+            return (
+              <Marker 
+                key={poi.id} 
+                position={position}
+                eventHandlers={{
+                  click: () => handleMarkerClick(poi),
+                }}
+              >
+                  <Popup>{poi.name}</Popup>
+              </Marker>
+            );
+          })}
+        </MapContainer>
+      </Paper>
+      
+      <Drawer
+        opened={isDrawerOpen}
+        onClose={handleCloseDrawer}
+        title={<Title order={4}>POI Details</Title>}
+        position="right"
+        padding="xl"
+        size="xl"
+        shadow="md"
+      >
+        {loading && <Group justify="center" mt="xl"><Loader /></Group>}
+        {!loading && selectedPoi && (
+            <>
+                <PoiDetailView poi={selectedPoi} />
+                <Button onClick={handleEditClick} leftSection={<IconPencil size={16} />} mt="xl" fullWidth>
+                    Edit POI
+                </Button>
+            </>
         )}
-        {currentPoiType === 'outdoors' && (
-          <Box mt="md" p="md" bg="gray.0" style={{ borderRadius: 'var(--mantine-radius-md)' }}>
-            <Text fw={500} size="lg" mb="sm">Outdoors Details</Text>
-            <Select label="Outdoor Specific Type" data={['park', 'trail']} {...form.getInputProps('outdoor_specific_type')} />
-          </Box>
-        )}
-        {currentPoiType === 'event' && (
-          <Box mt="md" p="md" bg="gray.0" style={{ borderRadius: 'var(--mantine-radius-md)' }}>
-            <Text fw={500} size="lg" mb="sm">Event Details</Text>
-            <SimpleGrid cols={{ base: 1, sm: 2 }}>
-              <DateTimePicker withAsterisk valueFormat="MMM D, YYYY h:mm A" label="Start Time" {...form.getInputProps('start_datetime')} />
-              <DateTimePicker valueFormat="MMM D, YYYY h:mm A" label="End Time" {...form.getInputProps('end_datetime')} />
-            </SimpleGrid>
-          </Box>
-        )}
-
-        <Divider my="xl" label={<Text fw={500} size="lg">Location</Text>} labelPosition="left" />
-        <Text c="dimmed" size="sm" mb="xs">Click on the map or drag the marker to set the precise location.</Text>
-
-        <Box style={{ height: '350px', width: '100%', borderRadius: 'var(--mantine-radius-md)', overflow: 'hidden', border: '1px solid var(--mantine-color-gray-3)' }} mb="md">
-          <MapContainer center={currentPosition} zoom={13} style={{ height: '100%', width: '100%' }}>
-            <ChangeView center={currentPosition} zoom={13} />
-            <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            />
-            <DraggableMarker position={currentPosition} onPositionChange={handlePositionChange} />
-          </MapContainer>
-        </Box>
-
-        <SimpleGrid cols={{ base: 1, sm: 2 }} mt="md">
-          <NumberInput withAsterisk label="Latitude" readOnly {...form.getInputProps('latitude')} precision={6} />
-          <NumberInput withAsterisk label="Longitude" readOnly {...form.getInputProps('longitude')} precision={6} />
-        </SimpleGrid>
-        <SimpleGrid cols={{ base: 1, sm: 2 }} mt="md">
-          <TextInput label="Address (Optional)" placeholder="123 Main St" {...form.getInputProps('address_line1')} />
-          <TextInput label="City (Optional)" placeholder="Pittsboro" {...form.getInputProps('city')} />
-        </SimpleGrid>
-        <SimpleGrid cols={{ base: 1, sm: 2 }} mt="md">
-          <TextInput label="State" placeholder="NC" {...form.getInputProps('state_abbr')} />
-          <TextInput label="Postal Code" placeholder="27312" {...form.getInputProps('postal_code')} />
-        </SimpleGrid>
-
-        <Group justify="flex-end" mt="xl">
-          <Button variant="default" onClick={() => navigate('/')}>Cancel</Button>
-          <Button type="submit" size="md">
-            {isEditing ? 'Update POI' : 'Create POI'}
-          </Button>
-        </Group>
-      </form>
-    </Paper>
+      </Drawer>
+    </>
   );
 }
 
-export default POIForm;
+export default POIMap;
 ```
 </file>
 </files>

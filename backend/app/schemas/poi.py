@@ -1,12 +1,15 @@
 import uuid
 import re
 from datetime import datetime
-from typing import Optional, List, Any
+from typing import Optional, List, Any, Literal
 
 from pydantic import BaseModel, field_validator, model_validator
 # FIX: Import tools to handle GeoAlchemy2's WKBElement
 from geoalchemy2.elements import WKBElement
 from geoalchemy2.shape import to_shape
+
+# Import the new category schema to be used in POI schema
+from .category import Category
 
 # Helper for slug generation
 def generate_slug(value: str) -> str:
@@ -45,6 +48,9 @@ class LocationBase(BaseModel):
     state_abbr: Optional[str] = None
     postal_code: Optional[str] = None
     coordinates: PointGeometry
+    use_coordinates_for_map: bool = False
+    entry_notes: Optional[str] = None
+    entrance_photo_url: Optional[str] = None
 
 class LocationCreate(LocationBase):
     pass
@@ -56,9 +62,16 @@ class Location(LocationBase):
         from_attributes = True
 
 # Business Schemas
+LISTING_TYPES = Literal['free', 'paid', 'paid_founding', 'sponsor']
+
 class BusinessBase(BaseModel):
     price_range: Optional[str] = None
-    amenities: Optional[Any] = None
+    listing_type: LISTING_TYPES = 'free'
+    contact_name: Optional[str] = None
+    contact_email: Optional[str] = None
+    contact_phone: Optional[str] = None
+    is_service_business: bool = False
+    attributes: Optional[dict] = None
 
 class BusinessCreate(BusinessBase):
     pass
@@ -99,11 +112,22 @@ class Event(EventBase):
         from_attributes = True
 
 # Point of Interest Schemas
+STATUS_TYPES = Literal[
+    'Fully Open', 'Partly Open', 'Temporary Hour Changes', 'Temporarily Closed',
+    'Call Ahead', 'Permanently Closed', 'Warning', 'Limited Capacity',
+    'Coming Soon', 'Under Development', 'Alert'
+]
+
 class PointOfInterestBase(BaseModel):
     name: str
     description: Optional[str] = None
     poi_type: str
-    status: str = 'active'
+    status: STATUS_TYPES = 'Fully Open'
+    summary: Optional[str] = None
+    status_message: Optional[str] = None
+    featured_image_url: Optional[str] = None
+    is_verified: bool = False
+    parent_poi_id: Optional[uuid.UUID] = None
 
     @field_validator('poi_type')
     def poi_type_must_be_valid(cls, v):
@@ -117,6 +141,7 @@ class PointOfInterestCreate(PointOfInterestBase):
     business: Optional[BusinessCreate] = None
     outdoors: Optional[OutdoorsCreate] = None
     event: Optional[EventCreate] = None
+    category_ids: Optional[List[uuid.UUID]] = []
 
     @model_validator(mode='before')
     @classmethod
@@ -126,13 +151,26 @@ class PointOfInterestCreate(PointOfInterestBase):
                 values['slug'] = generate_slug(values['name'])
         return values
 
-class PointOfInterestUpdate(PointOfInterestBase):
+class PointOfInterestUpdate(BaseModel):
+    # Make all fields optional for PATCH-like behavior
     name: Optional[str] = None
+    description: Optional[str] = None
     poi_type: Optional[str] = None
+    status: Optional[STATUS_TYPES] = None
+    summary: Optional[str] = None
+    status_message: Optional[str] = None
+    featured_image_url: Optional[str] = None
+    is_verified: Optional[bool] = None
+    parent_poi_id: Optional[uuid.UUID] = None
+    
     location: Optional[LocationCreate] = None
     business: Optional[BusinessCreate] = None
     outdoors: Optional[OutdoorsCreate] = None
     event: Optional[EventCreate] = None
+    category_ids: Optional[List[uuid.UUID]] = None
+
+    class Config:
+        from_attributes = True
 
 
 class PointOfInterest(PointOfInterestBase):
@@ -142,6 +180,8 @@ class PointOfInterest(PointOfInterestBase):
     business: Optional[Business] = None
     outdoors: Optional[Outdoors] = None
     event: Optional[Event] = None
+    categories: List[Category] = []
+    updated_at: datetime
     
     class Config:
         from_attributes = True

@@ -69,7 +69,7 @@ const theme = createTheme({
             root: {
                 borderRadius: theme.radius.md,
                 transition: 'background-color 0.2s ease, color 0.2s ease',
-                '&[data-active]': {
+                '&[dataActive]': {
                     backgroundColor: theme.colors['deep-purple'][0],
                     color: theme.colors['deep-purple'][8],
                 },

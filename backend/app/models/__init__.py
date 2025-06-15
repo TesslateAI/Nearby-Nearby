@@ -4,3 +4,4 @@
 # from app.models.poi import PointOfInterest
 
 from .poi import PointOfInterest, Location, Business, Outdoors, Event
+from .category import Category, poi_category_association

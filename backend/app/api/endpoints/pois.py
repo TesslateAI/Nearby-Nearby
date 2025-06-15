@@ -36,9 +36,15 @@ def read_poi(poi_id: uuid.UUID, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Point of Interest not found")
     return db_poi
 
-# Note: A full PUT/PATCH implementation would be more complex, handling partial updates
-# and changes of POI type. For this MVP, we focus on Create, Read, Delete.
-# A basic PUT could be added here if necessary.
+@router.put("/pois/{poi_id}", response_model=schemas.PointOfInterest)
+def update_poi(poi_id: uuid.UUID, poi_in: schemas.PointOfInterestUpdate, db: Session = Depends(get_db)):
+    db_poi = crud.get_poi(db, poi_id=poi_id)
+    if not db_poi:
+        raise HTTPException(status_code=404, detail="Point of Interest not found")
+    
+    updated_poi = crud.update_poi(db=db, db_obj=db_poi, obj_in=poi_in)
+    return updated_poi
+
 
 @router.delete("/pois/{poi_id}", response_model=schemas.PointOfInterest)
 def delete_poi(poi_id: uuid.UUID, db: Session = Depends(get_db)):
