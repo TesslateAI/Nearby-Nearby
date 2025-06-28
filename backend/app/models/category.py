@@ -1,6 +1,6 @@
 import uuid
-from sqlalchemy import Column, String, ForeignKey, Table
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import Column, String, ForeignKey, Table, Boolean, Integer
+from sqlalchemy.dialects.postgresql import UUID, ARRAY
 from sqlalchemy.orm import relationship
 
 from app.database import Base
@@ -26,3 +26,7 @@ class Category(Base):
 
     # This relationship is defined in the PointOfInterest model via back_populates
     # pois = relationship("PointOfInterest", secondary=poi_category_association, back_populates="categories")
+
+    applicable_to = Column(ARRAY(String))  # Array of POI types this category applies to
+    is_active = Column(Boolean, default=True)
+    sort_order = Column(Integer, default=0)

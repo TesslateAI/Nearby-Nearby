@@ -3,6 +3,16 @@
 # instead of the more verbose:
 # from app.crud.crud_poi import create_poi
 
-from .crud_poi import get_poi, get_pois, create_poi, delete_poi, update_poi, search_pois, get_pois_nearby
-# FIX: Add the new category crud functions to the package's namespace
-from .crud_category import get_category, create_category, get_all_categories, get_all_categories_as_tree, delete_category
+from .crud_poi import (
+    get_poi, get_pois, search_pois, search_pois_by_location, get_pois_nearby,
+    create_poi, update_poi, delete_poi, create_poi_relationship, get_poi_relationships
+)
+from .crud_category import get_category, create_category, delete_category, get_all_categories_as_tree
+from .crud_attribute import (
+    get_attribute, get_attributes, get_attributes_by_type, get_attributes_for_poi_type,
+    create_attribute, update_attribute, delete_attribute, get_attribute_hierarchy
+)
+from .crud_user import (
+    get_user, get_user_by_email, get_users, create_user, update_user, delete_user,
+    authenticate_user
+)

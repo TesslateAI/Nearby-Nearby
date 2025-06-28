@@ -11,12 +11,14 @@ router = APIRouter()
 
 @router.post("/pois/", response_model=schemas.PointOfInterest, status_code=201)
 def create_poi(poi: schemas.PointOfInterestCreate, db: Session = Depends(get_db)):
-    if poi.poi_type == 'business' and not poi.business:
-        raise HTTPException(status_code=400, detail="Business data required for poi_type 'business'")
-    if poi.poi_type == 'outdoors' and not poi.outdoors:
-        raise HTTPException(status_code=400, detail="Outdoors data required for poi_type 'outdoors'")
-    if poi.poi_type == 'event' and not poi.event:
-        raise HTTPException(status_code=400, detail="Event data required for poi_type 'event'")
+    if poi.poi_type == 'BUSINESS' and not poi.business:
+        raise HTTPException(status_code=400, detail="Business data required for poi_type 'BUSINESS'")
+    if poi.poi_type == 'PARK' and not poi.park:
+        raise HTTPException(status_code=400, detail="Park data required for poi_type 'PARK'")
+    if poi.poi_type == 'TRAIL' and not poi.trail:
+        raise HTTPException(status_code=400, detail="Trail data required for poi_type 'TRAIL'")
+    if poi.poi_type == 'EVENT' and not poi.event:
+        raise HTTPException(status_code=400, detail="Event data required for poi_type 'EVENT'")
 
     return crud.create_poi(db=db, poi=poi)
 

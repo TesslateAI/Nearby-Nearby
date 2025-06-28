@@ -8,6 +8,9 @@ alembic
 python-dotenv
 # FIX: Include the optional shapely dependency
 GeoAlchemy2[shapely]
+passlib[bcrypt]
+python-jose[cryptography]
+python-multipart
 
 # Test dependencies
 pytest

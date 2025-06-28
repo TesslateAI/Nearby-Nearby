@@ -3,6 +3,7 @@
 # instead of the more verbose:
 # from app.schemas.poi import PointOfInterest
 
-from .poi import PointOfInterest, PointOfInterestCreate, PointOfInterestUpdate, Location, LocationCreate
-# FIX: Add the new category schemas to the package's namespace
-from .category import Category, CategoryCreate, CategoryWithChildren
+from .poi import PointOfInterest, PointOfInterestCreate, PointOfInterestUpdate, Business, Park, Trail, Event, POIRelationship, POIRelationshipCreate
+from .category import Category, CategoryCreate, CategoryUpdate, CategoryWithChildren
+from .attribute import Attribute, AttributeCreate, AttributeUpdate
+from .user import User, UserCreate, UserUpdate, Token, TokenData

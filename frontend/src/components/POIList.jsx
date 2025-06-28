@@ -61,7 +61,12 @@ function POIList() {
       <Table.Td>
         <Text size="sm" c="dimmed" tt="capitalize">{poi.poi_type}</Text>
       </Table.Td>
-      <Table.Td>{poi.location?.city}</Table.Td>
+      <Table.Td>{poi.address_city}</Table.Td>
+      <Table.Td>
+        <Text size="sm" c="dimmed">
+          {poi.is_verified ? '✓ Verified' : 'Unverified'}
+        </Text>
+      </Table.Td>
       <Table.Td>
         <Group gap="xs" justify="flex-end">
           <Tooltip label="Edit POI">
@@ -94,6 +99,7 @@ function POIList() {
               <Table.Th>Name</Table.Th>
               <Table.Th>Type</Table.Th>
               <Table.Th>City</Table.Th>
+              <Table.Th>Status</Table.Th>
               <Table.Th style={{ textAlign: 'right' }}>Actions</Table.Th>
             </Table.Tr>
           </Table.Thead>

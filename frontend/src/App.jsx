@@ -1,12 +1,13 @@
 import { AppShell, Burger, Group, Title, NavLink } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
-import { IconRocket } from '@tabler/icons-react';
+import { IconRocket, IconSettings } from '@tabler/icons-react';
 import POIList from './components/POIList';
 import POIForm from './components/POIForm';
 import POIMap from './components/POIMap';
 import CategoryList from './components/CategoryList'; 
 import CategoryForm from './components/CategoryForm';
+import AttributeManager from './components/AttributeManager';
 import PublicHomePage from './pages/PublicHomePage';
 import PoiDetailPage from './pages/PoiDetailPage'; // New Detail Page
 
@@ -42,6 +43,7 @@ function App() {
         <NavLink label="Points of Interest" component={Link} to="/" />
         <NavLink label="POI Map" component={Link} to="/map" />
         <NavLink label="Manage Categories" component={Link} to="/categories" />
+        <NavLink label="Manage Attributes" component={Link} to="/attributes" />
         <NavLink label="Create New POI" component={Link} to="/poi/new" />
         <NavLink 
           label="Launch Nearby Nearby" 
@@ -65,6 +67,7 @@ function App() {
           <Route path="/categories" element={<CategoryList />} />
           <Route path="/category/new" element={<CategoryForm />} />
           <Route path="/category/:id/edit" element={<CategoryForm />} />
+          <Route path="/attributes" element={<AttributeManager />} />
           <Route path="/launch" element={<PublicHomePage />} />
         </Routes>
       </AppShell.Main>

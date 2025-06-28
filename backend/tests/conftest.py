@@ -1,6 +1,6 @@
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 import os
 import sys
@@ -22,13 +22,17 @@ def db_session():
     Fixture to create all tables for a test, and drop them after.
     This ensures every test gets a clean database.
     """
+    # Drop and recreate the public schema for a clean slate
+    with engine.connect() as conn:
+        conn.execute(text("DROP SCHEMA public CASCADE;"))
+        conn.execute(text("CREATE SCHEMA public;"))
     Base.metadata.create_all(bind=engine)
     db = TestingSessionLocal()
     try:
         yield db
     finally:
         db.close()
-        Base.metadata.drop_all(bind=engine)
+        # No need to drop tables here, schema is dropped at start of each test
 
 
 @pytest.fixture(scope="function")

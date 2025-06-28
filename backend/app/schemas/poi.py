@@ -1,9 +1,9 @@
 import uuid
 import re
 from datetime import datetime
-from typing import Optional, List, Any, Literal
+from typing import Optional, List, Any, Literal, Dict
 
-from pydantic import BaseModel, field_validator, model_validator
+from pydantic import BaseModel, field_validator, model_validator, field_serializer, Field, ConfigDict
 from geoalchemy2.elements import WKBElement
 from geoalchemy2.shape import to_shape
 
@@ -36,60 +36,55 @@ class PointGeometry(BaseModel):
             return {"type": "Point", "coordinates": list(point.coords)[0]}
         return v
 
-# Location Schemas
-class LocationBase(BaseModel):
-    address_line1: Optional[str] = None
-    city: Optional[str] = None
-    state_abbr: Optional[str] = None
-    postal_code: Optional[str] = None
-    coordinates: PointGeometry
-    use_coordinates_for_map: bool = False
-    entry_notes: Optional[str] = None
-    entrance_photo_url: Optional[str] = None
-
-class LocationCreate(LocationBase):
-    pass
-
-class Location(LocationBase):
-    id: uuid.UUID
-    class Config: from_attributes = True
-
 # Business Schemas
-LISTING_TYPES = Literal['free', 'paid', 'paid_founding', 'sponsor']
+LISTING_TIERS = Literal['free', 'paid', 'paid_founding', 'sponsor']
+PRICE_RANGES = Literal['$', '$$', '$$$', '$$$$']
 
 class BusinessBase(BaseModel):
-    listing_type: LISTING_TYPES = 'free'
-    contact_name: Optional[str] = None
-    contact_email: Optional[str] = None
-    contact_phone: Optional[str] = None
-    is_service_business: bool = False
-    attributes: Optional[dict] = None
+    listing_tier: LISTING_TIERS = 'free'
+    price_range: Optional[PRICE_RANGES] = None
 
 class BusinessCreate(BusinessBase): pass
 class Business(BusinessBase):
     poi_id: uuid.UUID
-    class Config: from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
-# Outdoors Schemas
-class OutdoorsBase(BaseModel):
-    attributes: Optional[dict] = None
+# Park Schemas
+class ParkBase(BaseModel):
+    drone_usage_policy: Optional[str] = None
 
-class OutdoorsCreate(OutdoorsBase): pass
-class Outdoors(OutdoorsBase):
+class ParkCreate(ParkBase): pass
+class Park(ParkBase):
     poi_id: uuid.UUID
-    class Config: from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
+
+# Trail Schemas
+TRAIL_DIFFICULTY = Literal['easy', 'moderate', 'difficult', 'expert']
+ROUTE_TYPES = Literal['loop', 'out_and_back', 'point_to_point']
+
+class TrailBase(BaseModel):
+    length_text: Optional[str] = None
+    difficulty: Optional[TRAIL_DIFFICULTY] = None
+    route_type: Optional[ROUTE_TYPES] = None
+
+class TrailCreate(TrailBase): pass
+class Trail(TrailBase):
+    poi_id: uuid.UUID
+    model_config = ConfigDict(from_attributes=True)
 
 # Event Schemas
 class EventBase(BaseModel):
     start_datetime: datetime
     end_datetime: Optional[datetime] = None
+    cost_text: Optional[str] = None
 
 class EventCreate(EventBase): pass
 class Event(EventBase):
     poi_id: uuid.UUID
-    class Config: from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # Point of Interest Schemas
+POI_TYPES = Literal['BUSINESS', 'PARK', 'TRAIL', 'EVENT']
 STATUS_TYPES = Literal[
     'Fully Open', 'Partly Open', 'Temporary Hour Changes', 'Temporarily Closed',
     'Call Ahead', 'Permanently Closed', 'Warning', 'Limited Capacity',
@@ -97,64 +92,115 @@ STATUS_TYPES = Literal[
 ]
 
 class PointOfInterestBase(BaseModel):
+    poi_type: POI_TYPES
     name: str
-    description: Optional[str] = None
-    poi_type: str
+    description_long: Optional[str] = None
+    description_short: Optional[str] = None
+    
+    # Address fields
+    address_full: Optional[str] = None
+    address_street: Optional[str] = None
+    address_city: Optional[str] = None
+    address_state: Optional[str] = None
+    address_zip: Optional[str] = None
+    
+    # Status and verification
     status: STATUS_TYPES = 'Fully Open'
-    summary: Optional[str] = None
     status_message: Optional[str] = None
-    featured_image_url: Optional[str] = None
     is_verified: bool = False
-    parent_poi_id: Optional[uuid.UUID] = None
-
-    @field_validator('poi_type')
-    def poi_type_must_be_valid(cls, v):
-        if v not in ['business', 'outdoors', 'event']:
-            raise ValueError("poi_type must be 'business', 'outdoors', or 'event'")
-        return v
+    is_disaster_hub: bool = False
+    
+    # Contact info
+    website_url: Optional[str] = None
+    phone_number: Optional[str] = None
+    email: Optional[str] = None
+    
+    # JSONB fields
+    photos: Optional[Dict[str, Any]] = None
+    hours: Optional[Dict[str, Any]] = None
+    amenities: Optional[Dict[str, Any]] = None
+    contact_info: Optional[Dict[str, Any]] = None
+    compliance: Optional[Dict[str, Any]] = None
+    custom_fields: Optional[Dict[str, Any]] = None
 
 class PointOfInterestCreate(PointOfInterestBase):
-    slug: Optional[str] = None
-    location: LocationCreate
+    location: PointGeometry
     business: Optional[BusinessCreate] = None
-    outdoors: Optional[OutdoorsCreate] = None
+    park: Optional[ParkCreate] = None
+    trail: Optional[TrailCreate] = None
     event: Optional[EventCreate] = None
     category_ids: Optional[List[uuid.UUID]] = []
 
     @model_validator(mode='before')
     @classmethod
-    def generate_slug_from_name(cls, values):
-        if isinstance(values, dict) and not values.get('slug') and values.get('name'):
-            values['slug'] = generate_slug(values['name'])
+    def validate_poi_type_and_subtype(cls, values):
+        if isinstance(values, dict):
+            poi_type = values.get('poi_type')
+            if poi_type == 'BUSINESS' and not values.get('business'):
+                raise ValueError("Business data required for poi_type 'BUSINESS'")
+            elif poi_type == 'PARK' and not values.get('park'):
+                raise ValueError("Park data required for poi_type 'PARK'")
+            elif poi_type == 'TRAIL' and not values.get('trail'):
+                raise ValueError("Trail data required for poi_type 'TRAIL'")
+            elif poi_type == 'EVENT' and not values.get('event'):
+                raise ValueError("Event data required for poi_type 'EVENT'")
         return values
 
 class PointOfInterestUpdate(BaseModel):
+    poi_type: Optional[POI_TYPES] = None
     name: Optional[str] = None
-    description: Optional[str] = None
-    poi_type: Optional[str] = None
+    description_long: Optional[str] = None
+    description_short: Optional[str] = None
+    address_full: Optional[str] = None
+    address_street: Optional[str] = None
+    address_city: Optional[str] = None
+    address_state: Optional[str] = None
+    address_zip: Optional[str] = None
     status: Optional[STATUS_TYPES] = None
-    summary: Optional[str] = None
     status_message: Optional[str] = None
-    featured_image_url: Optional[str] = None
     is_verified: Optional[bool] = None
-    parent_poi_id: Optional[uuid.UUID] = None
+    is_disaster_hub: Optional[bool] = None
+    website_url: Optional[str] = None
+    phone_number: Optional[str] = None
+    email: Optional[str] = None
+    photos: Optional[Dict[str, Any]] = None
+    hours: Optional[Dict[str, Any]] = None
+    amenities: Optional[Dict[str, Any]] = None
+    contact_info: Optional[Dict[str, Any]] = None
+    compliance: Optional[Dict[str, Any]] = None
+    custom_fields: Optional[Dict[str, Any]] = None
     
-    location: Optional[LocationCreate] = None
+    location: Optional[PointGeometry] = None
     business: Optional[BusinessCreate] = None
-    outdoors: Optional[OutdoorsCreate] = None
+    park: Optional[ParkCreate] = None
+    trail: Optional[TrailCreate] = None
     event: Optional[EventCreate] = None
     category_ids: Optional[List[uuid.UUID]] = None
 
-    class Config: from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class PointOfInterest(PointOfInterestBase):
+    poi_type: str = Field(..., alias='poi_type')
     id: uuid.UUID
-    slug: str
-    location: Location
+    location: PointGeometry
     business: Optional[Business] = None
-    outdoors: Optional[Outdoors] = None
+    park: Optional[Park] = None
+    trail: Optional[Trail] = None
     event: Optional[Event] = None
     categories: List[Category] = []
-    updated_at: datetime
+    created_at: datetime
+    last_updated: datetime
     
-    class Config: from_attributes = True
+    model_config = {'from_attributes': True, 'populate_by_name': True}
+
+# POI Relationship Schema
+class POIRelationshipBase(BaseModel):
+    source_poi_id: uuid.UUID
+    target_poi_id: uuid.UUID
+    relationship_type: str
+
+class POIRelationshipCreate(POIRelationshipBase):
+    pass
+
+class POIRelationship(POIRelationshipBase):
+    model_config = ConfigDict(from_attributes=True)

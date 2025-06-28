@@ -1,9 +1,10 @@
 import uuid
-from sqlalchemy import Column, String, Text, ForeignKey, Numeric, TIMESTAMP, Boolean
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy import Column, String, Text, ForeignKey, Numeric, TIMESTAMP, Boolean, Enum
+from sqlalchemy.dialects.postgresql import UUID, JSONB, ARRAY
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from geoalchemy2 import Geometry
+import enum
 
 from app.database import Base
 from app.models.category import poi_category_association # Import the association table
@@ -12,117 +13,132 @@ from app.models.category import poi_category_association # Import the associatio
 # The `users` and `categories` tables from the schema can be implemented here
 # in a similar fashion when they are needed.
 
-class Location(Base):
-    __tablename__ = "locations"
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    address_line1 = Column(String)
-    city = Column(String)
-    state_abbr = Column(String(2))
-    postal_code = Column(String)
-    coordinates = Column(Geometry(geometry_type='POINT', srid=4326), nullable=False)
-    
-    # NEW: For cases where the map pin should be trusted over the address
-    use_coordinates_for_map = Column(Boolean, nullable=False, default=False)
-    # NEW: Note for directions at the location
-    entry_notes = Column(Text, nullable=True)
-    # NEW: URL for a photo of the business entrance
-    entrance_photo_url = Column(String, nullable=True)
-
+class POIType(enum.Enum):
+    BUSINESS = "BUSINESS"
+    PARK = "PARK"
+    TRAIL = "TRAIL"
+    EVENT = "EVENT"
 
 class PointOfInterest(Base):
     __tablename__ = "points_of_interest"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    name = Column(String, nullable=False)
-    slug = Column(String, unique=True, nullable=False, index=True)
-    description = Column(Text) # Unlimited for paid, limited on frontend for free
-    poi_type = Column(String, nullable=False) # 'business', 'outdoors', 'event'
-    status = Column(String, nullable=False, default='Fully Open')
+    poi_type = Column(Enum(POIType), nullable=False)
+    name = Column(String(255), nullable=False)
+    description_long = Column(Text)
+    description_short = Column(String(250))
     
-    # NEW Fields
-    summary = Column(String(200), nullable=True) # 200 char summary for SEO
-    status_message = Column(String(80), nullable=True) # Extra details on status
-    is_verified = Column(Boolean, nullable=False, default=False)
-    featured_image_url = Column(String, nullable=True)
-    updated_at = Column(TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now())
-
-    location_id = Column(UUID(as_uuid=True), ForeignKey("locations.id"))
+    # Address fields
+    address_full = Column(String)
+    address_street = Column(String)
+    address_city = Column(String)
+    address_state = Column(String)
+    address_zip = Column(String)
     
-    # NEW: For parent-child relationships (e.g., business in a shopping center)
-    parent_poi_id = Column(UUID(as_uuid=True), ForeignKey('points_of_interest.id'), nullable=True)
-
-    location = relationship("Location")
-
-    # Relationships to subtypes (one-to-one)
-    business = relationship("Business", back_populates="poi", uselist=False, cascade="all, delete-orphan")
-    outdoors = relationship("Outdoors", back_populates="poi", uselist=False, cascade="all, delete-orphan")
+    # Location (PostGIS)
+    location = Column(Geometry(geometry_type='POINT', srid=4326), nullable=False)
     
-    event = relationship(
-        "Event",
-        back_populates="poi",
-        foreign_keys="Event.poi_id",
-        uselist=False,
-        cascade="all, delete-orphan"
-    )
+    # Status and verification
+    status = Column(String(50), default='Fully Open')
+    status_message = Column(String(100))
+    is_verified = Column(Boolean, default=False)
+    is_disaster_hub = Column(Boolean, default=False)
+    
+    # Contact info
+    website_url = Column(String)
+    phone_number = Column(String)
+    email = Column(String)
+    
+    # JSONB fields for flexible attributes
+    photos = Column(JSONB)  # {"featured": "url", "gallery": ["url1", "url2"]}
+    hours = Column(JSONB)   # {"monday": [{"open": "09:00", "close": "17:00"}], "holidays": [{"date": "2024-12-25", "status": "closed"}]}
+    amenities = Column(JSONB)  # {"payment_methods": ["Cash", "Credit Card"], "ideal_for": ["Families"]}
+    contact_info = Column(JSONB)  # {"best": {"name": "Rhonda", ...}, "emergency": {...}}
+    compliance = Column(JSONB)  # {"pre_approval_required": true, "lead_time": "5 days"}
+    custom_fields = Column(JSONB)  # {"Parking Tip": "Back lot is free after 5 PM."}
+    
+    # Timestamps
+    created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
+    last_updated = Column(TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now())
 
-    hosted_events = relationship("Event", back_populates="venue", foreign_keys="Event.venue_poi_id")
-
-    parent = relationship("PointOfInterest", remote_side=[id], backref="children")
-
+    # Relationships
     categories = relationship(
         "Category",
         secondary=poi_category_association,
-        backref="pois" 
+        backref="pois"
     )
+    
+    # POI-to-POI relationships
+    source_relationships = relationship(
+        "POIRelationship",
+        foreign_keys="POIRelationship.source_poi_id",
+        back_populates="source_poi"
+    )
+    
+    target_relationships = relationship(
+        "POIRelationship",
+        foreign_keys="POIRelationship.target_poi_id",
+        back_populates="target_poi"
+    )
+
+    # Subtype relationships (one-to-one)
+    business = relationship("Business", back_populates="poi", uselist=False, cascade="all, delete-orphan")
+    park = relationship("Park", back_populates="poi", uselist=False, cascade="all, delete-orphan")
+    trail = relationship("Trail", back_populates="poi", uselist=False, cascade="all, delete-orphan")
+    event = relationship("Event", back_populates="poi", uselist=False, cascade="all, delete-orphan")
+
+    @property
+    def poi_type_str(self):
+        return self.poi_type.value if isinstance(self.poi_type, enum.Enum) else self.poi_type
+
+
+class POIRelationship(Base):
+    __tablename__ = "poi_relationships"
+    
+    source_poi_id = Column(UUID(as_uuid=True), ForeignKey("points_of_interest.id"), primary_key=True)
+    target_poi_id = Column(UUID(as_uuid=True), ForeignKey("points_of_interest.id"), primary_key=True)
+    relationship_type = Column(String, primary_key=True)  # e.g., "venue", "trail_in_park", "service_provider"
+    
+    source_poi = relationship("PointOfInterest", foreign_keys=[source_poi_id], back_populates="source_relationships")
+    target_poi = relationship("PointOfInterest", foreign_keys=[target_poi_id], back_populates="target_relationships")
 
 
 class Business(Base):
     __tablename__ = "businesses"
     
     poi_id = Column(UUID(as_uuid=True), ForeignKey("points_of_interest.id"), primary_key=True)
+    listing_tier = Column(String)  # 'free', 'paid', 'paid_founding', 'sponsor'
+    price_range = Column(String)  # '$', '$$', '$$$', '$$$$'
     
-    listing_type = Column(String, nullable=False, default='free') # 'free', 'paid', 'paid_founding', 'sponsor'
-    
-    # NEW: Non-public contact info
-    contact_name = Column(String, nullable=True)
-    contact_email = Column(String, nullable=True)
-    contact_phone = Column(String, nullable=True)
-
-    # NEW: Flag for service-based businesses
-    is_service_business = Column(Boolean, nullable=False, default=False)
-    
-    # All other flexible attributes stored in JSONB
-    attributes = Column(JSONB)
-
     poi = relationship("PointOfInterest", back_populates="business")
 
-class Outdoors(Base):
-    __tablename__ = "outdoors"
 
+class Park(Base):
+    __tablename__ = "parks"
+    
     poi_id = Column(UUID(as_uuid=True), ForeignKey("points_of_interest.id"), primary_key=True)
+    drone_usage_policy = Column(String)
     
-    # All flexible park/trail attributes stored in JSONB
-    attributes = Column(JSONB)
+    poi = relationship("PointOfInterest", back_populates="park")
+
+
+class Trail(Base):
+    __tablename__ = "trails"
     
-    poi = relationship("PointOfInterest", back_populates="outdoors")
+    poi_id = Column(UUID(as_uuid=True), ForeignKey("points_of_interest.id"), primary_key=True)
+    length_text = Column(String)  # e.g., "2.5 miles", "1.2 km"
+    difficulty = Column(String)  # 'easy', 'moderate', 'difficult', 'expert'
+    route_type = Column(String)  # 'loop', 'out_and_back', 'point_to_point'
+    
+    poi = relationship("PointOfInterest", back_populates="trail")
+
 
 class Event(Base):
     __tablename__ = "events"
-
+    
     poi_id = Column(UUID(as_uuid=True), ForeignKey("points_of_interest.id"), primary_key=True)
     start_datetime = Column(TIMESTAMP(timezone=True), nullable=False)
     end_datetime = Column(TIMESTAMP(timezone=True))
+    cost_text = Column(String)  # e.g., "Free", "$15", "Donation suggested"
     
-    venue_poi_id = Column(UUID(as_uuid=True), ForeignKey("points_of_interest.id"))
-    
-    poi = relationship(
-        "PointOfInterest",
-        back_populates="event",
-        foreign_keys=[poi_id]
-    )
-    venue = relationship(
-        "PointOfInterest",
-        back_populates="hosted_events",
-        foreign_keys=[venue_poi_id]
-    )
+    poi = relationship("PointOfInterest", back_populates="event")

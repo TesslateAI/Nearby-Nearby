@@ -12,29 +12,34 @@ from geoalchemy2.types import Geography
 
 def get_poi(db: Session, poi_id: uuid.UUID):
     return db.query(models.PointOfInterest).options(
-        joinedload(models.PointOfInterest.location),
         joinedload(models.PointOfInterest.business),
-        joinedload(models.PointOfInterest.outdoors),
+        joinedload(models.PointOfInterest.park),
+        joinedload(models.PointOfInterest.trail),
         joinedload(models.PointOfInterest.event),
         joinedload(models.PointOfInterest.categories)
     ).filter(models.PointOfInterest.id == poi_id).first()
 
+
 def get_pois(db: Session, skip: int = 0, limit: int = 100):
-    return db.query(models.PointOfInterest).options(
-        joinedload(models.PointOfInterest.location)
-    ).order_by(models.PointOfInterest.updated_at.desc()).offset(skip).limit(limit).all()
+    return db.query(models.PointOfInterest).order_by(
+        models.PointOfInterest.last_updated.desc()
+    ).offset(skip).limit(limit).all()
+
 
 def get_poi_by_slug(db: Session, slug: str):
     return db.query(models.PointOfInterest).filter(models.PointOfInterest.slug == slug).first()
+
 
 def search_pois(db: Session, query_str: str):
     search = f"%{query_str}%"
     return db.query(models.PointOfInterest).filter(
         or_(
             models.PointOfInterest.name.ilike(search),
-            models.PointOfInterest.description.ilike(search)
+            models.PointOfInterest.description_long.ilike(search),
+            models.PointOfInterest.description_short.ilike(search)
         )
-    ).options(joinedload(models.PointOfInterest.location)).limit(20).all()
+    ).limit(20).all()
+
 
 def search_pois_by_location(db: Session, location_str: str, limit: int = 8):
     """
@@ -42,76 +47,78 @@ def search_pois_by_location(db: Session, location_str: str, limit: int = 8):
     and then finds other POIs near that one.
     """
     search = f"%{location_str}%"
-    # Find a location that matches the text query
-    first_match_location = db.query(models.Location).filter(
+    # Find a POI that matches the text query
+    first_match_poi = db.query(models.PointOfInterest).filter(
         or_(
-            models.Location.city.ilike(search),
-            models.Location.address_line1.ilike(search),
-            models.Location.postal_code.ilike(search)
+            models.PointOfInterest.address_city.ilike(search),
+            models.PointOfInterest.address_street.ilike(search),
+            models.PointOfInterest.address_zip.ilike(search)
         )
     ).first()
 
-    if not first_match_location:
+    if not first_match_poi:
         return []
 
     # Now find POIs near this location's coordinates
-    distance_meters = 20000 # 20km radius for a general area search
+    distance_meters = 20000  # 20km radius for a general area search
     
-    nearby_pois = db.query(models.PointOfInterest).join(models.Location).filter(
+    nearby_pois = db.query(models.PointOfInterest).filter(
         func.ST_DWithin(
-            models.Location.coordinates,
-            first_match_location.coordinates,
+            models.PointOfInterest.location,
+            first_match_poi.location,
             distance_meters,
-            use_spheroid=False # Use faster box comparison for broad search
+            use_spheroid=False  # Use faster box comparison for broad search
         )
-    ).options(joinedload(models.PointOfInterest.location)).limit(limit).all()
+    ).limit(limit).all()
     
     return nearby_pois
 
 
 def get_pois_nearby(db: Session, *, poi_id: uuid.UUID, distance_km: float = 5.0, limit: int = 12):
     origin_poi = get_poi(db, poi_id)
-    if not origin_poi or not origin_poi.location:
-        raise HTTPException(status_code=404, detail="Origin POI not found or has no location.")
+    if not origin_poi:
+        raise HTTPException(status_code=404, detail="Origin POI not found.")
 
-    origin_point = origin_poi.location.coordinates
+    origin_point = origin_poi.location
     distance_meters = distance_km * 1000
 
-    nearby_pois = db.query(models.PointOfInterest).join(models.Location).filter(
+    nearby_pois = db.query(models.PointOfInterest).filter(
         func.ST_DWithin(
             origin_point,
-            models.Location.coordinates,
+            models.PointOfInterest.location,
             distance_meters,
             use_spheroid=True
         )
     ).filter(
         models.PointOfInterest.id != origin_poi.id
-    ).options(joinedload(models.PointOfInterest.location)).limit(limit).all()
+    ).limit(limit).all()
 
     return nearby_pois
 
 
 def create_poi(db: Session, poi: schemas.PointOfInterestCreate):
-    if get_poi_by_slug(db, poi.slug):
-        raise HTTPException(status_code=400, detail=f"POI with slug '{poi.slug}' already exists.")
-
-    db_location = models.Location(**poi.location.model_dump())
-    db_location.coordinates = f'POINT({poi.location.coordinates.coordinates[0]} {poi.location.coordinates.coordinates[1]})'
-    
-    poi_data = poi.model_dump(exclude={'location', 'business', 'outdoors', 'event', 'category_ids'})
+    # Create the POI with location
+    poi_data = poi.model_dump(exclude={'location', 'business', 'park', 'trail', 'event', 'category_ids'})
     db_poi = models.PointOfInterest(**poi_data)
-    db_poi.location = db_location
+    
+    # Set the location geometry
+    db_poi.location = f'POINT({poi.location.coordinates[0]} {poi.location.coordinates[1]})'
 
+    # Add categories
     if poi.category_ids:
         for cat_id in poi.category_ids:
             category = get_category(db, cat_id)
-            if category: db_poi.categories.append(category)
+            if category:
+                db_poi.categories.append(category)
 
-    if poi.poi_type == 'business' and poi.business:
+    # Create subtype based on poi_type
+    if poi.poi_type == 'BUSINESS' and poi.business:
         db_poi.business = models.Business(**poi.business.model_dump())
-    elif poi.poi_type == 'outdoors' and poi.outdoors:
-        db_poi.outdoors = models.Outdoors(**poi.outdoors.model_dump())
-    elif poi.poi_type == 'event' and poi.event:
+    elif poi.poi_type == 'PARK' and poi.park:
+        db_poi.park = models.Park(**poi.park.model_dump())
+    elif poi.poi_type == 'TRAIL' and poi.trail:
+        db_poi.trail = models.Trail(**poi.trail.model_dump())
+    elif poi.poi_type == 'EVENT' and poi.event:
         db_poi.event = models.Event(**poi.event.model_dump())
 
     try:
@@ -127,38 +134,59 @@ def create_poi(db: Session, poi: schemas.PointOfInterestCreate):
 
     return db_poi
 
+
 def update_poi(db: Session, *, db_obj: models.PointOfInterest, obj_in: schemas.PointOfInterestUpdate) -> models.PointOfInterest:
     update_data = obj_in.model_dump(exclude_unset=True)
 
+    # Handle location update
     if 'location' in update_data:
         location_data = update_data.pop('location')
-        if db_obj.location:
-            for key, value in location_data.items():
-                if key == 'coordinates' and value:
-                    setattr(db_obj.location, key, f'POINT({value["coordinates"][0]} {value["coordinates"][1]})')
-                else:
-                    setattr(db_obj.location, key, value)
+        db_obj.location = f'POINT({location_data.coordinates[0]} {location_data.coordinates[1]})'
     
-    if 'business' in update_data and db_obj.poi_type == 'business':
+    # Handle subtype updates
+    if 'business' in update_data and db_obj.poi_type == 'BUSINESS':
         business_data = update_data.pop('business')
         if db_obj.business:
             for key, value in business_data.items():
                 setattr(db_obj.business, key, value)
+        else:
+            db_obj.business = models.Business(**business_data)
 
-    if 'outdoors' in update_data and db_obj.poi_type == 'outdoors':
-        outdoors_data = update_data.pop('outdoors')
-        if db_obj.outdoors:
-            for key, value in outdoors_data.items():
-                setattr(db_obj.outdoors, key, value)
+    if 'park' in update_data and db_obj.poi_type == 'PARK':
+        park_data = update_data.pop('park')
+        if db_obj.park:
+            for key, value in park_data.items():
+                setattr(db_obj.park, key, value)
+        else:
+            db_obj.park = models.Park(**park_data)
 
+    if 'trail' in update_data and db_obj.poi_type == 'TRAIL':
+        trail_data = update_data.pop('trail')
+        if db_obj.trail:
+            for key, value in trail_data.items():
+                setattr(db_obj.trail, key, value)
+        else:
+            db_obj.trail = models.Trail(**trail_data)
+
+    if 'event' in update_data and db_obj.poi_type == 'EVENT':
+        event_data = update_data.pop('event')
+        if db_obj.event:
+            for key, value in event_data.items():
+                setattr(db_obj.event, key, value)
+        else:
+            db_obj.event = models.Event(**event_data)
+
+    # Handle category updates
     if 'category_ids' in update_data:
         category_ids = update_data.pop('category_ids')
         db_obj.categories.clear()
         for cat_id in category_ids:
             category = get_category(db, cat_id)
-            if category: db_obj.categories.append(category)
+            if category:
+                db_obj.categories.append(category)
         db.flush()
 
+    # Update remaining fields
     for field, value in update_data.items():
         setattr(db_obj, field, value)
 
@@ -169,14 +197,35 @@ def update_poi(db: Session, *, db_obj: models.PointOfInterest, obj_in: schemas.P
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"An error occurred during update: {e}")
-        
+
     return db_obj
 
 
 def delete_poi(db: Session, poi_id: uuid.UUID):
     db_poi = get_poi(db, poi_id)
-    if not db_poi:
-        return None
-    db.delete(db_poi)
-    db.commit()
+    if db_poi:
+        db.delete(db_poi)
+        db.commit()
     return db_poi
+
+
+def create_poi_relationship(db: Session, source_poi_id: uuid.UUID, target_poi_id: uuid.UUID, relationship_type: str):
+    """Create a relationship between two POIs"""
+    relationship = models.POIRelationship(
+        source_poi_id=source_poi_id,
+        target_poi_id=target_poi_id,
+        relationship_type=relationship_type
+    )
+    db.add(relationship)
+    db.commit()
+    return relationship
+
+
+def get_poi_relationships(db: Session, poi_id: uuid.UUID):
+    """Get all relationships for a POI"""
+    return db.query(models.POIRelationship).filter(
+        or_(
+            models.POIRelationship.source_poi_id == poi_id,
+            models.POIRelationship.target_poi_id == poi_id
+        )
+    ).all()
