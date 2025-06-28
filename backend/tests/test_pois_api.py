@@ -21,7 +21,9 @@ def test_create_and_read_poi(client: TestClient, db_session: Session):
             "coordinates": {"type": "Point", "coordinates": [-75.4, 35.9]}
         },
         "business": {
-            "price_range": "$$"
+            "attributes": {
+                "price_range": "$$"
+            }
         }
     }
     
@@ -32,7 +34,7 @@ def test_create_and_read_poi(client: TestClient, db_session: Session):
     data = response.json()
     assert data["name"] == business_payload["name"]
     assert data["poi_type"] == "business"
-    assert data["business"]["price_range"] == "$$"
+    assert data["business"]["attributes"]["price_range"] == "$$"
     assert "id" in data
     assert "slug" in data and data["slug"] == "test-cafe"
     poi_id = data["id"]
@@ -99,7 +101,9 @@ def test_create_poi_with_existing_slug(client: TestClient, db_session: Session):
         "name": "Unique Name",
         "poi_type": "business",
         "location": { "coordinates": {"type": "Point", "coordinates": [-78, 38]} },
-        "business": {}
+        "business": {
+            "attributes": {}
+        }
     }
     
     # Create it the first time - should succeed
