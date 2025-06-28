@@ -215,7 +215,19 @@ function POIForm() {
     <Paper maw={1200} mx="auto">
       <Title order={2} c="deep-purple.7" mb="xl">{isEditing ? `Editing: ${form.values.name}` : 'Create New Point of Interest'}</Title>
 
-      <Stepper active={activeStep} onStepClick={setActiveStep} breakpoint="sm" allowNextStepsSelect={false}>
+      <Stepper 
+        active={activeStep} 
+        onStepClick={setActiveStep} 
+        breakpoint="sm" 
+        allowNextStepsSelect={false}
+        size="sm"
+        styles={{
+          root: { marginBottom: 'xl' },
+          step: { flex: 1, minWidth: 0 },
+          stepLabel: { fontSize: '0.875rem' },
+          stepDescription: { fontSize: '0.75rem' }
+        }}
+      >
         <Stepper.Step label="Core Info" description="Basic details">
             <Stack mt="xl" p="md">
                 <SimpleGrid cols={2}>
@@ -235,7 +247,7 @@ function POIForm() {
             </Stack>
         </Stepper.Step>
         
-        <Stepper.Step label="Categories & Type" description="Categories and type-specific data">
+        <Stepper.Step label="Categories" description="Categories & type">
             <Stack mt="xl" p="md">
                 <CategorySelector value={form.values.category_ids} onChange={(ids) => form.setFieldValue('category_ids', ids)} />
                 
@@ -280,7 +292,7 @@ function POIForm() {
             </Stack>
         </Stepper.Step>
 
-        <Stepper.Step label="Location" description="Address & map pin">
+        <Stepper.Step label="Location" description="Address & map">
             <Stack mt="xl" p="md">
                 <Box style={{ height: '300px', width: '100%' }} mb="md">
                     <MapContainer center={currentPosition} zoom={13} style={{ height: '100%', width: '100%' }}>
@@ -309,7 +321,7 @@ function POIForm() {
             </Stack>
         </Stepper.Step>
 
-        <Stepper.Step label="Contact & Hours" description="Contact information and hours">
+        <Stepper.Step label="Contact" description="Contact & hours">
             <Stack mt="xl" p="md">
                 <SimpleGrid cols={2}>
                     <TextInput label="Website URL" {...form.getInputProps('website_url')} />
@@ -322,7 +334,7 @@ function POIForm() {
             </Stack>
         </Stepper.Step>
 
-        <Stepper.Step label="Attributes & Custom Fields" description="Dynamic attributes and additional data">
+        <Stepper.Step label="Attributes" description="Dynamic fields">
             <Stack mt="xl" p="md">
                 <Divider my="md" label="Dynamic Attributes" />
                 <DynamicAttributeForm
@@ -344,6 +356,15 @@ function POIForm() {
         <Button variant="default" onClick={prevStep} disabled={activeStep === 0}>Back</Button>
         <Button onClick={nextStep} disabled={activeStep === 5}>Next</Button>
         {activeStep === 5 && <Button onClick={form.onSubmit(handleSubmit)}>Submit</Button>}
+        {isEditing && (
+          <Button 
+            variant="outline" 
+            color="red" 
+            onClick={() => navigate('/')}
+          >
+            Cancel
+          </Button>
+        )}
       </Group>
     </Paper>
   );

@@ -14,5 +14,12 @@ export default defineConfig({
     allowedHosts: [
       '.tesslate.com',
     ],
+    proxy: {
+      '/api': {
+        target: 'http://backend:8000',
+        changeOrigin: true,
+        secure: false,
+      },
+    },
   },
 })

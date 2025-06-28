@@ -36,7 +36,7 @@ const NearbyMap = ({ poi }) => {
     }, [poi]);
     
     if(!poi) return null;
-    const centerPosition = [poi.location.coordinates.coordinates[1], poi.location.coordinates.coordinates[0]];
+    const centerPosition = [poi.location.coordinates[1], poi.location.coordinates[0]];
 
     return (
         <Box>
@@ -48,7 +48,7 @@ const NearbyMap = ({ poi }) => {
                 </Marker>
                 {/* Nearby POI Markers */}
                 {nearbyPois.map(p => (
-                    <Marker key={p.id} position={[p.location.coordinates.coordinates[1], p.location.coordinates.coordinates[0]]}>
+                    <Marker key={p.id} position={[p.location.coordinates[1], p.location.coordinates[0]]}>
                         <Popup><Link to={`/poi/detail/${p.id}`}>{p.name}</Link></Popup>
                     </Marker>
                 ))}

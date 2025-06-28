@@ -4,6 +4,7 @@ import App from './App.jsx';
 import { MantineProvider, createTheme } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import { BrowserRouter } from 'react-router-dom';
+import { AuthProvider } from './utils/AuthContext';
 
 // Import CSS files
 import 'leaflet/dist/leaflet.css';
@@ -97,7 +98,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     <MantineProvider theme={theme}>
       <Notifications position="top-right" />
       <BrowserRouter>
-        <App />
+        <AuthProvider>
+          <App />
+        </AuthProvider>
       </BrowserRouter>
     </MantineProvider>
   </React.StrictMode>

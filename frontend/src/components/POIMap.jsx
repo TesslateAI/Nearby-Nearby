@@ -156,6 +156,8 @@ function POIMap() {
     const fetchPois = async () => {
       try {
         const response = await axios.get(`${API_URL}/api/pois/?limit=1000`);
+        console.log('Fetched POIs:', response.data.length);
+        console.log('Sample POI:', response.data[0]);
         setPois(response.data);
       } catch (error) {
         notifications.show({ title: 'Error fetching data', message: 'Could not load points of interest for the map.', color: 'red' });
@@ -195,9 +197,13 @@ function POIMap() {
         <MapContainer center={[35.7, -79.1]} zoom={9} scrollWheelZoom={true} style={{ height: "100%", width: "100%", borderRadius: 'var(--mantine-radius-md)' }}>
           <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
           {pois.map(poi => {
-            const coords = poi.location?.coordinates?.coordinates;
-            if (!coords || coords.length !== 2) return null;
+            const coords = poi.location?.coordinates;
+            if (!coords || coords.length !== 2) {
+              console.log('Skipping POI due to invalid coordinates:', poi.name, coords);
+              return null;
+            }
             const position = [coords[1], coords[0]]; 
+            console.log('Rendering marker for:', poi.name, 'at position:', position);
 
             return (
               <Marker key={poi.id} position={position} eventHandlers={{ click: () => handleMarkerClick(poi) }} >

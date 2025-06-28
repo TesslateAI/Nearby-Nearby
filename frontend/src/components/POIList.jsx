@@ -1,20 +1,31 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
-import { Table, Button, Group, Title, Anchor, Text, Paper, ActionIcon, Tooltip } from '@mantine/core';
+import { Table, Button, Group, Title, Anchor, Text, Paper, ActionIcon, Tooltip, Badge } from '@mantine/core';
 import { Link, useNavigate } from 'react-router-dom';
 import { notifications } from '@mantine/notifications';
-import { IconPencil, IconTrash, IconPlus } from '@tabler/icons-react';
-
-const API_URL = import.meta.env.VITE_API_BASE_URL;
+import { IconPencil, IconTrash, IconPlus, IconTestPipe } from '@tabler/icons-react';
+import api from '../utils/api';
+import { useAuth } from '../utils/AuthContext';
 
 function POIList() {
   const [pois, setPois] = useState([]);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const { getAuthToken } = useAuth();
+
+  const isDemoMode = () => {
+    return getAuthToken() === 'demo-token';
+  };
 
   const fetchPois = async () => {
+    setLoading(true);
     try {
-      const response = await axios.get(`${API_URL}/api/pois/`);
-      setPois(response.data);
+      const response = await api.get('/api/pois/');
+      if (response.ok) {
+        const data = await response.json();
+        setPois(data);
+      } else {
+        throw new Error('Failed to fetch POIs');
+      }
     } catch (error) {
       notifications.show({
         title: 'Error fetching data',
@@ -23,6 +34,8 @@ function POIList() {
         autoClose: 5000,
       });
       console.error("Error fetching POIs:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -33,13 +46,17 @@ function POIList() {
   const handleDelete = async (poiId) => {
     if (window.confirm('Are you sure you want to delete this POI?')) {
       try {
-        await axios.delete(`${API_URL}/api/pois/${poiId}`);
-        notifications.show({
-          title: 'Success!',
-          message: 'POI deleted successfully!',
-          color: 'green',
-        });
-        fetchPois();
+        const response = await api.delete(`/api/pois/${poiId}`);
+        if (response.ok) {
+          notifications.show({
+            title: 'Success!',
+            message: isDemoMode() ? 'Demo: POI would be deleted' : 'POI deleted successfully!',
+            color: 'green',
+          });
+          fetchPois();
+        } else {
+          throw new Error('Failed to delete POI');
+        }
       } catch (error) {
         notifications.show({
           title: 'Error',
@@ -87,12 +104,28 @@ function POIList() {
   return (
     <Paper>
       <Group justify="space-between" mb="lg">
-        <Title order={2} c="deep-purple.7">Points of Interest</Title>
+        <Group>
+          <Title order={2} c="deep-purple.7">Points of Interest</Title>
+          {isDemoMode() && (
+            <Badge 
+              leftSection={<IconTestPipe size="0.8rem" />} 
+              color="blue" 
+              variant="light"
+            >
+              Demo Mode
+            </Badge>
+          )}
+        </Group>
         <Button onClick={() => navigate('/poi/new')} leftSection={<IconPlus size={18} />}>
             Create New POI
         </Button>
       </Group>
-      {pois.length > 0 ? (
+      
+      {loading ? (
+        <Text c="dimmed" ta="center" py="xl">
+          Loading POIs...
+        </Text>
+      ) : pois.length > 0 ? (
         <Table striped highlightOnHover withTableBorder>
           <Table.Thead>
             <Table.Tr>
@@ -108,6 +141,12 @@ function POIList() {
       ) : (
         <Text c="dimmed" ta="center" py="xl">
             No points of interest found. Create one to get started!
+        </Text>
+      )}
+      
+      {isDemoMode() && (
+        <Text c="dimmed" size="sm" ta="center" mt="md">
+          Demo mode: Using mock data. No actual API calls are made.
         </Text>
       )}
     </Paper>
