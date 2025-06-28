@@ -31,7 +31,7 @@ function CategoryForm() {
             const flattened = [];
             const flatten = (cats, depth = 0) => {
                 cats.forEach(cat => {
-                    flattened.push({ value: cat.id, label: `${'— '.repeat(depth)}${cat.name}` });
+                    flattened.push({ value: cat.id, label: `${'\u00A0\u00A0\u00A0\u00A0'.repeat(depth)}${cat.name}` });
                     if (cat.children) flatten(cat.children, depth + 1);
                 });
             };

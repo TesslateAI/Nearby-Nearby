@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
-import { Drawer, Title, Text, Button, Stack, Badge, Paper, Loader, Group, Accordion, List, SimpleGrid, ThemeIcon, Box, Divider, Card } from '@mantine/core';
+import { MapContainer, TileLayer, Marker, Popup, Tooltip } from 'react-leaflet';
+import { Drawer, Title, Text, Button, Stack, Badge, Paper, Loader, Group, Accordion, List, SimpleGrid, ThemeIcon, Box, Divider, Card, TextInput } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
-import { IconPencil, IconCheck, IconLink, IconPhone, IconMail, IconMapPin, IconArrowRight } from '@tabler/icons-react';
+import { IconPencil, IconCheck, IconLink, IconPhone, IconMail, IconMapPin, IconArrowRight, IconSearch, IconBuilding, IconTree, IconRoute, IconCalendar } from '@tabler/icons-react';
 import L from 'leaflet';
 
 const API_URL = import.meta.env.VITE_API_BASE_URL;
@@ -17,6 +17,113 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
 });
 
+// Add custom CSS for tooltips and markers
+const customStyles = `
+  .custom-tooltip {
+    background: white !important;
+    border: 1px solid #e5e7eb !important;
+    border-radius: 6px !important;
+    color: #374151 !important;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    font-size: 12px !important;
+    padding: 6px 10px !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+    white-space: nowrap !important;
+    max-width: 250px !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+  
+  .custom-tooltip::before {
+    border-top-color: white !important;
+  }
+  
+  .custom-marker {
+    background: transparent !important;
+    border: none !important;
+  }
+  
+  .custom-marker div {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  
+  .custom-marker:hover div {
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4) !important;
+  }
+`;
+
+// Inject custom styles
+if (typeof document !== 'undefined') {
+  const styleElement = document.createElement('style');
+  styleElement.textContent = customStyles;
+  document.head.appendChild(styleElement);
+}
+
+// Custom icon configuration for different POI types
+const createCustomIcon = (type, color) => {
+  return L.divIcon({
+    html: `
+      <div style="
+        background: ${color};
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        border: 3px solid white;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 12px;
+        font-weight: bold;
+      ">
+        ${getIconSymbol(type)}
+      </div>
+    `,
+    className: 'custom-marker',
+    iconSize: [24, 24],
+    iconAnchor: [12, 12],
+    popupAnchor: [0, -12]
+  });
+};
+
+// Get icon symbol for each POI type
+const getIconSymbol = (type) => {
+  // Handle enum format like "POIType.BUSINESS" or just "BUSINESS"
+  const typeStr = type?.includes('.') ? type.split('.')[1] : type;
+  switch (typeStr?.toUpperCase()) {
+    case 'BUSINESS': return '🏢';
+    case 'PARK': return '🌳';
+    case 'TRAIL': return '🥾';
+    case 'EVENT': return '📅';
+    case 'OUTDOORS': return '🌳';
+    default: return '📍';
+  }
+};
+
+// Color scheme for different POI types
+const getPoiColor = (type) => {
+  // Handle enum format like "POIType.BUSINESS" or just "BUSINESS"
+  const typeStr = type?.includes('.') ? type.split('.')[1] : type;
+  switch (typeStr?.toUpperCase()) {
+    case 'BUSINESS': return '#3B82F6'; // Blue
+    case 'PARK': return '#10B981'; // Green
+    case 'TRAIL': return '#F59E0B'; // Amber
+    case 'EVENT': return '#EF4444'; // Red
+    case 'OUTDOORS': return '#10B981'; // Green (same as park)
+    default: return '#6B7280'; // Gray
+  }
+};
+
+// Legend data
+const legendData = [
+  { type: 'BUSINESS', label: 'Business', color: '#3B82F6', icon: '🏢' },
+  { type: 'PARK', label: 'Park', color: '#10B981', icon: '🌳' },
+  { type: 'TRAIL', label: 'Trail', color: '#F59E0B', icon: '🥾' },
+  { type: 'EVENT', label: 'Event', color: '#EF4444', icon: '📅' },
+  { type: 'OUTDOORS', label: 'Outdoors', color: '#10B981', icon: '🌳' },
+];
 
 // Helper component to render a list from an array attribute
 const AttributeList = ({ title, data }) => {
@@ -144,9 +251,55 @@ const PoiDetailView = ({ poi }) => {
     );
 };
 
+// Legend component
+const MapLegend = () => (
+  <Paper
+    style={{
+      position: 'absolute',
+      bottom: 20,
+      left: 20,
+      zIndex: 1000,
+      padding: '8px',
+      backgroundColor: 'white',
+      borderRadius: '6px',
+      boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+      minWidth: '140px'
+    }}
+    withBorder
+  >
+    <Text size="sm" fw={600} mb={4}>POI Types</Text>
+    <Stack gap={4}>
+      {legendData.map((item) => (
+        <Group key={item.type} gap={6} wrap="nowrap">
+          <div
+            style={{
+              width: '18px',
+              height: '18px',
+              borderRadius: '50%',
+              backgroundColor: item.color,
+              border: '2px solid white',
+              boxShadow: '0 1px 4px rgba(0,0,0,0.2)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '9px',
+              color: 'white',
+              fontWeight: 'bold'
+            }}
+          >
+            {item.icon}
+          </div>
+          <Text size="xs" style={{ flex: 1 }}>{item.label}</Text>
+        </Group>
+      ))}
+    </Stack>
+  </Paper>
+);
 
 function POIMap() {
   const [pois, setPois] = useState([]);
+  const [filteredPois, setFilteredPois] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
   const [selectedPoi, setSelectedPoi] = useState(null);
   const [isDrawerOpen, setDrawerOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -159,12 +312,36 @@ function POIMap() {
         console.log('Fetched POIs:', response.data.length);
         console.log('Sample POI:', response.data[0]);
         setPois(response.data);
+        setFilteredPois(response.data);
       } catch (error) {
         notifications.show({ title: 'Error fetching data', message: 'Could not load points of interest for the map.', color: 'red' });
       }
     };
     fetchPois();
   }, []);
+
+  // Filter POIs based on search query
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setFilteredPois(pois);
+      return;
+    }
+
+    const query = searchQuery.toLowerCase();
+    const filtered = pois.filter(poi => {
+      const nameMatch = poi.name?.toLowerCase().includes(query);
+      const descriptionMatch = poi.description?.toLowerCase().includes(query);
+      const categoryMatch = poi.categories?.some(cat => 
+        cat.name?.toLowerCase().includes(query)
+      );
+      const addressMatch = poi.location?.address_line1?.toLowerCase().includes(query) ||
+                          poi.location?.city?.toLowerCase().includes(query);
+      
+      return nameMatch || descriptionMatch || categoryMatch || addressMatch;
+    });
+    
+    setFilteredPois(filtered);
+  }, [searchQuery, pois]);
 
   const handleMarkerClick = async (poi) => {
     setLoading(true);
@@ -191,27 +368,94 @@ function POIMap() {
       setSelectedPoi(null);
   }
 
+  // Create tooltip content for a POI
+  const createTooltipContent = (poi) => {
+    const { name, poi_type, status, location } = poi;
+    const address = location?.address_line1 ? `${location.address_line1}, ${location.city}` : location?.city || 'Address not available';
+    
+    return `
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 200px;">
+        <div style="font-weight: 600; font-size: 14px; margin-bottom: 4px; color: #1f2937;">${name}</div>
+        <div style="font-size: 12px; color: #6b7280; margin-bottom: 2px;">${poi_type}</div>
+        <div style="font-size: 11px; color: #9ca3af; margin-bottom: 2px;">${status}</div>
+        <div style="font-size: 11px; color: #9ca3af;">${address}</div>
+      </div>
+    `;
+  };
+
+  // Create simple tooltip text for POI
+  const createTooltipText = (poi) => {
+    const { name, poi_type, status, location } = poi;
+    const address = location?.city || 'Address not available';
+    // Handle enum format like "POIType.BUSINESS" or just "BUSINESS"
+    const typeStr = poi_type?.includes('.') ? poi_type.split('.')[1] : poi_type;
+    return `${name} (${typeStr}) - ${status} - ${address}`;
+  };
+
   return (
     <>
       <Paper style={{ height: '85vh', width: '100%' }} withBorder radius="md" p={0} shadow="sm">
+        <Box p="md" style={{ position: 'absolute', top: 10, left: '50%', transform: 'translateX(-50%)', zIndex: 1000, maxWidth: '400px', width: '100%' }}>
+          <TextInput
+            placeholder="Search POIs..."
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.currentTarget.value)}
+            leftSection={<IconSearch size={16} />}
+            styles={{
+              input: {
+                backgroundColor: 'white',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+              },
+              rightSection: {
+                width: 'auto',
+                paddingRight: '4px'
+              }
+            }}
+          />
+          {searchQuery && (
+            <Text size="xs" c="dimmed" mt={4} ta="center">
+              Showing {filteredPois.length} of {pois.length} POIs
+            </Text>
+          )}
+        </Box>
+        
         <MapContainer center={[35.7, -79.1]} zoom={9} scrollWheelZoom={true} style={{ height: "100%", width: "100%", borderRadius: 'var(--mantine-radius-md)' }}>
           <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-          {pois.map(poi => {
+          {filteredPois.map(poi => {
             const coords = poi.location?.coordinates;
             if (!coords || coords.length !== 2) {
               console.log('Skipping POI due to invalid coordinates:', poi.name, coords);
               return null;
             }
             const position = [coords[1], coords[0]]; 
-            console.log('Rendering marker for:', poi.name, 'at position:', position);
+            const poiType = poi.poi_type || 'business';
+            const iconColor = getPoiColor(poiType);
+            const customIcon = createCustomIcon(poiType, iconColor);
+            
+            console.log('Rendering marker for:', poi.name, 'at position:', position, 'type:', poiType);
 
             return (
-              <Marker key={poi.id} position={position} eventHandlers={{ click: () => handleMarkerClick(poi) }} >
-                  <Popup>{poi.name}</Popup>
+              <Marker 
+                key={poi.id} 
+                position={position} 
+                icon={customIcon}
+                eventHandlers={{ click: () => handleMarkerClick(poi) }}
+              >
+                <Tooltip 
+                  permanent={false}
+                  direction="top"
+                  offset={[0, -8]}
+                  opacity={0.9}
+                  className="custom-tooltip"
+                >
+                  {createTooltipText(poi)}
+                </Tooltip>
               </Marker>
             );
           })}
         </MapContainer>
+        
+        <MapLegend />
       </Paper>
       
       <Drawer opened={isDrawerOpen} onClose={handleCloseDrawer} title={<Title order={4}>POI Details</Title>} position="right" padding="xl" size="xl" shadow="md">

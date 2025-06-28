@@ -13,7 +13,8 @@ import {
   Collapse, 
   TextInput,
   ScrollArea,
-  Loader
+  Loader,
+  Modal
 } from '@mantine/core';
 import { useNavigate } from 'react-router-dom';
 import { notifications } from '@mantine/notifications';
@@ -22,7 +23,8 @@ import {
   IconTrash, 
   IconPlus, 
   IconChevronRight, 
-  IconSearch 
+  IconSearch,
+  IconAlertTriangle
 } from '@tabler/icons-react';
 
 const API_URL = import.meta.env.VITE_API_BASE_URL;
@@ -48,22 +50,16 @@ function CategoryTreeItem({ category, onEdit, onDelete, searchTerm, depth = 0, i
   // Determine background color based on depth - same color for each level, alternating pattern
   const getBackgroundColor = () => {
     if (depth === 0) {
-      return 'transparent'; // Root level - no background
-    } else if (depth === 1) {
-      return isEven ? 'var(--mantine-color-gray-0)' : 'var(--mantine-color-gray-1)';
-    } else if (depth === 2) {
       return isEven ? 'var(--mantine-color-gray-0)' : 'var(--mantine-color-gray-1)';
     } else {
-      return isEven ? 'var(--mantine-color-gray-0)' : 'var(--mantine-color-gray-1)';
+      return 'transparent'; // All children - no background
     }
   };
 
   // Get border color based on depth
   const getBorderColor = () => {
-    if (depth === 0) return 'none';
-    if (depth === 1) return 'var(--mantine-color-deep-purple-3)';
-    if (depth === 2) return 'var(--mantine-color-brand-green-3)';
-    return 'var(--mantine-color-gray-4)';
+    if (depth === 0) return 'var(--mantine-color-deep-purple-3)';
+    return 'none'; // No border for children
   };
 
   return (
@@ -81,10 +77,12 @@ function CategoryTreeItem({ category, onEdit, onDelete, searchTerm, depth = 0, i
           backgroundColor: getBackgroundColor(),
           borderLeft: depth > 0 ? `3px solid ${getBorderColor()}` : 'none',
           marginLeft: depth > 0 ? 8 : 0,
-          '&:hover': {
-            backgroundColor: depth === 0 
-              ? 'var(--mantine-color-gray-0)' 
-              : 'var(--mantine-color-gray-2)',
+        }}
+        styles={{
+          root: {
+            '&:hover': {
+              backgroundColor: 'var(--mantine-color-blue-0)',
+            }
           }
         }}
         onClick={handleToggle}
@@ -166,6 +164,8 @@ function CategoryList() {
   const [categories, setCategories] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [categoryToDelete, setCategoryToDelete] = useState(null);
   const navigate = useNavigate();
 
   const fetchCategories = async () => {
@@ -189,23 +189,31 @@ function CategoryList() {
   }, []);
 
   const handleDelete = async (categoryId, categoryName) => {
-    if (window.confirm(`Are you sure you want to delete the category "${categoryName}"? This will remove it from all POIs. This action cannot be undone.`)) {
-      try {
-        await axios.delete(`${API_URL}/api/categories/${categoryId}`);
-        notifications.show({
-          title: 'Success!',
-          message: `Category "${categoryName}" was deleted.`,
-          color: 'green',
-        });
-        fetchCategories(); // Refresh the list
-      } catch (error) {
-        const message = error.response?.data?.detail || 'Failed to delete category.';
-        notifications.show({
-          title: 'Deletion Error',
-          message: message,
-          color: 'red',
-        });
-      }
+    setCategoryToDelete({ id: categoryId, name: categoryName });
+    setDeleteModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!categoryToDelete) return;
+    
+    try {
+      await axios.delete(`${API_URL}/api/categories/${categoryToDelete.id}`);
+      notifications.show({
+        title: 'Success!',
+        message: `Category "${categoryToDelete.name}" was deleted.`,
+        color: 'green',
+      });
+      fetchCategories(); // Refresh the list
+    } catch (error) {
+      const message = error.response?.data?.detail || 'Failed to delete category.';
+      notifications.show({
+        title: 'Deletion Error',
+        message: message,
+        color: 'red',
+      });
+    } finally {
+      setDeleteModalOpen(false);
+      setCategoryToDelete(null);
     }
   };
 
@@ -268,6 +276,67 @@ function CategoryList() {
           </Box>
         )}
       </ScrollArea>
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        opened={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        title={
+          <Group gap="xs">
+            <IconAlertTriangle size={20} color="var(--mantine-color-red-6)" />
+            <Text fw={600}>Confirm Category Deletion</Text>
+          </Group>
+        }
+        centered
+        size="md"
+        styles={{
+          title: {
+            color: 'var(--mantine-color-red-7)',
+          }
+        }}
+      >
+        <Stack gap="lg">
+          <Text>
+            Are you sure you want to delete the category{' '}
+            <Text component="span" fw={600} c="red.7">
+              "{categoryToDelete?.name}"
+            </Text>
+            ?
+          </Text>
+          
+          <Text size="sm" c="dimmed">
+            This action will:
+          </Text>
+          
+          <Box pl="md">
+            <Text size="sm" c="dimmed" mb="xs">
+              • Remove this category from all associated POIs
+            </Text>
+            <Text size="sm" c="dimmed" mb="xs">
+              • Delete all child categories under this category
+            </Text>
+            <Text size="sm" c="dimmed">
+              • This action cannot be undone
+            </Text>
+          </Box>
+
+          <Group justify="flex-end" gap="md" mt="lg">
+            <Button 
+              variant="subtle" 
+              onClick={() => setDeleteModalOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button 
+              color="red" 
+              onClick={confirmDelete}
+              leftSection={<IconTrash size={16} />}
+            >
+              Delete Category
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
     </Paper>
   );
 }
