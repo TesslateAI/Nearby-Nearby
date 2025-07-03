@@ -19,7 +19,7 @@ function POIList() {
   const fetchPois = async () => {
     setLoading(true);
     try {
-      const response = await api.get('/api/pois/');
+      const response = await api.get('/pois/');
       if (response.ok) {
         const data = await response.json();
         setPois(data);
@@ -46,7 +46,7 @@ function POIList() {
   const handleDelete = async (poiId) => {
     if (window.confirm('Are you sure you want to delete this POI?')) {
       try {
-        const response = await api.delete(`/api/pois/${poiId}`);
+        const response = await api.delete(`/pois/${poiId}`);
         if (response.ok) {
           notifications.show({
             title: 'Success!',

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../utils/api';
 import { 
   Button, 
   Group, 
@@ -26,8 +26,6 @@ import {
   IconSearch,
   IconAlertTriangle
 } from '@tabler/icons-react';
-
-const API_URL = import.meta.env.VITE_API_BASE_URL;
 
 // Recursive component to render category tree
 function CategoryTreeItem({ category, onEdit, onDelete, searchTerm, depth = 0, isEven = false }) {
@@ -171,8 +169,9 @@ function CategoryList() {
   const fetchCategories = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${API_URL}/api/categories/tree`);
-      setCategories(response.data);
+      const response = await api.get('/categories/tree');
+      const data = await response.json();
+      setCategories(data);
     } catch (error) {
       notifications.show({
         title: 'Error fetching data',
@@ -197,18 +196,21 @@ function CategoryList() {
     if (!categoryToDelete) return;
     
     try {
-      await axios.delete(`${API_URL}/api/categories/${categoryToDelete.id}`);
-      notifications.show({
-        title: 'Success!',
-        message: `Category "${categoryToDelete.name}" was deleted.`,
-        color: 'green',
-      });
-      fetchCategories(); // Refresh the list
+      const response = await api.delete(`/categories/${categoryToDelete.id}`);
+      if (response.ok) {
+        notifications.show({
+          title: 'Success!',
+          message: `Category "${categoryToDelete.name}" was deleted.`,
+          color: 'green',
+        });
+        fetchCategories(); // Refresh the list
+      } else {
+        throw new Error('Failed to delete category');
+      }
     } catch (error) {
-      const message = error.response?.data?.detail || 'Failed to delete category.';
       notifications.show({
         title: 'Deletion Error',
-        message: message,
+        message: 'Failed to delete category.',
         color: 'red',
       });
     } finally {

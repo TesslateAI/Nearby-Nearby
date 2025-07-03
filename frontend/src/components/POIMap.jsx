@@ -1,13 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../utils/api';
 import { MapContainer, TileLayer, Marker, Popup, Tooltip } from 'react-leaflet';
 import { Drawer, Title, Text, Button, Stack, Badge, Paper, Loader, Group, Accordion, List, SimpleGrid, ThemeIcon, Box, Divider, Card, TextInput } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { IconPencil, IconCheck, IconLink, IconPhone, IconMail, IconMapPin, IconArrowRight, IconSearch, IconBuilding, IconTree, IconRoute, IconCalendar } from '@tabler/icons-react';
 import L from 'leaflet';
-
-const API_URL = import.meta.env.VITE_API_BASE_URL;
 
 // Fix for default Leaflet icon path issue with bundlers like Vite
 delete L.Icon.Default.prototype._getIconUrl;
@@ -154,7 +152,8 @@ const NearbyPoiList = ({ poiId }) => {
         const fetchNearby = async () => {
             setLoading(true);
             try {
-                const { data } = await axios.get(`${API_URL}/api/pois/${poiId}/nearby`);
+                const response = await api.get(`/pois/${poiId}/nearby`);
+                const data = await response.json();
                 setNearby(data);
             } catch (error) {
                 console.error("Failed to fetch nearby POIs", error);
@@ -302,19 +301,24 @@ function POIMap() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedPoi, setSelectedPoi] = useState(null);
   const [isDrawerOpen, setDrawerOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
     const fetchPois = async () => {
       try {
-        const response = await axios.get(`${API_URL}/api/pois/?limit=1000`);
-        console.log('Fetched POIs:', response.data.length);
-        console.log('Sample POI:', response.data[0]);
-        setPois(response.data);
-        setFilteredPois(response.data);
+        console.log('Fetching POIs...');
+        const response = await api.get('/pois/?limit=1000');
+        const data = await response.json();
+        console.log('Fetched POIs:', data.length);
+        console.log('Sample POI:', data[0]);
+        setPois(data);
+        setFilteredPois(data);
       } catch (error) {
+        console.error('Error fetching POIs:', error);
         notifications.show({ title: 'Error fetching data', message: 'Could not load points of interest for the map.', color: 'red' });
+      } finally {
+        setLoading(false);
       }
     };
     fetchPois();
@@ -347,8 +351,9 @@ function POIMap() {
     setLoading(true);
     setDrawerOpen(true);
     try {
-        const response = await axios.get(`${API_URL}/api/pois/${poi.id}`);
-        setSelectedPoi(response.data);
+        const response = await api.get(`/pois/${poi.id}`);
+        const data = await response.json();
+        setSelectedPoi(data);
     } catch(e) {
         notifications.show({ title: 'Error', message: 'Could not fetch POI details.', color: 'red' });
         setDrawerOpen(false);
@@ -419,43 +424,63 @@ function POIMap() {
           )}
         </Box>
         
-        <MapContainer center={[35.7, -79.1]} zoom={9} scrollWheelZoom={true} style={{ height: "100%", width: "100%", borderRadius: 'var(--mantine-radius-md)' }}>
-          <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-          {filteredPois.map(poi => {
-            const coords = poi.location?.coordinates;
-            if (!coords || coords.length !== 2) {
-              console.log('Skipping POI due to invalid coordinates:', poi.name, coords);
-              return null;
-            }
-            const position = [coords[1], coords[0]]; 
-            const poiType = poi.poi_type || 'business';
-            const iconColor = getPoiColor(poiType);
-            const customIcon = createCustomIcon(poiType, iconColor);
-            
-            console.log('Rendering marker for:', poi.name, 'at position:', position, 'type:', poiType);
+        {loading && pois.length === 0 ? (
+          <Box style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Stack align="center" spacing="md">
+              <Loader size="lg" />
+              <Text>Loading map data...</Text>
+            </Stack>
+          </Box>
+        ) : (
+          <>
+            <MapContainer 
+              center={[35.7, -79.1]} 
+              zoom={9} 
+              scrollWheelZoom={true} 
+              style={{ height: "100%", width: "100%", borderRadius: 'var(--mantine-radius-md)' }}
+              key={filteredPois.length} // Force re-render when POIs change
+            >
+              <TileLayer 
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' 
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" 
+              />
+              {filteredPois.map(poi => {
+                const coords = poi.location?.coordinates;
+                if (!coords || coords.length !== 2) {
+                  console.log('Skipping POI due to invalid coordinates:', poi.name, coords);
+                  return null;
+                }
+                const position = [coords[1], coords[0]]; 
+                const poiType = poi.poi_type || 'business';
+                const iconColor = getPoiColor(poiType);
+                const customIcon = createCustomIcon(poiType, iconColor);
+                
+                console.log('Rendering marker for:', poi.name, 'at position:', position, 'type:', poiType);
 
-            return (
-              <Marker 
-                key={poi.id} 
-                position={position} 
-                icon={customIcon}
-                eventHandlers={{ click: () => handleMarkerClick(poi) }}
-              >
-                <Tooltip 
-                  permanent={false}
-                  direction="top"
-                  offset={[0, -8]}
-                  opacity={0.9}
-                  className="custom-tooltip"
-                >
-                  {createTooltipText(poi)}
-                </Tooltip>
-              </Marker>
-            );
-          })}
-        </MapContainer>
-        
-        <MapLegend />
+                return (
+                  <Marker 
+                    key={poi.id} 
+                    position={position} 
+                    icon={customIcon}
+                    eventHandlers={{ click: () => handleMarkerClick(poi) }}
+                  >
+                    <Tooltip 
+                      permanent={false}
+                      direction="top"
+                      offset={[0, -8]}
+                      opacity={0.9}
+                      className="custom-tooltip"
+                    >
+                      {createTooltipText(poi)}
+                    </Tooltip>
+                  </Marker>
+                );
+              })}
+            </MapContainer>
+            
+            <MapLegend />
+          </>
+        )}
       </Paper>
       
       <Drawer opened={isDrawerOpen} onClose={handleCloseDrawer} title={<Title order={4}>POI Details</Title>} position="right" padding="xl" size="xl" shadow="md">

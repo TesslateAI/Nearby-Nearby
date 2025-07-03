@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useForm } from '@mantine/form';
 import { TextInput, Button, Group, Box, Title, Select, Paper } from '@mantine/core';
-import axios from 'axios';
+import api from '../utils/api';
 import { notifications } from '@mantine/notifications';
 
 const API_URL = import.meta.env.VITE_API_BASE_URL;
@@ -27,7 +27,8 @@ function CategoryForm() {
     // Fetch all categories to populate the 'parent' dropdown
     const fetchCategories = async () => {
         try {
-            const response = await axios.get(`${API_URL}/api/categories/tree`);
+            const response = await api.get('/categories/tree');
+            const data = await response.json();
             const flattened = [];
             const flatten = (cats, depth = 0) => {
                 cats.forEach(cat => {
@@ -35,7 +36,7 @@ function CategoryForm() {
                     if (cat.children) flatten(cat.children, depth + 1);
                 });
             };
-            flatten(response.data);
+            flatten(data);
             setCategories(flattened);
         } catch (error) {
             notifications.show({ title: 'Error', message: 'Could not fetch categories for parent selection.', color: 'red' });
@@ -57,9 +58,13 @@ function CategoryForm() {
     };
 
     try {
-      await axios.post(`${API_URL}/api/categories/`, payload);
-      notifications.show({ title: 'Success!', message: `Category "${values.name}" created!`, color: 'green' });
-      navigate('/categories'); // Go back to the category list
+      const response = await api.post('/categories/', payload);
+      if (response.ok) {
+        notifications.show({ title: 'Success!', message: `Category "${values.name}" created!`, color: 'green' });
+        navigate('/categories'); // Go back to the category list
+      } else {
+        throw new Error('Failed to create category');
+      }
     } catch (error) {
       notifications.show({ title: 'Error', message: 'Failed to create category.', color: 'red' });
     }

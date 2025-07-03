@@ -2,11 +2,9 @@ import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Container, Title, Text, SimpleGrid, Paper, Group, Badge, Button, Image, Stack, Center, Accordion, Grid, Box, ActionIcon, Tooltip, Card, Skeleton, ThemeIcon } from '@mantine/core';
 import { IconShare, IconHeart, IconMapPin, IconPhone, IconMail, IconWorldWww, IconCheck, IconArrowRight, IconCurrentLocation } from '@tabler/icons-react';
-import axios from 'axios';
+import api from '../utils/api';
 import L from 'leaflet';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
-
-const API_URL = import.meta.env.VITE_API_BASE_URL;
 
 // Fix for default Leaflet icon path issue with bundlers like Vite
 delete L.Icon.Default.prototype._getIconUrl;
@@ -31,7 +29,10 @@ const NearbyMap = ({ poi }) => {
     const [nearbyPois, setNearbyPois] = useState([]);
     useEffect(() => {
         if (poi) {
-            axios.get(`${API_URL}/api/pois/${poi.id}/nearby`).then(res => setNearbyPois(res.data));
+            api.get(`/pois/${poi.id}/nearby`)
+                .then(response => response.json())
+                .then(data => setNearbyPois(data))
+                .catch(err => console.error("Failed to fetch nearby POIs", err));
         }
     }, [poi]);
     
@@ -72,8 +73,9 @@ const PoiDetailPage = () => {
 
     useEffect(() => {
         setLoading(true);
-        axios.get(`${API_URL}/api/pois/${id}`)
-            .then(res => setPoi(res.data))
+        api.get(`/pois/${id}`)
+            .then(response => response.json())
+            .then(data => setPoi(data))
             .catch(err => console.error("Failed to fetch POI", err))
             .finally(() => setLoading(false));
     }, [id]);

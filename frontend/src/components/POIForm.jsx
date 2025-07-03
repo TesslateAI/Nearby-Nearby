@@ -5,7 +5,7 @@ import {
   TextInput, Button, Group, Box, Title, Select, Textarea, Paper, SimpleGrid,
   Divider, Text, Radio, Switch, Stack, Checkbox, Stepper, Accordion,
 } from '@mantine/core';
-import axios from 'axios';
+import api from '../utils/api';
 import { notifications } from '@mantine/notifications';
 import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from 'react-leaflet';
 import { CategorySelector } from './CategorySelector';
@@ -155,9 +155,9 @@ function POIForm() {
 
   useEffect(() => {
     if (isEditing) {
-      axios.get(`${API_URL}/api/pois/${id}`)
-        .then(response => {
-          const poi = response.data;
+      api.get(`/pois/${id}`)
+        .then(async response => {
+          const poi = await response.json();
           const initial = { ...emptyInitialValues };
 
           // Populate top-level fields
@@ -303,15 +303,18 @@ function POIForm() {
       event: cleanValues.poi_type === 'EVENT' ? cleanValues.event : null,
     };
 
-    const apiCall = isEditing ? axios.put(`${API_URL}/api/pois/${id}`, payload) : axios.post(`${API_URL}/api/pois/`, payload);
+    const apiCall = isEditing ? api.put(`/pois/${id}`, payload) : api.post('/pois/', payload);
 
     try {
-      await apiCall;
-      notifications.show({ title: 'Success!', message: `POI "${cleanValues.name}" was ${isEditing ? 'updated' : 'created'}!`, color: 'green' });
-      navigate('/');
+      const response = await apiCall;
+      if (response.ok) {
+        notifications.show({ title: 'Success!', message: `POI "${cleanValues.name}" was ${isEditing ? 'updated' : 'created'}!`, color: 'green' });
+        navigate('/');
+      } else {
+        throw new Error(`Failed to ${isEditing ? 'update' : 'create'} POI`);
+      }
     } catch (error) {
-      const errorMessage = error.response?.data?.detail ? JSON.stringify(error.response.data.detail) : `Failed to ${isEditing ? 'update' : 'create'} POI.`;
-      notifications.show({ title: 'Submission Error', message: errorMessage, color: 'red' });
+      notifications.show({ title: 'Submission Error', message: `Failed to ${isEditing ? 'update' : 'create'} POI.`, color: 'red' });
     }
   };
 

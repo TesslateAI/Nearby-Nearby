@@ -14,6 +14,7 @@ app = FastAPI(title="Nearby Nearby API")
 origins = [
     "http://localhost",
     "http://localhost:5173", # Default Vite dev server port
+    "http://127.0.0.1:5173", # Alternative localhost
     "https://nearbynearby.tesslate.com"
 ]
 

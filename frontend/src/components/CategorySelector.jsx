@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Box, Checkbox, Group, Text, Pill, ScrollArea, TextInput, ActionIcon, Collapse, Stack, Loader } from '@mantine/core';
 import { IconSearch, IconChevronRight } from '@tabler/icons-react';
-import axios from 'axios';
+import api from '../utils/api';
 import { notifications } from '@mantine/notifications';
 
 const API_URL = import.meta.env.VITE_API_BASE_URL;
@@ -79,7 +79,8 @@ export function CategorySelector({ value, onChange }) {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const { data } = await axios.get(`${API_URL}/api/categories/tree`);
+        const response = await api.get('/categories/tree');
+        const data = await response.json();
         setAllCategories(data);
 
         const map = {};

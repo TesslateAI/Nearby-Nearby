@@ -6,9 +6,7 @@ import {
 import { useForm } from '@mantine/form';
 import { notifications } from '@mantine/notifications';
 import { IconEdit, IconTrash, IconPlus } from '@tabler/icons-react';
-import axios from 'axios';
-
-const API_URL = import.meta.env.VITE_API_BASE_URL;
+import api from '../utils/api';
 
 const ATTRIBUTE_TYPES = [
   'PAYMENT_METHOD', 'AMENITY', 'ENTERTAINMENT', 'IDEAL_FOR', 'FACILITY',
@@ -42,8 +40,9 @@ function AttributeManager() {
 
   const fetchAttributes = async () => {
     try {
-      const response = await axios.get(`${API_URL}/api/attributes/`);
-      setAttributes(response.data);
+      const response = await api.get('/attributes/');
+      const data = await response.json();
+      setAttributes(data);
     } catch (error) {
       notifications.show({
         title: 'Error',
@@ -62,19 +61,27 @@ function AttributeManager() {
   const handleSubmit = async (values) => {
     try {
       if (editingAttribute) {
-        await axios.put(`${API_URL}/api/attributes/${editingAttribute.id}`, values);
-        notifications.show({
-          title: 'Success',
-          message: 'Attribute updated successfully',
-          color: 'green'
-        });
+        const response = await api.put(`/attributes/${editingAttribute.id}/`, values);
+        if (response.ok) {
+          notifications.show({
+            title: 'Success',
+            message: 'Attribute updated successfully',
+            color: 'green'
+          });
+        } else {
+          throw new Error('Failed to update attribute');
+        }
       } else {
-        await axios.post(`${API_URL}/api/attributes/`, values);
-        notifications.show({
-          title: 'Success',
-          message: 'Attribute created successfully',
-          color: 'green'
-        });
+        const response = await api.post('/attributes/', values);
+        if (response.ok) {
+          notifications.show({
+            title: 'Success',
+            message: 'Attribute created successfully',
+            color: 'green'
+          });
+        } else {
+          throw new Error('Failed to create attribute');
+        }
       }
       setModalOpened(false);
       form.reset();
@@ -83,7 +90,7 @@ function AttributeManager() {
     } catch (error) {
       notifications.show({
         title: 'Error',
-        message: error.response?.data?.detail || 'Failed to save attribute',
+        message: 'Failed to save attribute',
         color: 'red'
       });
     }
@@ -106,17 +113,21 @@ function AttributeManager() {
     if (!confirm('Are you sure you want to delete this attribute?')) return;
     
     try {
-      await axios.delete(`${API_URL}/api/attributes/${attributeId}`);
-      notifications.show({
-        title: 'Success',
-        message: 'Attribute deleted successfully',
-        color: 'green'
-      });
-      fetchAttributes();
+      const response = await api.delete(`/attributes/${attributeId}/`);
+      if (response.ok) {
+        notifications.show({
+          title: 'Success',
+          message: 'Attribute deleted successfully',
+          color: 'green'
+        });
+        fetchAttributes();
+      } else {
+        throw new Error('Failed to delete attribute');
+      }
     } catch (error) {
       notifications.show({
         title: 'Error',
-        message: error.response?.data?.detail || 'Failed to delete attribute',
+        message: 'Failed to delete attribute',
         color: 'red'
       });
     }

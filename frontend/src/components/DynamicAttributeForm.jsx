@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Checkbox, Stack, Text, Divider, Group, Badge, LoadingOverlay } from '@mantine/core';
-import axios from 'axios';
-
-const API_URL = import.meta.env.VITE_API_BASE_URL;
+import api from '../utils/api';
 
 function DynamicAttributeForm({ poiType, value = {}, onChange }) {
   const [attributes, setAttributes] = useState([]);
@@ -18,8 +16,9 @@ function DynamicAttributeForm({ poiType, value = {}, onChange }) {
   const fetchAttributes = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${API_URL}/api/attributes/for-poi-type/${poiType}`);
-      const activeAttributes = response.data.filter(attr => attr.is_active);
+      const response = await api.get(`/attributes/for-poi-type/${poiType}`);
+      const data = await response.json();
+      const activeAttributes = data.filter(attr => attr.is_active);
       setAttributes(activeAttributes);
       
       // Group attributes by type

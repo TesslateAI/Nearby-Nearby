@@ -2,11 +2,9 @@ import { useState, useEffect } from 'react';
 import { Container, Title, Text, SimpleGrid, Paper, Group, Badge, Button, Image, Stack, Center, TextInput, Box, Card, Skeleton } from '@mantine/core';
 import { IconArrowRight, IconMapPin, IconSearch, IconToolsKitchen2, IconTrees, IconDog, IconMask, IconBuildingCircus, IconHome2 } from '@tabler/icons-react';
 import { useForm } from '@mantine/form';
-import axios from 'axios';
+import api from '../utils/api';
 import { notifications } from '@mantine/notifications';
 import { Link } from 'react-router-dom';
-
-const API_URL = import.meta.env.VITE_API_BASE_URL;
 
 const categoryIcons = {
     'Food & Drinks': <IconToolsKitchen2 />, 'Parks & Recreation': <IconTrees />, 'Pet Friendly': <IconDog />,
@@ -58,9 +56,23 @@ const PublicHomePage = () => {
 
     useEffect(() => {
         // Fetch initial data
-        axios.get(`${API_URL}/api/pois/?limit=8`).then(res => setPois(res.data));
-        axios.get(`${API_URL}/api/categories/tree`).then(res => setCategories(res.data.slice(0, 6)));
-        setLoading(false);
+        const fetchData = async () => {
+            try {
+                const [poisResponse, categoriesResponse] = await Promise.all([
+                    api.get('/pois/?limit=8'),
+                    api.get('/categories/tree')
+                ]);
+                const poisData = await poisResponse.json();
+                const categoriesData = await categoriesResponse.json();
+                setPois(poisData);
+                setCategories(categoriesData.slice(0, 6));
+            } catch (error) {
+                console.error('Error fetching initial data:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchData();
     }, []);
 
     const handleSearch = async ({ search }) => {
@@ -70,7 +82,8 @@ const PublicHomePage = () => {
         }
         setLoading(true);
         try {
-            const { data } = await axios.get(`${API_URL}/api/pois/search-by-location?q=${search}`);
+            const response = await api.get(`/pois/search-by-location?q=${search}`);
+            const data = await response.json();
             setPois(data);
             setSearchTitle(`Results near "${search}"`);
         } catch (error) {
