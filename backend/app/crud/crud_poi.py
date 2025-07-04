@@ -209,6 +209,19 @@ def update_poi(db: Session, *, db_obj: models.PointOfInterest, obj_in: schemas.P
 def delete_poi(db: Session, poi_id: uuid.UUID):
     db_poi = get_poi(db, poi_id)
     if db_poi:
+        # First, delete all relationships that reference this POI
+        from app.models.poi import POIRelationship
+        relationships_to_delete = db.query(POIRelationship).filter(
+            or_(
+                POIRelationship.source_poi_id == poi_id,
+                POIRelationship.target_poi_id == poi_id
+            )
+        ).all()
+        
+        for relationship in relationships_to_delete:
+            db.delete(relationship)
+        
+        # Now delete the POI
         db.delete(db_poi)
         db.commit()
     return db_poi

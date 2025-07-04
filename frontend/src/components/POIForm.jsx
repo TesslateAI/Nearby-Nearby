@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useForm } from '@mantine/form';
 import {
   TextInput, Button, Group, Box, Title, Select, Textarea, Paper, SimpleGrid,
-  Divider, Text, Radio, Switch, Stack, Checkbox, Stepper, Accordion,
+  Divider, Text, Radio, Switch, Stack, Checkbox, Stepper, Accordion, Alert,
 } from '@mantine/core';
 import api from '../utils/api';
 import { notifications } from '@mantine/notifications';
@@ -107,7 +107,7 @@ function POIForm() {
       if (activeStep === 1) {
         // Validate subtype-specific required fields
         if (values.poi_type === 'EVENT') {
-          if (!values.event?.start_datetime) {
+          if (!values.event?.start_datetime || values.event.start_datetime.trim() === '') {
             errors['event.start_datetime'] = 'Start date/time is required for events';
           }
         }
@@ -134,7 +134,7 @@ function POIForm() {
           errors.longitude = 'Location coordinates are required';
         }
         
-        if (values.poi_type === 'EVENT' && !values.event?.start_datetime) {
+        if (values.poi_type === 'EVENT' && (!values.event?.start_datetime || values.event.start_datetime.trim() === '')) {
           errors['event.start_datetime'] = 'Start date/time is required for events';
         }
       }
@@ -145,8 +145,6 @@ function POIForm() {
 
   const nextStep = () => {
     if (!form.validate().hasErrors) {
-      console.log('Current activeStep:', activeStep);
-      console.log('Previous completedSteps:', completedSteps);
       setCompletedSteps(activeStep);
       setActiveStep((current) => Math.min(5, current + 1));
     }
@@ -215,10 +213,18 @@ function POIForm() {
               route_type: poi.trail.route_type || null
             };
           } else if (poi.poi_type === 'EVENT' && poi.event) {
+            // Convert datetime objects to string format for datetime-local inputs
+            const formatDateTimeForInput = (datetime) => {
+              if (!datetime) return '';
+              const date = new Date(datetime);
+              return date.toISOString().slice(0, 16); // Format: YYYY-MM-DDTHH:MM
+            };
+            
             initial.event = {
               ...initial.event,
               ...poi.event,
-              end_datetime: poi.event.end_datetime || null,
+              start_datetime: formatDateTimeForInput(poi.event.start_datetime),
+              end_datetime: formatDateTimeForInput(poi.event.end_datetime),
               cost_text: poi.event.cost_text || null
             };
           }
@@ -267,8 +273,24 @@ function POIForm() {
 
     if (cleanValues.event) {
       if (cleanValues.event.cost_text === '') cleanValues.event.cost_text = null;
+      // Convert datetime strings to ISO format for backend
+      if (cleanValues.event.start_datetime && cleanValues.event.start_datetime.trim() !== '') {
+        try {
+          cleanValues.event.start_datetime = new Date(cleanValues.event.start_datetime).toISOString();
+        } catch (error) {
+          throw new Error('Invalid start date/time format');
+        }
+      }
+      if (cleanValues.event.end_datetime && cleanValues.event.end_datetime.trim() !== '') {
+        try {
+          cleanValues.event.end_datetime = new Date(cleanValues.event.end_datetime).toISOString();
+        } catch (error) {
+          throw new Error('Invalid end date/time format');
+        }
+      }
     }
 
+    // Ensure subtype data is included for the current POI type
     const payload = {
       name: cleanValues.name,
       poi_type: cleanValues.poi_type,
@@ -297,11 +319,23 @@ function POIForm() {
         type: "Point",
         coordinates: [cleanValues.longitude, cleanValues.latitude]
       },
-      business: cleanValues.poi_type === 'BUSINESS' ? cleanValues.business : null,
-      park: cleanValues.poi_type === 'PARK' ? cleanValues.park : null,
-      trail: cleanValues.poi_type === 'TRAIL' ? cleanValues.trail : null,
-      event: cleanValues.poi_type === 'EVENT' ? cleanValues.event : null,
     };
+
+    // Add subtype data based on POI type
+    if (cleanValues.poi_type === 'BUSINESS') {
+      payload.business = cleanValues.business || { listing_tier: 'free' };
+    } else if (cleanValues.poi_type === 'PARK') {
+      payload.park = cleanValues.park || {};
+    } else if (cleanValues.poi_type === 'TRAIL') {
+      payload.trail = cleanValues.trail || {};
+    } else if (cleanValues.poi_type === 'EVENT') {
+      // Ensure event object exists and has required fields
+      payload.event = {
+        start_datetime: cleanValues.event?.start_datetime || '',
+        end_datetime: cleanValues.event?.end_datetime || null,
+        cost_text: cleanValues.event?.cost_text || null
+      };
+    }
 
     const apiCall = isEditing ? api.put(`/pois/${id}`, payload) : api.post('/pois/', payload);
 
@@ -311,10 +345,18 @@ function POIForm() {
         notifications.show({ title: 'Success!', message: `POI "${cleanValues.name}" was ${isEditing ? 'updated' : 'created'}!`, color: 'green' });
         navigate('/');
       } else {
-        throw new Error(`Failed to ${isEditing ? 'update' : 'create'} POI`);
+        // Get error details from response
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.detail || `Failed to ${isEditing ? 'update' : 'create'} POI`;
+        throw new Error(errorMessage);
       }
     } catch (error) {
-      notifications.show({ title: 'Submission Error', message: `Failed to ${isEditing ? 'update' : 'create'} POI.`, color: 'red' });
+      console.error('Submission error:', error);
+      notifications.show({ 
+        title: 'Submission Error', 
+        message: error.message || `Failed to ${isEditing ? 'update' : 'create'} POI.`, 
+        color: 'red' 
+      });
     }
   };
 
@@ -459,8 +501,7 @@ function POIForm() {
             </SimpleGrid>
             <TextInput label="Email" type="email" {...form.getInputProps('email')} />
 
-            <Divider my="md" label="Hours of Operation" />
-            <Text size="sm" c="dimmed">Hours configuration will be added in a future update</Text>
+
           </Stack>
         </Stepper.Step>
 
@@ -476,10 +517,13 @@ function POIForm() {
             <Divider my="md" label="Photos" />
             <TextInput label="Featured Image URL" {...form.getInputProps('photos.featured')} />
 
-            <Divider my="md" label="Custom Fields" />
-            <Text size="sm" c="dimmed">Custom fields will be added in a future update</Text>
+
+
+
           </Stack>
         </Stepper.Step>
+
+
       </Stepper>
 
       {activeStep === 5 && (
@@ -513,6 +557,12 @@ function POIForm() {
                     <Group justify="space-between">
                       <Text size="sm" c="dimmed">Summary:</Text>
                       <Text size="sm" fw={500} style={{ maxWidth: '200px' }}>{form.values.description_short}</Text>
+                    </Group>
+                  )}
+                  {form.values.status_message && (
+                    <Group justify="space-between">
+                      <Text size="sm" c="dimmed">Status Message:</Text>
+                      <Text size="sm" fw={500} style={{ maxWidth: '200px' }}>{form.values.status_message}</Text>
                     </Group>
                   )}
                 </Stack>
@@ -606,6 +656,12 @@ function POIForm() {
                           <Text size="sm" fw={500}>{form.values.event.end_datetime}</Text>
                         </Group>
                       )}
+                      {form.values.event.cost_text && (
+                        <Group justify="space-between">
+                          <Text size="sm" c="dimmed">Cost:</Text>
+                          <Text size="sm" fw={500}>{form.values.event.cost_text}</Text>
+                        </Group>
+                      )}
                     </>
                   )}
                   {form.values.poi_type === 'TRAIL' && form.values.trail && (
@@ -622,11 +678,48 @@ function POIForm() {
                           <Text size="sm" fw={500}>{form.values.trail.difficulty}</Text>
                         </Group>
                       )}
+                      {form.values.trail.route_type && (
+                        <Group justify="space-between">
+                          <Text size="sm" c="dimmed">Route Type:</Text>
+                          <Text size="sm" fw={500}>{form.values.trail.route_type}</Text>
+                        </Group>
+                      )}
+                    </>
+                  )}
+                  {form.values.poi_type === 'PARK' && form.values.park && (
+                    <>
+                      {form.values.park.drone_usage_policy && (
+                        <Group justify="space-between">
+                          <Text size="sm" c="dimmed">Drone Policy:</Text>
+                          <Text size="sm" fw={500}>{form.values.park.drone_usage_policy}</Text>
+                        </Group>
+                      )}
                     </>
                   )}
                 </Stack>
               </Paper>
             </SimpleGrid>
+
+            {/* Additional Information */}
+            {(form.values.description_long || form.values.photos?.featured) && (
+              <Paper p="md" withBorder radius="sm">
+                <Text size="sm" fw={600} c="teal.7" mb="xs">📝 Additional Information</Text>
+                <Stack spacing="xs">
+                  {form.values.description_long && (
+                    <Group justify="space-between">
+                      <Text size="sm" c="dimmed">Full Description:</Text>
+                      <Text size="sm" fw={500} style={{ maxWidth: '300px' }}>{form.values.description_long}</Text>
+                    </Group>
+                  )}
+                  {form.values.photos?.featured && (
+                    <Group justify="space-between">
+                      <Text size="sm" c="dimmed">Featured Photo:</Text>
+                      <Text size="sm" fw={500} style={{ maxWidth: '200px' }}>{form.values.photos.featured}</Text>
+                    </Group>
+                  )}
+                </Stack>
+              </Paper>
+            )}
 
             {/* Flags and Verification */}
             <Paper p="md" withBorder radius="sm" bg="gray.0">
@@ -647,9 +740,14 @@ function POIForm() {
               </Group>
             </Paper>
 
-            <Text size="sm" c="blue.6" fw={500} ta="center" mt="md">
-              Click the "Submit" button below to {isEditing ? 'update' : 'create'} this POI.
-            </Text>
+            <Alert color="blue" variant="light" mt="md">
+              <Text size="sm">
+                <strong>Tip:</strong> After saving this POI, you can manage relationships with other POIs 
+                from the main POI list using the link icon (🔗) in the actions column.
+              </Text>
+            </Alert>
+            
+
           </Stack>
         </Paper>
       )}

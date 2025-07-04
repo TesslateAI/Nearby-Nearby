@@ -185,4 +185,28 @@ def test_update_with_invalid_data(db_session):
     update_in = PointOfInterestUpdate()
     update_in.__dict__["nonexistent_field"] = "value"
     updated = crud_poi.update_poi(db_session, db_obj=poi, obj_in=update_in)
-    assert hasattr(updated, "name") 
+    assert hasattr(updated, "name")
+
+
+def test_delete_poi_also_deletes_relationships(db_session):
+    # Create three POIs
+    poi1 = crud_poi.create_poi(db_session, make_poi_create(name="POI1"))
+    poi2 = crud_poi.create_poi(db_session, make_poi_create(name="POI2"))
+    poi3 = crud_poi.create_poi(db_session, make_poi_create(name="POI3"))
+
+    # Create relationships: poi1 <-> poi2, poi1 <-> poi3
+    rel1 = crud_poi.create_poi_relationship(db_session, poi1.id, poi2.id, "related")
+    rel2 = crud_poi.create_poi_relationship(db_session, poi3.id, poi1.id, "related")
+
+    # Confirm relationships exist
+    rels_for_poi1 = crud_poi.get_poi_relationships(db_session, poi1.id)
+    assert len(rels_for_poi1) == 2
+
+    # Delete poi1
+    crud_poi.delete_poi(db_session, poi1.id)
+
+    # Relationships involving poi1 should be gone
+    rels_for_poi2 = crud_poi.get_poi_relationships(db_session, poi2.id)
+    rels_for_poi3 = crud_poi.get_poi_relationships(db_session, poi3.id)
+    assert all(poi1.id not in (r.source_poi_id, r.target_poi_id) for r in rels_for_poi2)
+    assert all(poi1.id not in (r.source_poi_id, r.target_poi_id) for r in rels_for_poi3) 

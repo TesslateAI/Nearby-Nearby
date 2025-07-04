@@ -1,7 +1,7 @@
-import { AppShell, Burger, Group, Title, NavLink, Button, Text, Badge } from '@mantine/core';
+import { AppShell, Burger, Group, Title, NavLink, Button, Text } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
-import { IconRocket, IconSettings, IconLogout, IconTestPipe } from '@tabler/icons-react';
+import { IconRocket, IconSettings, IconLogout } from '@tabler/icons-react';
 import POIList from './components/POIList';
 import POIForm from './components/POIForm';
 import POIMap from './components/POIMap';
@@ -17,11 +17,7 @@ import { useAuth } from './utils/AuthContext';
 function App() {
   const [opened, { toggle }] = useDisclosure();
   const location = useLocation();
-  const { logout, user, getAuthToken } = useAuth();
-
-  const isDemoMode = () => {
-    return getAuthToken() === 'demo-token';
-  };
+  const { logout, user } = useAuth();
 
   // Hide AppShell for public detail page
   if (location.pathname.startsWith('/poi/detail')) {
@@ -55,16 +51,6 @@ function App() {
               <Title order={3} component={Link} to="/" style={{ textDecoration: 'none', color: 'inherit' }}>
                 Nearby Nearby Admin
               </Title>
-              {isDemoMode() && (
-                <Badge 
-                  leftSection={<IconTestPipe size="0.8rem" />} 
-                  color="blue" 
-                  variant="light"
-                  size="sm"
-                >
-                  Demo
-                </Badge>
-              )}
             </Group>
             <Group>
               {user && (

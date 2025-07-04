@@ -20,7 +20,7 @@ const PoiCard = ({ poi }) => {
             <Stack p="md" spacing="xs">
                 {poi.categories.length > 0 && <Group>{poi.categories.slice(0, 2).map(cat => <Badge key={cat.id} color="teal">{cat.name}</Badge>)}</Group>}
                 <Title order={4}>{poi.name}</Title>
-                <Group gap="xs"><IconMapPin size={14} /><Text size="sm">{poi.location.address_line1 || poi.location.city || 'Location'}</Text></Group>
+                <Group gap="xs"><IconMapPin size={14} /><Text size="sm">{poi.address_full || poi.address_city || 'Location'}</Text></Group>
                 <Badge color={poi.status === 'Fully Open' ? 'green' : 'orange'} variant="light" size="sm">{poi.status}</Badge>
             </Stack>
         </Paper>

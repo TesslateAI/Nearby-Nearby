@@ -54,6 +54,10 @@ def upgrade() -> None:
     op.add_column('points_of_interest', sa.Column('custom_fields', postgresql.JSONB(astext_type=sa.Text()), nullable=True))
     op.add_column('points_of_interest', sa.Column('created_at', sa.TIMESTAMP(timezone=True), server_default=sa.text('now()'), nullable=True))
     op.add_column('points_of_interest', sa.Column('last_updated', sa.TIMESTAMP(timezone=True), server_default=sa.text('now()'), nullable=True))
+    # Create the enum type first
+    op.execute("CREATE TYPE poitype AS ENUM ('BUSINESS', 'PARK', 'TRAIL', 'EVENT')")
+    
+    # Then alter the column to use the enum type
     op.alter_column('points_of_interest', 'poi_type',
                existing_type=sa.VARCHAR(),
                type_=sa.Enum('BUSINESS', 'PARK', 'TRAIL', 'EVENT', name='poitype'),
@@ -115,6 +119,9 @@ def downgrade() -> None:
                existing_type=sa.Enum('BUSINESS', 'PARK', 'TRAIL', 'EVENT', name='poitype'),
                type_=sa.VARCHAR(),
                existing_nullable=False)
+    
+    # Drop the enum type
+    op.execute("DROP TYPE poitype")
     op.drop_column('points_of_interest', 'last_updated')
     op.drop_column('points_of_interest', 'created_at')
     op.drop_column('points_of_interest', 'custom_fields')

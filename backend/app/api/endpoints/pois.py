@@ -24,7 +24,14 @@ def create_poi(poi: schemas.PointOfInterestCreate, db: Session = Depends(get_db)
 
 
 @router.get("/pois/", response_model=List[schemas.PointOfInterest])
-def read_pois(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+def read_pois(
+    skip: int = 0, 
+    limit: int = 100, 
+    search: str = Query(None, description="Search query for POI names"),
+    db: Session = Depends(get_db)
+):
+    if search:
+        return crud.search_pois(db=db, query_str=search)
     pois = crud.get_pois(db, skip=skip, limit=limit)
     return pois
 

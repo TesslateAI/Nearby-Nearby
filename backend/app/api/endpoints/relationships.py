@@ -8,6 +8,37 @@ from app.database import get_db
 
 router = APIRouter()
 
+# Define valid relationship combinations based on POI types
+VALID_RELATIONSHIPS = {
+    'EVENT': {
+        'venue': ['BUSINESS', 'PARK'],
+        'vendor': ['BUSINESS'],
+        'sponsor': ['BUSINESS'],
+        'related': ['BUSINESS', 'PARK', 'TRAIL', 'EVENT']
+    },
+    'TRAIL': {
+        'trail_in_park': ['PARK'],
+        'service_provider': ['BUSINESS'],
+        'related': ['BUSINESS', 'PARK', 'TRAIL', 'EVENT']
+    },
+    'PARK': {
+        'service_provider': ['BUSINESS'],
+        'related': ['BUSINESS', 'PARK', 'TRAIL', 'EVENT']
+    },
+    'BUSINESS': {
+        'service_provider': ['PARK', 'TRAIL'],
+        'vendor': ['EVENT'],
+        'sponsor': ['EVENT'],
+        'related': ['BUSINESS', 'PARK', 'TRAIL', 'EVENT']
+    }
+}
+
+def is_valid_relationship(source_poi_type: str, target_poi_type: str, relationship_type: str) -> bool:
+    """Check if a relationship is valid based on POI types"""
+    valid_relationships = VALID_RELATIONSHIPS.get(source_poi_type, {})
+    valid_target_types = valid_relationships.get(relationship_type, [])
+    return target_poi_type in valid_target_types
+
 @router.post("/relationships/", response_model=schemas.POIRelationship, status_code=201)
 def create_poi_relationship(
     source_poi_id: uuid.UUID,
@@ -24,6 +55,21 @@ def create_poi_relationship(
     target_poi = crud.get_poi(db, target_poi_id)
     if not target_poi:
         raise HTTPException(status_code=404, detail="Target POI not found")
+    
+    # Prevent self-relationships
+    if source_poi_id == target_poi_id:
+        raise HTTPException(status_code=400, detail="Cannot create a relationship with itself")
+    
+    # Validate relationship based on POI types
+    source_type = source_poi.poi_type.value if hasattr(source_poi.poi_type, 'value') else str(source_poi.poi_type)
+    target_type = target_poi.poi_type.value if hasattr(target_poi.poi_type, 'value') else str(target_poi.poi_type)
+    if not is_valid_relationship(source_type, target_type, relationship_type):
+        valid_relationships = VALID_RELATIONSHIPS.get(source_type, {})
+        valid_types = valid_relationships.get(relationship_type, [])
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Invalid relationship: Cannot create a '{relationship_type}' relationship between a {source_type} and a {target_type}. Valid target types for this relationship: {', '.join(valid_types)}"
+        )
     
     # Check if relationship already exists
     existing = db.query(models.POIRelationship).filter(

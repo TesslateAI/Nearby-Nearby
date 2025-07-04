@@ -10,10 +10,9 @@ import {
   Group, 
   Stack,
   Alert,
-  Loader,
-  Divider
+  Loader
 } from '@mantine/core';
-import { IconAlertCircle, IconLock, IconUser, IconTestPipe } from '@tabler/icons-react';
+import { IconAlertCircle, IconLock, IconUser } from '@tabler/icons-react';
 import { useNavigate } from 'react-router-dom';
 import { notifications } from '@mantine/notifications';
 import { useAuth } from '../utils/AuthContext';
@@ -66,17 +65,6 @@ function LoginPage() {
     }
   };
 
-  const handleDemoLogin = () => {
-    // Demo login for testing purposes
-    login('demo-token', 'admin@nearbynearby.com');
-    notifications.show({
-      title: 'Demo Mode',
-      message: 'Logged in with demo credentials',
-      color: 'blue',
-    });
-    navigate('/');
-  };
-
   return (
     <Container size={420} my={40}>
       <Title ta="center" order={1} mb="xl">
@@ -123,17 +111,6 @@ function LoginPage() {
             </Button>
           </Stack>
         </form>
-
-        <Divider my="md" label="or" labelPosition="center" />
-
-        <Button 
-          variant="outline" 
-          fullWidth 
-          onClick={handleDemoLogin}
-          leftSection={<IconTestPipe size="1rem" />}
-        >
-          Demo Login
-        </Button>
 
         <Text c="dimmed" size="sm" ta="center" mt={20}>
           For internal team use only

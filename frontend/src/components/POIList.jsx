@@ -1,20 +1,18 @@
 import { useState, useEffect } from 'react';
-import { Table, Button, Group, Title, Anchor, Text, Paper, ActionIcon, Tooltip, Badge } from '@mantine/core';
+import { Table, Button, Group, Title, Anchor, Text, Paper, ActionIcon, Tooltip } from '@mantine/core';
 import { Link, useNavigate } from 'react-router-dom';
 import { notifications } from '@mantine/notifications';
-import { IconPencil, IconTrash, IconPlus, IconTestPipe } from '@tabler/icons-react';
+import { IconPencil, IconTrash, IconPlus, IconLink } from '@tabler/icons-react';
 import api from '../utils/api';
 import { useAuth } from '../utils/AuthContext';
+import RelationshipManager from './RelationshipManager';
 
 function POIList() {
   const [pois, setPois] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [relationshipsModalOpen, setRelationshipsModalOpen] = useState(false);
+  const [selectedPoi, setSelectedPoi] = useState(null);
   const navigate = useNavigate();
-  const { getAuthToken } = useAuth();
-
-  const isDemoMode = () => {
-    return getAuthToken() === 'demo-token';
-  };
 
   const fetchPois = async () => {
     setLoading(true);
@@ -50,7 +48,7 @@ function POIList() {
         if (response.ok) {
           notifications.show({
             title: 'Success!',
-            message: isDemoMode() ? 'Demo: POI would be deleted' : 'POI deleted successfully!',
+            message: 'POI deleted successfully!',
             color: 'green',
           });
           fetchPois();
@@ -68,6 +66,11 @@ function POIList() {
     }
   };
 
+  const handleRelationshipsModalClose = () => {
+    setRelationshipsModalOpen(false);
+    setSelectedPoi(null);
+  };
+
   const rows = pois.map((poi) => (
     <Table.Tr key={poi.id} style={{ transition: 'background-color 0.2s' }}>
       <Table.Td>
@@ -80,12 +83,23 @@ function POIList() {
       </Table.Td>
       <Table.Td>{poi.address_city}</Table.Td>
       <Table.Td>
-        <Text size="sm" c="dimmed">
-          {poi.is_verified ? '✓ Verified' : 'Unverified'}
-        </Text>
+        <Group gap="xs">
+          <Text size="sm" c="dimmed">
+            {poi.is_verified ? '✓ Verified' : 'Unverified'}
+          </Text>
+          {/* Relationship count badge - this would need to be fetched separately */}
+        </Group>
       </Table.Td>
       <Table.Td>
         <Group gap="xs" justify="flex-end">
+          <Tooltip label="Manage Relationships">
+            <ActionIcon variant="subtle" color="blue" onClick={() => {
+              setSelectedPoi(poi);
+              setRelationshipsModalOpen(true);
+            }}>
+              <IconLink size={18} />
+            </ActionIcon>
+          </Tooltip>
           <Tooltip label="Edit POI">
             <ActionIcon variant="subtle" color="gray" onClick={() => navigate(`/poi/${poi.id}/edit`)}>
               <IconPencil size={18} />
@@ -106,15 +120,6 @@ function POIList() {
       <Group justify="space-between" mb="lg">
         <Group>
           <Title order={2} c="deep-purple.7">Points of Interest</Title>
-          {isDemoMode() && (
-            <Badge 
-              leftSection={<IconTestPipe size="0.8rem" />} 
-              color="blue" 
-              variant="light"
-            >
-              Demo Mode
-            </Badge>
-          )}
         </Group>
         <Button onClick={() => navigate('/poi/new')} leftSection={<IconPlus size={18} />}>
             Create New POI
@@ -143,11 +148,17 @@ function POIList() {
             No points of interest found. Create one to get started!
         </Text>
       )}
-      
-      {isDemoMode() && (
-        <Text c="dimmed" size="sm" ta="center" mt="md">
-          Demo mode: Using mock data. No actual API calls are made.
-        </Text>
+
+      {/* Use RelationshipManager's modal */}
+      {selectedPoi && (
+        <RelationshipManager
+          poiId={selectedPoi.id}
+          poiType={selectedPoi.poi_type}
+          poiName={selectedPoi.name}
+          modalOpened={relationshipsModalOpen}
+          onModalClose={handleRelationshipsModalClose}
+          showManageButton={false}
+        />
       )}
     </Paper>
   );

@@ -1,5 +1,4 @@
 import { useAuth } from './AuthContext';
-import { isDemoMode, DEMO_TOKEN, handleDemoRequest } from './demo';
 
 // Base API URL - using proxy configuration for Docker internal networking
 const API_BASE_URL = '/api';
@@ -10,17 +9,12 @@ export const api = {
     const token = localStorage.getItem('authToken');
     return {
       'Content-Type': 'application/json',
-      ...(token && token !== DEMO_TOKEN && { 'Authorization': `Bearer ${token}` }),
+      ...(token && { 'Authorization': `Bearer ${token}` }),
     };
   },
 
   // Generic request function
   request: async (endpoint, options = {}) => {
-    // If in demo mode, return mock data
-    if (isDemoMode()) {
-      return handleDemoRequest(endpoint, options);
-    }
-
     // Real API call
     const url = `${API_BASE_URL}${endpoint}`;
     const config = {
