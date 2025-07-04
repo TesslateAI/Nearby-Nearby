@@ -7,3 +7,4 @@ from .poi import PointOfInterest, POIRelationship, Business, Park, Trail, Event,
 from .category import Category, poi_category_association
 from .attribute import Attribute
 from .user import User
+from app.database import Base

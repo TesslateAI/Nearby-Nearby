@@ -141,7 +141,12 @@ def update_poi(db: Session, *, db_obj: models.PointOfInterest, obj_in: schemas.P
     # Handle location update
     if 'location' in update_data:
         location_data = update_data.pop('location')
-        db_obj.location = f'POINT({location_data.coordinates[0]} {location_data.coordinates[1]})'
+        # Accept both dict and object with coordinates
+        if isinstance(location_data, dict):
+            coords = location_data.get('coordinates')
+        else:
+            coords = location_data.coordinates
+        db_obj.location = f'POINT({coords[0]} {coords[1]})'
     
     # Handle subtype updates
     if 'business' in update_data and db_obj.poi_type == 'BUSINESS':
