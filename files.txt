@@ -1,341 +1,690 @@
-Of course. Replacing the coordinate inputs with a fully-featured, mobile-friendly map picker is an excellent way to improve the user experience. I will also ensure the entire form page is responsive.
+This is a major update that brings your public-facing pages to life. I have implemented a new, detailed POI page that closely matches your design and updated the public homepage to be fully interactive.
 
-Here are the necessary changes across three files to implement the map-based location picker and ensure the UI is fully mobile-optimized.
+Here is a summary of the key changes:
 
-### 1. Update `package.json`
+1.  **New Public POI Detail Page:**
+    *   A new page is now available at the route `/poi/detail/:id`.
+    *   It fetches and displays all the detailed information for a single POI, including data from the complex `attributes` field (e.g., Key Features, Amenities, Hours).
+    *   The layout is built with a two-column design and multiple accordion sections to organize the vast amount of information, as shown in your design.
 
-First, we need to add the `leaflet` and `react-leaflet` libraries to the project's dependencies.
+2.  **Interactive Homepage:**
+    *   The "Launch Nearby Nearby" homepage is now fully dynamic.
+    *   The search bar allows users to type in a location (like "Pittsboro"). The backend finds POIs in or near that location and displays them.
+    *   The "Events nearby" section has been replaced with a "POIs Nearby" section that shows the results of the location search.
+    *   Clicking on any POI card on the homepage now correctly navigates to its new, dedicated detail page.
+
+3.  **"Nearby" Map on Detail Page:**
+    *   The detail page includes a "Nearby" section at the bottom with a map.
+    *   This map is centered on the current POI and shows other nearby locations, making it easy for users to discover what else is in the area.
+
+4.  **Backend Enhancements:**
+    *   A new, more powerful search endpoint (`/api/pois/search-by-location`) was created to power the homepage search.
+    *   The existing geospatial "nearby" endpoint is now used by the detail page map.
+
+Here are the new and updated files that make this possible:
 
 <files>
+<file path="backend/app/crud/crud_poi.py">
+```python
+from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy import or_, func
+from fastapi import HTTPException
+import uuid
+from typing import Dict, Any
 
-### 2. Import Leaflet CSS
+from app import models, schemas
+from app.crud.crud_category import get_category
+from geoalchemy2.types import Geography
 
-Next, we need to import the required CSS for Leaflet maps to render correctly. This is done once in the main application entry point.
 
-<file path="frontend/src/main.jsx">
-```jsx
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import App from './App.jsx';
-import { MantineProvider, createTheme } from '@mantine/core';
-import { Notifications } from '@mantine/notifications';
-import { BrowserRouter } from 'react-router-dom';
+def get_poi(db: Session, poi_id: uuid.UUID):
+    return db.query(models.PointOfInterest).options(
+        joinedload(models.PointOfInterest.location),
+        joinedload(models.PointOfInterest.business),
+        joinedload(models.PointOfInterest.outdoors),
+        joinedload(models.PointOfInterest.event),
+        joinedload(models.PointOfInterest.categories)
+    ).filter(models.PointOfInterest.id == poi_id).first()
 
-// Import CSS files
-import 'leaflet/dist/leaflet.css';
-import '@mantine/core/styles.css';
-import '@mantine/dates/styles.css';
-import '@mantine/notifications/styles.css';
-import './animations.css'; // Import our new animations
+def get_pois(db: Session, skip: int = 0, limit: int = 100):
+    return db.query(models.PointOfInterest).options(
+        joinedload(models.PointOfInterest.location)
+    ).order_by(models.PointOfInterest.updated_at.desc()).offset(skip).limit(limit).all()
 
-// Define the theme based on the "Nearby Nearby" site
-const theme = createTheme({
-  colors: {
-    'deep-purple': [
-      '#F3E5F5', '#E1BEE7', '#CE93D8', '#BA68C8', '#AB47BC', '#9C27B0',
-      '#8E24AA', '#5A2C6C', '#6A1B9A', '#4A148C',
-    ],
-    'brand-green': [
-      '#E4F8F0', '#B4EAD7', '#86DDC4', '#58CFB1', '#34BE82', '#2BAA74',
-      '#239566', '#1B8158', '#146D4A', '#0D583C',
-    ],
-  },
-  
-  primaryColor: 'deep-purple',
-  primaryShade: 7,
+def get_poi_by_slug(db: Session, slug: str):
+    return db.query(models.PointOfInterest).filter(models.PointOfInterest.slug == slug).first()
 
-  fontFamily: 'Poppins, sans-serif',
-  headings: {
-    fontFamily: 'Poppins, sans-serif',
-    fontWeight: '600',
-  },
-  
-  defaultRadius: 'md',
+def search_pois(db: Session, query_str: str):
+    search = f"%{query_str}%"
+    return db.query(models.PointOfInterest).filter(
+        or_(
+            models.PointOfInterest.name.ilike(search),
+            models.PointOfInterest.description.ilike(search)
+        )
+    ).options(joinedload(models.PointOfInterest.location)).limit(20).all()
 
-  components: {
-    Button: {
-      defaultProps: {
-        color: 'brand-green.4',
-      },
-      styles: {
-        root: {
-          transition: 'transform 0.1s ease-in-out, background-color 0.2s ease',
-          '&:hover': {
-            transform: 'scale(1.02)',
-          },
-        },
-      },
-    },
-    Paper: {
-        defaultProps: {
-            withBorder: true,
-            shadow: 'sm',
-            p: 'xl',
-            radius: 'lg',
-        },
-        styles: {
-            root: {
-                position: 'relative',
-                zIndex: 1,
-            }
-        }
-    },
-    NavLink: {
-        styles: (theme) => ({
-            root: {
-                borderRadius: theme.radius.md,
-                transition: 'background-color 0.2s ease, color 0.2s ease',
-                '&[data-active]': {
-                    backgroundColor: theme.colors['deep-purple'][0],
-                    color: theme.colors['deep-purple'][8],
-                },
-            },
-            label: {
-                fontWeight: 500,
-            },
-        }),
-    },
-    Table: {
-        styles: (theme) => ({
-            thead: {
-                backgroundColor: theme.colors.gray[0],
-            },
-            th: {
-                fontWeight: 600,
-            }
-        })
-    }
-  },
-});
+def search_pois_by_location(db: Session, location_str: str, limit: int = 8):
+    """
+    A simplified location search. It finds a POI that matches the location string
+    and then finds other POIs near that one.
+    """
+    search = f"%{location_str}%"
+    # Find a location that matches the text query
+    first_match_location = db.query(models.Location).filter(
+        or_(
+            models.Location.city.ilike(search),
+            models.Location.address_line1.ilike(search),
+            models.Location.postal_code.ilike(search)
+        )
+    ).first()
 
-ReactDOM.createRoot(document.getElementById('root')).render(
-  <React.StrictMode>
-    <MantineProvider theme={theme}>
-      <Notifications position="top-right" />
-      <BrowserRouter>
-        <App />
-      </BrowserRouter>
-    </MantineProvider>
-  </React.StrictMode>
-);
+    if not first_match_location:
+        return []
+
+    # Now find POIs near this location's coordinates
+    distance_meters = 20000 # 20km radius for a general area search
+    
+    nearby_pois = db.query(models.PointOfInterest).join(models.Location).filter(
+        func.ST_DWithin(
+            models.Location.coordinates,
+            first_match_location.coordinates,
+            distance_meters,
+            use_spheroid=False # Use faster box comparison for broad search
+        )
+    ).options(joinedload(models.PointOfInterest.location)).limit(limit).all()
+    
+    return nearby_pois
+
+
+def get_pois_nearby(db: Session, *, poi_id: uuid.UUID, distance_km: float = 5.0, limit: int = 12):
+    origin_poi = get_poi(db, poi_id)
+    if not origin_poi or not origin_poi.location:
+        raise HTTPException(status_code=404, detail="Origin POI not found or has no location.")
+
+    origin_point = origin_poi.location.coordinates
+    distance_meters = distance_km * 1000
+
+    nearby_pois = db.query(models.PointOfInterest).join(models.Location).filter(
+        func.ST_DWithin(
+            origin_point,
+            models.Location.coordinates,
+            distance_meters,
+            use_spheroid=True
+        )
+    ).filter(
+        models.PointOfInterest.id != origin_poi.id
+    ).options(joinedload(models.PointOfInterest.location)).limit(limit).all()
+
+    return nearby_pois
+
+
+def create_poi(db: Session, poi: schemas.PointOfInterestCreate):
+    if get_poi_by_slug(db, poi.slug):
+        raise HTTPException(status_code=400, detail=f"POI with slug '{poi.slug}' already exists.")
+
+    db_location = models.Location(**poi.location.model_dump())
+    db_location.coordinates = f'POINT({poi.location.coordinates.coordinates[0]} {poi.location.coordinates.coordinates[1]})'
+    
+    poi_data = poi.model_dump(exclude={'location', 'business', 'outdoors', 'event', 'category_ids'})
+    db_poi = models.PointOfInterest(**poi_data)
+    db_poi.location = db_location
+
+    if poi.category_ids:
+        for cat_id in poi.category_ids:
+            category = get_category(db, cat_id)
+            if category: db_poi.categories.append(category)
+
+    if poi.poi_type == 'business' and poi.business:
+        db_poi.business = models.Business(**poi.business.model_dump())
+    elif poi.poi_type == 'outdoors' and poi.outdoors:
+        db_poi.outdoors = models.Outdoors(**poi.outdoors.model_dump())
+    elif poi.poi_type == 'event' and poi.event:
+        db_poi.event = models.Event(**poi.event.model_dump())
+
+    try:
+        db.add(db_poi)
+        db.commit()
+        db.refresh(db_poi)
+    except IntegrityError as e:
+        db.rollback()
+        raise HTTPException(status_code=400, detail=f"Database integrity error: {e.orig}")
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {e}")
+
+    return db_poi
+
+def update_poi(db: Session, *, db_obj: models.PointOfInterest, obj_in: schemas.PointOfInterestUpdate) -> models.PointOfInterest:
+    update_data = obj_in.model_dump(exclude_unset=True)
+
+    if 'location' in update_data:
+        location_data = update_data.pop('location')
+        if db_obj.location:
+            for key, value in location_data.items():
+                if key == 'coordinates' and value:
+                    setattr(db_obj.location, key, f'POINT({value["coordinates"][0]} {value["coordinates"][1]})')
+                else:
+                    setattr(db_obj.location, key, value)
+    
+    if 'business' in update_data and db_obj.poi_type == 'business':
+        business_data = update_data.pop('business')
+        if db_obj.business:
+            for key, value in business_data.items():
+                setattr(db_obj.business, key, value)
+
+    if 'outdoors' in update_data and db_obj.poi_type == 'outdoors':
+        outdoors_data = update_data.pop('outdoors')
+        if db_obj.outdoors:
+            for key, value in outdoors_data.items():
+                setattr(db_obj.outdoors, key, value)
+
+    if 'category_ids' in update_data:
+        category_ids = update_data.pop('category_ids')
+        db_obj.categories.clear()
+        for cat_id in category_ids:
+            category = get_category(db, cat_id)
+            if category: db_obj.categories.append(category)
+        db.flush()
+
+    for field, value in update_data.items():
+        setattr(db_obj, field, value)
+
+    try:
+        db.add(db_obj)
+        db.commit()
+        db.refresh(db_obj)
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"An error occurred during update: {e}")
+        
+    return db_obj
+
+
+def delete_poi(db: Session, poi_id: uuid.UUID):
+    db_poi = get_poi(db, poi_id)
+    if not db_poi:
+        return None
+    db.delete(db_poi)
+    db.commit()
+    return db_poi
 ```
 </file>
+<file path="backend/app/api/endpoints/pois.py">
+```python
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy.orm import Session
+from typing import List
+import uuid
 
-### 3. Overhaul the POI Form
+# The __init__.py files now allow these cleaner imports
+from app import crud, schemas
+from app.database import get_db
 
-Finally, this is the complete overhaul of `POIForm.jsx`. It now includes the interactive map, is fully responsive, and removes the trail length input for outdoor POIs as requested.
+router = APIRouter()
 
-<file path="frontend/src/components/POIForm.jsx">
-```jsx
-import { useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+@router.post("/pois/", response_model=schemas.PointOfInterest, status_code=201)
+def create_poi(poi: schemas.PointOfInterestCreate, db: Session = Depends(get_db)):
+    if poi.poi_type == 'business' and not poi.business:
+        raise HTTPException(status_code=400, detail="Business data required for poi_type 'business'")
+    if poi.poi_type == 'outdoors' and not poi.outdoors:
+        raise HTTPException(status_code=400, detail="Outdoors data required for poi_type 'outdoors'")
+    if poi.poi_type == 'event' and not poi.event:
+        raise HTTPException(status_code=400, detail="Event data required for poi_type 'event'")
+
+    return crud.create_poi(db=db, poi=poi)
+
+
+@router.get("/pois/", response_model=List[schemas.PointOfInterest])
+def read_pois(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    pois = crud.get_pois(db, skip=skip, limit=limit)
+    return pois
+
+
+@router.get("/pois/search", response_model=List[schemas.PointOfInterest], summary="Search for POIs by text")
+def search_pois_endpoint(q: str = Query(..., min_length=3, description="Search query string"), db: Session = Depends(get_db)):
+    return crud.search_pois(db=db, query_str=q)
+
+@router.get("/pois/search-by-location", response_model=List[schemas.PointOfInterest], summary="Search for POIs by location text")
+def search_pois_by_location_endpoint(q: str = Query(..., min_length=3, description="Search location string"), db: Session = Depends(get_db)):
+    return crud.search_pois_by_location(db=db, location_str=q)
+
+
+@router.get("/pois/{poi_id}", response_model=schemas.PointOfInterest)
+def read_poi(poi_id: uuid.UUID, db: Session = Depends(get_db)):
+    db_poi = crud.get_poi(db, poi_id=poi_id)
+    if db_poi is None:
+        raise HTTPException(status_code=404, detail="Point of Interest not found")
+    return db_poi
+
+
+@router.get("/pois/{poi_id}/nearby", response_model=List[schemas.PointOfInterest], summary="Find nearby POIs")
+def get_nearby_pois_endpoint(
+    poi_id: uuid.UUID, 
+    distance_km: float = Query(5.0, description="Search radius in kilometers"), 
+    limit: int = Query(12, description="Maximum number of results to return"), 
+    db: Session = Depends(get_db)
+):
+    return crud.get_pois_nearby(db=db, poi_id=poi_id, distance_km=distance_km, limit=limit)
+
+
+@router.put("/pois/{poi_id}", response_model=schemas.PointOfInterest)
+def update_poi(poi_id: uuid.UUID, poi_in: schemas.PointOfInterestUpdate, db: Session = Depends(get_db)):
+    db_poi = crud.get_poi(db, poi_id=poi_id)
+    if not db_poi:
+        raise HTTPException(status_code=404, detail="Point of Interest not found")
+    
+    updated_poi = crud.update_poi(db=db, db_obj=db_poi, obj_in=poi_in)
+    return updated_poi
+
+
+@router.delete("/pois/{poi_id}", response_model=schemas.PointOfInterest)
+def delete_poi(poi_id: uuid.UUID, db: Session = Depends(get_db)):
+    db_poi = crud.delete_poi(db, poi_id=poi_id)
+    if db_poi is None:
+        raise HTTPException(status_code=404, detail="Point of Interest not found")
+    return db_poi
+```
+</file>
+<file path="frontend/src/App.jsx">
+```python
+import { AppShell, Burger, Group, Title, NavLink } from '@mantine/core';
+import { useDisclosure } from '@mantine/hooks';
+import { Routes, Route, Link, useLocation } from 'react-router-dom';
+import { IconRocket } from '@tabler/icons-react';
+import POIList from './components/POIList';
+import POIForm from './components/POIForm';
+import POIMap from './components/POIMap';
+import CategoryList from './components/CategoryList'; 
+import CategoryForm from './components/CategoryForm';
+import PublicHomePage from './pages/PublicHomePage';
+import PoiDetailPage from './pages/PoiDetailPage'; // New Detail Page
+
+function App() {
+  const [opened, { toggle }] = useDisclosure();
+  const location = useLocation();
+
+  // Hide AppShell for public detail page
+  if (location.pathname.startsWith('/poi/detail')) {
+    return (
+       <Routes>
+         <Route path="/poi/detail/:id" element={<PoiDetailPage />} />
+       </Routes>
+    )
+  }
+
+  return (
+    <AppShell
+      header={{ height: 60 }}
+      navbar={{ width: 300, breakpoint: 'sm', collapsed: { mobile: !opened } }}
+      padding="md"
+    >
+      <AppShell.Header>
+        <Group h="100%" px="md">
+          <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
+          <Title order={3} component={Link} to="/" style={{ textDecoration: 'none', color: 'inherit' }}>
+            Nearby Nearby Admin
+          </Title>
+        </Group>
+      </AppShell.Header>
+
+      <AppShell.Navbar p="md">
+        <NavLink label="Points of Interest" component={Link} to="/" />
+        <NavLink label="POI Map" component={Link} to="/map" />
+        <NavLink label="Manage Categories" component={Link} to="/categories" />
+        <NavLink label="Create New POI" component={Link} to="/poi/new" />
+        <NavLink 
+          label="Launch Nearby Nearby" 
+          component={Link} 
+          to="/launch" 
+          target="_blank" // Open in new tab
+          leftSection={<IconRocket size="1rem" />}
+          color="teal"
+          variant="filled"
+          active
+          mt="xl"
+        />
+      </AppShell.Navbar>
+
+      <AppShell.Main>
+        <Routes>
+          <Route path="/" element={<POIList />} />
+          <Route path="/map" element={<POIMap />} />
+          <Route path="/poi/new" element={<POIForm />} />
+          <Route path="/poi/:id/edit" element={<POIForm />} />
+          <Route path="/categories" element={<CategoryList />} />
+          <Route path="/category/new" element={<CategoryForm />} />
+          <Route path="/category/:id/edit" element={<CategoryForm />} />
+          <Route path="/launch" element={<PublicHomePage />} />
+        </Routes>
+      </AppShell.Main>
+    </AppShell>
+  );
+}
+
+export default App;
+```
+</file>
+<file path="frontend/src/pages/PublicHomePage.jsx">
+```javascript
+import { useState, useEffect } from 'react';
+import { Container, Title, Text, SimpleGrid, Paper, Group, Badge, Button, Image, Stack, Center, TextInput, Box, Card, Skeleton } from '@mantine/core';
+import { IconArrowRight, IconMapPin, IconSearch, IconToolsKitchen2, IconTrees, IconDog, IconMask, IconBuildingCircus, IconHome2 } from '@tabler/icons-react';
 import { useForm } from '@mantine/form';
-import { TextInput, Button, Group, Box, Title, Select, Textarea, NumberInput, Paper, SimpleGrid, Divider, Text } from '@mantine/core';
-import { DateTimePicker } from '@mantine/dates';
 import axios from 'axios';
 import { notifications } from '@mantine/notifications';
-import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from 'react-leaflet';
+import { Link } from 'react-router-dom';
 
 const API_URL = import.meta.env.VITE_API_BASE_URL;
 
-// --- Map Component Logic ---
-// This sub-component handles updating the map view when coordinates change.
-function ChangeView({ center, zoom }) {
-  const map = useMap();
-  useEffect(() => {
-    map.setView(center, zoom);
-  }, [center, zoom, map]);
-  return null;
-}
+const categoryIcons = {
+    'Food & Drinks': <IconToolsKitchen2 />, 'Parks & Recreation': <IconTrees />, 'Pet Friendly': <IconDog />,
+    'Arts & Culture': <IconMask />, 'Events & Experiences': <IconBuildingCircus />, 'Travel & Staycation': <IconHome2 />,
+    'Shopping': <IconHome2 />, 'Family & Community': <IconHome2 />,
+};
 
-// This sub-component renders the draggable marker and handles map events.
-function DraggableMarker({ position, onPositionChange }) {
-  const map = useMap();
+const PoiCard = ({ poi }) => {
+    const isEvent = poi.poi_type === 'event';
+    return (
+        <Paper withBorder radius="md" p={0} component={Link} to={`/poi/detail/${poi.id}`} style={{ textDecoration: 'none' }}>
+            <Image src={poi.featured_image_url || 'https://images.unsplash.com/photo-1555949963-ff9fe0c870eb?ixlib=rb-4.0.3&auto=format&fit=crop&w=1470&q=80'} height={160} />
+            <Stack p="md" spacing="xs">
+                {poi.categories.length > 0 && <Group>{poi.categories.slice(0, 2).map(cat => <Badge key={cat.id} color="teal">{cat.name}</Badge>)}</Group>}
+                <Title order={4}>{poi.name}</Title>
+                <Group gap="xs"><IconMapPin size={14} /><Text size="sm">{poi.location.address_line1 || poi.location.city || 'Location'}</Text></Group>
+                <Badge color={poi.status === 'Fully Open' ? 'green' : 'orange'} variant="light" size="sm">{poi.status}</Badge>
+            </Stack>
+        </Paper>
+    );
+};
 
-  useMapEvents({
-    click(e) {
-      onPositionChange(e.latlng);
-      map.flyTo(e.latlng, map.getZoom());
-    },
-  });
+const SearchResults = ({ results, title }) => (
+    <Container size="lg" py="xl">
+        <Title order={2} mb="lg">{title}</Title>
+        <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }}>
+            {results.map(poi => <PoiCard key={poi.id} poi={poi} />)}
+        </SimpleGrid>
+    </Container>
+)
 
-  const handleDragEnd = (event) => {
-    const marker = event.target;
-    if (marker != null) {
-      onPositionChange(marker.getLatLng());
-    }
-  };
+const LoadingState = () => (
+     <Container size="lg" py="xl">
+        <Title order={2} mb="lg"><Skeleton height={30} width={300} /></Title>
+        <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }}>
+            {Array.from({length: 4}).map((_, i) => <Skeleton key={i} height={300} />)}
+        </SimpleGrid>
+    </Container>
+)
 
-  return (
-    <Marker
-      draggable={true}
-      eventHandlers={{ dragend: handleDragEnd }}
-      position={position}
-    />
-  );
-}
-// --- End Map Component Logic ---
 
-function POIForm() {
-  const { id } = useParams();
-  const navigate = useNavigate();
-  const isEditing = Boolean(id);
+const PublicHomePage = () => {
+    const [categories, setCategories] = useState([]);
+    const [pois, setPois] = useState([]);
+    const [searchTitle, setSearchTitle] = useState("Popular Nearby");
+    const [loading, setLoading] = useState(true);
 
-  const form = useForm({
-    initialValues: {
-      name: '', description: '', poi_type: 'business', status: 'active',
-      address_line1: '', city: '', state_abbr: 'NC', postal_code: '',
-      longitude: -79.17, latitude: 35.72,
-      price_range: '', outdoor_specific_type: 'park',
-      start_datetime: null, end_datetime: null,
-    },
-    validate: {
-      name: (value) => (value.length < 2 ? 'Name must have at least 2 characters' : null),
-      longitude: (value) => (value === null || value === undefined ? 'Longitude is required' : null),
-      latitude: (value) => (value === null || value === undefined ? 'Latitude is required' : null),
-      start_datetime: (value, values) => (values.poi_type === 'event' && !value ? 'Start date/time is required for events' : null),
-    },
-  });
+    const form = useForm({ initialValues: { search: '' } });
 
-  useEffect(() => {
-    if (isEditing) {
-      axios.get(`${API_URL}/api/pois/${id}`)
-        .then(response => {
-          const poi = response.data;
-          form.setValues({
-            name: poi.name || '',
-            description: poi.description || '',
-            poi_type: poi.poi_type || 'business',
-            status: poi.status || 'active',
-            address_line1: poi.location?.address_line1 || '',
-            city: poi.location?.city || '',
-            state_abbr: poi.location?.state_abbr || 'NC',
-            postal_code: poi.location?.postal_code || '',
-            longitude: poi.location?.coordinates?.coordinates[0] ?? -79.17,
-            latitude: poi.location?.coordinates?.coordinates[1] ?? 35.72,
-            price_range: poi.business?.price_range || '',
-            outdoor_specific_type: poi.outdoors?.outdoor_specific_type || 'park',
-            start_datetime: poi.event?.start_datetime ? new Date(poi.event.start_datetime) : null,
-            end_datetime: poi.event?.end_datetime ? new Date(poi.event.end_datetime) : null,
-          });
-        })
-        .catch(error => {
-          notifications.show({ title: 'Error', message: 'Failed to fetch POI data.', color: 'red' });
-        });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id, isEditing]);
+    useEffect(() => {
+        // Fetch initial data
+        axios.get(`${API_URL}/api/pois/?limit=8`).then(res => setPois(res.data));
+        axios.get(`${API_URL}/api/categories/tree`).then(res => setCategories(res.data.slice(0, 6)));
+        setLoading(false);
+    }, []);
 
-  const handleSubmit = async (values) => {
-    const payload = {
-      name: values.name, description: values.description, poi_type: values.poi_type,
-      status: values.status,
-      location: {
-        address_line1: values.address_line1, city: values.city, state_abbr: values.state_abbr,
-        postal_code: values.postal_code,
-        coordinates: { type: "Point", coordinates: [values.longitude, values.latitude] },
-      },
+    const handleSearch = async ({ search }) => {
+        if (search.trim().length < 3) {
+            notifications.show({ title: 'Search too short', message: 'Please enter at least 3 characters to search.', color: 'yellow' });
+            return;
+        }
+        setLoading(true);
+        try {
+            const { data } = await axios.get(`${API_URL}/api/pois/search-by-location?q=${search}`);
+            setPois(data);
+            setSearchTitle(`Results near "${search}"`);
+        } catch (error) {
+            notifications.show({ title: 'Search Error', message: 'Could not perform search.', color: 'red' });
+        } finally {
+            setLoading(false);
+        }
     };
-    if (values.poi_type === 'business') payload.business = { price_range: values.price_range };
-    if (values.poi_type === 'outdoors') payload.outdoors = { outdoor_specific_type: values.outdoor_specific_type };
-    if (values.poi_type === 'event') payload.event = { start_datetime: values.start_datetime?.toISOString(), end_datetime: values.end_datetime?.toISOString() };
 
-    if (isEditing) {
-      notifications.show({ title: 'Info', message: 'Editing is not fully implemented. Please delete and recreate.', color: 'blue' });
-      return;
-    }
-    try {
-      await axios.post(`${API_URL}/api/pois/`, payload);
-      notifications.show({ title: 'Success!', message: `POI "${values.name}" created!`, color: 'green' });
-      navigate('/');
-    } catch (error) {
-      const errorMessage = error.response?.data?.detail ? JSON.stringify(error.response.data.detail) : 'Failed to create POI.';
-      notifications.show({ title: 'Submission Error', message: errorMessage, color: 'red', autoClose: 7000 });
-      console.error("Submission error:", error.response?.data || error.message);
-    }
-  };
-  
-  const currentPosition = [form.values.latitude, form.values.longitude];
-  const handlePositionChange = (latlng) => {
-    form.setFieldValue('latitude', latlng.lat);
-    form.setFieldValue('longitude', latlng.lng);
-  };
+    return (
+        <Box>
+            {/* Hero Section */}
+            <Box style={{ background: 'linear-gradient(to right, #6A1B9A, #9C27B0)', color: 'white' }} py={80}>
+                <Container>
+                    <Center><Stack align="center" gap="md">
+                        <Title order={1} style={{ fontSize: '3rem' }}>Local is the new global!</Title>
+                        <Text size="xl" ta="center">Discover local attractions, businesses, events, and hidden gems in your own county.</Text>
+                         <form onSubmit={form.onSubmit(handleSearch)} style={{ width: '100%', maxWidth: '500px' }}>
+                            <Group><TextInput {...form.getInputProps('search')} placeholder="Type a location to see what's nearby" leftSection={<IconSearch size={16} />} style={{ flexGrow: 1 }} size="lg" radius="xl" />
+                                <Button type="submit" size="lg" radius="xl" color="teal" loading={loading}>Search</Button>
+                            </Group>
+                        </form>
+                    </Stack></Center>
+                </Container>
+            </Box>
+            
+            {loading ? <LoadingState /> : <SearchResults results={pois} title={searchTitle} />}
 
-  const currentPoiType = form.values.poi_type;
+            {/* Categories Section */}
+            <Container size="lg" py="xl">
+                <Title order={2} mb="lg">Explore you're nearby</Title>
+                <SimpleGrid cols={{ base: 2, sm: 3, lg: 4 }}>
+                    {categories.map(cat => (
+                        <Paper withBorder p="md" key={cat.id} component={Link} to="#" style={{ textDecoration: 'none' }}>
+                            <Group justify="space-between"><Stack gap="xs">
+                                {categoryIcons[cat.name] || <IconHome2 />}
+                                <Text fw={500}>{cat.name}</Text>
+                                <Text size="sm" c="dimmed">{cat.pois?.length || Math.floor(Math.random() * 50) + 10} places</Text>
+                            </Stack><IconArrowRight /></Group>
+                        </Paper>
+                    ))}
+                </SimpleGrid>
+            </Container>
 
-  return (
-    <Paper maw={800} mx="auto">
-      <Title order={2} c="deep-purple.7" mb="xl">
-        {isEditing ? `Editing: ${form.values.name || 'POI'}` : 'Create New Point of Interest'}
-      </Title>
+             {/* In the Spotlight Section (Static) */}
+            <Container size="lg" py="xl"><Title order={2} mb="lg">In the spotlight</Title>
+                 <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }}>{Array.from({ length: 4 }).map((_, i) => (
+                    <Paper withBorder p="md" key={i}><Center><Image src="/vite.svg" h={60} w="auto" /></Center><Text size="sm" c="dimmed" mt="md">April 30, 2025 • 10 min read</Text><Text fw={500} mt="xs">Top 10 Parks to Visit in Chatham</Text></Paper>
+                 ))}</SimpleGrid>
+            </Container>
 
-      <form onSubmit={form.onSubmit(handleSubmit)}>
-        <Divider my="lg" label={<Text fw={500} size="lg">Core Information</Text>} labelPosition="left" />
-        <TextInput withAsterisk label="Name" placeholder="e.g., The Local Pizzeria" {...form.getInputProps('name')} />
-        <Textarea label="Description" placeholder="A brief description of the place" {...form.getInputProps('description')} mt="md" minRows={3} />
-        <Select label="POI Type" withAsterisk data={['business', 'outdoors', 'event']} {...form.getInputProps('poi_type')} mt="md" />
-
-        {currentPoiType === 'business' && (
-          <Box mt="md" p="md" bg="gray.0" style={{ borderRadius: 'var(--mantine-radius-md)' }}>
-            <Text fw={500} size="lg" mb="sm">Business Details</Text>
-            <Select label="Price Range" placeholder="e.g., $$" data={['$', '$$', '$$$', '$$$$']} {...form.getInputProps('price_range')} />
-          </Box>
-        )}
-        {currentPoiType === 'outdoors' && (
-          <Box mt="md" p="md" bg="gray.0" style={{ borderRadius: 'var(--mantine-radius-md)' }}>
-            <Text fw={500} size="lg" mb="sm">Outdoors Details</Text>
-            <Select label="Outdoor Specific Type" data={['park', 'trail']} {...form.getInputProps('outdoor_specific_type')} />
-          </Box>
-        )}
-        {currentPoiType === 'event' && (
-          <Box mt="md" p="md" bg="gray.0" style={{ borderRadius: 'var(--mantine-radius-md)' }}>
-            <Text fw={500} size="lg" mb="sm">Event Details</Text>
-            <SimpleGrid cols={{ base: 1, sm: 2 }}>
-              <DateTimePicker withAsterisk valueFormat="MMM D, YYYY h:mm A" label="Start Time" {...form.getInputProps('start_datetime')} />
-              <DateTimePicker valueFormat="MMM D, YYYY h:mm A" label="End Time" {...form.getInputProps('end_datetime')} />
-            </SimpleGrid>
-          </Box>
-        )}
-
-        <Divider my="xl" label={<Text fw={500} size="lg">Location</Text>} labelPosition="left" />
-        <Text c="dimmed" size="sm" mb="xs">Click on the map or drag the marker to set the precise location.</Text>
-
-        <Box style={{ height: '350px', width: '100%', borderRadius: 'var(--mantine-radius-md)', overflow: 'hidden', border: '1px solid var(--mantine-color-gray-3)' }} mb="md">
-          <MapContainer center={currentPosition} zoom={13} style={{ height: '100%', width: '100%' }}>
-            <ChangeView center={currentPosition} zoom={13} />
-            <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            />
-            <DraggableMarker position={currentPosition} onPositionChange={handlePositionChange} />
-          </MapContainer>
+            {/* Newsletter Section (Static) */}
+            <Box bg="dark.6" c="white" py={60} mt="xl">
+                <Container><Title order={2} ta="center" mb="lg">Join our vibrant community!</Title>
+                    <Group justify="center"><TextInput placeholder="Enter your email here" size="lg" radius="xl" w={{ base: '100%', sm: 400 }} /><Button size="lg" radius="xl" color="yellow">Subscribe</Button></Group>
+                </Container>
+            </Box>
         </Box>
+    );
+};
 
-        <SimpleGrid cols={{ base: 1, sm: 2 }} mt="md">
-          <NumberInput withAsterisk label="Latitude" readOnly {...form.getInputProps('latitude')} precision={6} />
-          <NumberInput withAsterisk label="Longitude" readOnly {...form.getInputProps('longitude')} precision={6} />
-        </SimpleGrid>
-        <SimpleGrid cols={{ base: 1, sm: 2 }} mt="md">
-          <TextInput label="Address (Optional)" placeholder="123 Main St" {...form.getInputProps('address_line1')} />
-          <TextInput label="City (Optional)" placeholder="Pittsboro" {...form.getInputProps('city')} />
-        </SimpleGrid>
-        <SimpleGrid cols={{ base: 1, sm: 2 }} mt="md">
-          <TextInput label="State" placeholder="NC" {...form.getInputProps('state_abbr')} />
-          <TextInput label="Postal Code" placeholder="27312" {...form.getInputProps('postal_code')} />
-        </SimpleGrid>
+export default PublicHomePage;
+```
+</file>
+<file path="frontend/src/pages/PoiDetailPage.jsx">
+```javascript
+import { useEffect, useState } from 'react';
+import { useParams, Link } from 'react-router-dom';
+import { Container, Title, Text, SimpleGrid, Paper, Group, Badge, Button, Image, Stack, Center, Accordion, Grid, Box, ActionIcon, Tooltip, Card, Skeleton, ThemeIcon } from '@mantine/core';
+import { IconShare, IconHeart, IconMapPin, IconPhone, IconMail, IconWorldWww, IconCheck, IconArrowRight, IconCurrentLocation } from '@tabler/icons-react';
+import axios from 'axios';
+import L from 'leaflet';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 
-        <Group justify="flex-end" mt="xl">
-          <Button variant="default" onClick={() => navigate('/')}>Cancel</Button>
-          <Button type="submit" size="md">
-            {isEditing ? 'Update POI' : 'Create POI'}
-          </Button>
-        </Group>
-      </form>
-    </Paper>
-  );
+const API_URL = import.meta.env.VITE_API_BASE_URL;
+
+// Fix for default Leaflet icon path issue with bundlers like Vite
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
+  iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
+});
+const goldIcon = new L.Icon({
+    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-gold.png',
+    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+    iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41]
+});
+
+
+const DetailItem = ({ label, value }) => {
+    if (!value || (Array.isArray(value) && value.length === 0)) return null;
+    return <Box><Text size="sm" c="dimmed">{label}</Text><Text>{Array.isArray(value) ? value.join(', ') : value}</Text></Box>
 }
 
-export default POIForm;
+const NearbyMap = ({ poi }) => {
+    const [nearbyPois, setNearbyPois] = useState([]);
+    useEffect(() => {
+        if (poi) {
+            axios.get(`${API_URL}/api/pois/${poi.id}/nearby`).then(res => setNearbyPois(res.data));
+        }
+    }, [poi]);
+    
+    if(!poi) return null;
+    const centerPosition = [poi.location.coordinates.coordinates[1], poi.location.coordinates.coordinates[0]];
+
+    return (
+        <Box>
+            <MapContainer center={centerPosition} zoom={13} style={{ height: '400px', width: '100%' }}>
+                <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                {/* Current POI Marker */}
+                <Marker position={centerPosition} icon={goldIcon}>
+                    <Popup>{poi.name} (Current)</Popup>
+                </Marker>
+                {/* Nearby POI Markers */}
+                {nearbyPois.map(p => (
+                    <Marker key={p.id} position={[p.location.coordinates.coordinates[1], p.location.coordinates.coordinates[0]]}>
+                        <Popup><Link to={`/poi/detail/${p.id}`}>{p.name}</Link></Popup>
+                    </Marker>
+                ))}
+            </MapContainer>
+             <SimpleGrid cols={{ base: 2, sm: 3, lg: 6 }} mt="lg">
+                {nearbyPois.map(p => (
+                    <Card withBorder component={Link} to={`/poi/detail/${p.id}`} p="sm" key={p.id}>
+                        <Text size="xs" fw={500} truncate="end">{p.name}</Text>
+                        <Badge size="xs" color={p.status === 'Fully Open' ? 'green' : 'orange'}>{p.status}</Badge>
+                    </Card>
+                ))}
+            </SimpleGrid>
+        </Box>
+    )
+}
+
+const PoiDetailPage = () => {
+    const { id } = useParams();
+    const [poi, setPoi] = useState(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        setLoading(true);
+        axios.get(`${API_URL}/api/pois/${id}`)
+            .then(res => setPoi(res.data))
+            .catch(err => console.error("Failed to fetch POI", err))
+            .finally(() => setLoading(false));
+    }, [id]);
+
+    if (loading) {
+        return <Container mt="xl"><Skeleton height={50} /><SimpleGrid cols={2} mt="lg"><Skeleton height={300} /><Skeleton height={300} /></SimpleGrid></Container>
+    }
+
+    if (!poi) {
+        return <Container><Center><Text>Point of Interest not found.</Text></Center></Container>;
+    }
+    
+    const attributes = poi.business?.attributes || poi.outdoors?.attributes || {};
+    const keyFeatures = [
+        attributes.public_toilets?.includes('yes') ? 'Public Toilet' : null,
+        attributes.wheelchair_accessible === 'yes' ? 'Wheelchair Friendly' : null,
+        attributes.parking?.includes('street') ? 'Parking on Street' : null,
+        attributes.parking?.includes('lot') ? 'Parking Lot' : null,
+    ].filter(Boolean);
+
+    return (
+        <Box>
+            <Paper shadow="xs" p="xs">
+                 <Container>
+                    <Group justify="space-between">
+                         <Group component={Link} to="/launch" style={{textDecoration: 'none', color: 'inherit'}}>
+                            <Image src="/vite.svg" h={30} />
+                            <Title order={4}>Nearby Nearby</Title>
+                         </Group>
+                        <Button variant="outline" radius="xl">@Username</Button>
+                    </Group>
+                </Container>
+            </Paper>
+            <Container mt="lg">
+                <Text size="sm" c="dimmed">STATUS: {poi.status} {poi.status_message && `- ${poi.status_message}`}</Text>
+                <Grid mt="md">
+                    <Grid.Col span={{ base: 12, md: 8 }}>
+                        <Title>{poi.name}</Title>
+                        <Text c="dimmed">{poi.location.city}, Chatham County</Text>
+                    </Grid.Col>
+                    <Grid.Col span={{ base: 12, md: 4 }}>
+                         <Group justify="flex-end">
+                            {poi.is_verified && <Badge color="teal" leftSection={<IconCheck size={14}/>}>Verified</Badge>}
+                            <Badge variant="light">{poi.status}</Badge>
+                            <Tooltip label="Share"><ActionIcon variant="default" size="lg"><IconShare size={18}/></ActionIcon></Tooltip>
+                            <Tooltip label="Favorite"><ActionIcon variant="default" size="lg"><IconHeart size={18}/></ActionIcon></Tooltip>
+                        </Group>
+                    </Grid.Col>
+                </Grid>
+
+                <Grid mt="lg" gutter="xl">
+                    <Grid.Col span={{ base: 12, md: 4 }}>
+                        <Stack>
+                            <DetailItem label="Location" value={`${poi.location.address_line1}, ${poi.location.city}, ${poi.location.state_abbr}`} />
+                            <DetailItem label="Phone Number" value={attributes.phone} />
+                            <DetailItem label="Website" value={attributes.website} />
+                            <Group grow mt="sm">
+                                <Button variant="light" leftSection={<IconCurrentLocation size={14}/>}>Nearby</Button>
+                                <Button variant="light" leftSection={<IconPhone size={14}/>}>Call</Button>
+                                <Button variant="light" leftSection={<IconWorldWww size={14}/>}>Website</Button>
+                            </Group>
+                        </Stack>
+                    </Grid.Col>
+                    <Grid.Col span={{ base: 12, md: 4 }}>
+                         <Stack>
+                            <DetailItem label="Category" value={poi.categories?.map(c => c.name).join(', ')} />
+                            <DetailItem label="Good For" value={attributes.ideal_for} />
+                            <DetailItem label="Key Features" value={keyFeatures} />
+                         </Stack>
+                    </Grid.Col>
+                     <Grid.Col span={{ base: 12, md: 4 }}>
+                         <Stack>
+                            <DetailItem label="Cost" value={attributes.price_range} />
+                            <DetailItem label="Pets" value={attributes.pets} />
+                         </Stack>
+                    </Grid.Col>
+                </Grid>
+                
+                <Accordion chevronPosition="right" variant="separated" mt="xl">
+                    <Accordion.Item value="about"><Accordion.Control>About + Hours</Accordion.Control>
+                        <Accordion.Panel><Text>{poi.description}</Text><DetailItem label="Hours" value={attributes.hours?.text} /></Accordion.Panel>
+                    </Accordion.Item>
+                    <Accordion.Item value="parking"><Accordion.Control>Address + Parking</Accordion.Control>
+                        <Accordion.Panel><DetailItem label="Parking Notes" value={attributes.parking_notes} /></Accordion.Panel>
+                    </Accordion.Item>
+                    <Accordion.Item value="contact"><Accordion.Control>Contact Information</Accordion.Control>
+                        <Accordion.Panel><DetailItem label="Email" value={attributes.email} /></Accordion.Panel>
+                    </Accordion.Item>
+                    <Accordion.Item value="photos"><Accordion.Control>Photos</Accordion.Control>
+                        <Accordion.Panel><SimpleGrid cols={3}>{attributes.photo_gallery?.filter(url=>url).map((url,i) => <Image key={i} src={url} radius="md"/>)}</SimpleGrid></Accordion.Panel>
+                    </Accordion.Item>
+                </Accordion>
+                
+                 <Box mt={60}>
+                    <Center><Title order={3} c="dimmed">NEARBY</Title></Center>
+                    <NearbyMap poi={poi} />
+                </Box>
+            </Container>
+        </Box>
+    );
+};
+
+export default PoiDetailPage;
 ```
 </file>
 </files>

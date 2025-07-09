@@ -4,6 +4,7 @@ import App from './App.jsx';
 import { MantineProvider, createTheme } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import { BrowserRouter } from 'react-router-dom';
+import { AuthProvider } from './utils/AuthContext';
 
 // Import CSS files
 import 'leaflet/dist/leaflet.css';
@@ -69,7 +70,7 @@ const theme = createTheme({
             root: {
                 borderRadius: theme.radius.md,
                 transition: 'background-color 0.2s ease, color 0.2s ease',
-                '&[data-active]': {
+                '&[dataActive]': {
                     backgroundColor: theme.colors['deep-purple'][0],
                     color: theme.colors['deep-purple'][8],
                 },
@@ -97,7 +98,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     <MantineProvider theme={theme}>
       <Notifications position="top-right" />
       <BrowserRouter>
-        <App />
+        <AuthProvider>
+          <App />
+        </AuthProvider>
       </BrowserRouter>
     </MantineProvider>
   </React.StrictMode>

@@ -1,207 +1,771 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useForm } from '@mantine/form';
-import { TextInput, Button, Group, Box, Title, Select, Textarea, NumberInput, Paper, SimpleGrid, Divider, Text } from '@mantine/core';
-import { DateTimePicker } from '@mantine/dates';
-import axios from 'axios';
+import {
+  TextInput, Button, Group, Box, Title, Select, Textarea, Paper, SimpleGrid,
+  Divider, Text, Radio, Switch, Stack, Checkbox, Stepper, Accordion, Alert,
+} from '@mantine/core';
+import api from '../utils/api';
 import { notifications } from '@mantine/notifications';
 import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from 'react-leaflet';
+import { CategorySelector } from './CategorySelector';
+import DynamicAttributeForm from './DynamicAttributeForm';
 
 const API_URL = import.meta.env.VITE_API_BASE_URL;
 
 // --- Map Component Logic ---
-// This sub-component handles updating the map view when coordinates change.
 function ChangeView({ center, zoom }) {
   const map = useMap();
-  useEffect(() => {
-    map.setView(center, zoom);
-  }, [center, zoom, map]);
+  useEffect(() => { map.setView(center, zoom); }, [center, zoom, map]);
   return null;
 }
-
-// This sub-component renders the draggable marker and handles map events.
 function DraggableMarker({ position, onPositionChange }) {
   const map = useMap();
-
-  useMapEvents({
-    click(e) {
-      onPositionChange(e.latlng);
-      map.flyTo(e.latlng, map.getZoom());
-    },
-  });
-
-  const handleDragEnd = (event) => {
-    const marker = event.target;
-    if (marker != null) {
-      onPositionChange(marker.getLatLng());
-    }
-  };
-
-  return (
-    <Marker
-      draggable={true}
-      eventHandlers={{ dragend: handleDragEnd }}
-      position={position}
-    />
-  );
+  useMapEvents({ click(e) { onPositionChange(e.latlng); map.flyTo(e.latlng, map.getZoom()); } });
+  const handleDragEnd = (event) => { if (event.target != null) { onPositionChange(event.target.getLatLng()); } };
+  return <Marker draggable={true} eventHandlers={{ dragend: handleDragEnd }} position={position} />;
 }
 // --- End Map Component Logic ---
+
+const emptyInitialValues = {
+  // Core POI Info
+  name: '',
+  poi_type: 'BUSINESS',
+  description_long: null,
+  description_short: null,
+  status: 'Fully Open',
+  status_message: null,
+  is_verified: false,
+  is_disaster_hub: false,
+  // Address fields
+  address_full: null,
+  address_street: null,
+  address_city: null,
+  address_state: 'NC',
+  address_zip: null,
+  // Contact info
+  website_url: null,
+  phone_number: null,
+  email: null,
+  // Location coordinates
+  longitude: -79.17,
+  latitude: 35.72,
+  // JSONB fields
+  photos: { featured: '', gallery: [] },
+  hours: {},
+  amenities: {},
+  contact_info: {},
+  compliance: {},
+  custom_fields: {},
+  // Categories
+  category_ids: [],
+  // Business specific
+  business: {
+    listing_tier: 'free',
+    price_range: null
+  },
+  // Park specific
+  park: {
+    drone_usage_policy: null
+  },
+  // Trail specific
+  trail: {
+    length_text: null,
+    difficulty: null,
+    route_type: null
+  },
+  // Event specific
+  event: {
+    start_datetime: '',
+    end_datetime: null,
+    cost_text: null
+  }
+};
 
 function POIForm() {
   const { id } = useParams();
   const navigate = useNavigate();
   const isEditing = Boolean(id);
+  const [activeStep, setActiveStep] = useState(0);
+  const [completedSteps, setCompletedSteps] = useState(0);
 
   const form = useForm({
-    initialValues: {
-      name: '', description: '', poi_type: 'business', status: 'active',
-      address_line1: '', city: '', state_abbr: 'NC', postal_code: '',
-      longitude: -79.17, latitude: 35.72,
-      price_range: '', outdoor_specific_type: 'park',
-      start_datetime: null, end_datetime: null,
-    },
-    validate: {
-      name: (value) => (value.length < 2 ? 'Name must have at least 2 characters' : null),
-      longitude: (value) => (value === null || value === undefined ? 'Longitude is required' : null),
-      latitude: (value) => (value === null || value === undefined ? 'Latitude is required' : null),
-      start_datetime: (value, values) => (values.poi_type === 'event' && !value ? 'Start date/time is required for events' : null),
+    initialValues: emptyInitialValues,
+    validate: (values) => {
+      const errors = {};
+
+      // Step 0: Core Info validation
+      if (activeStep === 0) {
+        if (!values.name.trim()) {
+          errors.name = 'Name is required';
+        } else if (values.name.trim().length < 2) {
+          errors.name = 'Name must have at least 2 characters';
+        }
+      }
+
+      // Step 1: Categories validation
+      if (activeStep === 1) {
+        // Validate subtype-specific required fields
+        if (values.poi_type === 'EVENT') {
+          if (!values.event?.start_datetime || values.event.start_datetime.trim() === '') {
+            errors['event.start_datetime'] = 'Start date/time is required for events';
+          }
+        }
+      }
+
+      // Step 2: Location validation
+      if (activeStep === 2) {
+        if (!values.latitude || !values.longitude) {
+          errors.latitude = 'Location coordinates are required';
+          errors.longitude = 'Location coordinates are required';
+        }
+      }
+
+      // Final validation (step 5) - check all required fields
+      if (activeStep === 5) {
+        if (!values.name.trim()) {
+          errors.name = 'Name is required';
+        } else if (values.name.trim().length < 2) {
+          errors.name = 'Name must have at least 2 characters';
+        }
+        
+        if (!values.latitude || !values.longitude) {
+          errors.latitude = 'Location coordinates are required';
+          errors.longitude = 'Location coordinates are required';
+        }
+        
+        if (values.poi_type === 'EVENT' && (!values.event?.start_datetime || values.event.start_datetime.trim() === '')) {
+          errors['event.start_datetime'] = 'Start date/time is required for events';
+        }
+      }
+
+      return errors;
     },
   });
 
+  const nextStep = () => {
+    if (!form.validate().hasErrors) {
+      setCompletedSteps(activeStep);
+      setActiveStep((current) => Math.min(5, current + 1));
+    }
+  };
+  const prevStep = () => setActiveStep((current) => Math.max(0, current - 1));
+
   useEffect(() => {
     if (isEditing) {
-      axios.get(`${API_URL}/api/pois/${id}`)
-        .then(response => {
-          const poi = response.data;
-          form.setValues({
-            name: poi.name || '',
-            description: poi.description || '',
-            poi_type: poi.poi_type || 'business',
-            status: poi.status || 'active',
-            address_line1: poi.location?.address_line1 || '',
-            city: poi.location?.city || '',
-            state_abbr: poi.location?.state_abbr || 'NC',
-            postal_code: poi.location?.postal_code || '',
-            longitude: poi.location?.coordinates?.coordinates[0] ?? -79.17,
-            latitude: poi.location?.coordinates?.coordinates[1] ?? 35.72,
-            price_range: poi.business?.price_range || '',
-            outdoor_specific_type: poi.outdoors?.outdoor_specific_type || 'park',
-            start_datetime: poi.event?.start_datetime ? new Date(poi.event.start_datetime) : null,
-            end_datetime: poi.event?.end_datetime ? new Date(poi.event.end_datetime) : null,
+      api.get(`/pois/${id}`)
+        .then(async response => {
+          const poi = await response.json();
+          const initial = { ...emptyInitialValues };
+
+          // Populate top-level fields
+          Object.assign(initial, {
+            name: poi.name,
+            description_long: poi.description_long || null,
+            description_short: poi.description_short || null,
+            poi_type: poi.poi_type,
+            status: poi.status,
+            status_message: poi.status_message || null,
+            is_verified: poi.is_verified,
+            is_disaster_hub: poi.is_disaster_hub,
+            address_full: poi.address_full || null,
+            address_street: poi.address_street || null,
+            address_city: poi.address_city || null,
+            address_state: poi.address_state,
+            address_zip: poi.address_zip || null,
+            website_url: poi.website_url || null,
+            phone_number: poi.phone_number || null,
+            email: poi.email || null,
+            photos: poi.photos || { featured: '', gallery: [] },
+            hours: poi.hours || {},
+            amenities: poi.amenities || {},
+            contact_info: poi.contact_info || {},
+            compliance: poi.compliance || {},
+            custom_fields: poi.custom_fields || {},
+            category_ids: poi.categories?.map(c => c.id) || [],
           });
+
+          // Populate location coordinates
+          if (poi.location) {
+            initial.longitude = poi.location.coordinates[0];
+            initial.latitude = poi.location.coordinates[1];
+          }
+
+          // Populate subtype specific fields
+          if (poi.poi_type === 'BUSINESS' && poi.business) {
+            initial.business = {
+              ...initial.business,
+              ...poi.business,
+              price_range: poi.business.price_range || null
+            };
+          } else if (poi.poi_type === 'PARK' && poi.park) {
+            initial.park = {
+              ...initial.park,
+              ...poi.park,
+              drone_usage_policy: poi.park.drone_usage_policy || null
+            };
+          } else if (poi.poi_type === 'TRAIL' && poi.trail) {
+            initial.trail = {
+              ...initial.trail,
+              ...poi.trail,
+              length_text: poi.trail.length_text || null,
+              difficulty: poi.trail.difficulty || null,
+              route_type: poi.trail.route_type || null
+            };
+          } else if (poi.poi_type === 'EVENT' && poi.event) {
+            // Convert datetime objects to string format for datetime-local inputs
+            const formatDateTimeForInput = (datetime) => {
+              if (!datetime) return '';
+              const date = new Date(datetime);
+              return date.toISOString().slice(0, 16); // Format: YYYY-MM-DDTHH:MM
+            };
+            
+            initial.event = {
+              ...initial.event,
+              ...poi.event,
+              start_datetime: formatDateTimeForInput(poi.event.start_datetime),
+              end_datetime: formatDateTimeForInput(poi.event.end_datetime),
+              cost_text: poi.event.cost_text || null
+            };
+          }
+
+          form.setValues(initial);
+          form.setInitialValues(initial);
         })
-        .catch(error => {
-          notifications.show({ title: 'Error', message: 'Failed to fetch POI data.', color: 'red' });
-        });
+        .catch(error => notifications.show({ title: 'Error', message: 'Failed to fetch POI data.', color: 'red' }));
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, isEditing]);
 
   const handleSubmit = async (values) => {
+    // Clean up empty string values and convert them to null for optional fields
+    const cleanValues = { ...values };
+
+    // Clean business fields
+    if (cleanValues.business) {
+      if (cleanValues.business.price_range === '') {
+        cleanValues.business.price_range = null;
+      }
+    }
+
+    // Clean other optional string fields
+    const optionalStringFields = [
+      'description_long', 'description_short', 'status_message',
+      'address_full', 'address_street', 'address_city', 'address_zip',
+      'website_url', 'phone_number', 'email'
+    ];
+
+    optionalStringFields.forEach(field => {
+      if (cleanValues[field] === '') {
+        cleanValues[field] = null;
+      }
+    });
+
+    // Clean subtype-specific fields
+    if (cleanValues.park && cleanValues.park.drone_usage_policy === '') {
+      cleanValues.park.drone_usage_policy = null;
+    }
+
+    if (cleanValues.trail) {
+      if (cleanValues.trail.length_text === '') cleanValues.trail.length_text = null;
+      if (cleanValues.trail.difficulty === '') cleanValues.trail.difficulty = null;
+      if (cleanValues.trail.route_type === '') cleanValues.trail.route_type = null;
+    }
+
+    if (cleanValues.event) {
+      if (cleanValues.event.cost_text === '') cleanValues.event.cost_text = null;
+      // Convert datetime strings to ISO format for backend
+      if (cleanValues.event.start_datetime && cleanValues.event.start_datetime.trim() !== '') {
+        try {
+          cleanValues.event.start_datetime = new Date(cleanValues.event.start_datetime).toISOString();
+        } catch (error) {
+          throw new Error('Invalid start date/time format');
+        }
+      }
+      if (cleanValues.event.end_datetime && cleanValues.event.end_datetime.trim() !== '') {
+        try {
+          cleanValues.event.end_datetime = new Date(cleanValues.event.end_datetime).toISOString();
+        } catch (error) {
+          throw new Error('Invalid end date/time format');
+        }
+      }
+    }
+
+    // Ensure subtype data is included for the current POI type
     const payload = {
-      name: values.name, description: values.description, poi_type: values.poi_type,
-      status: values.status,
+      name: cleanValues.name,
+      poi_type: cleanValues.poi_type,
+      description_long: cleanValues.description_long,
+      description_short: cleanValues.description_short,
+      status: cleanValues.status,
+      status_message: cleanValues.status_message,
+      is_verified: cleanValues.is_verified,
+      is_disaster_hub: cleanValues.is_disaster_hub,
+      address_full: cleanValues.address_full,
+      address_street: cleanValues.address_street,
+      address_city: cleanValues.address_city,
+      address_state: cleanValues.address_state,
+      address_zip: cleanValues.address_zip,
+      website_url: cleanValues.website_url,
+      phone_number: cleanValues.phone_number,
+      email: cleanValues.email,
+      photos: cleanValues.photos,
+      hours: cleanValues.hours,
+      amenities: cleanValues.amenities,
+      contact_info: cleanValues.contact_info,
+      compliance: cleanValues.compliance,
+      custom_fields: cleanValues.custom_fields,
+      category_ids: cleanValues.category_ids,
       location: {
-        address_line1: values.address_line1, city: values.city, state_abbr: values.state_abbr,
-        postal_code: values.postal_code,
-        coordinates: { type: "Point", coordinates: [values.longitude, values.latitude] },
+        type: "Point",
+        coordinates: [cleanValues.longitude, cleanValues.latitude]
       },
     };
-    if (values.poi_type === 'business') payload.business = { price_range: values.price_range };
-    if (values.poi_type === 'outdoors') payload.outdoors = { outdoor_specific_type: values.outdoor_specific_type };
-    if (values.poi_type === 'event') payload.event = { start_datetime: values.start_datetime?.toISOString(), end_datetime: values.end_datetime?.toISOString() };
 
-    if (isEditing) {
-      notifications.show({ title: 'Info', message: 'Editing is not fully implemented. Please delete and recreate.', color: 'blue' });
-      return;
+    // Add subtype data based on POI type
+    if (cleanValues.poi_type === 'BUSINESS') {
+      payload.business = cleanValues.business || { listing_tier: 'free' };
+    } else if (cleanValues.poi_type === 'PARK') {
+      payload.park = cleanValues.park || {};
+    } else if (cleanValues.poi_type === 'TRAIL') {
+      payload.trail = cleanValues.trail || {};
+    } else if (cleanValues.poi_type === 'EVENT') {
+      // Ensure event object exists and has required fields
+      payload.event = {
+        start_datetime: cleanValues.event?.start_datetime || '',
+        end_datetime: cleanValues.event?.end_datetime || null,
+        cost_text: cleanValues.event?.cost_text || null
+      };
     }
+
+    const apiCall = isEditing ? api.put(`/pois/${id}`, payload) : api.post('/pois/', payload);
+
     try {
-      await axios.post(`${API_URL}/api/pois/`, payload);
-      notifications.show({ title: 'Success!', message: `POI "${values.name}" created!`, color: 'green' });
-      navigate('/');
+      const response = await apiCall;
+      if (response.ok) {
+        notifications.show({ title: 'Success!', message: `POI "${cleanValues.name}" was ${isEditing ? 'updated' : 'created'}!`, color: 'green' });
+        navigate('/');
+      } else {
+        // Get error details from response
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.detail || `Failed to ${isEditing ? 'update' : 'create'} POI`;
+        throw new Error(errorMessage);
+      }
     } catch (error) {
-      const errorMessage = error.response?.data?.detail ? JSON.stringify(error.response.data.detail) : 'Failed to create POI.';
-      notifications.show({ title: 'Submission Error', message: errorMessage, color: 'red', autoClose: 7000 });
-      console.error("Submission error:", error.response?.data || error.message);
+      console.error('Submission error:', error);
+      notifications.show({ 
+        title: 'Submission Error', 
+        message: error.message || `Failed to ${isEditing ? 'update' : 'create'} POI.`, 
+        color: 'red' 
+      });
     }
   };
-  
-  const currentPosition = [form.values.latitude, form.values.longitude];
-  const handlePositionChange = (latlng) => {
-    form.setFieldValue('latitude', latlng.lat);
-    form.setFieldValue('longitude', latlng.lng);
-  };
 
-  const currentPoiType = form.values.poi_type;
+  const currentPosition = [form.values.latitude, form.values.longitude];
+  const isBusiness = form.values.poi_type === 'BUSINESS';
+  const isPark = form.values.poi_type === 'PARK';
+  const isTrail = form.values.poi_type === 'TRAIL';
+  const isEvent = form.values.poi_type === 'EVENT';
+  const isPaidListing = isBusiness && ['paid', 'paid_founding', 'sponsor'].includes(form.values.business?.listing_tier);
 
   return (
-    <Paper maw={800} mx="auto">
-      <Title order={2} c="deep-purple.7" mb="xl">
-        {isEditing ? `Editing: ${form.values.name || 'POI'}` : 'Create New Point of Interest'}
-      </Title>
+    <Paper maw={1200} mx="auto">
+      <Title order={2} c="deep-purple.7" mb="xl">{isEditing ? `Editing: ${form.values.name}` : 'Create New Point of Interest'}</Title>
+      <Text size="sm" c="dimmed" mb="md">Fields marked with * are required</Text>
 
-      <form onSubmit={form.onSubmit(handleSubmit)}>
-        <Divider my="lg" label={<Text fw={500} size="lg">Core Information</Text>} labelPosition="left" />
-        <TextInput withAsterisk label="Name" placeholder="e.g., The Local Pizzeria" {...form.getInputProps('name')} />
-        <Textarea label="Description" placeholder="A brief description of the place" {...form.getInputProps('description')} mt="md" minRows={3} />
-        <Select label="POI Type" withAsterisk data={['business', 'outdoors', 'event']} {...form.getInputProps('poi_type')} mt="md" />
-
-        {currentPoiType === 'business' && (
-          <Box mt="md" p="md" bg="gray.0" style={{ borderRadius: 'var(--mantine-radius-md)' }}>
-            <Text fw={500} size="lg" mb="sm">Business Details</Text>
-            <Select label="Price Range" placeholder="e.g., $$" data={['$', '$$', '$$$', '$$$$']} {...form.getInputProps('price_range')} />
-          </Box>
-        )}
-        {currentPoiType === 'outdoors' && (
-          <Box mt="md" p="md" bg="gray.0" style={{ borderRadius: 'var(--mantine-radius-md)' }}>
-            <Text fw={500} size="lg" mb="sm">Outdoors Details</Text>
-            <Select label="Outdoor Specific Type" data={['park', 'trail']} {...form.getInputProps('outdoor_specific_type')} />
-          </Box>
-        )}
-        {currentPoiType === 'event' && (
-          <Box mt="md" p="md" bg="gray.0" style={{ borderRadius: 'var(--mantine-radius-md)' }}>
-            <Text fw={500} size="lg" mb="sm">Event Details</Text>
-            <SimpleGrid cols={{ base: 1, sm: 2 }}>
-              <DateTimePicker withAsterisk valueFormat="MMM D, YYYY h:mm A" label="Start Time" {...form.getInputProps('start_datetime')} />
-              <DateTimePicker valueFormat="MMM D, YYYY h:mm A" label="End Time" {...form.getInputProps('end_datetime')} />
+      <Stepper
+        active={activeStep}
+        completed={completedSteps}
+        onStepClick={setActiveStep}
+        breakpoint="sm"
+        allowNextStepsSelect={false}
+        size="sm"
+        styles={{
+          root: { marginBottom: 'xl' },
+          step: { flex: 1, minWidth: 0 },
+          stepLabel: { fontSize: '0.875rem' },
+          stepDescription: { fontSize: '0.75rem' },
+          separator: {
+            width: '30px',
+            borderStyle: 'solid',
+            borderWidth: '2px',
+            borderColor: 'var(--mantine-color-gray-4)',
+            backgroundColor: 'transparent'
+          },
+          separatorActive: {
+            borderColor: 'var(--mantine-color-deep-purple-6)'
+          },
+          separatorCompleted: {
+            borderColor: 'var(--mantine-color-deep-purple-6)'
+          }
+        }}
+      >
+        <Stepper.Step label="Core Info" description="Basic details">
+          <Stack mt="xl" p="md">
+            <SimpleGrid cols={2}>
+              <TextInput withAsterisk label="POI Name/Title" {...form.getInputProps('name')} />
+              <Select withAsterisk label="POI Type" data={['BUSINESS', 'PARK', 'TRAIL', 'EVENT']} {...form.getInputProps('poi_type')} />
             </SimpleGrid>
-          </Box>
-        )}
+            <Textarea label="Full Description" {...form.getInputProps('description_long')} minRows={4} maxLength={isBusiness && !isPaidListing ? 200 : undefined} description={isBusiness && !isPaidListing ? '200 character limit for free listings' : 'Unlimited characters'} />
+            <Textarea label="Short Description" placeholder="A brief summary" {...form.getInputProps('description_short')} minRows={2} maxLength={250} description="250 character summary." />
+            <SimpleGrid cols={2}>
+              <Select label="Status" data={['Fully Open', 'Partly Open', 'Temporary Hour Changes', 'Temporarily Closed', 'Call Ahead', 'Permanently Closed', 'Warning', 'Limited Capacity', 'Coming Soon', 'Under Development', 'Alert']} {...form.getInputProps('status')} />
+              <TextInput label="Status Message" placeholder="e.g., Closed for private event" maxLength={100} {...form.getInputProps('status_message')} />
+            </SimpleGrid>
+            <SimpleGrid cols={2}>
+              <Switch label="This listing is verified by Nearby Nearby" {...form.getInputProps('is_verified', { type: 'checkbox' })} />
+              <Switch label="This is a disaster hub" {...form.getInputProps('is_disaster_hub', { type: 'checkbox' })} />
+            </SimpleGrid>
+          </Stack>
+        </Stepper.Step>
 
-        <Divider my="xl" label={<Text fw={500} size="lg">Location</Text>} labelPosition="left" />
-        <Text c="dimmed" size="sm" mb="xs">Click on the map or drag the marker to set the precise location.</Text>
+        <Stepper.Step label="Categories" description="Categories & type">
+          <Stack mt="xl" p="md">
+            <CategorySelector value={form.values.category_ids} onChange={(ids) => form.setFieldValue('category_ids', ids)} />
 
-        <Box style={{ height: '350px', width: '100%', borderRadius: 'var(--mantine-radius-md)', overflow: 'hidden', border: '1px solid var(--mantine-color-gray-3)' }} mb="md">
-          <MapContainer center={currentPosition} zoom={13} style={{ height: '100%', width: '100%' }}>
-            <ChangeView center={currentPosition} zoom={13} />
-            <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            {isBusiness && (
+              <>
+                <Divider my="md" label="Business Details" />
+                <SimpleGrid cols={2}>
+                  <Select label="Listing Tier" data={['free', 'paid', 'paid_founding', 'sponsor']} {...form.getInputProps('business.listing_tier')} />
+                  <Select label="Price Range" placeholder="Select price range" data={['$', '$$', '$$$', '$$$$']} {...form.getInputProps('business.price_range')} />
+                </SimpleGrid>
+              </>
+            )}
+
+            {isPark && (
+              <>
+                <Divider my="md" label="Park Details" />
+                <TextInput label="Drone Usage Policy" placeholder="e.g., Allowed with permit" {...form.getInputProps('park.drone_usage_policy')} />
+              </>
+            )}
+
+            {isTrail && (
+              <>
+                <Divider my="md" label="Trail Details" />
+                <SimpleGrid cols={3}>
+                  <TextInput label="Length" placeholder="e.g., 2.5 miles" {...form.getInputProps('trail.length_text')} />
+                  <Select label="Difficulty" placeholder="Select difficulty" data={['easy', 'moderate', 'difficult', 'expert']} {...form.getInputProps('trail.difficulty')} />
+                  <Select label="Route Type" placeholder="Select route type" data={['loop', 'out_and_back', 'point_to_point']} {...form.getInputProps('trail.route_type')} />
+                </SimpleGrid>
+              </>
+            )}
+
+            {isEvent && (
+              <>
+                <Divider my="md" label="Event Details" />
+                <SimpleGrid cols={2}>
+                  <TextInput withAsterisk type="datetime-local" label="Start Date/Time" {...form.getInputProps('event.start_datetime')} />
+                  <TextInput type="datetime-local" label="End Date/Time" {...form.getInputProps('event.end_datetime')} />
+                </SimpleGrid>
+                <TextInput label="Cost" placeholder="e.g., Free, $15, Donation suggested" {...form.getInputProps('event.cost_text')} />
+              </>
+            )}
+          </Stack>
+        </Stepper.Step>
+
+        <Stepper.Step label="Location" description="Address & map">
+          <Stack mt="xl" p="md">
+            <Text size="sm" c="dimmed" mb="xs">Click on the map or drag the marker to set the location (required)</Text>
+            <Box style={{ height: '300px', width: '100%' }} mb="md">
+              <MapContainer center={currentPosition} zoom={13} style={{ height: '100%', width: '100%' }}>
+                <ChangeView center={currentPosition} zoom={13} />
+                <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                <DraggableMarker position={currentPosition} onPositionChange={(latlng) => {
+                  form.setFieldValue('latitude', latlng.lat);
+                  form.setFieldValue('longitude', latlng.lng);
+                }} />
+              </MapContainer>
+            </Box>
+
+            <SimpleGrid cols={2}>
+              <TextInput label="Street Address" {...form.getInputProps('address_street')} />
+              <TextInput label="City" {...form.getInputProps('address_city')} />
+            </SimpleGrid>
+            <SimpleGrid cols={3}>
+              <TextInput label="State" {...form.getInputProps('address_state')} />
+              <TextInput label="ZIP Code" {...form.getInputProps('address_zip')} />
+              <TextInput label="Full Address" {...form.getInputProps('address_full')} />
+            </SimpleGrid>
+            <SimpleGrid cols={2}>
+              <TextInput withAsterisk label="Latitude" type="number" step="any" {...form.getInputProps('latitude')} />
+              <TextInput withAsterisk label="Longitude" type="number" step="any" {...form.getInputProps('longitude')} />
+            </SimpleGrid>
+          </Stack>
+        </Stepper.Step>
+
+        <Stepper.Step label="Contact" description="Contact & hours">
+          <Stack mt="xl" p="md">
+            <SimpleGrid cols={2}>
+              <TextInput label="Website URL" {...form.getInputProps('website_url')} />
+              <TextInput label="Phone Number" {...form.getInputProps('phone_number')} />
+            </SimpleGrid>
+            <TextInput label="Email" type="email" {...form.getInputProps('email')} />
+
+
+          </Stack>
+        </Stepper.Step>
+
+        <Stepper.Step label="Attributes" description="Dynamic fields">
+          <Stack mt="xl" p="md">
+            <Divider my="md" label="Dynamic Attributes" />
+            <DynamicAttributeForm
+              poiType={form.values.poi_type}
+              value={form.values.amenities}
+              onChange={(value) => form.setFieldValue('amenities', value)}
             />
-            <DraggableMarker position={currentPosition} onPositionChange={handlePositionChange} />
-          </MapContainer>
-        </Box>
 
-        <SimpleGrid cols={{ base: 1, sm: 2 }} mt="md">
-          <NumberInput withAsterisk label="Latitude" readOnly {...form.getInputProps('latitude')} precision={6} />
-          <NumberInput withAsterisk label="Longitude" readOnly {...form.getInputProps('longitude')} precision={6} />
-        </SimpleGrid>
-        <SimpleGrid cols={{ base: 1, sm: 2 }} mt="md">
-          <TextInput label="Address (Optional)" placeholder="123 Main St" {...form.getInputProps('address_line1')} />
-          <TextInput label="City (Optional)" placeholder="Pittsboro" {...form.getInputProps('city')} />
-        </SimpleGrid>
-        <SimpleGrid cols={{ base: 1, sm: 2 }} mt="md">
-          <TextInput label="State" placeholder="NC" {...form.getInputProps('state_abbr')} />
-          <TextInput label="Postal Code" placeholder="27312" {...form.getInputProps('postal_code')} />
-        </SimpleGrid>
+            <Divider my="md" label="Photos" />
+            <TextInput label="Featured Image URL" {...form.getInputProps('photos.featured')} />
 
-        <Group justify="flex-end" mt="xl">
-          <Button variant="default" onClick={() => navigate('/')}>Cancel</Button>
-          <Button type="submit" size="md">
-            {isEditing ? 'Update POI' : 'Create POI'}
+
+
+
+          </Stack>
+        </Stepper.Step>
+
+
+      </Stepper>
+
+      {activeStep === 5 && (
+        <Paper p="xl" withBorder mt="xl" radius="md">
+          <Stack spacing="lg">
+            <Group>
+              <Text size="xl" fw={700} c="deep-purple.7">Ready to Submit</Text>
+              <Text size="sm" c="dimmed" style={{ flex: 1 }}>
+                You are about to {isEditing ? 'update' : 'create'} a Point of Interest. Please review your information below.
+              </Text>
+            </Group>
+
+            <SimpleGrid cols={2} spacing="lg">
+              {/* Basic Information */}
+              <Paper p="md" withBorder radius="sm">
+                <Text size="sm" fw={600} c="blue.7" mb="xs">📋 Basic Information</Text>
+                <Stack spacing="xs">
+                  <Group justify="space-between">
+                    <Text size="sm" c="dimmed">Name:</Text>
+                    <Text size="sm" fw={500}>{form.values.name}</Text>
+                  </Group>
+                  <Group justify="space-between">
+                    <Text size="sm" c="dimmed">Type:</Text>
+                    <Text size="sm" fw={500}>{form.values.poi_type}</Text>
+                  </Group>
+                  <Group justify="space-between">
+                    <Text size="sm" c="dimmed">Status:</Text>
+                    <Text size="sm" fw={500}>{form.values.status}</Text>
+                  </Group>
+                  {form.values.description_short && (
+                    <Group justify="space-between">
+                      <Text size="sm" c="dimmed">Summary:</Text>
+                      <Text size="sm" fw={500} style={{ maxWidth: '200px' }}>{form.values.description_short}</Text>
+                    </Group>
+                  )}
+                  {form.values.status_message && (
+                    <Group justify="space-between">
+                      <Text size="sm" c="dimmed">Status Message:</Text>
+                      <Text size="sm" fw={500} style={{ maxWidth: '200px' }}>{form.values.status_message}</Text>
+                    </Group>
+                  )}
+                </Stack>
+              </Paper>
+
+              {/* Location Information */}
+              <Paper p="md" withBorder radius="sm">
+                <Text size="sm" fw={600} c="green.7" mb="xs">📍 Location</Text>
+                <Stack spacing="xs">
+                  <Group justify="space-between">
+                    <Text size="sm" c="dimmed">Coordinates:</Text>
+                    <Text size="sm" fw={500}>{form.values.latitude.toFixed(6)}, {form.values.longitude.toFixed(6)}</Text>
+                  </Group>
+                  {form.values.address_street && (
+                    <Group justify="space-between">
+                      <Text size="sm" c="dimmed">Street:</Text>
+                      <Text size="sm" fw={500}>{form.values.address_street}</Text>
+                    </Group>
+                  )}
+                  {form.values.address_city && (
+                    <Group justify="space-between">
+                      <Text size="sm" c="dimmed">City:</Text>
+                      <Text size="sm" fw={500}>{form.values.address_city}, {form.values.address_state}</Text>
+                    </Group>
+                  )}
+                  {form.values.address_zip && (
+                    <Group justify="space-between">
+                      <Text size="sm" c="dimmed">ZIP:</Text>
+                      <Text size="sm" fw={500}>{form.values.address_zip}</Text>
+                    </Group>
+                  )}
+                </Stack>
+              </Paper>
+
+              {/* Contact Information */}
+              <Paper p="md" withBorder radius="sm">
+                <Text size="sm" fw={600} c="orange.7" mb="xs">📞 Contact</Text>
+                <Stack spacing="xs">
+                  {form.values.website_url && (
+                    <Group justify="space-between">
+                      <Text size="sm" c="dimmed">Website:</Text>
+                      <Text size="sm" fw={500} style={{ maxWidth: '150px' }}>{form.values.website_url}</Text>
+                    </Group>
+                  )}
+                  {form.values.phone_number && (
+                    <Group justify="space-between">
+                      <Text size="sm" c="dimmed">Phone:</Text>
+                      <Text size="sm" fw={500}>{form.values.phone_number}</Text>
+                    </Group>
+                  )}
+                  {form.values.email && (
+                    <Group justify="space-between">
+                      <Text size="sm" c="dimmed">Email:</Text>
+                      <Text size="sm" fw={500}>{form.values.email}</Text>
+                    </Group>
+                  )}
+                </Stack>
+              </Paper>
+
+              {/* Categories & Type-Specific */}
+              <Paper p="md" withBorder radius="sm">
+                <Text size="sm" fw={600} c="purple.7" mb="xs">🏷️ Categories & Details</Text>
+                <Stack spacing="xs">
+                  <Group justify="space-between">
+                    <Text size="sm" c="dimmed">Categories:</Text>
+                    <Text size="sm" fw={500}>{form.values.category_ids.length} selected</Text>
+                  </Group>
+                  {form.values.poi_type === 'BUSINESS' && form.values.business && (
+                    <>
+                      <Group justify="space-between">
+                        <Text size="sm" c="dimmed">Listing Tier:</Text>
+                        <Text size="sm" fw={500}>{form.values.business.listing_tier}</Text>
+                      </Group>
+                      {form.values.business.price_range && (
+                        <Group justify="space-between">
+                          <Text size="sm" c="dimmed">Price Range:</Text>
+                          <Text size="sm" fw={500}>{form.values.business.price_range}</Text>
+                        </Group>
+                      )}
+                    </>
+                  )}
+                  {form.values.poi_type === 'EVENT' && form.values.event && (
+                    <>
+                      <Group justify="space-between">
+                        <Text size="sm" c="dimmed">Start Date:</Text>
+                        <Text size="sm" fw={500}>{form.values.event.start_datetime}</Text>
+                      </Group>
+                      {form.values.event.end_datetime && (
+                        <Group justify="space-between">
+                          <Text size="sm" c="dimmed">End Date:</Text>
+                          <Text size="sm" fw={500}>{form.values.event.end_datetime}</Text>
+                        </Group>
+                      )}
+                      {form.values.event.cost_text && (
+                        <Group justify="space-between">
+                          <Text size="sm" c="dimmed">Cost:</Text>
+                          <Text size="sm" fw={500}>{form.values.event.cost_text}</Text>
+                        </Group>
+                      )}
+                    </>
+                  )}
+                  {form.values.poi_type === 'TRAIL' && form.values.trail && (
+                    <>
+                      {form.values.trail.length_text && (
+                        <Group justify="space-between">
+                          <Text size="sm" c="dimmed">Length:</Text>
+                          <Text size="sm" fw={500}>{form.values.trail.length_text}</Text>
+                        </Group>
+                      )}
+                      {form.values.trail.difficulty && (
+                        <Group justify="space-between">
+                          <Text size="sm" c="dimmed">Difficulty:</Text>
+                          <Text size="sm" fw={500}>{form.values.trail.difficulty}</Text>
+                        </Group>
+                      )}
+                      {form.values.trail.route_type && (
+                        <Group justify="space-between">
+                          <Text size="sm" c="dimmed">Route Type:</Text>
+                          <Text size="sm" fw={500}>{form.values.trail.route_type}</Text>
+                        </Group>
+                      )}
+                    </>
+                  )}
+                  {form.values.poi_type === 'PARK' && form.values.park && (
+                    <>
+                      {form.values.park.drone_usage_policy && (
+                        <Group justify="space-between">
+                          <Text size="sm" c="dimmed">Drone Policy:</Text>
+                          <Text size="sm" fw={500}>{form.values.park.drone_usage_policy}</Text>
+                        </Group>
+                      )}
+                    </>
+                  )}
+                </Stack>
+              </Paper>
+            </SimpleGrid>
+
+            {/* Additional Information */}
+            {(form.values.description_long || form.values.photos?.featured) && (
+              <Paper p="md" withBorder radius="sm">
+                <Text size="sm" fw={600} c="teal.7" mb="xs">📝 Additional Information</Text>
+                <Stack spacing="xs">
+                  {form.values.description_long && (
+                    <Group justify="space-between">
+                      <Text size="sm" c="dimmed">Full Description:</Text>
+                      <Text size="sm" fw={500} style={{ maxWidth: '300px' }}>{form.values.description_long}</Text>
+                    </Group>
+                  )}
+                  {form.values.photos?.featured && (
+                    <Group justify="space-between">
+                      <Text size="sm" c="dimmed">Featured Photo:</Text>
+                      <Text size="sm" fw={500} style={{ maxWidth: '200px' }}>{form.values.photos.featured}</Text>
+                    </Group>
+                  )}
+                </Stack>
+              </Paper>
+            )}
+
+            {/* Flags and Verification */}
+            <Paper p="md" withBorder radius="sm" bg="gray.0">
+              <Text size="sm" fw={600} c="red.7" mb="xs">🏁 Flags & Verification</Text>
+              <Group>
+                <Group gap="xs">
+                  <Text size="sm" c="dimmed">Verified:</Text>
+                  <Text size="sm" fw={500}>
+                    {form.values.is_verified ? "✓ Yes" : "✗ No"}
+                  </Text>
+                </Group>
+                <Group gap="xs">
+                  <Text size="sm" c="dimmed">Disaster Hub:</Text>
+                  <Text size="sm" fw={500}>
+                    {form.values.is_disaster_hub ? "✓ Yes" : "✗ No"}
+                  </Text>
+                </Group>
+              </Group>
+            </Paper>
+
+            <Alert color="blue" variant="light" mt="md">
+              <Text size="sm">
+                <strong>Tip:</strong> After saving this POI, you can manage relationships with other POIs 
+                from the main POI list using the link icon (🔗) in the actions column.
+              </Text>
+            </Alert>
+            
+
+          </Stack>
+        </Paper>
+      )}
+
+      <Group justify="center" mt="xl">
+        <Button variant="default" onClick={prevStep} disabled={activeStep === 0}>Back</Button>
+        <Button onClick={nextStep} disabled={activeStep === 5}>Next</Button>
+        {activeStep === 5 && <Button onClick={form.onSubmit(handleSubmit)} disabled={Object.keys(form.errors).length > 0}>Submit</Button>}
+        {isEditing && (
+          <Button 
+            variant="outline" 
+            color="red" 
+            onClick={() => navigate('/')}
+          >
+            Cancel
           </Button>
-        </Group>
-      </form>
+        )}
+      </Group>
     </Paper>
   );
 }
