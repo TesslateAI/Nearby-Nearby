@@ -1,0 +1,20 @@
+# Example environment variables for Nearby-Nearby
+# Copy this file to .env and fill in your actual values
+
+# Database URL
+DATABASE_URL=postgresql://nearby:nearby@db/nearbynearby
+
+# AWS RDS Example: DATABASE_URL=postgresql://<username>:<password>@<rds-endpoint>:5432/<database>
+
+# Other environment variables
+POSTGRES_USER=<username>
+POSTGRES_PASSWORD=<password>
+POSTGRES_DB=<database>
+
+TEST_POSTGRES_USER=<testuser>
+TEST_POSTGRES_PASSWORD=<testpassword>
+TEST_POSTGRES_DB=<testdb>
+
+# For testing (if needed)
+TEST_DATABASE_URL=postgresql://<test-username>:<test-password>@<test-db-endpoint>:5432/<test-database>
+TESTING=True

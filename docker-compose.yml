@@ -5,11 +5,11 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data/
     environment:
-      - POSTGRES_USER=nearby
-      - POSTGRES_PASSWORD=nearby
-      - POSTGRES_DB=nearbynearby
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U nearby -d nearbynearby"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -20,7 +20,7 @@ services:
     volumes:
       - ./backend:/app
     environment:
-      - DATABASE_URL=postgresql://nearby:nearby@db/nearbynearby
+      - DATABASE_URL=${DATABASE_URL}
     depends_on:
       db:
         condition: service_healthy
@@ -41,11 +41,11 @@ services:
   test-db:
     image: postgis/postgis:15-3.4
     environment:
-      - POSTGRES_USER=testuser
-      - POSTGRES_PASSWORD=testpassword
-      - POSTGRES_DB=testdb
+      - POSTGRES_USER=${TEST_POSTGRES_USER}
+      - POSTGRES_PASSWORD=${TEST_POSTGRES_PASSWORD}
+      - POSTGRES_DB=${TEST_POSTGRES_DB}
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U testuser -d testdb"]
+      test: ["CMD-SHELL", "pg_isready -U ${TEST_POSTGRES_USER} -d ${TEST_POSTGRES_DB}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -57,8 +57,8 @@ services:
     volumes:
       - ./backend:/app
     environment:
-      - DATABASE_URL=postgresql://testuser:testpassword@test-db/testdb
-      - TESTING=True
+      - DATABASE_URL=${TEST_DATABASE_URL}
+      - TESTING=${TESTING}
     depends_on:
       test-db:
         condition: service_healthy
