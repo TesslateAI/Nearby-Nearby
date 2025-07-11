@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.endpoints import pois, categories, attributes, auth, relationships
+from app.api.endpoints import pois, categories, attributes, auth, relationships, search
 from app.database import engine, Base
 
 # This line can be used to create tables if not using Alembic,
@@ -31,6 +31,7 @@ app.include_router(categories.router, prefix="/api/categories", tags=["Categorie
 app.include_router(attributes.router, prefix="/api", tags=["Attributes"])
 app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
 app.include_router(relationships.router, prefix="/api", tags=["POI Relationships"])
+app.include_router(search.router, prefix="/api", tags=["Search"])
 
 @app.get("/")
 def read_root():
