@@ -193,7 +193,45 @@ def update_poi(db: Session, *, db_obj: models.PointOfInterest, obj_in: schemas.P
 
     # Update remaining fields
     for field, value in update_data.items():
-        setattr(db_obj, field, value)
+        # For relationship fields, ensure we assign model instances, not dicts
+        if field == "event" and db_obj.poi_type == "EVENT":
+            if isinstance(value, dict):
+                if db_obj.event:
+                    for k, v in value.items():
+                        setattr(db_obj.event, k, v)
+                else:
+                    db_obj.event = models.Event(**value)
+            else:
+                db_obj.event = value
+        elif field == "business" and db_obj.poi_type == "BUSINESS":
+            if isinstance(value, dict):
+                if db_obj.business:
+                    for k, v in value.items():
+                        setattr(db_obj.business, k, v)
+                else:
+                    db_obj.business = models.Business(**value)
+            else:
+                db_obj.business = value
+        elif field == "park" and db_obj.poi_type == "PARK":
+            if isinstance(value, dict):
+                if db_obj.park:
+                    for k, v in value.items():
+                        setattr(db_obj.park, k, v)
+                else:
+                    db_obj.park = models.Park(**value)
+            else:
+                db_obj.park = value
+        elif field == "trail" and db_obj.poi_type == "TRAIL":
+            if isinstance(value, dict):
+                if db_obj.trail:
+                    for k, v in value.items():
+                        setattr(db_obj.trail, k, v)
+                else:
+                    db_obj.trail = models.Trail(**value)
+            else:
+                db_obj.trail = value
+        else:
+            setattr(db_obj, field, value)
 
     try:
         db.add(db_obj)
