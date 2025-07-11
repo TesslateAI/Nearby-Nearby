@@ -1,0 +1,7 @@
+build:
+  docker:
+    web: ./backend
+    frontend: ./frontend
+run:
+  web: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+  frontend: npm start 
