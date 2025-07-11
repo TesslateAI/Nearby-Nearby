@@ -12,6 +12,14 @@ passlib[bcrypt]
 python-jose[cryptography]
 python-multipart
 
+# Natural Language Search Dependencies
+sentence-transformers
+chromadb
+redis
+numpy
+scikit-learn
+nltk
+
 # Test dependencies
 pytest
 httpx

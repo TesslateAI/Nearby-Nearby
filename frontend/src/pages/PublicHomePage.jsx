@@ -14,14 +14,49 @@ const categoryIcons = {
 
 const PoiCard = ({ poi }) => {
     const isEvent = poi.poi_type === 'event';
+    
+    // Handle different data structures (old vs new search API)
+    const categories = poi.categories || [];
+    const address = poi.address_city || poi.address_full || 'Location';
+    const status = poi.status || 'Unknown';
+    const relevanceScore = poi.relevance_score ? Math.round(poi.relevance_score * 100) : null;
+    const distance = poi.distance_km ? `${poi.distance_km.toFixed(1)} km` : null;
+    
     return (
         <Paper withBorder radius="md" p={0} component={Link} to={`/poi/detail/${poi.id}`} style={{ textDecoration: 'none' }}>
             <Image src={poi.featured_image_url || 'https://images.unsplash.com/photo-1555949963-ff9fe0c870eb?ixlib=rb-4.0.3&auto=format&fit=crop&w=1470&q=80'} height={160} />
             <Stack p="md" spacing="xs">
-                {poi.categories.length > 0 && <Group>{poi.categories.slice(0, 2).map(cat => <Badge key={cat.id} color="teal">{cat.name}</Badge>)}</Group>}
+                <Group justify="space-between">
+                    {categories.length > 0 && (
+                        <Group>
+                            {categories.slice(0, 2).map(cat => (
+                                <Badge key={cat.id || cat} color="teal" size="sm">
+                                    {cat.name || cat}
+                                </Badge>
+                            ))}
+                        </Group>
+                    )}
+                    {relevanceScore && (
+                        <Badge color="blue" variant="light" size="sm">
+                            {relevanceScore}% match
+                        </Badge>
+                    )}
+                </Group>
                 <Title order={4}>{poi.name}</Title>
-                <Group gap="xs"><IconMapPin size={14} /><Text size="sm">{poi.address_full || poi.address_city || 'Location'}</Text></Group>
-                <Badge color={poi.status === 'Fully Open' ? 'green' : 'orange'} variant="light" size="sm">{poi.status}</Badge>
+                <Group gap="xs">
+                    <IconMapPin size={14} />
+                    <Text size="sm">{address}</Text>
+                </Group>
+                <Group justify="space-between">
+                    <Badge color={status === 'ACTIVE' ? 'green' : 'orange'} variant="light" size="sm">
+                        {status}
+                    </Badge>
+                    {distance && (
+                        <Text size="xs" c="dimmed">
+                            {distance} away
+                        </Text>
+                    )}
+                </Group>
             </Stack>
         </Paper>
     );
@@ -76,18 +111,53 @@ const PublicHomePage = () => {
     }, []);
 
     const handleSearch = async ({ search }) => {
-        if (search.trim().length < 3) {
-            notifications.show({ title: 'Search too short', message: 'Please enter at least 3 characters to search.', color: 'yellow' });
+        if (search.trim().length < 2) {
+            notifications.show({ title: 'Search too short', message: 'Please enter at least 2 characters to search.', color: 'yellow' });
             return;
         }
         setLoading(true);
         try {
-            const response = await api.get(`/pois/search-by-location?q=${search}`);
+            // Use the new natural language search API
+            // For demo purposes, using a default location (Chatham County, NC)
+            const searchRequest = {
+                query: search,
+                user_location: [35.7796, -79.4194], // Chatham County, NC coordinates
+                radius_km: 50,
+                limit: 20
+            };
+            
+            const response = await api.post('/search', searchRequest);
             const data = await response.json();
-            setPois(data);
-            setSearchTitle(`Results near "${search}"`);
+            
+            if (data.results && data.results.length > 0) {
+                setPois(data.results);
+                setSearchTitle(`Found ${data.total_results} results for "${search}"`);
+                
+                // Show search insights if available
+                if (data.query_interpretation?.intent) {
+                    const intent = data.query_interpretation.intent;
+                    notifications.show({ 
+                        title: 'Search Insights', 
+                        message: `Detected intent: ${intent.intent} (confidence: ${Math.round(intent.confidence * 100)}%)`, 
+                        color: 'blue' 
+                    });
+                }
+            } else {
+                setPois([]);
+                setSearchTitle(`No results found for "${search}"`);
+                notifications.show({ 
+                    title: 'No Results', 
+                    message: 'Try different keywords or expand your search area.', 
+                    color: 'yellow' 
+                });
+            }
         } catch (error) {
-            notifications.show({ title: 'Search Error', message: 'Could not perform search.', color: 'red' });
+            console.error('Search error:', error);
+            notifications.show({ 
+                title: 'Search Error', 
+                message: 'Could not perform search. Please try again.', 
+                color: 'red' 
+            });
         } finally {
             setLoading(false);
         }
