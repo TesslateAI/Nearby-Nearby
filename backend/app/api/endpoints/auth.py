@@ -6,7 +6,8 @@ import uuid
 
 from app import crud, schemas
 from app.database import get_db
-from app.core.security import create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES, get_current_user
+from app.core.security import create_access_token, get_current_user
+from app.core.config import settings
 
 router = APIRouter()
 
@@ -22,14 +23,18 @@ def login_for_access_token(
             detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
         data={"sub": user.email}, expires_delta=access_token_expires
     )
     return {"access_token": access_token, "token_type": "bearer"}
 
 @router.post("/users/", response_model=schemas.User, status_code=201)
-def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
+def create_user(
+    user: schemas.UserCreate, 
+    db: Session = Depends(get_db),
+    current_user: str = Depends(get_current_user)
+):
     db_user = crud.get_user_by_email(db, email=user.email)
     if db_user:
         raise HTTPException(status_code=400, detail="Email already registered")
@@ -40,4 +45,4 @@ def read_users_me(current_user_email: str = Depends(get_current_user), db: Sessi
     user = crud.get_user_by_email(db, email=current_user_email)
     if user is None:
         raise HTTPException(status_code=404, detail="User not found")
-    return user 
+    return user

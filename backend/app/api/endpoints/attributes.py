@@ -5,12 +5,17 @@ import uuid
 
 from app import crud, schemas
 from app.database import get_db
+from app.core.security import get_current_user
 
 router = APIRouter()
 
 
 @router.post("/attributes/", response_model=schemas.Attribute, status_code=201)
-def create_attribute(attribute: schemas.AttributeCreate, db: Session = Depends(get_db)):
+def create_attribute(
+    attribute: schemas.AttributeCreate, 
+    db: Session = Depends(get_db),
+    current_user: str = Depends(get_current_user)
+):
     return crud.create_attribute(db=db, attribute=attribute)
 
 

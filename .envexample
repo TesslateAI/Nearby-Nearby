@@ -1,20 +1,79 @@
-# Example environment variables for Nearby-Nearby
+# Nearby-Nearby Environment Configuration
 # Copy this file to .env and fill in your actual values
 
-# Database URL
+#==============================================================================
+# 🚨 CRITICAL SECURITY SETTINGS - REQUIRED FOR ALL ENVIRONMENTS
+#==============================================================================
+
+# JWT Secret Key - NEVER use default value in production!
+# Generate with: openssl rand -hex 32
+SECRET_KEY=your_generated_secret_key_here_minimum_32_characters
+
+# Environment mode: development, staging, or production
+ENVIRONMENT=development
+
+# JWT token expiration time (in minutes)
+ACCESS_TOKEN_EXPIRE_MINUTES=30
+
+#==============================================================================
+# 📡 DATABASE CONFIGURATION
+#==============================================================================
+
+# Main application database URL
+# Format: postgresql://username:password@host:port/database
 DATABASE_URL=postgresql://nearby:nearby@db/nearbynearby
 
-# AWS RDS Example: DATABASE_URL=postgresql://<username>:<password>@<rds-endpoint>:5432/<database>
+# For AWS RDS or external database:
+# DATABASE_URL=postgresql://username:password@your-rds-endpoint:5432/database
 
-# Other environment variables
-POSTGRES_USER=<username>
-POSTGRES_PASSWORD=<password>
-POSTGRES_DB=<database>
+# Database credentials (used by Docker Compose)
+POSTGRES_USER=nearby
+POSTGRES_PASSWORD=nearby_secure_password_change_me
+POSTGRES_DB=nearbynearby
 
-TEST_POSTGRES_USER=<testuser>
-TEST_POSTGRES_PASSWORD=<testpassword>
-TEST_POSTGRES_DB=<testdb>
+#==============================================================================
+# 🧪 TEST DATABASE CONFIGURATION (Optional - for testing)
+#==============================================================================
 
-# For testing (if needed)
-TEST_DATABASE_URL=postgresql://<test-username>:<test-password>@<test-db-endpoint>:5432/<test-database>
-TESTING=True
+TEST_POSTGRES_USER=test_user
+TEST_POSTGRES_PASSWORD=test_password_change_me
+TEST_POSTGRES_DB=nearbynearby_test
+TEST_DATABASE_URL=postgresql://test_user:test_password@localhost:5433/nearbynearby_test
+TESTING=false
+
+#==============================================================================
+# 🌐 CORS AND NETWORKING CONFIGURATION
+#==============================================================================
+
+# Allowed frontend origins (comma-separated)
+# Development default includes common local development URLs
+ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000
+
+# Allowed hosts for the application (comma-separated, or "*" for any)
+# In production, specify exact domains for security
+ALLOWED_HOSTS=localhost,127.0.0.1
+
+# Production domain (without https://) - will be added to CORS automatically
+PRODUCTION_DOMAIN=yourdomain.com
+
+#==============================================================================
+# 🔧 PRODUCTION ENVIRONMENT EXAMPLE
+#==============================================================================
+# For production deployment, use these settings:
+#
+# SECRET_KEY=your_32_character_secret_generated_with_openssl_rand
+# ENVIRONMENT=production
+# DATABASE_URL=postgresql://username:password@your-production-db:5432/database
+# ALLOWED_ORIGINS=https://yourdomain.com
+# ALLOWED_HOSTS=yourdomain.com
+# PRODUCTION_DOMAIN=yourdomain.com
+# POSTGRES_PASSWORD=very_secure_production_password
+
+#==============================================================================
+# 📝 USAGE NOTES
+#==============================================================================
+# 1. Copy this file to .env: cp .envexample .env
+# 2. Fill in your actual values (especially SECRET_KEY and passwords)
+# 3. NEVER commit .env files to version control
+# 4. Use different values for development, staging, and production
+# 5. Generate SECRET_KEY with: openssl rand -hex 32
