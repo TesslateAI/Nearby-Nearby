@@ -1,4 +1,4 @@
-import { useAuth } from './AuthContext';
+import { secureTokenStorage } from './secureStorage';
 
 // Base API URL - using proxy configuration for Docker internal networking
 const API_BASE_URL = '/api';
@@ -6,7 +6,7 @@ const API_BASE_URL = '/api';
 export const api = {
   // Helper function to get auth headers
   getAuthHeaders: () => {
-    const token = localStorage.getItem('authToken');
+    const token = secureTokenStorage.getToken();
     return {
       'Content-Type': 'application/json',
       ...(token && { 'Authorization': `Bearer ${token}` }),
@@ -26,8 +26,7 @@ export const api = {
     
     if (response.status === 401) {
       // Token expired or invalid, redirect to login
-      localStorage.removeItem('authToken');
-      localStorage.removeItem('userEmail');
+      secureTokenStorage.clearToken();
       window.location.href = '/login';
       return;
     }

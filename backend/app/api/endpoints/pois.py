@@ -6,11 +6,16 @@ import uuid
 # The __init__.py files now allow these cleaner imports
 from app import crud, schemas
 from app.database import get_db
+from app.core.security import get_current_user
 
 router = APIRouter()
 
 @router.post("/pois/", response_model=schemas.PointOfInterest, status_code=201)
-def create_poi(poi: schemas.PointOfInterestCreate, db: Session = Depends(get_db)):
+def create_poi(
+    poi: schemas.PointOfInterestCreate, 
+    db: Session = Depends(get_db),
+    current_user: str = Depends(get_current_user)
+):
     if poi.poi_type == 'BUSINESS' and not poi.business:
         raise HTTPException(status_code=400, detail="Business data required for poi_type 'BUSINESS'")
     if poi.poi_type == 'PARK' and not poi.park:
@@ -64,7 +69,12 @@ def get_nearby_pois_endpoint(
 
 
 @router.put("/pois/{poi_id}", response_model=schemas.PointOfInterest)
-def update_poi(poi_id: uuid.UUID, poi_in: schemas.PointOfInterestUpdate, db: Session = Depends(get_db)):
+def update_poi(
+    poi_id: uuid.UUID, 
+    poi_in: schemas.PointOfInterestUpdate, 
+    db: Session = Depends(get_db),
+    current_user: str = Depends(get_current_user)
+):
     db_poi = crud.get_poi(db, poi_id=poi_id)
     if not db_poi:
         raise HTTPException(status_code=404, detail="Point of Interest not found")
@@ -74,7 +84,11 @@ def update_poi(poi_id: uuid.UUID, poi_in: schemas.PointOfInterestUpdate, db: Ses
 
 
 @router.delete("/pois/{poi_id}", response_model=schemas.PointOfInterest)
-def delete_poi(poi_id: uuid.UUID, db: Session = Depends(get_db)):
+def delete_poi(
+    poi_id: uuid.UUID, 
+    db: Session = Depends(get_db),
+    current_user: str = Depends(get_current_user)
+):
     db_poi = crud.delete_poi(db, poi_id=poi_id)
     if db_poi is None:
         raise HTTPException(status_code=404, detail="Point of Interest not found")
