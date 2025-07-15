@@ -56,6 +56,10 @@ ALLOWED_HOSTS=localhost,127.0.0.1
 # Production domain (without https://) - will be added to CORS automatically
 PRODUCTION_DOMAIN=yourdomain.com
 
+# Frontend API Base URL (for production deployment)
+# Leave empty for development (uses proxy), set to backend URL for production
+VITE_API_BASE_URL=
+
 #==============================================================================
 # 🔧 PRODUCTION ENVIRONMENT EXAMPLE
 #==============================================================================
@@ -67,6 +71,7 @@ PRODUCTION_DOMAIN=yourdomain.com
 # ALLOWED_ORIGINS=https://yourdomain.com
 # ALLOWED_HOSTS=yourdomain.com
 # PRODUCTION_DOMAIN=yourdomain.com
+# VITE_API_BASE_URL=http://your-ec2-ip:8000/api
 # POSTGRES_PASSWORD=very_secure_production_password
 
 #==============================================================================

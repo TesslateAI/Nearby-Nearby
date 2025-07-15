@@ -1,10 +1,28 @@
-version: '3.8'
-
 services:
+  # NOTE: In production, you should use an external managed database (AWS RDS, etc.)
+  # Uncomment the db service below only if you want to run database in Docker for production
+  #
+  # db:
+  #   image: postgis/postgis:15-3.4
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data/
+  #   environment:
+  #     - POSTGRES_USER=${POSTGRES_USER}
+  #     - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+  #     - POSTGRES_DB=${POSTGRES_DB}
+  #   env_file:
+  #     - .env
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+  #   restart: unless-stopped
+
   backend:
     build: 
       context: ./backend
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.prod
     command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"
     ports:
       - "8000:8000"
@@ -29,16 +47,14 @@ services:
   frontend:
     build:
       context: ./frontend
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.prod
+      args:
+        - VITE_API_BASE_URL=${VITE_API_BASE_URL}
     ports:
       - "5173:5173"
     depends_on:
-      backend:
-        condition: service_healthy
+      - backend
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5173/"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
+
+volumes:
+  postgres_data:

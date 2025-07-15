@@ -11,8 +11,6 @@ import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from 'react-lea
 import { CategorySelector } from './CategorySelector';
 import DynamicAttributeForm from './DynamicAttributeForm';
 
-const API_URL = import.meta.env.VITE_API_BASE_URL;
-
 // --- Map Component Logic ---
 function ChangeView({ center, zoom }) {
   const map = useMap();

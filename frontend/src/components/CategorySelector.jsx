@@ -4,8 +4,6 @@ import { IconSearch, IconChevronRight } from '@tabler/icons-react';
 import api from '../utils/api';
 import { notifications } from '@mantine/notifications';
 
-const API_URL = import.meta.env.VITE_API_BASE_URL;
-
 // This is a recursive component to render categories and their children
 function CategoryTree({ categories, selected, onToggle, searchTerm, parentIsOpened = false }) {
   const [opened, setOpened] = useState({});

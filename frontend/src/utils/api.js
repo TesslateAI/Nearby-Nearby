@@ -1,24 +1,40 @@
 import { secureTokenStorage } from './secureStorage';
 
-// Base API URL - using proxy configuration for Docker internal networking
-const API_BASE_URL = '/api';
+// Base API URL - using environment variable or proxy configuration
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
 export const api = {
   // Helper function to get auth headers
-  getAuthHeaders: () => {
+  getAuthHeaders: (contentType = 'application/json') => {
     const token = secureTokenStorage.getToken();
-    return {
-      'Content-Type': 'application/json',
+    const headers = {
       ...(token && { 'Authorization': `Bearer ${token}` }),
     };
+    
+    // Only add Content-Type if it's not FormData (browser will set it automatically)
+    if (contentType) {
+      headers['Content-Type'] = contentType;
+    }
+    
+    return headers;
   },
 
   // Generic request function
   request: async (endpoint, options = {}) => {
     // Real API call
     const url = `${API_BASE_URL}${endpoint}`;
+    
+    // Handle different content types
+    const isFormData = options.body instanceof FormData;
+    const headers = isFormData 
+      ? api.getAuthHeaders(null) // Don't set Content-Type for FormData
+      : api.getAuthHeaders();
+    
     const config = {
-      headers: api.getAuthHeaders(),
+      headers: {
+        ...headers,
+        ...options.headers, // Allow overriding headers
+      },
       ...options,
     };
 

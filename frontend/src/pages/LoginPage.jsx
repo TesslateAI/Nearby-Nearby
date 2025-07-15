@@ -37,7 +37,7 @@ function LoginPage() {
       formData.append('username', email);
       formData.append('password', password);
 
-      const response = await fetch('/api/auth/login', {
+      const response = await api.request('/auth/login', {
         method: 'POST',
         body: formData,
       });

@@ -5,8 +5,6 @@ import { TextInput, Button, Group, Box, Title, Select, Paper } from '@mantine/co
 import api from '../utils/api';
 import { notifications } from '@mantine/notifications';
 
-const API_URL = import.meta.env.VITE_API_BASE_URL;
-
 function CategoryForm() {
   const { id } = useParams();
   const navigate = useNavigate();
