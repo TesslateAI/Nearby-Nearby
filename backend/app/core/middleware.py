@@ -32,9 +32,11 @@ def add_security_middleware(app):
     # Add security headers
     app.add_middleware(SecurityHeadersMiddleware)
     
-    # Force HTTPS in production
-    if settings.is_production:
-        app.add_middleware(HTTPSRedirectMiddleware)
+    # Skip HTTPS redirect for IP-based deployments
+    # Force HTTPS in production ONLY if using a proper domain (not IP)
+    # Commented out for IP-based deployment:
+    # if settings.is_production:
+    #     app.add_middleware(HTTPSRedirectMiddleware)
     
     # Trusted hosts - only in production or when specifically configured
     allowed_hosts = settings.allowed_hosts_list
