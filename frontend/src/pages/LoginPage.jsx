@@ -36,6 +36,7 @@ function LoginPage() {
       const formData = new FormData();
       formData.append('username', email);
       formData.append('password', password);
+      formData.append('grant_type', 'password'); // Required by OAuth2PasswordRequestForm
 
       const response = await api.request('/auth/login', {
         method: 'POST',
