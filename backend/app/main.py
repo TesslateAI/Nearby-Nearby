@@ -24,7 +24,13 @@ allowed_origins = settings.allowed_origins_list.copy()
 
 # Add production domain if specified
 if settings.PRODUCTION_DOMAIN:
+    # Support both HTTP and HTTPS for production domain
+    allowed_origins.append(f"http://{settings.PRODUCTION_DOMAIN}")
     allowed_origins.append(f"https://{settings.PRODUCTION_DOMAIN}")
+    
+    # Also add with common ports
+    allowed_origins.append(f"http://{settings.PRODUCTION_DOMAIN}:5173")
+    allowed_origins.append(f"https://{settings.PRODUCTION_DOMAIN}:5173")
 
 app.add_middleware(
     CORSMiddleware,
