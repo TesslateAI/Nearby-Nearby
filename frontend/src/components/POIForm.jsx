@@ -55,6 +55,33 @@ const emptyInitialValues = {
   contact_info: {},
   compliance: {},
   custom_fields: {},
+  // New corporate compliance and emergency fields
+  corporate_compliance: {
+    has_compliance_requirements: false,
+    compliance_description: '',
+    disable_comments: false,
+    comments_restriction_reason: '',
+    social_media_restrictions: [],
+    other_social_media: '',
+    pre_approval_required: false,
+    approval_lead_time: '',
+    approval_contact_name: '',
+    approval_contact_email: '',
+    approval_contact_phone: '',
+    has_branding_requirements: false,
+    branding_description: ''
+  },
+  main_emergency_contact: {
+    name: '',
+    email: '',
+    phone: ''
+  },
+  public_toilets: {
+    available: false,
+    types: [],
+    locations: [],
+    description: ''
+  },
   // Categories
   category_ids: [],
   // Business specific
@@ -119,8 +146,8 @@ function POIForm() {
         }
       }
 
-      // Final validation (step 5) - check all required fields
-      if (activeStep === 5) {
+      // Final validation (step 6) - check all required fields
+      if (activeStep === 6) {
         if (!values.name.trim()) {
           errors.name = 'Name is required';
         } else if (values.name.trim().length < 2) {
@@ -144,7 +171,7 @@ function POIForm() {
   const nextStep = () => {
     if (!form.validate().hasErrors) {
       setCompletedSteps(activeStep);
-      setActiveStep((current) => Math.min(5, current + 1));
+      setActiveStep((current) => Math.min(6, current + 1));
     }
   };
   const prevStep = () => setActiveStep((current) => Math.max(0, current - 1));
@@ -180,6 +207,23 @@ function POIForm() {
             contact_info: poi.contact_info || {},
             compliance: poi.compliance || {},
             custom_fields: poi.custom_fields || {},
+            corporate_compliance: poi.corporate_compliance || {
+              has_compliance_requirements: false,
+              compliance_description: '',
+              disable_comments: false,
+              comments_restriction_reason: '',
+              social_media_restrictions: [],
+              other_social_media: '',
+              pre_approval_required: false,
+              approval_lead_time: '',
+              approval_contact_name: '',
+              approval_contact_email: '',
+              approval_contact_phone: '',
+              has_branding_requirements: false,
+              branding_description: ''
+            },
+            main_emergency_contact: poi.main_emergency_contact || { name: '', email: '', phone: '' },
+            public_toilets: poi.public_toilets || { available: false, types: [], locations: [], description: '' },
             category_ids: poi.categories?.map(c => c.id) || [],
           });
 
@@ -312,6 +356,9 @@ function POIForm() {
       contact_info: cleanValues.contact_info,
       compliance: cleanValues.compliance,
       custom_fields: cleanValues.custom_fields,
+      corporate_compliance: cleanValues.corporate_compliance,
+      main_emergency_contact: cleanValues.main_emergency_contact,
+      public_toilets: cleanValues.public_toilets,
       category_ids: cleanValues.category_ids,
       location: {
         type: "Point",
@@ -521,10 +568,259 @@ function POIForm() {
           </Stack>
         </Stepper.Step>
 
+        <Stepper.Step label="Compliance" description="Corporate & safety">
+          <Stack mt="xl" p="md">
+            
+            <Divider my="md" label="Corporate Compliance (For ALL POIs)" />
+            
+            <Checkbox
+              label="Do you have any corporate compliance requirements we should be aware of? (e.g., required disclaimers, phrasing, or placement restrictions)"
+              {...form.getInputProps('corporate_compliance.has_compliance_requirements', { type: 'checkbox' })}
+            />
+            
+            {form.values.corporate_compliance?.has_compliance_requirements && (
+              <Textarea
+                label="Please describe your compliance requirements"
+                placeholder="Describe any required disclaimers, phrasing, or placement restrictions"
+                {...form.getInputProps('corporate_compliance.compliance_description')}
+                minRows={3}
+              />
+            )}
+
+            <Divider my="md" label="Comments & Community Tips" />
+            
+            <Radio.Group
+              label="Are there any restrictions on public comments or community tips being shown on your listing?"
+              value={form.values.corporate_compliance?.disable_comments ? 'true' : 'false'}
+              onChange={(value) => form.setFieldValue('corporate_compliance.disable_comments', value === 'true')}
+            >
+              <Group mt="xs">
+                <Radio value="false" label="No" />
+                <Radio value="true" label="Yes" />
+              </Group>
+            </Radio.Group>
+
+            {form.values.corporate_compliance?.disable_comments && (
+              <Textarea
+                label="If yes, please explain. Would disabling the comments section on your listing satisfy requirements?"
+                placeholder="Please explain your comment restrictions and if disabling comments would satisfy your requirements"
+                {...form.getInputProps('corporate_compliance.comments_restriction_reason')}
+                minRows={3}
+              />
+            )}
+
+            <Divider my="md" label="Social Media Restrictions" />
+            
+            <Checkbox.Group
+              label="Are there any social media platforms where your event cannot be mentioned or tagged?"
+              {...form.getInputProps('corporate_compliance.social_media_restrictions')}
+            >
+              <Stack mt="xs">
+                <Checkbox value="facebook" label="Facebook" />
+                <Checkbox value="instagram" label="Instagram" />
+                <Checkbox value="x_twitter" label="X (formally Twitter)" />
+                <Checkbox value="tiktok" label="TikTok" />
+                <Checkbox value="linkedin" label="LinkedIn" />
+              </Stack>
+            </Checkbox.Group>
+
+            <TextInput
+              label="Other social media restrictions"
+              placeholder="Please specify any other social media platforms or restrictions"
+              {...form.getInputProps('corporate_compliance.other_social_media')}
+            />
+
+            <Divider my="md" label="Pre-approval Requirements" />
+            
+            <Radio.Group
+              label="Do you require pre-approval before we feature or promote your location in any posts, newsletters, or other materials?"
+              value={form.values.corporate_compliance?.pre_approval_required ? 'true' : 'false'}
+              onChange={(value) => form.setFieldValue('corporate_compliance.pre_approval_required', value === 'true')}
+            >
+              <Group mt="xs">
+                <Radio value="false" label="No" />
+                <Radio value="true" label="Yes" />
+              </Group>
+            </Radio.Group>
+
+            {form.values.corporate_compliance?.pre_approval_required && (
+              <Stack>
+                <TextInput
+                  label="How long of a lead time do you need?"
+                  placeholder="e.g., 5 business days, 1 week"
+                  {...form.getInputProps('corporate_compliance.approval_lead_time')}
+                />
+                <SimpleGrid cols={1}>
+                  <TextInput
+                    label="Contact Name for Approval Submissions"
+                    placeholder="Name of person to contact"
+                    {...form.getInputProps('corporate_compliance.approval_contact_name')}
+                  />
+                </SimpleGrid>
+                <SimpleGrid cols={2}>
+                  <TextInput
+                    label="Contact Email"
+                    type="email"
+                    placeholder="email@example.com"
+                    {...form.getInputProps('corporate_compliance.approval_contact_email')}
+                  />
+                  <TextInput
+                    label="Contact Phone"
+                    placeholder="Phone number"
+                    {...form.getInputProps('corporate_compliance.approval_contact_phone')}
+                  />
+                </SimpleGrid>
+              </Stack>
+            )}
+
+            <Divider my="md" label="Branding Requirements" />
+            
+            <Radio.Group
+              label="Is there any language or branding you are required to use (or avoid) when referring to your location?"
+              value={form.values.corporate_compliance?.has_branding_requirements ? 'true' : 'false'}
+              onChange={(value) => form.setFieldValue('corporate_compliance.has_branding_requirements', value === 'true')}
+            >
+              <Group mt="xs">
+                <Radio value="false" label="No" />
+                <Radio value="true" label="Yes" />
+              </Group>
+            </Radio.Group>
+
+            {form.values.corporate_compliance?.has_branding_requirements && (
+              <Textarea
+                label="Please describe or attach brand guidelines"
+                placeholder="Describe required language, branding, or provide link to brand guidelines"
+                {...form.getInputProps('corporate_compliance.branding_description')}
+                minRows={3}
+              />
+            )}
+
+            <Divider my="md" label="Main and Emergency Contacts (All POIs)" />
+            <Text size="sm" c="dimmed" mb="md">
+              We need contact info that's not public for best contact when it comes to problems and for us to reach out to someone
+            </Text>
+            
+            <SimpleGrid cols={1}>
+              <TextInput
+                label="Contact Name"
+                placeholder="Main contact person name"
+                {...form.getInputProps('main_emergency_contact.name')}
+              />
+            </SimpleGrid>
+            <SimpleGrid cols={2}>
+              <TextInput
+                label="Contact Email"
+                type="email"
+                placeholder="contact@example.com"
+                {...form.getInputProps('main_emergency_contact.email')}
+              />
+              <TextInput
+                label="Contact Phone"
+                placeholder="Phone number"
+                {...form.getInputProps('main_emergency_contact.phone')}
+              />
+            </SimpleGrid>
+
+            <Divider my="md" label="Public Toilets (All POIs)" />
+            
+            <Radio.Group
+              label="Public Toilets Available?"
+              value={form.values.public_toilets?.available ? 'true' : 'false'}
+              onChange={(value) => form.setFieldValue('public_toilets.available', value === 'true')}
+            >
+              <Group mt="xs">
+                <Radio value="false" label="No" />
+                <Radio value="true" label="Yes" />
+              </Group>
+            </Radio.Group>
+
+            {form.values.public_toilets?.available && (
+              <Stack>
+                <Checkbox.Group
+                  label="Toilet Types (check all that apply)"
+                  {...form.getInputProps('public_toilets.types')}
+                >
+                  <Stack mt="xs">
+                    <Checkbox value="family" label="Family" />
+                    <Checkbox value="baby_changing" label="Baby Changing Station" />
+                    <Checkbox value="wheelchair_accessible" label="Wheelchair/Handicap Accessible" />
+                    <Checkbox value="porta_potti" label="Porta Potti" />
+                    <Checkbox value="porta_potti_only" label="Porta Potti Only" />
+                  </Stack>
+                </Checkbox.Group>
+
+                <Textarea
+                  label="Toilet Description"
+                  placeholder="Please provide a brief description where visitors can find the public toilets"
+                  {...form.getInputProps('public_toilets.description')}
+                  minRows={2}
+                />
+
+                <Text size="sm" fw={500} mt="md">Toilet Locations (Lat & Long)</Text>
+                <Text size="xs" c="dimmed" mb="xs">You can add multiple toilet locations if needed</Text>
+                
+                {form.values.public_toilets?.locations?.map((location, index) => (
+                  <Paper key={index} p="sm" withBorder>
+                    <Group justify="space-between" mb="xs">
+                      <Text size="sm" fw={500}>Location {index + 1}</Text>
+                      <Button
+                        size="xs"
+                        variant="outline"
+                        color="red"
+                        onClick={() => {
+                          const newLocations = [...(form.values.public_toilets?.locations || [])];
+                          newLocations.splice(index, 1);
+                          form.setFieldValue('public_toilets.locations', newLocations);
+                        }}
+                      >
+                        Remove
+                      </Button>
+                    </Group>
+                    <SimpleGrid cols={2}>
+                      <TextInput
+                        label="Latitude"
+                        type="number"
+                        step="any"
+                        value={location.latitude || ''}
+                        onChange={(e) => {
+                          const newLocations = [...(form.values.public_toilets?.locations || [])];
+                          newLocations[index] = { ...newLocations[index], latitude: parseFloat(e.target.value) };
+                          form.setFieldValue('public_toilets.locations', newLocations);
+                        }}
+                      />
+                      <TextInput
+                        label="Longitude"
+                        type="number"
+                        step="any"
+                        value={location.longitude || ''}
+                        onChange={(e) => {
+                          const newLocations = [...(form.values.public_toilets?.locations || [])];
+                          newLocations[index] = { ...newLocations[index], longitude: parseFloat(e.target.value) };
+                          form.setFieldValue('public_toilets.locations', newLocations);
+                        }}
+                      />
+                    </SimpleGrid>
+                  </Paper>
+                ))}
+
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    const newLocations = [...(form.values.public_toilets?.locations || []), { latitude: 0, longitude: 0 }];
+                    form.setFieldValue('public_toilets.locations', newLocations);
+                  }}
+                >
+                  Add Toilet Location
+                </Button>
+              </Stack>
+            )}
+
+          </Stack>
+        </Stepper.Step>
 
       </Stepper>
 
-      {activeStep === 5 && (
+      {activeStep === 6 && (
         <Paper p="xl" withBorder mt="xl" radius="md">
           <Stack spacing="lg">
             <Group>
@@ -719,6 +1015,49 @@ function POIForm() {
               </Paper>
             )}
 
+            {/* Compliance and Emergency Information */}
+            <Paper p="md" withBorder radius="sm">
+              <Text size="sm" fw={600} c="violet.7" mb="xs">📋 Compliance & Emergency Info</Text>
+              <Stack spacing="xs">
+                <Group justify="space-between">
+                  <Text size="sm" c="dimmed">Compliance Requirements:</Text>
+                  <Text size="sm" fw={500}>
+                    {form.values.corporate_compliance?.has_compliance_requirements ? "✓ Yes" : "✗ No"}
+                  </Text>
+                </Group>
+                <Group justify="space-between">
+                  <Text size="sm" c="dimmed">Comments Restricted:</Text>
+                  <Text size="sm" fw={500}>
+                    {form.values.corporate_compliance?.disable_comments ? "✓ Yes" : "✗ No"}
+                  </Text>
+                </Group>
+                <Group justify="space-between">
+                  <Text size="sm" c="dimmed">Pre-approval Required:</Text>
+                  <Text size="sm" fw={500}>
+                    {form.values.corporate_compliance?.pre_approval_required ? "✓ Yes" : "✗ No"}
+                  </Text>
+                </Group>
+                {form.values.main_emergency_contact?.name && (
+                  <Group justify="space-between">
+                    <Text size="sm" c="dimmed">Emergency Contact:</Text>
+                    <Text size="sm" fw={500}>{form.values.main_emergency_contact.name}</Text>
+                  </Group>
+                )}
+                <Group justify="space-between">
+                  <Text size="sm" c="dimmed">Public Toilets:</Text>
+                  <Text size="sm" fw={500}>
+                    {form.values.public_toilets?.available ? "✓ Available" : "✗ Not Available"}
+                  </Text>
+                </Group>
+                {form.values.corporate_compliance?.social_media_restrictions?.length > 0 && (
+                  <Group justify="space-between">
+                    <Text size="sm" c="dimmed">Social Media Restrictions:</Text>
+                    <Text size="sm" fw={500}>{form.values.corporate_compliance.social_media_restrictions.length} platforms</Text>
+                  </Group>
+                )}
+              </Stack>
+            </Paper>
+
             {/* Flags and Verification */}
             <Paper p="md" withBorder radius="sm" bg="gray.0">
               <Text size="sm" fw={600} c="red.7" mb="xs">🏁 Flags & Verification</Text>
@@ -752,8 +1091,8 @@ function POIForm() {
 
       <Group justify="center" mt="xl">
         <Button variant="default" onClick={prevStep} disabled={activeStep === 0}>Back</Button>
-        <Button onClick={nextStep} disabled={activeStep === 5}>Next</Button>
-        {activeStep === 5 && <Button onClick={form.onSubmit(handleSubmit)} disabled={Object.keys(form.errors).length > 0}>Submit</Button>}
+        <Button onClick={nextStep} disabled={activeStep === 6}>Next</Button>
+        {activeStep === 6 && <Button onClick={form.onSubmit(handleSubmit)} disabled={Object.keys(form.errors).length > 0}>Submit</Button>}
         {isEditing && (
           <Button 
             variant="outline" 

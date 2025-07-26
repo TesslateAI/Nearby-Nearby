@@ -122,6 +122,11 @@ class PointOfInterestBase(BaseModel):
     contact_info: Optional[Dict[str, Any]] = None
     compliance: Optional[Dict[str, Any]] = None
     custom_fields: Optional[Dict[str, Any]] = None
+    
+    # New corporate compliance and emergency fields
+    corporate_compliance: Optional[Dict[str, Any]] = None
+    main_emergency_contact: Optional[Dict[str, Any]] = None
+    public_toilets: Optional[Dict[str, Any]] = None
 
 class PointOfInterestCreate(PointOfInterestBase):
     location: PointGeometry
@@ -169,6 +174,9 @@ class PointOfInterestUpdate(BaseModel):
     contact_info: Optional[Dict[str, Any]] = None
     compliance: Optional[Dict[str, Any]] = None
     custom_fields: Optional[Dict[str, Any]] = None
+    corporate_compliance: Optional[Dict[str, Any]] = None
+    main_emergency_contact: Optional[Dict[str, Any]] = None
+    public_toilets: Optional[Dict[str, Any]] = None
     
     location: Optional[PointGeometry] = None
     business: Optional[BusinessCreate] = None

@@ -57,6 +57,13 @@ class PointOfInterest(Base):
     compliance = Column(JSONB)  # {"pre_approval_required": true, "lead_time": "5 days"}
     custom_fields = Column(JSONB)  # {"Parking Tip": "Back lot is free after 5 PM."}
     
+    # Corporate compliance and emergency contacts (admin only fields)
+    corporate_compliance = Column(JSONB)  # {compliance requirements, social media restrictions, branding guidelines}
+    main_emergency_contact = Column(JSONB)  # {"name": "", "email": "", "phone": ""} - admin only
+    offsite_emergency_contact = Column(JSONB)  # admin only for disaster response
+    emergency_protocols = Column(JSONB)  # admin only for disaster response
+    public_toilets = Column(JSONB)  # {"available": true/false, "types": [], "locations": [], "description": ""}
+    
     # Timestamps
     created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
     last_updated = Column(TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now())
