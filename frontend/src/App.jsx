@@ -2,17 +2,13 @@ import { AppShell, Burger, Group, Title, NavLink, Button, Text } from '@mantine/
 import { useDisclosure } from '@mantine/hooks';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
 import { IconRocket, IconSettings, IconLogout } from '@tabler/icons-react';
-import POIList from './components/POIList';
-import POIForm from './components/POIForm';
-import POIMap from './components/POIMap';
-import CategoryList from './components/CategoryList'; 
-import CategoryForm from './components/CategoryForm';
-import AttributeManager from './components/AttributeManager';
-import PublicHomePage from './pages/PublicHomePage';
-import PoiDetailPage from './pages/PoiDetailPage';
-import LoginPage from './pages/LoginPage';
-import ProtectedRoute from './components/ProtectedRoute';
-import { useAuth } from './utils/AuthContext';
+import { 
+  POIList, POIForm, 
+  CategoryList, CategoryForm, AttributeManager,
+  LoginPage, ProtectedRoute, useAuth
+} from './components';
+import { POIMap } from './components';
+import { PublicHomePage, PoiDetailPage } from './pages';
 
 function App() {
   const [opened, { toggle }] = useDisclosure();

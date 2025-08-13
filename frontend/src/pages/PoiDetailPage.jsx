@@ -2,11 +2,11 @@ import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Container, Title, Text, SimpleGrid, Paper, Group, Badge, Button, Image, Stack, Center, Accordion, Grid, Box, ActionIcon, Tooltip, Card, Skeleton, ThemeIcon, Divider } from '@mantine/core';
 import { IconShare, IconHeart, IconMapPin, IconPhone, IconMail, IconWorldWww, IconCheck, IconArrowRight, IconCurrentLocation, IconClock, IconCar, IconInfoCircle, IconCamera, IconMap, IconBuilding, IconTree, IconRoute, IconCalendar, IconLink } from '@tabler/icons-react';
-import api from '../utils/api';
+import api from '../services/api';
 import L from 'leaflet';
 import { MapContainer, TileLayer, Marker, Popup, Tooltip as LeafletTooltip } from 'react-leaflet';
 import { createCustomIcon, getPoiColor, legendData, createTooltipText, getIconSymbol } from '../utils/mapUtils';
-import RelationshipManager from '../components/RelationshipManager';
+import RelationshipManager from '../features/relationships/RelationshipManager';
 
 // Helper function to format distance
 const formatDistance = (meters) => {

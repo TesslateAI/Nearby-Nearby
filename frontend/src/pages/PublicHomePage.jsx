@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Container, Title, Text, SimpleGrid, Paper, Group, Badge, Button, Image, Stack, Center, TextInput, Box, Card, Skeleton } from '@mantine/core';
 import { IconArrowRight, IconMapPin, IconSearch, IconToolsKitchen2, IconTrees, IconDog, IconMask, IconBuildingCircus, IconHome2 } from '@tabler/icons-react';
 import { useForm } from '@mantine/form';
-import api from '../utils/api';
+import api from '../services/api';
 import { notifications } from '@mantine/notifications';
 import { Link } from 'react-router-dom';
 

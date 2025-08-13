@@ -4,14 +4,14 @@ import App from './App.jsx';
 import { MantineProvider, createTheme } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import { BrowserRouter } from 'react-router-dom';
-import { AuthProvider } from './utils/AuthContext';
+import { AuthProvider } from './components';
 
 // Import CSS files
 import 'leaflet/dist/leaflet.css';
 import '@mantine/core/styles.css';
 import '@mantine/dates/styles.css';
 import '@mantine/notifications/styles.css';
-import './animations.css'; // Import our new animations
+import './styles/animations.css'; // Import our new animations
 
 // Define the theme based on the "Nearby Nearby" site
 const theme = createTheme({
