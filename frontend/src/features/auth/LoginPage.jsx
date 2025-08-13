@@ -7,7 +7,6 @@ import {
   Title, 
   Text, 
   Container, 
-  Group, 
   Stack,
   Alert,
   Loader
@@ -16,7 +15,7 @@ import { IconAlertCircle, IconLock, IconUser } from '@tabler/icons-react';
 import { useNavigate } from 'react-router-dom';
 import { notifications } from '@mantine/notifications';
 import { useAuth } from './AuthContext';
-import api from '../../services/api';
+import { api } from '../../services';
 
 function LoginPage() {
   const [email, setEmail] = useState('');

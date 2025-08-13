@@ -1,9 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Checkbox, Stack, Text, Divider, Group, Badge, LoadingOverlay } from '@mantine/core';
-import api from '../../services/api';
+import { api } from '../../services';
 
 function DynamicAttributeForm({ poiType, value = {}, onChange }) {
-  const [attributes, setAttributes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [groupedAttributes, setGroupedAttributes] = useState({});
 
@@ -11,15 +10,14 @@ function DynamicAttributeForm({ poiType, value = {}, onChange }) {
     if (poiType) {
       fetchAttributes();
     }
-  }, [poiType]);
+  }, [poiType, fetchAttributes]);
 
-  const fetchAttributes = async () => {
+  const fetchAttributes = useCallback(async () => {
     try {
       setLoading(true);
       const response = await api.get(`/attributes/for-poi-type/${poiType}`);
       const data = await response.json();
       const activeAttributes = data.filter(attr => attr.is_active);
-      setAttributes(activeAttributes);
       
       // Group attributes by type
       const grouped = activeAttributes.reduce((acc, attr) => {
@@ -36,25 +34,8 @@ function DynamicAttributeForm({ poiType, value = {}, onChange }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [poiType]);
 
-  const handleAttributeChange = (attributeType, attributeName, checked) => {
-    const newValue = { ...value };
-    
-    if (!newValue[attributeType]) {
-      newValue[attributeType] = [];
-    }
-    
-    if (checked) {
-      if (!newValue[attributeType].includes(attributeName)) {
-        newValue[attributeType] = [...newValue[attributeType], attributeName];
-      }
-    } else {
-      newValue[attributeType] = newValue[attributeType].filter(name => name !== attributeName);
-    }
-    
-    onChange(newValue);
-  };
 
   const formatAttributeType = (type) => {
     return type.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase());

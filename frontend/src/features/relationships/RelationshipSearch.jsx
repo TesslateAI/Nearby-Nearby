@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { 
   Paper, Text, Group, Stack, Badge, Button, TextInput, Select, Divider 
 } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { IconSearch } from '@tabler/icons-react';
-import api from '../../services/api';
+import { api } from '../../services';
 import { 
   RELATIONSHIP_TYPES, 
   isValidRelationship, 
@@ -25,7 +25,7 @@ function RelationshipSearch({
   const [selectedTargetPoi, setSelectedTargetPoi] = useState(null);
 
   // Search for POIs to relate to
-  const searchPois = async (query) => {
+  const searchPois = useCallback(async (query) => {
     if (!query.trim()) {
       setSearchResults([]);
       return;
@@ -53,7 +53,7 @@ function RelationshipSearch({
     } finally {
       setSearchLoading(false);
     }
-  };
+  }, [poiId, isPoiRelated]);
 
   // Add a new relationship
   const addRelationship = async (targetPoiId, relationshipType) => {
@@ -130,11 +130,11 @@ function RelationshipSearch({
   };
 
   // Check if a POI is already related
-  const isPoiRelated = (poiId) => {
+  const isPoiRelated = useCallback((poiId) => {
     return existingRelationships.some(rel => 
       (rel.source_poi_id === poiId || rel.target_poi_id === poiId)
     );
-  };
+  }, [existingRelationships]);
 
   // Handle target POI selection
   const handleTargetPoiSelect = (poi) => {
@@ -167,12 +167,12 @@ function RelationshipSearch({
     } else {
       setSearchResults([]);
     }
-  }, [searchQuery]);
+  }, [searchQuery, searchPois]);
 
   return (
     <Stack gap="md">
       <Text size="sm" c="dimmed">
-        Search for a POI to create a relationship with "{poiName}" ({poiType})
+        Search for a POI to create a relationship with &quot;{poiName}&quot; ({poiType})
       </Text>
 
       <TextInput

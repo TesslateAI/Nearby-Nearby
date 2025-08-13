@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../../services';
-import { MapContainer, TileLayer, Marker, Popup, Tooltip } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Tooltip } from 'react-leaflet';
 import { Drawer, Title, Text, Stack, Paper, Loader, Group, Box, TextInput } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { IconSearch } from '@tabler/icons-react';
@@ -189,23 +189,6 @@ function POIMap() {
       setSelectedPoi(null);
   }
 
-  // Create tooltip content for a POI
-  const createTooltipContent = (poi) => {
-    const { name, poi_type, status, address_full, address_street, address_city, address_state } = poi;
-    
-    // Build address string
-    const addressParts = [address_street, address_city, address_state].filter(Boolean);
-    const address = address_full || addressParts.join(', ') || 'Address not available';
-    
-    return `
-      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 200px;">
-        <div style="font-weight: 600; font-size: 14px; margin-bottom: 4px; color: #1f2937;">${name}</div>
-        <div style="font-size: 12px; color: #6b7280; margin-bottom: 2px;">${poi_type}</div>
-        <div style="font-size: 11px; color: #9ca3af; margin-bottom: 2px;">${status}</div>
-        <div style="font-size: 11px; color: #9ca3af;">${address}</div>
-      </div>
-    `;
-  };
 
 
 

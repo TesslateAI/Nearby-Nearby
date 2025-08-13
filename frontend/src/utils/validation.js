@@ -8,7 +8,7 @@ export const validateEmail = (email) => {
 };
 
 export const validatePhone = (phone) => {
-  const phoneRegex = /^[\d\s\-\(\)\+]+$/;
+  const phoneRegex = /^[\d\s\-()+ ]+$/;
   if (phone && !phoneRegex.test(phone)) return FORM_VALIDATION_MESSAGES.INVALID_PHONE;
   return null;
 };

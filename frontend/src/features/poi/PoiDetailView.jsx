@@ -139,7 +139,7 @@ const PoiDetailView = ({ poi, onEditClick }) => {
             </Group>
             <Badge tt="capitalize" color="purple">{poi_type}</Badge>
             <Badge color={status === 'Fully Open' ? 'green' : 'orange'}>{status}</Badge>
-            {status_message && <Text c="dimmed" size="sm">"{status_message}"</Text>}
+            {status_message && <Text c="dimmed" size="sm">&quot;{status_message}&quot;</Text>}
             
             <Accordion 
                 multiple 
@@ -410,7 +410,7 @@ const PoiDetailView = ({ poi, onEditClick }) => {
                     </Accordion.Panel>
                 </Accordion.Item>
                 <Accordion.Item value="nearby">
-                    <Accordion.Control>What's Nearby?</Accordion.Control>
+                    <Accordion.Control>What&apos;s Nearby?</Accordion.Control>
                     <Accordion.Panel>
                         <NearbyPoiList poiId={id} />
                     </Accordion.Panel>

@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useForm } from '@mantine/form';
 import { Paper, Title, Text, Stepper, Group, Button } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
-import api from '../../../services/api';
+import { api } from '../../../services';
 
 // Import constants and utilities
 import { emptyInitialValues } from './constants';
@@ -130,9 +130,9 @@ function POIForm() {
           form.setValues(initial);
           form.setInitialValues(initial);
         })
-        .catch(error => notifications.show({ title: 'Error', message: 'Failed to fetch POI data.', color: 'red' }));
+        .catch(() => notifications.show({ title: 'Error', message: 'Failed to fetch POI data.', color: 'red' }));
     }
-  }, [id, isEditing]);
+  }, [id, isEditing, form]);
 
   const handleSubmit = async (values) => {
     try {

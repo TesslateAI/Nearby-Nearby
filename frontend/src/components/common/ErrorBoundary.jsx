@@ -1,5 +1,5 @@
 import { Component } from 'react';
-import { Alert, Button, Container, Stack, Title, Text } from '@mantine/core';
+import { Alert, Button, Container, Stack, Text } from '@mantine/core';
 import { IconAlertCircle } from '@tabler/icons-react';
 
 class ErrorBoundary extends Component {
@@ -35,7 +35,7 @@ class ErrorBoundary extends Component {
               <Text>
                 An unexpected error occurred. Please try refreshing the page or contact support if the problem persists.
               </Text>
-              {process.env.NODE_ENV === 'development' && this.state.error && (
+              {import.meta.env.DEV && this.state.error && (
                 <Text size="xs" c="dimmed" style={{ fontFamily: 'monospace' }}>
                   {this.state.error.toString()}
                 </Text>

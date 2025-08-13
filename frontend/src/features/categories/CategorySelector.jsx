@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Box, Checkbox, Group, Text, Pill, ScrollArea, TextInput, ActionIcon, Collapse, Stack, Loader } from '@mantine/core';
 import { IconSearch, IconChevronRight } from '@tabler/icons-react';
-import api from '../../services/api';
+import { api } from '../../services';
 import { notifications } from '@mantine/notifications';
 
 // This is a recursive component to render categories and their children
-function CategoryTree({ categories, selected, onToggle, searchTerm, parentIsOpened = false }) {
+function CategoryTree({ categories, selected, onToggle, searchTerm }) {
   const [opened, setOpened] = useState({});
 
   const handleToggleCollapse = (id) => {

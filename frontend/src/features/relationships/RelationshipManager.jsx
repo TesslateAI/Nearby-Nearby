@@ -1,16 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
-  Paper, Title, Text, Button, Group, Stack, Modal, Divider, Alert
+  Title, Text, Button, Group, Stack, Modal, Divider, Alert
 } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { IconPlus } from '@tabler/icons-react';
-import api from '../../services/api';
+import { api } from '../../services';
 import RelationshipCard from './RelationshipCard';
 import RelationshipSearch from './RelationshipSearch';
-import { 
-  getRelationshipLabel, 
-  getRelationshipColor 
-} from './utils/relationshipUtils';
+// import { 
+//   getRelationshipLabel, 
+//   getRelationshipColor 
+// } from './utils/relationshipUtils';
 
 function RelationshipManager({ 
   poiId, 
@@ -31,7 +31,7 @@ function RelationshipManager({
   const handleModalClose = onModalClose || (() => setModalOpen(false));
 
   // Fetch existing relationships
-  const fetchRelationships = async () => {
+  const fetchRelationships = useCallback(async () => {
     if (!poiId) return;
     
     setLoading(true);
@@ -52,7 +52,7 @@ function RelationshipManager({
     } finally {
       setLoading(false);
     }
-  };
+  }, [poiId]);
 
   // Delete a relationship
   const deleteRelationship = async (sourceId, targetId, relationshipType) => {
@@ -108,7 +108,7 @@ function RelationshipManager({
 
   useEffect(() => {
     fetchRelationships();
-  }, [poiId]);
+  }, [poiId, fetchRelationships]);
 
 
 
@@ -160,7 +160,7 @@ function RelationshipManager({
       ) : (
         <Alert color="blue" variant="light">
           <Text size="sm">No relationships defined for this POI.</Text>
-          <Text size="sm" c="dimmed">Click "Manage Relationships" to link this POI to others.</Text>
+          <Text size="sm" c="dimmed">Click &quot;Manage Relationships&quot; to link this POI to others.</Text>
         </Alert>
       )}
 

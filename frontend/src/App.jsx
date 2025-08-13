@@ -1,7 +1,7 @@
 import { AppShell, Burger, Group, Title, NavLink, Button, Text } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
-import { IconRocket, IconSettings, IconLogout } from '@tabler/icons-react';
+import { IconRocket, IconLogout } from '@tabler/icons-react';
 import { 
   POIList, POIForm, 
   CategoryList, CategoryForm, AttributeManager,

@@ -132,7 +132,7 @@ function ComplianceStep({ form }) {
 
       <Divider my="md" label="Main and Emergency Contacts (All POIs)" />
       <Text size="sm" c="dimmed" mb="md">
-        We need contact info that's not public for best contact when it comes to problems and for us to reach out to someone
+        We need contact info that&apos;s not public for best contact when it comes to problems and for us to reach out to someone
       </Text>
       
       <SimpleGrid cols={1}>

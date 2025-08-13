@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 import {
   Table, Button, Group, Box, Title, TextInput, Select, Switch, Stack,
-  Modal, Textarea, NumberInput, ActionIcon, Text, Badge
+  Modal, NumberInput, ActionIcon, Badge
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { notifications } from '@mantine/notifications';
 import { IconEdit, IconTrash, IconPlus } from '@tabler/icons-react';
-import api from '../../services/api';
+import { api } from '../../services';
 
 const ATTRIBUTE_TYPES = [
   'PAYMENT_METHOD', 'AMENITY', 'ENTERTAINMENT', 'IDEAL_FOR', 'FACILITY',
@@ -18,7 +18,6 @@ const POI_TYPES = ['BUSINESS', 'PARK', 'TRAIL', 'EVENT'];
 
 function AttributeManager() {
   const [attributes, setAttributes] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [modalOpened, setModalOpened] = useState(false);
   const [editingAttribute, setEditingAttribute] = useState(null);
 
@@ -49,8 +48,6 @@ function AttributeManager() {
         message: 'Failed to fetch attributes',
         color: 'red'
       });
-    } finally {
-      setLoading(false);
     }
   };
 

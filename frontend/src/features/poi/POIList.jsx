@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { notifications } from '@mantine/notifications';
 import { IconPencil, IconTrash, IconPlus, IconLink } from '@tabler/icons-react';
 import { api } from '../../services';
-import { useAuth, RelationshipManager } from '../../components';
+import { RelationshipManager } from '../../components';
 
 function POIList() {
   const [pois, setPois] = useState([]);

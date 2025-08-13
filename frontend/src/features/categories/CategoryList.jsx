@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import api from '../../services/api';
+import { api } from '../../services';
 import { 
   Button, 
   Group, 
@@ -301,7 +301,7 @@ function CategoryList() {
           <Text>
             Are you sure you want to delete the category{' '}
             <Text component="span" fw={600} c="red.7">
-              "{categoryToDelete?.name}"
+              &quot;{categoryToDelete?.name}&quot;
             </Text>
             ?
           </Text>

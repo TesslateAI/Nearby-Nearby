@@ -114,7 +114,7 @@ const PublicHomePage = () => {
 
             {/* Categories Section */}
             <Container size="lg" py="xl">
-                <Title order={2} mb="lg">Explore you're nearby</Title>
+                <Title order={2} mb="lg">Explore you&apos;re nearby</Title>
                 <SimpleGrid cols={{ base: 2, sm: 3, lg: 4 }}>
                     {categories.map(cat => (
                         <Paper withBorder p="md" key={cat.id} component={Link} to="#" style={{ textDecoration: 'none' }}>

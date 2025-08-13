@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useForm } from '@mantine/form';
-import { TextInput, Button, Group, Box, Title, Select, Paper } from '@mantine/core';
-import api from '../../services/api';
+import { TextInput, Button, Group, Title, Select, Paper } from '@mantine/core';
+import { api } from '../../services';
 import { notifications } from '@mantine/notifications';
 
 function CategoryForm() {
