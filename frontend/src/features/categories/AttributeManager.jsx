@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   Table, Button, Group, Box, Title, TextInput, Select, Switch, Stack,
-  Modal, NumberInput, ActionIcon, Badge
+  Modal, NumberInput, ActionIcon, Badge, MultiSelect
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { notifications } from '@mantine/notifications';
@@ -222,11 +222,10 @@ function AttributeManager() {
               {...form.getInputProps('type')}
             />
             
-            <Select
+            <MultiSelect
               label="Applicable To"
               placeholder="Select POI types"
               data={POI_TYPES}
-              multiple
               required
               {...form.getInputProps('applicable_to')}
             />

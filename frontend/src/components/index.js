@@ -1,6 +1,5 @@
 // Re-export from subdirectories
 export * from './common';
-export * from './forms';
 export * from './maps';
 
 // Feature Components (re-exports for convenience)
