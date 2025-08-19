@@ -26,9 +26,11 @@ class PointOfInterest(Base):
     poi_type = Column(Enum(POIType), nullable=False)
     name = Column(String(255), nullable=False)
     description_long = Column(Text)
-    description_short = Column(String(250))
+    description_short = Column(String(250))  # Business free listings only (200 char limit)
+    teaser_paragraph = Column(String(120))  # All POI types (120 char limit)
     
     # Address fields
+    dont_display_location = Column(Boolean, default=False)  # For businesses that don't want exact location shown
     address_full = Column(String)
     address_street = Column(String)
     address_city = Column(String)
@@ -49,10 +51,139 @@ class PointOfInterest(Base):
     phone_number = Column(String)
     email = Column(String)
     
+    # Social media fields (usernames only)
+    instagram_username = Column(String)
+    facebook_username = Column(String) 
+    x_username = Column(String)
+    tiktok_username = Column(String)
+    linkedin_username = Column(String)
+    other_socials = Column(JSONB)  # {"youtube": "channel", "bluesky": "handle"}
+    
+    # Listing type for all POIs
+    listing_type = Column(String(50), default='free')  # 'free', 'paid', 'paid_founding', 'sponsor', 'community_comped'
+    
+    # Cost fields (for Events, Parks, Trails)
+    cost = Column(String(100))  # Flexible format: "$1000" or "$0.00-$1000.00" or "0" (shows as Free)
+    pricing_details = Column(Text)  # Additional pricing details like "Kids Under 2 are Free"
+    ticket_link = Column(String)  # For Events - link to buy tickets
+    
+    # Parking Information (will be in Location accordion on frontend)
+    parking_types = Column(JSONB)  # List of parking types selected
+    parking_locations = Column(JSONB)  # [{"lat": 0, "lng": 0, "name": "Main lot"}]
+    parking_notes = Column(Text)
+    parking_photos = Column(JSONB)  # ["url1", "url2"] max 2
+    public_transit_info = Column(Text)
+    expect_to_pay_parking = Column(String)  # 'yes', 'no', 'sometimes'
+    
+    # Additional Info
+    downloadable_maps = Column(JSONB)  # [{"name": "Trail Map", "url": "..."}]
+    payment_methods = Column(JSONB)  # List of accepted payment methods
+    key_facilities = Column(JSONB)  # For Events, Parks, Trails
+    alcohol_options = Column(JSONB)  # List of alcohol availability options
+    wheelchair_accessible = Column(JSONB)  # List of accessibility options
+    wheelchair_details = Column(Text)
+    smoking_options = Column(JSONB)  # List of smoking options
+    smoking_details = Column(Text)
+    wifi_options = Column(JSONB)  # For Events only
+    drone_usage = Column(String)  # For Events, Parks, Trails
+    drone_policy = Column(Text)
+    pet_options = Column(JSONB)  # List of pet policy options
+    pet_policy = Column(Text)
+    
+    # Public Toilets
+    public_toilets = Column(JSONB)  # List of toilet options
+    toilet_locations = Column(JSONB)  # [{"lat": 0, "lng": 0}]
+    toilet_description = Column(Text)  # e.g., "For Paying Customers Only"
+    
+    # Rentals
+    available_for_rent = Column(Boolean, default=False)
+    rental_info = Column(Text)
+    rental_pricing = Column(Text)
+    rental_link = Column(String)
+    rental_photos = Column(JSONB)  # List of rental photo URLs (max 10)
+    
+    # History (for paid listings, parks, trails)
+    history_paragraph = Column(Text)
+    
+    # Featured image
+    featured_image = Column(String)  # URL to featured image or logo
+    
+    # Main contact (internal use - not public)
+    main_contact_name = Column(String)
+    main_contact_email = Column(String)
+    main_contact_phone = Column(String)
+    
+    # Emergency contact (admin only - disaster response)
+    offsite_emergency_contact = Column(Text)  # Admin only field
+    emergency_protocols = Column(Text)  # Admin only field
+    
+    # Ideal For Key Box options (smaller subset)
+    ideal_for_key = Column(JSONB)  # List of key ideal_for options
+    
+    # Additional Business Details
+    price_range_per_person = Column(String)  # "$10 and under", "$15 and under", etc.
+    pricing = Column(String)  # General pricing text (all POIs)
+    discounts = Column(JSONB)  # List of discount types offered
+    gift_cards = Column(String)  # 'yes_this_only', 'no', 'yes_select_others'
+    youth_amenities = Column(JSONB)  # List of youth amenities (Business only)
+    business_amenities = Column(JSONB)  # List of business amenities/services
+    entertainment_options = Column(JSONB)  # List of entertainment options
+    
+    # Menu & Online Booking (Business only)
+    menu_photos = Column(JSONB)  # List of menu photo URLs
+    menu_link = Column(String)  # Link to online menu
+    delivery_links = Column(JSONB)  # List of delivery service links
+    reservation_links = Column(JSONB)  # List of reservation links  
+    appointment_links = Column(JSONB)  # List of appointment scheduling links
+    online_ordering_links = Column(JSONB)  # List of online ordering links
+    
+    # Service Relationships
+    service_locations = Column(JSONB)  # POI IDs where this business provides services
+    
+    # Locally Found & Community
+    locally_found_at = Column(JSONB)  # POI IDs where products are sold
+    article_links = Column(JSONB)  # Links to articles/blog posts
+    community_impact = Column(Text)  # Community involvement description
+    organization_memberships = Column(JSONB)  # Organization POI IDs and external links
+    
+    # Playground Information (All POIs)
+    playground_available = Column(Boolean, default=False)
+    playground_types = Column(JSONB)  # List of playground types
+    playground_surface_types = Column(JSONB)  # List of surface types
+    playground_notes = Column(Text)
+    playground_photos = Column(JSONB)  # List of photo URLs (max 15)
+    playground_location = Column(JSONB)  # {"lat": 0, "lng": 0}
+    
+    # Parks & Trails Additional Info
+    payphone_location = Column(JSONB)  # {"lat": 0, "lng": 0}
+    night_sky_viewing = Column(Text)
+    natural_features = Column(JSONB)  # List of natural features
+    outdoor_types = Column(JSONB)  # List of outdoor space types
+    things_to_do = Column(JSONB)  # List of activities available
+    birding_wildlife = Column(Text)
+    
+    # Hunting & Fishing
+    hunting_fishing_allowed = Column(String)  # 'no', 'seasonal', 'year_round'
+    hunting_types = Column(JSONB)  # List of hunting types allowed
+    fishing_allowed = Column(String)  # 'no', 'catch_release', 'catch_keep', 'other'
+    fishing_types = Column(JSONB)  # List of fishing types
+    licenses_required = Column(JSONB)  # List of required licenses
+    hunting_fishing_info = Column(Text)
+    
+    # Memberships & Passes
+    membership_passes = Column(JSONB)  # POI IDs that share memberships
+    membership_details = Column(Text)
+    
+    # Trail connections
+    associated_trails = Column(JSONB)  # POI IDs of connected trails
+    camping_lodging = Column(Text)
+    
     # JSONB fields for flexible attributes
     photos = Column(JSONB)  # {"featured": "url", "gallery": ["url1", "url2"]}
-    hours = Column(JSONB)   # {"monday": [{"open": "09:00", "close": "17:00"}], "holidays": [{"date": "2024-12-25", "status": "closed"}]}
-    amenities = Column(JSONB)  # {"payment_methods": ["Cash", "Credit Card"], "ideal_for": ["Families"]}
+    hours = Column(JSONB)   # Complex hours structure with multiple periods, seasonal, dawn/dusk
+    holiday_hours = Column(JSONB)  # Recurring holiday hours {"christmas": "closed", "thanksgiving": {"open": "10:00", "close": "14:00"}}
+    amenities = Column(JSONB)  # {"payment_methods": ["Cash", "Credit Card"]}
+    ideal_for = Column(JSONB)  # List of ideal_for options
     contact_info = Column(JSONB)  # {"best": {"name": "Rhonda", ...}, "emergency": {...}}
     compliance = Column(JSONB)  # {"pre_approval_required": true, "lead_time": "5 days"}
     custom_fields = Column(JSONB)  # {"Parking Tip": "Back lot is free after 5 PM."}
@@ -107,7 +238,6 @@ class Business(Base):
     __tablename__ = "businesses"
     
     poi_id = Column(UUID(as_uuid=True), ForeignKey("points_of_interest.id"), primary_key=True)
-    listing_tier = Column(String)  # 'free', 'paid', 'paid_founding', 'sponsor'
     price_range = Column(String)  # '$', '$$', '$$$', '$$$$'
     
     poi = relationship("PointOfInterest", back_populates="business")
@@ -127,8 +257,26 @@ class Trail(Base):
     
     poi_id = Column(UUID(as_uuid=True), ForeignKey("points_of_interest.id"), primary_key=True)
     length_text = Column(String)  # e.g., "2.5 miles", "1.2 km"
-    difficulty = Column(String)  # 'easy', 'moderate', 'difficult', 'expert'
-    route_type = Column(String)  # 'loop', 'out_and_back', 'point_to_point'
+    length_segments = Column(JSONB)  # For multiple loops: [{"name": "Top Loop", "length": "0.25 miles"}]
+    difficulty = Column(String)  # 'easy', 'moderate', 'challenging', 'difficult', 'very_difficult', 'extreme'
+    difficulty_description = Column(Text)  # Auto-populated based on difficulty
+    route_type = Column(String)  # 'loop', 'out_and_back', 'point_to_point', 'connecting_network'
+    
+    # Trailhead Information
+    trailhead_location = Column(JSONB)  # {"lat": 0, "lng": 0}
+    trailhead_entrance_photo = Column(String)
+    trailhead_exit_location = Column(JSONB)  # {"lat": 0, "lng": 0}
+    trailhead_exit_photo = Column(String)
+    trail_markings = Column(Text)
+    trailhead_access_details = Column(Text)
+    downloadable_trail_map = Column(String)  # URL to map file
+    
+    # Trail Surface
+    trail_surfaces = Column(JSONB)  # List of surface types
+    trail_conditions = Column(JSONB)  # List of condition warnings
+    
+    # Trail Experience
+    trail_experiences = Column(JSONB)  # List of experience types
     
     poi = relationship("PointOfInterest", back_populates="trail")
 
@@ -139,6 +287,22 @@ class Event(Base):
     poi_id = Column(UUID(as_uuid=True), ForeignKey("points_of_interest.id"), primary_key=True)
     start_datetime = Column(TIMESTAMP(timezone=True), nullable=False)
     end_datetime = Column(TIMESTAMP(timezone=True))
-    cost_text = Column(String)  # e.g., "Free", "$15", "Donation suggested"
+    # Repeating event fields
+    is_repeating = Column(Boolean, default=False)
+    repeat_pattern = Column(JSONB)  # {"frequency": "weekly", "days": ["thursday"], "exceptions": []}
+    
+    # Event-specific fields
+    organizer_name = Column(String)
+    food_and_drink_info = Column(Text)
+    coat_check_options = Column(JSONB)  # List of coat check options
+    
+    # Vendor information
+    has_vendors = Column(Boolean, default=False)
+    vendor_types = Column(JSONB)  # List of vendor types present
+    vendor_application_deadline = Column(TIMESTAMP(timezone=True))
+    vendor_application_info = Column(Text)
+    vendor_fee = Column(String)
+    vendor_requirements = Column(Text)
+    vendor_poi_links = Column(JSONB)  # List of POI IDs for vendors at this event
     
     poi = relationship("PointOfInterest", back_populates="event")

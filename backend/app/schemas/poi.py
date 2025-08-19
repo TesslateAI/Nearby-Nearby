@@ -37,11 +37,10 @@ class PointGeometry(BaseModel):
         return v
 
 # Business Schemas
-LISTING_TIERS = Literal['free', 'paid', 'paid_founding', 'sponsor']
+LISTING_TYPES = Literal['free', 'paid', 'paid_founding', 'sponsor', 'community_comped']
 PRICE_RANGES = Literal['$', '$$', '$$$', '$$$$']
 
 class BusinessBase(BaseModel):
-    listing_tier: LISTING_TIERS = 'free'
     price_range: Optional[PRICE_RANGES] = None
 
 class BusinessCreate(BusinessBase): pass
@@ -64,8 +63,24 @@ ROUTE_TYPES = Literal['loop', 'out_and_back', 'point_to_point']
 
 class TrailBase(BaseModel):
     length_text: Optional[str] = None
-    difficulty: Optional[TRAIL_DIFFICULTY] = None
-    route_type: Optional[ROUTE_TYPES] = None
+    length_segments: Optional[List[Dict[str, str]]] = None
+    difficulty: Optional[str] = None
+    difficulty_description: Optional[str] = None
+    route_type: Optional[str] = None
+    
+    # Trailhead Information
+    trailhead_location: Optional[Dict[str, Any]] = None
+    trailhead_entrance_photo: Optional[str] = None
+    trailhead_exit_location: Optional[Dict[str, Any]] = None
+    trailhead_exit_photo: Optional[str] = None
+    trail_markings: Optional[str] = None
+    trailhead_access_details: Optional[str] = None
+    downloadable_trail_map: Optional[str] = None
+    
+    # Trail Surface & Experience
+    trail_surfaces: Optional[List[str]] = None
+    trail_conditions: Optional[List[str]] = None
+    trail_experiences: Optional[List[str]] = None
 
 class TrailCreate(TrailBase): pass
 class Trail(TrailBase):
@@ -76,7 +91,18 @@ class Trail(TrailBase):
 class EventBase(BaseModel):
     start_datetime: datetime
     end_datetime: Optional[datetime] = None
-    cost_text: Optional[str] = None
+    is_repeating: bool = False
+    repeat_pattern: Optional[Dict[str, Any]] = None  # {"frequency": "weekly", "days": ["thursday"]}
+    organizer_name: Optional[str] = None
+    food_and_drink_info: Optional[str] = None
+    coat_check_options: Optional[List[str]] = None
+    has_vendors: bool = False
+    vendor_types: Optional[List[str]] = None
+    vendor_application_deadline: Optional[datetime] = None
+    vendor_application_info: Optional[str] = None
+    vendor_fee: Optional[str] = None
+    vendor_requirements: Optional[str] = None
+    vendor_poi_links: Optional[List[uuid.UUID]] = None
 
 class EventCreate(EventBase): pass
 class Event(EventBase):
@@ -85,19 +111,88 @@ class Event(EventBase):
 
 # Point of Interest Schemas
 POI_TYPES = Literal['BUSINESS', 'PARK', 'TRAIL', 'EVENT']
-STATUS_TYPES = Literal[
+
+# Different status types for different POI types
+BUSINESS_STATUS_TYPES = Literal[
     'Fully Open', 'Partly Open', 'Temporary Hour Changes', 'Temporarily Closed',
     'Call Ahead', 'Permanently Closed', 'Warning', 'Limited Capacity',
     'Coming Soon', 'Under Development', 'Alert'
+]
+
+EVENT_STATUS_TYPES = Literal[
+    'Scheduled', 'Canceled', 'Postponed', 'Updated Date and/or Time',
+    'Rescheduled', 'Moved Online', 'Unofficial Proposed Date'
+]
+
+OTHER_STATUS_TYPES = Literal[
+    'Fully Open', 'Partly Open', 'Temporarily Closed', 'Permanently Closed',
+    'Warning', 'Limited Capacity', 'Coming Soon', 'Under Development', 'Alert'
 ]
 
 class PointOfInterestBase(BaseModel):
     poi_type: POI_TYPES
     name: str
     description_long: Optional[str] = None
-    description_short: Optional[str] = None
+    description_short: Optional[str] = None  # Business free listings only (200 char limit)
+    teaser_paragraph: Optional[str] = Field(None, max_length=120)  # All POI types (120 char limit)
+    
+    # Listing type for all POIs
+    listing_type: LISTING_TYPES = 'free'
+    
+    # Cost fields (for Events, Parks, Trails)
+    cost: Optional[str] = None  # Flexible format: "$1000" or "$0.00-$1000.00" or "0"
+    pricing_details: Optional[str] = None  # Additional pricing details
+    ticket_link: Optional[str] = None  # For Events - link to buy tickets
+    
+    # History (for paid listings, parks, trails)
+    history_paragraph: Optional[str] = None
+    
+    # Featured image
+    featured_image: Optional[str] = None
+    
+    # Main contact (internal use - not public)
+    main_contact_name: Optional[str] = None
+    main_contact_email: Optional[str] = None
+    main_contact_phone: Optional[str] = None
+    
+    # Emergency contact (admin only - disaster response)
+    offsite_emergency_contact: Optional[str] = None
+    emergency_protocols: Optional[str] = None
+    
+    # Ideal For Key Box options (smaller subset)
+    ideal_for_key: Optional[List[str]] = None
+    
+    # Additional Business Details
+    price_range_per_person: Optional[str] = None
+    pricing: Optional[str] = None
+    discounts: Optional[List[str]] = None
+    gift_cards: Optional[str] = None
+    youth_amenities: Optional[List[str]] = None
+    business_amenities: Optional[List[str]] = None
+    entertainment_options: Optional[List[str]] = None
+    
+    # Menu & Online Booking (Business only)
+    menu_photos: Optional[List[str]] = None
+    menu_link: Optional[str] = None
+    delivery_links: Optional[List[str]] = None
+    reservation_links: Optional[List[str]] = None
+    appointment_links: Optional[List[str]] = None
+    online_ordering_links: Optional[List[str]] = None
+    
+    # Service Relationships
+    service_locations: Optional[List[uuid.UUID]] = None
+    
+    # Locally Found & Community
+    locally_found_at: Optional[List[uuid.UUID]] = None
+    article_links: Optional[List[Dict[str, str]]] = None
+    community_impact: Optional[str] = None
+    organization_memberships: Optional[List[Dict[str, Any]]] = None
+    
+    # Rental photos
+    rental_photos: Optional[List[str]] = None
     
     # Address fields
+    dont_display_location: bool = False  # For businesses that don't want exact location shown
     address_full: Optional[str] = None
     address_street: Optional[str] = None
     address_city: Optional[str] = None
@@ -105,7 +200,7 @@ class PointOfInterestBase(BaseModel):
     address_zip: Optional[str] = None
     
     # Status and verification
-    status: STATUS_TYPES = 'Fully Open'
+    status: Optional[str] = 'Fully Open'  # Will be validated based on POI type
     status_message: Optional[str] = None
     is_verified: bool = False
     is_disaster_hub: bool = False
@@ -115,10 +210,87 @@ class PointOfInterestBase(BaseModel):
     phone_number: Optional[str] = None
     email: Optional[str] = None
     
+    # Social media fields (usernames only)
+    instagram_username: Optional[str] = None
+    facebook_username: Optional[str] = None
+    x_username: Optional[str] = None
+    tiktok_username: Optional[str] = None
+    linkedin_username: Optional[str] = None
+    other_socials: Optional[Dict[str, str]] = None
+    
+    # Parking Information
+    parking_types: Optional[List[str]] = None
+    parking_locations: Optional[List[Dict[str, Any]]] = None
+    parking_notes: Optional[str] = None
+    parking_photos: Optional[List[str]] = None
+    public_transit_info: Optional[str] = None
+    expect_to_pay_parking: Optional[Literal['yes', 'no', 'sometimes']] = None
+    
+    # Additional Info
+    downloadable_maps: Optional[List[Dict[str, str]]] = None
+    payment_methods: Optional[List[str]] = None
+    key_facilities: Optional[List[str]] = None
+    alcohol_options: Optional[List[str]] = None
+    wheelchair_accessible: Optional[List[str]] = None
+    wheelchair_details: Optional[str] = None
+    smoking_options: Optional[List[str]] = None
+    smoking_details: Optional[str] = None
+    wifi_options: Optional[List[str]] = None
+    drone_usage: Optional[str] = None
+    drone_policy: Optional[str] = None
+    pet_options: Optional[List[str]] = None
+    pet_policy: Optional[str] = None
+    
+    # Public Toilets
+    public_toilets: Optional[List[str]] = None
+    toilet_locations: Optional[List[Dict[str, Any]]] = None
+    toilet_description: Optional[str] = None
+    
+    # Rentals
+    available_for_rent: bool = False
+    rental_info: Optional[str] = None
+    rental_pricing: Optional[str] = None
+    rental_link: Optional[str] = None
+    rental_photos: Optional[List[str]] = None
+    
+    # Playground Information (All POIs)
+    playground_available: bool = False
+    playground_types: Optional[List[str]] = None
+    playground_surface_types: Optional[List[str]] = None
+    playground_notes: Optional[str] = None
+    playground_photos: Optional[List[str]] = None
+    playground_location: Optional[Dict[str, Any]] = None
+    
+    # Parks & Trails Additional Info
+    payphone_location: Optional[Dict[str, Any]] = None
+    night_sky_viewing: Optional[str] = None
+    natural_features: Optional[List[str]] = None
+    outdoor_types: Optional[List[str]] = None
+    things_to_do: Optional[List[str]] = None
+    birding_wildlife: Optional[str] = None
+    
+    # Hunting & Fishing
+    hunting_fishing_allowed: Optional[str] = None
+    hunting_types: Optional[List[str]] = None
+    fishing_allowed: Optional[str] = None
+    fishing_types: Optional[List[str]] = None
+    licenses_required: Optional[List[str]] = None
+    hunting_fishing_info: Optional[str] = None
+    
+    # Memberships & Passes
+    membership_passes: Optional[List[uuid.UUID]] = None
+    membership_details: Optional[str] = None
+    
+    # Trail connections
+    associated_trails: Optional[List[uuid.UUID]] = None
+    camping_lodging: Optional[str] = None
+    
     # JSONB fields
     photos: Optional[Dict[str, Any]] = None
-    hours: Optional[Dict[str, Any]] = None
+    hours: Optional[Dict[str, Any]] = None  # Complex hours with multiple periods, seasonal
+    holiday_hours: Optional[Dict[str, Any]] = None  # Recurring holiday hours
     amenities: Optional[Dict[str, Any]] = None
+    ideal_for: Optional[List[str]] = None  # List of ideal_for options
     contact_info: Optional[Dict[str, Any]] = None
     compliance: Optional[Dict[str, Any]] = None
     custom_fields: Optional[Dict[str, Any]] = None
@@ -151,21 +323,111 @@ class PointOfInterestUpdate(BaseModel):
     name: Optional[str] = None
     description_long: Optional[str] = None
     description_short: Optional[str] = None
+    teaser_paragraph: Optional[str] = Field(None, max_length=120)
+    listing_type: Optional[LISTING_TYPES] = None
+    cost: Optional[str] = None
+    pricing_details: Optional[str] = None
+    ticket_link: Optional[str] = None
+    history_paragraph: Optional[str] = None
+    featured_image: Optional[str] = None
+    main_contact_name: Optional[str] = None
+    main_contact_email: Optional[str] = None
+    main_contact_phone: Optional[str] = None
+    offsite_emergency_contact: Optional[str] = None
+    emergency_protocols: Optional[str] = None
+    ideal_for_key: Optional[List[str]] = None
+    price_range_per_person: Optional[str] = None
+    pricing: Optional[str] = None
+    discounts: Optional[List[str]] = None
+    gift_cards: Optional[str] = None
+    youth_amenities: Optional[List[str]] = None
+    business_amenities: Optional[List[str]] = None
+    entertainment_options: Optional[List[str]] = None
+    menu_photos: Optional[List[str]] = None
+    menu_link: Optional[str] = None
+    delivery_links: Optional[List[str]] = None
+    reservation_links: Optional[List[str]] = None
+    appointment_links: Optional[List[str]] = None
+    online_ordering_links: Optional[List[str]] = None
+    service_locations: Optional[List[uuid.UUID]] = None
+    locally_found_at: Optional[List[uuid.UUID]] = None
+    article_links: Optional[List[Dict[str, str]]] = None
+    community_impact: Optional[str] = None
+    organization_memberships: Optional[List[Dict[str, Any]]] = None
+    rental_photos: Optional[List[str]] = None
+    dont_display_location: Optional[bool] = None
     address_full: Optional[str] = None
     address_street: Optional[str] = None
     address_city: Optional[str] = None
     address_state: Optional[str] = None
     address_zip: Optional[str] = None
-    status: Optional[STATUS_TYPES] = None
+    status: Optional[str] = None
     status_message: Optional[str] = None
     is_verified: Optional[bool] = None
     is_disaster_hub: Optional[bool] = None
     website_url: Optional[str] = None
     phone_number: Optional[str] = None
     email: Optional[str] = None
+    instagram_username: Optional[str] = None
+    facebook_username: Optional[str] = None
+    x_username: Optional[str] = None
+    tiktok_username: Optional[str] = None
+    linkedin_username: Optional[str] = None
+    other_socials: Optional[Dict[str, str]] = None
+    parking_types: Optional[List[str]] = None
+    parking_locations: Optional[List[Dict[str, Any]]] = None
+    parking_notes: Optional[str] = None
+    parking_photos: Optional[List[str]] = None
+    public_transit_info: Optional[str] = None
+    expect_to_pay_parking: Optional[Literal['yes', 'no', 'sometimes']] = None
+    downloadable_maps: Optional[List[Dict[str, str]]] = None
+    payment_methods: Optional[List[str]] = None
+    key_facilities: Optional[List[str]] = None
+    alcohol_options: Optional[List[str]] = None
+    wheelchair_accessible: Optional[List[str]] = None
+    wheelchair_details: Optional[str] = None
+    smoking_options: Optional[List[str]] = None
+    smoking_details: Optional[str] = None
+    wifi_options: Optional[List[str]] = None
+    drone_usage: Optional[str] = None
+    drone_policy: Optional[str] = None
+    pet_options: Optional[List[str]] = None
+    pet_policy: Optional[str] = None
+    public_toilets: Optional[List[str]] = None
+    toilet_locations: Optional[List[Dict[str, Any]]] = None
+    toilet_description: Optional[str] = None
+    available_for_rent: Optional[bool] = None
+    rental_info: Optional[str] = None
+    rental_pricing: Optional[str] = None
+    rental_link: Optional[str] = None
+    rental_photos: Optional[List[str]] = None
+    playground_available: Optional[bool] = None
+    playground_types: Optional[List[str]] = None
+    playground_surface_types: Optional[List[str]] = None
+    playground_notes: Optional[str] = None
+    playground_photos: Optional[List[str]] = None
+    playground_location: Optional[Dict[str, Any]] = None
+    payphone_location: Optional[Dict[str, Any]] = None
+    night_sky_viewing: Optional[str] = None
+    natural_features: Optional[List[str]] = None
+    outdoor_types: Optional[List[str]] = None
+    things_to_do: Optional[List[str]] = None
+    birding_wildlife: Optional[str] = None
+    hunting_fishing_allowed: Optional[str] = None
+    hunting_types: Optional[List[str]] = None
+    fishing_allowed: Optional[str] = None
+    fishing_types: Optional[List[str]] = None
+    licenses_required: Optional[List[str]] = None
+    hunting_fishing_info: Optional[str] = None
+    membership_passes: Optional[List[uuid.UUID]] = None
+    membership_details: Optional[str] = None
+    associated_trails: Optional[List[uuid.UUID]] = None
+    camping_lodging: Optional[str] = None
     photos: Optional[Dict[str, Any]] = None
     hours: Optional[Dict[str, Any]] = None
+    holiday_hours: Optional[Dict[str, Any]] = None
     amenities: Optional[Dict[str, Any]] = None
+    ideal_for: Optional[List[str]] = None
     contact_info: Optional[Dict[str, Any]] = None
     compliance: Optional[Dict[str, Any]] = None
     custom_fields: Optional[Dict[str, Any]] = None
