@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(docker:*)",
+      "Bash(start \"\" \"C:\\Program Files\\Docker\\Docker\\Docker Desktop.exe\")",
+      "Bash(pip install:*)",
+      "Bash(set DATABASE_URL=postgresql://nearby:nearby@localhost:5432/nearbynearby)",
+      "Bash(alembic upgrade:*)",
+      "Bash(npm install)",
+      "Bash(python:*)",
+      "Bash(del \"C:\\Users\\Manav\\Documents\\Programming\\Projects\\tesslate\\Nearby-Nearby\\backend\\check_user.py\")",
+      "Bash(rm:*)",
+      "Bash(alembic revision:*)",
+      "Bash(npm run dev:*)",
+      "Bash(del \"C:\\Users\\Manav\\Documents\\Programming\\Projects\\tesslate\\Nearby-Nearby\\test_hours.py\")",
+      "Bash(git checkout:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

@@ -68,7 +68,7 @@ function CategoryTree({ categories, selected, onToggle, searchTerm, parentIsOpen
   );
 }
 
-export function CategorySelector({ value, onChange }) {
+export function CategorySelector({ value = [], onChange, poiType }) {
   const [allCategories, setAllCategories] = useState([]);
   const [categoryMap, setCategoryMap] = useState({});
   const [searchTerm, setSearchTerm] = useState('');
@@ -79,7 +79,10 @@ export function CategorySelector({ value, onChange }) {
       try {
         const response = await api.get('/categories/tree');
         const data = await response.json();
-        setAllCategories(data);
+        
+        // Filter categories based on POI type if specified
+        const filteredData = poiType ? filterCategoriesByPoiType(data, poiType) : data;
+        setAllCategories(filteredData);
 
         const map = {};
         const flatten = (cats) => {
@@ -101,14 +104,25 @@ export function CategorySelector({ value, onChange }) {
       }
     };
     fetchCategories();
-  }, []);
+  }, [poiType]);
 
   const handleToggle = (id) => {
     const newSelection = value.includes(id) ? value.filter(v => v !== id) : [...value, id];
     onChange(newSelection);
   };
+  
+  // Helper function to filter categories by POI type
+  const filterCategoriesByPoiType = (categories, type) => {
+    return categories
+      .filter(cat => !cat.applicable_to || cat.applicable_to.length === 0 || cat.applicable_to.includes(type))
+      .map(cat => ({
+        ...cat,
+        children: cat.children ? filterCategoriesByPoiType(cat.children, type) : []
+      }))
+      .filter(cat => cat.children?.length > 0 || (!cat.children || cat.children.length === 0));
+  };
 
-  const selectedPills = value
+  const selectedPills = (value || [])
     .map(id => ({ id, name: categoryMap[id] }))
     .filter(cat => cat.name) // Filter out any IDs that might not have a name yet
     .map(cat => (
