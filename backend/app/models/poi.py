@@ -62,6 +62,9 @@ class PointOfInterest(Base):
     # Listing type for all POIs
     listing_type = Column(String(50), default='free')  # 'free', 'paid', 'paid_founding', 'sponsor', 'community_comped'
     
+    # Main category (required)
+    main_category_id = Column(UUID(as_uuid=True), ForeignKey("categories.id"), nullable=True)
+    
     # Cost fields (for Events, Parks, Trails)
     cost = Column(String(100))  # Flexible format: "$1000" or "$0.00-$1000.00" or "0" (shows as Free)
     pricing_details = Column(Text)  # Additional pricing details like "Kids Under 2 are Free"
@@ -193,6 +196,8 @@ class PointOfInterest(Base):
     last_updated = Column(TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now())
 
     # Relationships
+    main_category = relationship("Category", foreign_keys=[main_category_id])
+    
     categories = relationship(
         "Category",
         secondary=poi_category_association,

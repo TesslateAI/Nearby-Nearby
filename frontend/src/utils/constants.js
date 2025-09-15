@@ -13,7 +13,7 @@ export const IDEAL_FOR_KEY_OPTIONS = [
   'PreK',
   'School Age',
   'Teens',
-  'You'
+  'Youth'
 ];
 
 // Parking options

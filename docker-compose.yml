@@ -22,7 +22,7 @@ services:
     volumes:
       - ./backend:/app
     ports:
-      - "8000:8000"
+      - "8001:8000"
     env_file:
       - .env
     environment:
@@ -45,7 +45,7 @@ services:
       - ./frontend:/app
       - /app/node_modules
     ports:
-      - "5173:5173"
+      - "5175:5173"
     env_file:
       - .env
     environment:

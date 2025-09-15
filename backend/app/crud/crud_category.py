@@ -43,6 +43,41 @@ def get_all_categories_as_tree(db: Session) -> List[schemas.CategoryWithChildren
             
     return root_nodes
 
+def get_categories_by_poi_type(db: Session, poi_type: str) -> List[models.Category]:
+    """
+    Get all categories that are applicable to a specific POI type.
+    """
+    return db.query(models.Category).filter(
+        models.Category.is_active == True,
+        models.Category.applicable_to.contains([poi_type])
+    ).order_by(models.Category.sort_order, models.Category.name).all()
+
+def get_main_categories_by_poi_type(db: Session, poi_type: str) -> List[models.Category]:
+    """
+    Get only top-level (parent) categories for a specific POI type.
+    """
+    return db.query(models.Category).filter(
+        models.Category.is_active == True,
+        models.Category.parent_id == None,
+        models.Category.applicable_to.contains([poi_type])
+    ).order_by(models.Category.sort_order, models.Category.name).all()
+
+def get_secondary_categories_by_poi_type(db: Session, poi_type: str, parent_id: uuid.UUID = None) -> List[models.Category]:
+    """
+    Get child categories for a specific POI type, optionally filtered by parent.
+    """
+    query = db.query(models.Category).filter(
+        models.Category.is_active == True,
+        models.Category.applicable_to.contains([poi_type])
+    )
+    
+    if parent_id:
+        query = query.filter(models.Category.parent_id == parent_id)
+    else:
+        query = query.filter(models.Category.parent_id != None)
+    
+    return query.order_by(models.Category.sort_order, models.Category.name).all()
+
 def delete_category(db: Session, category_id: uuid.UUID):
     """
     Deletes a category from the database.

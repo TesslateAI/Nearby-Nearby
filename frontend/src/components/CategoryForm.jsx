@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useForm } from '@mantine/form';
-import { TextInput, Button, Group, Box, Title, Select, Paper } from '@mantine/core';
+import { TextInput, Button, Group, Box, Title, Select, Paper, MultiSelect, Switch, Stack, Text } from '@mantine/core';
 import api from '../utils/api';
 import { notifications } from '@mantine/notifications';
 
@@ -15,9 +15,12 @@ function CategoryForm() {
     initialValues: {
       name: '',
       parent_id: null,
+      poi_types: [],
+      is_main_category: false,
     },
     validate: {
       name: (value) => (value.trim().length < 2 ? 'Name must have at least 2 characters' : null),
+      poi_types: (value) => (value.length === 0 ? 'At least one POI type must be selected' : null),
     },
   });
 
@@ -53,6 +56,8 @@ function CategoryForm() {
     const payload = {
         name: values.name,
         parent_id: values.parent_id || null, // Ensure null is sent if empty
+        poi_types: values.poi_types,
+        is_main_category: values.is_main_category,
     };
 
     try {
@@ -74,16 +79,52 @@ function CategoryForm() {
         {isEditing ? 'Edit Category' : 'Create New Category'}
       </Title>
       <form onSubmit={form.onSubmit(handleSubmit)}>
-        <TextInput withAsterisk label="Category Name" placeholder="e.g., Food & Drinks" {...form.getInputProps('name')} />
-        <Select
-          label="Parent Category (Optional)"
-          placeholder="Select a parent to make this a subcategory"
-          data={categories}
-          {...form.getInputProps('parent_id')}
-          mt="md"
-          clearable
-          searchable
-        />
+        <Stack spacing="md">
+          <TextInput 
+            withAsterisk 
+            label="Category Name" 
+            placeholder="e.g., Food & Drinks" 
+            {...form.getInputProps('name')} 
+          />
+          
+          <MultiSelect
+            withAsterisk
+            label="POI Types"
+            placeholder="Select applicable POI types"
+            data={[
+              { value: 'BUSINESS', label: 'Business' },
+              { value: 'PARK', label: 'Park' },
+              { value: 'TRAIL', label: 'Trail' },
+              { value: 'EVENT', label: 'Event' }
+            ]}
+            {...form.getInputProps('poi_types')}
+          />
+          
+          <Switch
+            label="Is Main Category"
+            description="Main categories can be selected as primary categories for POIs"
+            {...form.getInputProps('is_main_category', { type: 'checkbox' })}
+          />
+          
+          {!form.values.is_main_category && (
+            <Select
+              label="Parent Category (Optional)"
+              placeholder="Select a parent to make this a subcategory"
+              data={categories}
+              {...form.getInputProps('parent_id')}
+              clearable
+              searchable
+              description="Secondary categories can have a parent category"
+            />
+          )}
+          
+          {form.values.is_main_category && (
+            <Text size="sm" c="dimmed">
+              Main categories cannot have parent categories. They appear as primary options for POIs.
+            </Text>
+          )}
+        </Stack>
+        
         <Group justify="flex-end" mt="xl">
           <Button variant="default" onClick={() => navigate('/categories')}>Cancel</Button>
           <Button type="submit">

@@ -25,6 +25,38 @@ def read_category_tree(db: Session = Depends(get_db)):
     """
     return crud.get_all_categories_as_tree(db=db)
 
+@router.get("/by-poi-type/{poi_type}", response_model=List[schemas.Category])
+def get_categories_by_poi_type(
+    poi_type: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Get all categories applicable to a specific POI type.
+    """
+    return crud.get_categories_by_poi_type(db=db, poi_type=poi_type)
+
+@router.get("/main/{poi_type}", response_model=List[schemas.Category])
+def get_main_categories(
+    poi_type: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Get only main (parent) categories for a specific POI type.
+    """
+    return crud.get_main_categories_by_poi_type(db=db, poi_type=poi_type)
+
+@router.get("/secondary/{poi_type}", response_model=List[schemas.Category])
+def get_secondary_categories(
+    poi_type: str,
+    parent_id: uuid.UUID = None,
+    db: Session = Depends(get_db)
+):
+    """
+    Get secondary (child) categories for a specific POI type.
+    Optionally filter by parent_id.
+    """
+    return crud.get_secondary_categories_by_poi_type(db=db, poi_type=poi_type, parent_id=parent_id)
+
 @router.delete("/{category_id}", status_code=204)
 def delete_category_endpoint(
     category_id: uuid.UUID, 

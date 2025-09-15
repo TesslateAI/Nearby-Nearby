@@ -16,7 +16,8 @@ def get_poi(db: Session, poi_id: uuid.UUID):
         joinedload(models.PointOfInterest.park),
         joinedload(models.PointOfInterest.trail),
         joinedload(models.PointOfInterest.event),
-        joinedload(models.PointOfInterest.categories)
+        joinedload(models.PointOfInterest.categories),
+        joinedload(models.PointOfInterest.main_category)
     ).filter(models.PointOfInterest.id == poi_id).first()
 
 
@@ -98,11 +99,19 @@ def get_pois_nearby(db: Session, *, poi_id: uuid.UUID, distance_km: float = 5.0,
 
 def create_poi(db: Session, poi: schemas.PointOfInterestCreate):
     # Create the POI with location
-    poi_data = poi.model_dump(exclude={'location', 'business', 'park', 'trail', 'event', 'category_ids'})
+    poi_data = poi.model_dump(exclude={'location', 'business', 'park', 'trail', 'event', 'category_ids', 'main_category_id'})
     db_poi = models.PointOfInterest(**poi_data)
     
     # Set the location geometry
     db_poi.location = f'POINT({poi.location.coordinates[0]} {poi.location.coordinates[1]})'
+
+    # Set main category
+    if poi.main_category_id:
+        main_category = get_category(db, poi.main_category_id)
+        if main_category and main_category.is_main_category:
+            db_poi.main_category_id = poi.main_category_id
+        else:
+            raise HTTPException(status_code=400, detail="Invalid main category")
 
     # Add categories
     if poi.category_ids:
@@ -180,6 +189,18 @@ def update_poi(db: Session, *, db_obj: models.PointOfInterest, obj_in: schemas.P
                 setattr(db_obj.event, key, value)
         else:
             db_obj.event = models.Event(**event_data)
+
+    # Handle main category update
+    if 'main_category_id' in update_data:
+        main_category_id = update_data.pop('main_category_id')
+        if main_category_id:
+            main_category = get_category(db, main_category_id)
+            if main_category and main_category.is_main_category:
+                db_obj.main_category_id = main_category_id
+            else:
+                raise HTTPException(status_code=400, detail="Invalid main category")
+        else:
+            db_obj.main_category_id = None
 
     # Handle category updates
     if 'category_ids' in update_data:

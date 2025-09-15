@@ -13,7 +13,17 @@
       "Bash(alembic revision:*)",
       "Bash(npm run dev:*)",
       "Bash(del \"C:\\Users\\Manav\\Documents\\Programming\\Projects\\tesslate\\Nearby-Nearby\\test_hours.py\")",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Bash(venvScripts:*)",
+      "Bash(.venvScriptsactivate)",
+      "Bash(venv\\Scripts\\activate.bat:*)",
+      "Bash(npm install:*)",
+      "Bash(curl:*)",
+      "Bash(pkill:*)",
+      "Bash(taskkill:*)",
+      "Bash(wmic:*)",
+      "Bash(TASKKILL:*)",
+      "Bash(grep:*)"
     ],
     "deny": [],
     "ask": []

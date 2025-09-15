@@ -449,6 +449,7 @@ class PointOfInterest(PointOfInterestBase):
     park: Optional[Park] = None
     trail: Optional[Trail] = None
     event: Optional[Event] = None
+    main_category: Optional[Category] = None
     categories: List[Category] = []
     created_at: datetime
     last_updated: datetime

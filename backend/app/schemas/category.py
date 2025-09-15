@@ -17,16 +17,21 @@ class CategoryBase(BaseModel):
     applicable_to: Optional[List[str]] = None  # Array of POI types this category applies to
     is_active: bool = True
     sort_order: int = 0
+    is_main_category: bool = False
 
 class CategoryCreate(CategoryBase):
     slug: Optional[str] = None
+    poi_types: Optional[List[str]] = None  # Alias for applicable_to in frontend
 
     @model_validator(mode='before')
     @classmethod
     def generate_slug_from_name(cls, values):
         if isinstance(values, dict):
-             if not values.get('slug') and values.get('name'):
+            if not values.get('slug') and values.get('name'):
                 values['slug'] = generate_slug(values['name'])
+            # Map poi_types to applicable_to for frontend compatibility
+            if values.get('poi_types') and not values.get('applicable_to'):
+                values['applicable_to'] = values['poi_types']
         return values
 
 class CategoryUpdate(BaseModel):
@@ -35,6 +40,7 @@ class CategoryUpdate(BaseModel):
     applicable_to: Optional[List[str]] = None
     is_active: Optional[bool] = None
     sort_order: Optional[int] = None
+    is_main_category: Optional[bool] = None
 
 class Category(CategoryBase):
     id: uuid.UUID
@@ -44,3 +50,9 @@ class Category(CategoryBase):
 # Recursive schema for nested display
 class CategoryWithChildren(Category):
     children: List['CategoryWithChildren'] = []
+    poi_types: Optional[List[str]] = None  # Alias for applicable_to
+    
+    @model_validator(mode='after')
+    def set_poi_types(self):
+        self.poi_types = self.applicable_to
+        return self

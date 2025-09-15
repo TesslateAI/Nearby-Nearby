@@ -30,3 +30,4 @@ class Category(Base):
     applicable_to = Column(ARRAY(String))  # Array of POI types this category applies to
     is_active = Column(Boolean, default=True)
     sort_order = Column(Integer, default=0)
+    is_main_category = Column(Boolean, default=False)  # Whether this can be selected as a main category

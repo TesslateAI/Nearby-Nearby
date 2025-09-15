@@ -25,6 +25,7 @@
     "react-router-dom": "^6.22.3"
   },
   "devDependencies": {
+    "@rollup/rollup-win32-x64-msvc": "^4.50.2",
     "@types/react": "^18.2.66",
     "@types/react-dom": "^18.2.22",
     "@vitejs/plugin-react": "^4.2.1",
@@ -36,5 +37,8 @@
     "postcss-preset-mantine": "^1.15.0",
     "postcss-simple-vars": "^7.0.1",
     "vite": "^6.3.5"
+  },
+  "optionalDependencies": {
+    "@rollup/rollup-win32-x64-msvc": "^4.50.1"
   }
 }

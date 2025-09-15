@@ -27,7 +27,9 @@ import {
   TRAIL_EXPERIENCES, HUNTING_FISHING_OPTIONS, FISHING_OPTIONS
 } from '../utils/outdoorConstants';
 import { notifications } from '@mantine/notifications';
-import { CategorySelector } from './CategorySelector';
+import { MainCategorySelector } from './MainCategorySelector';
+import { SecondaryCategoriesSelector } from './SecondaryCategoriesSelector';
+import { IdealForSelector } from './IdealForSelector';
 import DynamicAttributeForm from './DynamicAttributeForm';
 import HoursSelector from './HoursSelector';
 import { 
@@ -219,6 +221,7 @@ const emptyInitialValues = {
   contact_info: {},
   compliance: {},
   custom_fields: {},
+  main_category_id: null,
   category_ids: []
 };
 
@@ -238,6 +241,7 @@ export default function POIFormNew() {
       longitude: (value) => (value === null || value === undefined ? 'Location is required' : null),
       address_city: (value) => (!value ? 'City is required' : null),
       address_state: (value) => (!value ? 'State is required' : null),
+      main_category_id: (value) => (!value ? 'Main category is required' : null),
       category_ids: (value) => {
         const fieldConfig = getFieldsForListingType(form.values.listing_type, form.values.poi_type);
         const maxCategories = fieldConfig?.maxCategories || 3;
@@ -390,6 +394,10 @@ export default function POIFormNew() {
     isBusiness && ['paid', 'paid_founding', 'sponsor', 'community_comped'].includes(form.values.listing_type),
     [isBusiness, form.values.listing_type]
   );
+  const isFreeListing = useMemo(() => 
+    form.values.listing_type === 'free',
+    [form.values.listing_type]
+  );
 
   return (
     <Container size="xl" px={{ base: 'xs', sm: 'md', lg: 'xl' }}>
@@ -406,7 +414,6 @@ export default function POIFormNew() {
             defaultValue={['core', 'categories', 'location', 'hours']}
             multiple
             variant="separated"
-            keepMounted={false}
           >
             {/* Core Information Section */}
             <Accordion.Item value="core">
@@ -591,42 +598,78 @@ export default function POIFormNew() {
                     </Alert>
                   )}
                   
-                  <CategorySelector
-                    value={form.values.category_ids || []}
-                    onChange={useCallback((value) => form.setFieldValue('category_ids', value), [])}
+                  <MainCategorySelector
+                    value={form.values.main_category_id}
+                    onChange={(value) => form.setFieldValue('main_category_id', value)}
                     poiType={form.values.poi_type}
+                    error={form.errors.main_category_id}
+                  />
+                  
+                  <SecondaryCategoriesSelector
+                    value={form.values.category_ids || []}
+                    onChange={(value) => form.setFieldValue('category_ids', value)}
+                    poiType={form.values.poi_type}
+                    mainCategoryId={form.values.main_category_id}
+                    maxValues={getFieldsForListingType(form.values.listing_type, form.values.poi_type)?.maxCategories}
+                    error={form.errors.category_ids}
                   />
 
-                  <Divider my="md" label="Ideal For (Key Options)" />
-                  <MultiSelect
-                    label="Select up to 3 key audience types"
-                    placeholder="Choose primary target audiences"
-                    data={IDEAL_FOR_KEY_OPTIONS}
-                    {...form.getInputProps('ideal_for_key')}
-                    maxValues={getFieldsForListingType(form.values.listing_type, form.values.poi_type)?.maxIdealForKey || 3}
-                  />
-
-                  {(isPaidListing || !isBusiness) && (
-                    <>
-                      <Divider my="md" label="Ideal For (All Options)" />
-                      <Text size="sm" c="dimmed" mb="sm">
-                        Select all that apply - these help people find relevant places
+                  {/* Ideal For */}
+                  <Divider my="md" label="Target Audience" />
+                  
+                  {/* Key Ideal For - Only for paid listings */}
+                  {isPaidListing && (
+                    <Stack mb="md">
+                      <Title order={5}>Key Ideal For</Title>
+                      <Text size="sm" c="dimmed">
+                        Select up to 3 primary audiences (these will be prominently displayed)
                       </Text>
-                      <Checkbox.Group
-                        {...form.getInputProps('ideal_for')}
-                      >
-                        <SimpleGrid cols={{ base: 2, sm: 3, md: 4 }}>
-                          {IDEAL_FOR_OPTIONS.map((option) => (
-                            <Checkbox
-                              key={typeof option === 'object' ? option.value : option}
-                              value={typeof option === 'object' ? option.value : option}
-                              label={typeof option === 'object' ? option.label : option}
-                            />
-                          ))}
-                        </SimpleGrid>
-                      </Checkbox.Group>
-                    </>
+                      <SimpleGrid cols={{ base: 1, sm: 2 }}>
+                        {IDEAL_FOR_KEY_OPTIONS.map((option) => (
+                          <Checkbox
+                            key={option.value}
+                            label={option.label}
+                            checked={form.values.ideal_for_key?.includes(option.value) || false}
+                            onChange={(event) => {
+                              const checked = event.currentTarget.checked;
+                              if (checked && (form.values.ideal_for_key?.length || 0) < 3) {
+                                form.setFieldValue('ideal_for_key', [...(form.values.ideal_for_key || []), option.value]);
+                              } else if (!checked) {
+                                form.setFieldValue('ideal_for_key', (form.values.ideal_for_key || []).filter(v => v !== option.value));
+                              }
+                            }}
+                            disabled={
+                              form.values.ideal_for_key?.length >= 3 && 
+                              !form.values.ideal_for_key?.includes(option.value)
+                            }
+                          />
+                        ))}
+                      </SimpleGrid>
+                      <Text size="xs" c="dimmed">
+                        {form.values.ideal_for_key?.length || 0} / 3 selected
+                      </Text>
+                    </Stack>
                   )}
+
+                  {/* Full Ideal For */}
+                  <Stack>
+                    <Title order={5}>Ideal For</Title>
+                    <Text size="sm" c="dimmed">
+                      Select all audiences that would enjoy this {form.values.poi_type?.toLowerCase() || 'POI'}
+                    </Text>
+                    <IdealForSelector
+                      value={form.values.ideal_for || []}
+                      onChange={(value) => form.setFieldValue('ideal_for', value)}
+                      keyIdealFor={form.values.ideal_for_key || []}
+                      maxSelections={isFreeListing ? 5 : undefined}
+                      showAll={!isFreeListing}
+                    />
+                    {isFreeListing && (
+                      <Text size="xs" c="dimmed" mt="xs">
+                        Free listings can select up to 5 ideal audiences
+                      </Text>
+                    )}
+                  </Stack>
                 </Stack>
               </Accordion.Panel>
             </Accordion.Item>

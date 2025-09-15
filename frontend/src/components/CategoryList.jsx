@@ -14,7 +14,8 @@ import {
   TextInput,
   ScrollArea,
   Loader,
-  Modal
+  Modal,
+  Badge
 } from '@mantine/core';
 import { useNavigate } from 'react-router-dom';
 import { notifications } from '@mantine/notifications';
@@ -101,17 +102,34 @@ function CategoryTreeItem({ category, onEdit, onDelete, searchTerm, depth = 0, i
           <Box style={{ width: 22 }} />
         )}
         
-        <Text 
-          style={{ 
-            flex: 1,
-            fontWeight: depth === 0 ? 600 : 400,
-            color: depth === 0 
-              ? 'var(--mantine-color-deep-purple-8)' 
-              : 'var(--mantine-color-gray-7)'
-          }}
-        >
-          {category.name}
-        </Text>
+        <Box style={{ flex: 1 }}>
+          <Group gap="xs">
+            <Text 
+              style={{ 
+                fontWeight: depth === 0 ? 600 : 400,
+                color: depth === 0 
+                  ? 'var(--mantine-color-deep-purple-8)' 
+                  : 'var(--mantine-color-gray-7)'
+              }}
+            >
+              {category.name}
+            </Text>
+            {category.is_main_category && (
+              <Badge size="xs" variant="light" color="grape">
+                Main
+              </Badge>
+            )}
+            {category.poi_types && category.poi_types.length > 0 && (
+              <Group gap={4}>
+                {category.poi_types.map(type => (
+                  <Badge key={type} size="xs" variant="dot" color="blue">
+                    {type}
+                  </Badge>
+                ))}
+              </Group>
+            )}
+          </Group>
+        </Box>
         
         <Group gap="xs" onClick={(e) => e.stopPropagation()}>
           <Tooltip label="Edit Category">

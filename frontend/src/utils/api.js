@@ -1,6 +1,7 @@
 import { secureTokenStorage } from './secureStorage';
 
-// Base API URL - using environment variable or proxy configuration
+// Base API URL - should include /api suffix
+// e.g., http://localhost:8003/api
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
 export const api = {
