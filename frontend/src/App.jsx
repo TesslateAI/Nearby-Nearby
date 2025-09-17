@@ -3,7 +3,7 @@ import { useDisclosure } from '@mantine/hooks';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
 import { IconRocket, IconSettings, IconLogout } from '@tabler/icons-react';
 import POIList from './components/POIList';
-import POIFormNew from './components/POIFormNew';
+import POIForm from './components/POIForm';
 import POIMap from './components/POIMap';
 import CategoryList from './components/CategoryList'; 
 import CategoryForm from './components/CategoryForm';
@@ -94,8 +94,8 @@ function App() {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/" element={<POIList />} />
             <Route path="/map" element={<POIMap />} />
-            <Route path="/poi/new" element={<POIFormNew />} />
-            <Route path="/poi/:id/edit" element={<POIFormNew />} />
+            <Route path="/poi/new" element={<POIForm />} />
+            <Route path="/poi/:id/edit" element={<POIForm />} />
             <Route path="/categories" element={<CategoryList />} />
             <Route path="/category/new" element={<CategoryForm />} />
             <Route path="/category/:id/edit" element={<CategoryForm />} />

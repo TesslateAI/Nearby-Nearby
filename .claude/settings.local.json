@@ -28,7 +28,14 @@
       "mcp__playwright__browser_navigate",
       "mcp__playwright__browser_type",
       "mcp__playwright__browser_click",
-      "mcp__playwright__browser_evaluate"
+      "mcp__playwright__browser_evaluate",
+      "Bash(npm uninstall:*)",
+      "Bash(npm update:*)",
+      "mcp__playwright__browser_fill_form",
+      "mcp__playwright__browser_close",
+      "mcp__playwright__browser_wait_for",
+      "Read(//c/Users/**)",
+      "mcp__playwright__browser_snapshot"
     ],
     "deny": [],
     "ask": []

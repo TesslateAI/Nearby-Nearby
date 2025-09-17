@@ -7,6 +7,7 @@ from typing import Dict, Any
 
 from app import models, schemas
 from app.crud.crud_category import get_category
+from app.utils.html_sanitizer import sanitize_poi_fields
 from geoalchemy2.types import Geography
 
 
@@ -130,6 +131,9 @@ def get_pois_nearby(db: Session, *, poi_id: uuid.UUID, distance_km: float = 5.0,
 def create_poi(db: Session, poi: schemas.PointOfInterestCreate):
     # Create the POI with location
     poi_data = poi.model_dump(exclude={'location', 'business', 'park', 'trail', 'event', 'category_ids', 'main_category_id'})
+
+    # Sanitize HTML content in the POI data (temporarily disabled for testing)
+    poi_data = sanitize_poi_fields(poi_data)
     db_poi = models.PointOfInterest(**poi_data)
     
     # Set the location geometry
@@ -150,15 +154,19 @@ def create_poi(db: Session, poi: schemas.PointOfInterestCreate):
             if category:
                 db_poi.categories.append(category)
 
-    # Create subtype based on poi_type
+    # Create subtype based on poi_type with HTML sanitization
     if poi.poi_type == 'BUSINESS' and poi.business:
         db_poi.business = models.Business(**poi.business.model_dump())
     elif poi.poi_type == 'PARK' and poi.park:
         db_poi.park = models.Park(**poi.park.model_dump())
     elif poi.poi_type == 'TRAIL' and poi.trail:
-        db_poi.trail = models.Trail(**poi.trail.model_dump())
+        trail_data = poi.trail.model_dump()
+        trail_data = sanitize_poi_fields({'trail': trail_data}).get('trail', {})
+        db_poi.trail = models.Trail(**trail_data)
     elif poi.poi_type == 'EVENT' and poi.event:
-        db_poi.event = models.Event(**poi.event.model_dump())
+        event_data = poi.event.model_dump()
+        event_data = sanitize_poi_fields({'event': event_data}).get('event', {})
+        db_poi.event = models.Event(**event_data)
 
     try:
         db.add(db_poi)
@@ -176,6 +184,9 @@ def create_poi(db: Session, poi: schemas.PointOfInterestCreate):
 
 def update_poi(db: Session, *, db_obj: models.PointOfInterest, obj_in: schemas.PointOfInterestUpdate) -> models.PointOfInterest:
     update_data = obj_in.model_dump(exclude_unset=True)
+
+    # Sanitize HTML content in the update data (temporarily disabled for testing)
+    update_data = sanitize_poi_fields(update_data)
 
     # Handle location update
     if 'location' in update_data:
