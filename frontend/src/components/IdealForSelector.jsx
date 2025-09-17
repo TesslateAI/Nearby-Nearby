@@ -5,6 +5,11 @@ import { IDEAL_FOR_OPTIONS } from '../utils/constants';
 export function IdealForSelector({ value = [], onChange, keyIdealFor = [], maxSelections, showAll = true }) {
   const [selectedValues, setSelectedValues] = useState(value);
 
+  // Sync internal state with external value prop
+  useEffect(() => {
+    setSelectedValues(value);
+  }, [value]);
+
   // Group options by their group property
   const groupedOptions = IDEAL_FOR_OPTIONS.reduce((acc, option) => {
     const group = option.group || 'Other';
@@ -17,10 +22,11 @@ export function IdealForSelector({ value = [], onChange, keyIdealFor = [], maxSe
   useEffect(() => {
     if (keyIdealFor && keyIdealFor.length > 0) {
       // Find matching values in the full ideal for list
+      // keyIdealFor contains string values, we need to match them with IDEAL_FOR_OPTIONS
       const matchingValues = IDEAL_FOR_OPTIONS
-        .filter(opt => keyIdealFor.includes(opt.value))
+        .filter(opt => keyIdealFor.includes(opt.value) || keyIdealFor.includes(opt.label))
         .map(opt => opt.value);
-      
+
       // Merge with existing selections (avoid duplicates)
       const newValues = [...new Set([...selectedValues, ...matchingValues])];
       setSelectedValues(newValues);

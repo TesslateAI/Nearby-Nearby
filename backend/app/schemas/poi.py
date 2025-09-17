@@ -179,6 +179,17 @@ class PointOfInterestBase(BaseModel):
     reservation_links: Optional[List[str]] = None
     appointment_links: Optional[List[str]] = None
     online_ordering_links: Optional[List[str]] = None
+
+    # Gallery
+    gallery_photos: Optional[List[str]] = None
+
+    # Business Entry
+    business_entry_notes: Optional[str] = None
+    business_entry_photo: Optional[str] = None
+
+    # Hours enhancements
+    appointment_booking_url: Optional[str] = None
+    hours_but_appointment_required: Optional[bool] = False
     
     # Service Relationships
     service_locations: Optional[List[uuid.UUID]] = None
@@ -199,6 +210,11 @@ class PointOfInterestBase(BaseModel):
     address_city: Optional[str] = None
     address_state: Optional[str] = None
     address_zip: Optional[str] = None
+    address_county: Optional[str] = None
+
+    # Front door coordinates (separate from main location for map pin)
+    front_door_latitude: Optional[float] = None
+    front_door_longitude: Optional[float] = None
     
     # Status and verification
     status: Optional[str] = 'Fully Open'  # Will be validated based on POI type
@@ -353,6 +369,11 @@ class PointOfInterestUpdate(BaseModel):
     reservation_links: Optional[List[str]] = None
     appointment_links: Optional[List[str]] = None
     online_ordering_links: Optional[List[str]] = None
+    gallery_photos: Optional[List[str]] = None
+    business_entry_notes: Optional[str] = None
+    business_entry_photo: Optional[str] = None
+    appointment_booking_url: Optional[str] = None
+    hours_but_appointment_required: Optional[bool] = None
     service_locations: Optional[List[uuid.UUID]] = None
     locally_found_at: Optional[List[uuid.UUID]] = None
     article_links: Optional[List[Dict[str, str]]] = None
@@ -365,6 +386,9 @@ class PointOfInterestUpdate(BaseModel):
     address_city: Optional[str] = None
     address_state: Optional[str] = None
     address_zip: Optional[str] = None
+    address_county: Optional[str] = None
+    front_door_latitude: Optional[float] = None
+    front_door_longitude: Optional[float] = None
     status: Optional[str] = None
     status_message: Optional[str] = None
     is_verified: Optional[bool] = None

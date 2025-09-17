@@ -214,12 +214,20 @@ function DayHours({ day, hours, onChange, onCopy }) {
       onChange({ status: 'closed' });
     } else if (status === '24hours') {
       onChange({ status: '24hours' });
+    } else if (status === 'appointment') {
+      onChange({
+        status: 'appointment',
+        periods: [{
+          open: { type: 'appointment' },
+          close: { type: 'appointment' }
+        }]
+      });
     } else {
       onChange({
         status: 'open',
-        periods: initialHours.periods || [{ 
-          open: { type: 'fixed', time: '09:00' }, 
-          close: { type: 'fixed', time: '17:00' } 
+        periods: initialHours.periods || [{
+          open: { type: 'fixed', time: '09:00' },
+          close: { type: 'fixed', time: '17:00' }
         }]
       });
     }
@@ -256,7 +264,8 @@ function DayHours({ day, hours, onChange, onCopy }) {
             data={[
               { label: 'Open', value: 'open' },
               { label: 'Closed', value: 'closed' },
-              { label: '24 Hours', value: '24hours' }
+              { label: '24 Hours', value: '24hours' },
+              { label: 'By Appt', value: 'appointment' }
             ]}
           />
         </Group>
@@ -504,6 +513,27 @@ const HoursSelector = memo(({ value = {}, onChange, poiType }) => {
                 }}
               >
                 Set 24/7
+              </Button>
+
+              <Button
+                size="sm"
+                variant="light"
+                onClick={() => {
+                  const appointmentHours = {
+                    status: 'appointment',
+                    periods: [{
+                      open: { type: 'appointment' },
+                      close: { type: 'appointment' }
+                    }]
+                  };
+                  const newRegular = {};
+                  DAYS_OF_WEEK.forEach(day => {
+                    newRegular[day.value] = appointmentHours;
+                  });
+                  updateHours({ regular: newRegular });
+                }}
+              >
+                By Appointment Only
               </Button>
             </Group>
           </Stack>

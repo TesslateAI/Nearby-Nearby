@@ -36,6 +36,11 @@ class PointOfInterest(Base):
     address_city = Column(String)
     address_state = Column(String)
     address_zip = Column(String)
+    address_county = Column(String)
+
+    # Front door coordinates (separate from main location for map pin)
+    front_door_latitude = Column(Numeric(precision=10, scale=7))
+    front_door_longitude = Column(Numeric(precision=10, scale=7))
     
     # Location (PostGIS)
     location = Column(Geometry(geometry_type='POINT', srid=4326), nullable=False)
@@ -139,9 +144,20 @@ class PointOfInterest(Base):
     menu_photos = Column(JSONB)  # List of menu photo URLs
     menu_link = Column(String)  # Link to online menu
     delivery_links = Column(JSONB)  # List of delivery service links
-    reservation_links = Column(JSONB)  # List of reservation links  
+    reservation_links = Column(JSONB)  # List of reservation links
     appointment_links = Column(JSONB)  # List of appointment scheduling links
     online_ordering_links = Column(JSONB)  # List of online ordering links
+
+    # Gallery
+    gallery_photos = Column(JSONB)
+
+    # Business Entry
+    business_entry_notes = Column(Text)
+    business_entry_photo = Column(String)
+
+    # Hours enhancements
+    appointment_booking_url = Column(String)
+    hours_but_appointment_required = Column(Boolean, default=False)
     
     # Service Relationships
     service_locations = Column(JSONB)  # POI IDs where this business provides services

@@ -35,7 +35,10 @@
       "mcp__playwright__browser_close",
       "mcp__playwright__browser_wait_for",
       "Read(//c/Users/**)",
-      "mcp__playwright__browser_snapshot"
+      "mcp__playwright__browser_snapshot",
+      "Bash(cd:*)",
+      "Bash(find:*)",
+      "Bash(node:*)"
     ],
     "deny": [],
     "ask": []

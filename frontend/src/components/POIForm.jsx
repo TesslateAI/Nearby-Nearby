@@ -62,6 +62,10 @@ const emptyInitialValues = {
   address_city: '',
   address_state: 'NC',
   address_zip: '',
+  address_county: '',
+  // Front door coordinates
+  front_door_latitude: null,
+  front_door_longitude: null,
   // Contact info
   website_url: '',
   phone_number: '',
@@ -103,6 +107,7 @@ const emptyInitialValues = {
   downloadable_maps: [],
   payment_methods: [],
   key_facilities: [],
+  alcohol_available: 'no',
   alcohol_options: [],
   wheelchair_accessible: [],
   wheelchair_details: '',
@@ -111,12 +116,17 @@ const emptyInitialValues = {
   wifi_options: [],
   drone_usage: '',
   drone_policy: '',
+  pets_allowed: 'no',
   pet_options: [],
   pet_policy: '',
   // Public Toilets
+  public_toilets_available: 'no',
   public_toilets: [],
   toilet_locations: [],
   toilet_description: '',
+  toilet_latitude: null,
+  toilet_longitude: null,
+  toilet_photos: '',
   // Rentals
   available_for_rent: false,
   rental_info: '',
@@ -138,6 +148,14 @@ const emptyInitialValues = {
   reservation_links: [],
   appointment_links: [],
   online_ordering_links: [],
+  // Gallery photos
+  gallery_photos: [],
+  // Business Entry
+  business_entry_notes: '',
+  business_entry_photo: '',
+  // Hours enhancements
+  appointment_booking_url: '',
+  hours_but_appointment_required: false,
   // Service Relationships
   service_locations: [],
   // Locally Found & Community
@@ -348,7 +366,8 @@ export default function POIForm() {
             'drone_usage', 'drone_policy', 'pet_policy', 'toilet_description', 'rental_info',
             'rental_pricing', 'rental_link', 'price_range_per_person', 'pricing', 'gift_cards',
             'menu_link', 'community_impact', 'night_sky_viewing', 'birding_wildlife',
-            'hunting_fishing_info', 'membership_details', 'camping_lodging', 'playground_notes'
+            'hunting_fishing_info', 'membership_details', 'camping_lodging', 'playground_notes',
+            'pets_allowed', 'alcohol_available', 'public_toilets_available', 'toilet_photos'
           ];
 
           stringFields.forEach(field => {
@@ -727,9 +746,10 @@ export default function POIForm() {
                   )}
 
                   <TextInput
-                    label="Featured Image URL"
-                    placeholder="URL to featured image or logo"
+                    label={isBusiness && isFreeListing ? "Logo" : "Featured Image"}
+                    placeholder={isBusiness && isFreeListing ? "URL to business logo" : "URL to featured image"}
                     {...form.getInputProps('featured_image')}
+                    description="Upload image instead of URL"
                   />
                 </Stack>
               </Accordion.Panel>
@@ -783,20 +803,20 @@ export default function POIForm() {
                       <SimpleGrid cols={{ base: 1, sm: 2 }}>
                         {IDEAL_FOR_KEY_OPTIONS.map((option) => (
                           <Checkbox
-                            key={option.value}
-                            label={option.label}
-                            checked={(form.values.ideal_for_key || []).includes(option.value)}
+                            key={option}
+                            label={option}
+                            checked={(form.values.ideal_for_key || []).includes(option)}
                             onChange={(event) => {
                               const checked = event.currentTarget.checked;
                               if (checked && (form.values.ideal_for_key?.length || 0) < 3) {
-                                form.setFieldValue('ideal_for_key', [...(form.values.ideal_for_key || []), option.value]);
+                                form.setFieldValue('ideal_for_key', [...(form.values.ideal_for_key || []), option]);
                               } else if (!checked) {
-                                form.setFieldValue('ideal_for_key', (form.values.ideal_for_key || []).filter(v => v !== option.value));
+                                form.setFieldValue('ideal_for_key', (form.values.ideal_for_key || []).filter(v => v !== option));
                               }
                             }}
                             disabled={
-                              form.values.ideal_for_key?.length >= 3 && 
-                              !(form.values.ideal_for_key || []).includes(option.value)
+                              form.values.ideal_for_key?.length >= 3 &&
+                              !(form.values.ideal_for_key || []).includes(option)
                             }
                           />
                         ))}
@@ -858,18 +878,23 @@ export default function POIForm() {
                       {...form.getInputProps('address_street')}
                     />
                     <TextInput
-                      label="Full Address"
-                      placeholder="Complete address"
+                      label="Address Line 2 (Suite, Unit, etc.)"
+                      placeholder="Suite 100, Unit B, etc."
                       {...form.getInputProps('address_full')}
                     />
                   </SimpleGrid>
 
-                  <SimpleGrid cols={{ base: 1, sm: 3 }}>
+                  <SimpleGrid cols={{ base: 1, sm: 4 }}>
                     <TextInput
                       label="City"
                       placeholder="City name"
                       {...form.getInputProps('address_city')}
                       withAsterisk
+                    />
+                    <TextInput
+                      label="County"
+                      placeholder="County name"
+                      {...form.getInputProps('address_county')}
                     />
                     <Select
                       label="State"
@@ -885,6 +910,32 @@ export default function POIForm() {
                     />
                   </SimpleGrid>
 
+                  <Divider my="md" label="Coordinates" />
+                  <SimpleGrid cols={{ base: 1, sm: 2 }}>
+                    <NumberInput
+                      label="Front Door Latitude"
+                      placeholder="35.7128"
+                      precision={6}
+                      {...form.getInputProps('front_door_latitude')}
+                    />
+                    <NumberInput
+                      label="Front Door Longitude"
+                      placeholder="-79.0064"
+                      precision={6}
+                      {...form.getInputProps('front_door_longitude')}
+                    />
+                  </SimpleGrid>
+                  <Button
+                    size="xs"
+                    variant="light"
+                    onClick={() => {
+                      form.setFieldValue('front_door_latitude', form.values.latitude);
+                      form.setFieldValue('front_door_longitude', form.values.longitude);
+                    }}
+                  >
+                    Use Map Pin for Lat/Long
+                  </Button>
+
                   <Divider my="md" label="Parking Information" />
                   
                   <Checkbox.Group
@@ -898,28 +949,32 @@ export default function POIForm() {
                     </SimpleGrid>
                   </Checkbox.Group>
 
-                  <Textarea
-                    label="Parking Notes"
-                    placeholder="Additional parking information"
-                    {...form.getInputProps('parking_notes')}
-                  />
+                  {!isFreeListing && (
+                    <>
+                      <Textarea
+                        label="Parking Notes"
+                        placeholder="Additional parking information"
+                        {...form.getInputProps('parking_notes')}
+                      />
 
-                  <Textarea
-                    label="Public Transit Information"
-                    placeholder="Bus routes, train stations, etc."
-                    {...form.getInputProps('public_transit_info')}
-                  />
+                      <Textarea
+                        label="Public Transit Information"
+                        placeholder="Bus routes, train stations, etc."
+                        {...form.getInputProps('public_transit_info')}
+                      />
 
-                  <Radio.Group
-                    label="Expect to Pay for Parking?"
-                    {...form.getInputProps('expect_to_pay_parking')}
-                  >
-                    <Stack mt="xs">
-                      <Radio value="yes" label="Yes" />
-                      <Radio value="no" label="No" />
-                      <Radio value="sometimes" label="Sometimes" />
-                    </Stack>
-                  </Radio.Group>
+                      <Radio.Group
+                        label="Expect to Pay for Parking?"
+                        {...form.getInputProps('expect_to_pay_parking')}
+                      >
+                        <Stack mt="xs">
+                          <Radio value="yes" label="Yes" />
+                          <Radio value="no" label="No" />
+                          <Radio value="sometimes" label="Sometimes" />
+                        </Stack>
+                      </Radio.Group>
+                    </>
+                  )}
                 </Stack>
               </Accordion.Panel>
             </Accordion.Item>
@@ -930,11 +985,31 @@ export default function POIForm() {
                 <Text fw={600}>Hours of Operation</Text>
               </Accordion.Control>
               <Accordion.Panel>
-                <HoursSelector
-                  value={form.values.hours}
-                  onChange={(value) => form.setFieldValue('hours', value)}
-                  poiType={form.values.poi_type}
-                />
+                <Stack>
+                  <HoursSelector
+                    value={form.values.hours}
+                    onChange={(value) => form.setFieldValue('hours', value)}
+                    poiType={form.values.poi_type}
+                  />
+                  {isBusiness && (
+                    <>
+                      <Divider my="md" label="Appointment Booking" />
+                      <TextInput
+                        label="Appointment Booking URL"
+                        placeholder="https://calendly.com/your-business"
+                        {...form.getInputProps('appointment_booking_url')}
+                        description="Link for customers to book appointments (for 'By Appointment Only' businesses)"
+                      />
+                      {!isFreeListing && (
+                        <Checkbox
+                          label="Hours are set, but appointments are still required"
+                          {...form.getInputProps('hours_but_appointment_required', { type: 'checkbox' })}
+                          description="Check this if you have regular hours but customers still need to make appointments"
+                        />
+                      )}
+                    </>
+                  )}
+                </Stack>
               </Accordion.Panel>
             </Accordion.Item>
 
@@ -965,6 +1040,11 @@ export default function POIForm() {
 
                   <Divider my="md" label="Social Media Usernames" />
                   <Text size="sm" c="dimmed">Enter just the username (not the full URL)</Text>
+                  {isFreeListing && (
+                    <Alert color="blue" variant="light" mt="xs">
+                      For free accounts, these links are for internal use only and will not be displayed publicly. This helps us tag the correct business on social media.
+                    </Alert>
+                  )}
                   
                   <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }}>
                     <TextInput
@@ -1063,11 +1143,13 @@ export default function POIForm() {
                         data={PRICE_RANGE_OPTIONS}
                         {...form.getInputProps('price_range_per_person')}
                       />
-                      <Select
-                        label="Gift Cards Available?"
-                        data={GIFT_CARD_OPTIONS}
-                        {...form.getInputProps('gift_cards')}
-                      />
+                      {!isFreeListing && (
+                        <Select
+                          label="Gift Cards Available?"
+                          data={GIFT_CARD_OPTIONS}
+                          {...form.getInputProps('gift_cards')}
+                        />
+                      )}
                     </SimpleGrid>
 
                     <TextInput
@@ -1076,48 +1158,55 @@ export default function POIForm() {
                       {...form.getInputProps('pricing')}
                     />
 
-                    <Divider my="md" label="Discounts Offered" />
-                    <Checkbox.Group {...getCheckboxGroupProps('discounts')}>
-                      <SimpleGrid cols={{ base: 2, sm: 3 }}>
-                        {DISCOUNT_TYPES.map(discount => (
-                          <Checkbox key={discount} value={discount} label={discount} />
-                        ))}
-                      </SimpleGrid>
-                    </Checkbox.Group>
+                    {!isFreeListing && (
+                      <>
+                        <Divider my="md" label="Discounts Offered" />
+                        <Text size="sm" c="dimmed">
+                          Do you offer an everyday discount for service members or community members, separate from seasonal or day-specific promotions?
+                        </Text>
+                        <Checkbox.Group {...getCheckboxGroupProps('discounts')}>
+                          <SimpleGrid cols={{ base: 2, sm: 3 }}>
+                            {DISCOUNT_TYPES.map(discount => (
+                              <Checkbox key={discount} value={discount} label={discount} />
+                            ))}
+                          </SimpleGrid>
+                        </Checkbox.Group>
 
-                    <Divider my="md" label="Youth Amenities" />
-                    <Checkbox.Group {...getCheckboxGroupProps('youth_amenities')}>
-                      <SimpleGrid cols={{ base: 2, sm: 3 }}>
-                        {YOUTH_AMENITIES.map(amenity => (
-                          <Checkbox key={amenity} value={amenity} label={amenity} />
-                        ))}
-                      </SimpleGrid>
-                    </Checkbox.Group>
+                        <Divider my="md" label="Youth Amenities" />
+                        <Checkbox.Group {...getCheckboxGroupProps('youth_amenities')}>
+                          <SimpleGrid cols={{ base: 2, sm: 3 }}>
+                            {YOUTH_AMENITIES.map(amenity => (
+                              <Checkbox key={amenity} value={amenity} label={amenity} />
+                            ))}
+                          </SimpleGrid>
+                        </Checkbox.Group>
 
-                    <Divider my="md" label="Business Amenities" />
-                    <Checkbox.Group {...getCheckboxGroupProps('business_amenities')}>
-                      <SimpleGrid cols={{ base: 2, sm: 3 }}>
-                        {BUSINESS_AMENITIES.map(amenity => (
-                          <Checkbox key={amenity} value={amenity} label={amenity} />
-                        ))}
-                      </SimpleGrid>
-                    </Checkbox.Group>
+                        <Divider my="md" label="Business Amenities" />
+                        <Checkbox.Group {...getCheckboxGroupProps('business_amenities')}>
+                          <SimpleGrid cols={{ base: 2, sm: 3 }}>
+                            {BUSINESS_AMENITIES.map(amenity => (
+                              <Checkbox key={amenity} value={amenity} label={amenity} />
+                            ))}
+                          </SimpleGrid>
+                        </Checkbox.Group>
 
-                    <Divider my="md" label="Entertainment Options" />
-                    <Checkbox.Group {...getCheckboxGroupProps('entertainment_options')}>
-                      <SimpleGrid cols={{ base: 2, sm: 3 }}>
-                        {ENTERTAINMENT_OPTIONS.map(option => (
-                          <Checkbox key={option} value={option} label={option} />
-                        ))}
-                      </SimpleGrid>
-                    </Checkbox.Group>
+                        <Divider my="md" label="Entertainment Options" />
+                        <Checkbox.Group {...getCheckboxGroupProps('entertainment_options')}>
+                          <SimpleGrid cols={{ base: 2, sm: 3 }}>
+                            {ENTERTAINMENT_OPTIONS.map(option => (
+                              <Checkbox key={option} value={option} label={option} />
+                            ))}
+                          </SimpleGrid>
+                        </Checkbox.Group>
+                      </>
+                    )}
                   </Stack>
                 </Accordion.Panel>
               </Accordion.Item>
             )}
 
             {/* Menu & Online Booking Section */}
-            {isBusiness && (
+            {isBusiness && !isFreeListing && (
               <Accordion.Item value="menu">
                 <Accordion.Control>
                   <Text fw={600}>Menu & Online Booking</Text>
@@ -1128,6 +1217,14 @@ export default function POIForm() {
                       label="Menu Link"
                       placeholder="https://example.com/menu"
                       {...form.getInputProps('menu_link')}
+                    />
+
+                    <Divider my="md" label="Menu Photos" />
+                    <Text size="sm" c="dimmed">Upload photos of your menu</Text>
+                    <TextInput
+                      label="Menu Photos"
+                      placeholder="URLs to menu photos (comma-separated)"
+                      {...form.getInputProps('menu_photos')}
                     />
 
                     <Divider my="md" label="Delivery Services" />
@@ -1222,8 +1319,54 @@ export default function POIForm() {
               </Accordion.Item>
             )}
 
+            {/* Gallery Section - PAID Business only */}
+            {isBusiness && !isFreeListing && (
+              <Accordion.Item value="gallery">
+                <Accordion.Control>
+                  <Text fw={600}>Gallery</Text>
+                </Accordion.Control>
+                <Accordion.Panel>
+                  <Stack>
+                    <Text size="sm" c="dimmed">Upload extra photos to showcase your business</Text>
+                    <TextInput
+                      label="Gallery Photos"
+                      placeholder="URLs to extra photos (comma-separated)"
+                      {...form.getInputProps('gallery_photos')}
+                    />
+                  </Stack>
+                </Accordion.Panel>
+              </Accordion.Item>
+            )}
+
+            {/* Location & Parking Entry Details - PAID Business only */}
+            {isBusiness && !isFreeListing && (
+              <Accordion.Item value="business-entry">
+                <Accordion.Control>
+                  <Text fw={600}>Business Entry Details</Text>
+                </Accordion.Control>
+                <Accordion.Panel>
+                  <Stack>
+                    <RichTextEditor
+                      label="Business Entry Notes"
+                      placeholder="Describe how to enter your business, special instructions, etc."
+                      value={form.values.business_entry_notes || ''}
+                      onChange={(html) => form.setFieldValue('business_entry_notes', html)}
+                      error={form.errors.business_entry_notes}
+                      minRows={3}
+                    />
+                    <TextInput
+                      label="Entry Photo"
+                      placeholder="URL to photo of business entrance"
+                      {...form.getInputProps('business_entry_photo')}
+                    />
+                  </Stack>
+                </Accordion.Panel>
+              </Accordion.Item>
+            )}
+
             {/* Facilities & Accessibility Section */}
-            <Accordion.Item value="facilities">
+            {(!isBusiness || !isFreeListing) && (
+              <Accordion.Item value="facilities">
               <Accordion.Control>
                 <Text fw={600}>Facilities & Accessibility</Text>
               </Accordion.Control>
@@ -1252,13 +1395,37 @@ export default function POIForm() {
                   </Checkbox.Group>
 
                   <Divider my="md" label="Alcohol Availability" />
-                  <Checkbox.Group {...getCheckboxGroupProps('alcohol_options')}>
-                    <SimpleGrid cols={{ base: 2, sm: 3 }}>
-                      {ALCOHOL_OPTIONS.map(option => (
-                        <Checkbox key={option} value={option} label={option} />
-                      ))}
-                    </SimpleGrid>
-                  </Checkbox.Group>
+                  <Radio.Group
+                    label="Is alcohol available?"
+                    value={form.values.alcohol_available || 'no'}
+                    onChange={(value) => {
+                      form.setFieldValue('alcohol_available', value);
+                      // Clear alcohol options when "No" is selected
+                      if (value === 'no') {
+                        form.setFieldValue('alcohol_options', []);
+                      }
+                    }}
+                  >
+                    <Stack mt="xs">
+                      <Radio value="yes" label="Yes" />
+                      <Radio value="no" label="No" />
+                    </Stack>
+                  </Radio.Group>
+
+                  {form.values.alcohol_available === 'yes' && (
+                    <>
+                      <Checkbox.Group
+                        label="Alcohol Options"
+                        {...getCheckboxGroupProps('alcohol_options')}
+                      >
+                        <SimpleGrid cols={{ base: 2, sm: 3 }}>
+                          {ALCOHOL_OPTIONS.filter(option => !['Yes', 'No Alcohol Allowed'].includes(option)).map(option => (
+                            <Checkbox key={option} value={option} label={option} />
+                          ))}
+                        </SimpleGrid>
+                      </Checkbox.Group>
+                    </>
+                  )}
 
                   <Divider my="md" label="Wheelchair Accessibility" />
                   <Checkbox.Group {...getCheckboxGroupProps('wheelchair_accessible')}>
@@ -1343,27 +1510,77 @@ export default function POIForm() {
                 </Stack>
               </Accordion.Panel>
             </Accordion.Item>
+            )}
 
             {/* Public Amenities Section */}
-            <Accordion.Item value="amenities">
+            {(!isBusiness || !isFreeListing) && (
+              <Accordion.Item value="amenities">
               <Accordion.Control>
                 <Text fw={600}>Public Amenities</Text>
               </Accordion.Control>
               <Accordion.Panel>
                 <Stack>
                   <Divider my="md" label="Public Toilets" />
-                  <Checkbox.Group {...getCheckboxGroupProps('public_toilets')}>
-                    <SimpleGrid cols={{ base: 2, sm: 3 }}>
-                      {PUBLIC_TOILET_OPTIONS.map(option => (
-                        <Checkbox key={option} value={option} label={option} />
-                      ))}
-                    </SimpleGrid>
-                  </Checkbox.Group>
-                  <Textarea
-                    label="Toilet Description"
-                    placeholder="e.g., For paying customers only"
-                    {...form.getInputProps('toilet_description')}
-                  />
+                  <Radio.Group
+                    label="Are public toilets available?"
+                    value={form.values.public_toilets_available || 'no'}
+                    onChange={(value) => {
+                      form.setFieldValue('public_toilets_available', value);
+                      // Clear public toilet fields when "No" is selected
+                      if (value === 'no') {
+                        form.setFieldValue('public_toilets', []);
+                        form.setFieldValue('toilet_description', '');
+                        form.setFieldValue('toilet_locations', []);
+                      }
+                    }}
+                  >
+                    <Stack mt="xs">
+                      <Radio value="yes" label="Yes" />
+                      <Radio value="no" label="No" />
+                    </Stack>
+                  </Radio.Group>
+
+                  {form.values.public_toilets_available === 'yes' && (
+                    <>
+                      <Checkbox.Group
+                        label="Public Toilet Options"
+                        {...getCheckboxGroupProps('public_toilets')}
+                      >
+                        <SimpleGrid cols={{ base: 2, sm: 3 }}>
+                          {PUBLIC_TOILET_OPTIONS.filter(option => !['Yes', 'No'].includes(option)).map(option => (
+                            <Checkbox key={option} value={option} label={option} />
+                          ))}
+                        </SimpleGrid>
+                      </Checkbox.Group>
+
+                      <Textarea
+                        label="Toilet Description"
+                        placeholder="e.g., For paying customers only, Location details"
+                        {...form.getInputProps('toilet_description')}
+                      />
+
+                      <SimpleGrid cols={{ base: 1, sm: 2 }}>
+                        <NumberInput
+                          label="Toilet Latitude"
+                          placeholder="e.g., 35.7128"
+                          precision={6}
+                          {...form.getInputProps('toilet_latitude')}
+                        />
+                        <NumberInput
+                          label="Toilet Longitude"
+                          placeholder="e.g., -79.0064"
+                          precision={6}
+                          {...form.getInputProps('toilet_longitude')}
+                        />
+                      </SimpleGrid>
+
+                      <TextInput
+                        label="Toilet Photos"
+                        placeholder="URLs to toilet photos (comma-separated)"
+                        {...form.getInputProps('toilet_photos')}
+                      />
+                    </>
+                  )}
 
                   <Divider my="md" label="Rental Information" />
                   <Switch
@@ -1394,6 +1611,7 @@ export default function POIForm() {
                 </Stack>
               </Accordion.Panel>
             </Accordion.Item>
+            )}
 
             {/* Event Vendors Section */}
             {isEvent && (
@@ -1464,24 +1682,51 @@ export default function POIForm() {
               </Accordion.Control>
               <Accordion.Panel>
                 <Stack>
-                  <Checkbox.Group {...getCheckboxGroupProps('pet_options')}>
-                    <SimpleGrid cols={{ base: 2, sm: 3 }}>
-                      {PET_OPTIONS.map(option => (
-                        <Checkbox key={option} value={option} label={option} />
-                      ))}
-                    </SimpleGrid>
-                  </Checkbox.Group>
-                  <Textarea
-                    label="Pet Policy Details"
-                    placeholder="Additional pet policy information"
-                    {...form.getInputProps('pet_policy')}
-                  />
+                  <Radio.Group
+                    label="Are pets allowed?"
+                    value={form.values.pets_allowed || 'no'}
+                    onChange={(value) => {
+                      form.setFieldValue('pets_allowed', value);
+                      // Clear pet options when "No" is selected
+                      if (value === 'no') {
+                        form.setFieldValue('pet_options', []);
+                        form.setFieldValue('pet_policy', '');
+                      }
+                    }}
+                  >
+                    <Stack mt="xs">
+                      <Radio value="yes" label="Yes" />
+                      <Radio value="no" label="No" />
+                    </Stack>
+                  </Radio.Group>
+
+                  {form.values.pets_allowed === 'yes' && (
+                    <>
+                      <Divider my="md" label="Pet Policy Details" />
+                      <Checkbox.Group
+                        label="Pet Policy Options"
+                        {...getCheckboxGroupProps('pet_options')}
+                      >
+                        <SimpleGrid cols={{ base: 2, sm: 3 }}>
+                          {PET_OPTIONS.filter(option => !['Allowed', 'Not Allowed'].includes(option)).map(option => (
+                            <Checkbox key={option} value={option} label={option} />
+                          ))}
+                        </SimpleGrid>
+                      </Checkbox.Group>
+                      <Textarea
+                        label="Additional Pet Policy Information"
+                        placeholder="Additional pet policy information"
+                        {...form.getInputProps('pet_policy')}
+                      />
+                    </>
+                  )}
                 </Stack>
               </Accordion.Panel>
             </Accordion.Item>
 
             {/* Playground Section */}
-            <Accordion.Item value="playground">
+            {(!isBusiness || !isFreeListing) && (
+              <Accordion.Item value="playground">
               <Accordion.Control>
                 <Text fw={600}>Playground Information</Text>
               </Accordion.Control>
@@ -1522,6 +1767,7 @@ export default function POIForm() {
                 </Stack>
               </Accordion.Panel>
             </Accordion.Item>
+            )}
 
             {/* Outdoor Features Section */}
             {(isPark || isTrail) && (
@@ -1852,6 +2098,139 @@ export default function POIForm() {
                 </Accordion.Panel>
               </Accordion.Item>
             )}
+
+            {/* Corporate Compliance Section */}
+            <Accordion.Item value="compliance">
+              <Accordion.Control>
+                <Text fw={600}>Corporate Compliance</Text>
+              </Accordion.Control>
+              <Accordion.Panel>
+                <Stack>
+                  <Alert color="blue" variant="light" mb="md">
+                    This information is for internal use only and will not be displayed publicly
+                  </Alert>
+
+                  <RichTextEditor
+                    label="Corporate Compliance Requirements"
+                    placeholder="Do you have any corporate compliance requirements we should be aware of? (e.g., required disclaimers, phrasing, or placement restrictions)"
+                    value={form.values.compliance?.corporate_requirements || ''}
+                    onChange={(html) => form.setFieldValue('compliance.corporate_requirements', html)}
+                    error={form.errors['compliance.corporate_requirements']}
+                    minRows={3}
+                  />
+
+                  <Radio.Group
+                    label="Are there any restrictions on public comments or community tips being shown on your listing?"
+                    value={form.values.compliance?.comments_restricted || 'no'}
+                    onChange={(value) => {
+                      form.setFieldValue('compliance.comments_restricted', value);
+                      // Clear explanation when "No" is selected
+                      if (value === 'no') {
+                        form.setFieldValue('compliance.comments_explanation', '');
+                      }
+                    }}
+                  >
+                    <Stack mt="xs">
+                      <Radio value="yes" label="Yes" />
+                      <Radio value="no" label="No" />
+                    </Stack>
+                  </Radio.Group>
+
+                  {form.values.compliance?.comments_restricted === 'yes' && (
+                    <RichTextEditor
+                      label="If yes, please explain"
+                      placeholder="If yes, please explain: And would disabling the comments section on your listing satisfy requirements?"
+                      value={form.values.compliance?.comments_explanation || ''}
+                      onChange={(html) => form.setFieldValue('compliance.comments_explanation', html)}
+                      error={form.errors['compliance.comments_explanation']}
+                      minRows={3}
+                    />
+                  )}
+
+                  <Divider my="md" label="Social Media Restrictions" />
+                  <Text size="sm" fw={500} mb="xs">
+                    Are there any social media platforms where your business cannot be mentioned or tagged?
+                  </Text>
+                  <Checkbox.Group
+                    value={form.values.compliance?.social_media_restrictions || []}
+                    onChange={(value) => form.setFieldValue('compliance.social_media_restrictions', value)}
+                  >
+                    <SimpleGrid cols={{ base: 2, sm: 3 }}>
+                      <Checkbox value="facebook" label="Facebook" />
+                      <Checkbox value="instagram" label="Instagram" />
+                      <Checkbox value="x" label="X (formally Twitter)" />
+                      <Checkbox value="tiktok" label="TikTok" />
+                      <Checkbox value="linkedin" label="LinkedIn" />
+                    </SimpleGrid>
+                  </Checkbox.Group>
+
+                  <RichTextEditor
+                    label="Other Social Media Restrictions"
+                    placeholder="Other social media platforms or additional restrictions"
+                    value={form.values.compliance?.other_social_restrictions || ''}
+                    onChange={(html) => form.setFieldValue('compliance.other_social_restrictions', html)}
+                    error={form.errors['compliance.other_social_restrictions']}
+                    minRows={2}
+                  />
+
+                  <Radio.Group
+                    label="Do you require pre-approval before we feature or promote your business in any posts, newsletters, or other materials?"
+                    value={form.values.compliance?.pre_approval_required || 'no'}
+                    onChange={(value) => {
+                      form.setFieldValue('compliance.pre_approval_required', value);
+                      // Clear lead time when "No" is selected
+                      if (value === 'no') {
+                        form.setFieldValue('compliance.lead_time_details', '');
+                      }
+                    }}
+                  >
+                    <Stack mt="xs">
+                      <Radio value="yes" label="Yes" />
+                      <Radio value="no" label="No" />
+                    </Stack>
+                  </Radio.Group>
+
+                  {form.values.compliance?.pre_approval_required === 'yes' && (
+                    <RichTextEditor
+                      label="Lead Time and Contact Information"
+                      placeholder="If yes, how long of a lead time do you need and who do we contact with our post content for submission? (Email - Phone)"
+                      value={form.values.compliance?.lead_time_details || ''}
+                      onChange={(html) => form.setFieldValue('compliance.lead_time_details', html)}
+                      error={form.errors['compliance.lead_time_details']}
+                      minRows={3}
+                    />
+                  )}
+
+                  <Radio.Group
+                    label="Is there any language or branding you are required to use (or avoid) when referring to your business?"
+                    value={form.values.compliance?.branding_requirements || 'no'}
+                    onChange={(value) => {
+                      form.setFieldValue('compliance.branding_requirements', value);
+                      // Clear branding details when "No" is selected
+                      if (value === 'no') {
+                        form.setFieldValue('compliance.branding_details', '');
+                      }
+                    }}
+                  >
+                    <Stack mt="xs">
+                      <Radio value="yes" label="Yes" />
+                      <Radio value="no" label="No" />
+                    </Stack>
+                  </Radio.Group>
+
+                  {form.values.compliance?.branding_requirements === 'yes' && (
+                    <RichTextEditor
+                      label="Branding Guidelines"
+                      placeholder="If yes, please describe or attach brand guidelines"
+                      value={form.values.compliance?.branding_details || ''}
+                      onChange={(html) => form.setFieldValue('compliance.branding_details', html)}
+                      error={form.errors['compliance.branding_details']}
+                      minRows={3}
+                    />
+                  )}
+                </Stack>
+              </Accordion.Panel>
+            </Accordion.Item>
 
             {/* Dynamic Attributes Section */}
             <Accordion.Item value="attributes">
