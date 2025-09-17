@@ -70,9 +70,15 @@ class TrailBase(BaseModel):
     
     # Trailhead Information
     trailhead_location: Optional[Dict[str, Any]] = None
+    trailhead_latitude: Optional[float] = None
+    trailhead_longitude: Optional[float] = None
     trailhead_entrance_photo: Optional[str] = None
+    trailhead_photo: Optional[str] = None
     trailhead_exit_location: Optional[Dict[str, Any]] = None
+    trail_exit_latitude: Optional[float] = None
+    trail_exit_longitude: Optional[float] = None
     trailhead_exit_photo: Optional[str] = None
+    trail_exit_photo: Optional[str] = None
     trail_markings: Optional[str] = None
     trailhead_access_details: Optional[str] = None
     downloadable_trail_map: Optional[str] = None
@@ -94,6 +100,9 @@ class EventBase(BaseModel):
     is_repeating: bool = False
     repeat_pattern: Optional[Dict[str, Any]] = None  # {"frequency": "weekly", "days": ["thursday"]}
     organizer_name: Optional[str] = None
+    venue_settings: Optional[List[str]] = None
+    event_entry_notes: Optional[str] = None
+    event_entry_photo: Optional[str] = None
     food_and_drink_info: Optional[str] = None
     coat_check_options: Optional[List[str]] = None
     has_vendors: bool = False
@@ -283,6 +292,11 @@ class PointOfInterestBase(BaseModel):
     
     # Parks & Trails Additional Info
     payphone_location: Optional[Dict[str, Any]] = None
+    payphone_locations: Optional[List[Dict[str, Any]]] = None
+    park_entry_notes: Optional[str] = None
+    park_entry_photo: Optional[str] = None
+    parking_lot_photo: Optional[str] = None
+    facilities_options: Optional[List[str]] = None
     night_sky_viewing: Optional[str] = None
     natural_features: Optional[List[str]] = None
     outdoor_types: Optional[List[str]] = None
@@ -437,6 +451,11 @@ class PointOfInterestUpdate(BaseModel):
     playground_photos: Optional[List[str]] = None
     playground_location: Optional[Dict[str, Any]] = None
     payphone_location: Optional[Dict[str, Any]] = None
+    payphone_locations: Optional[List[Dict[str, Any]]] = None
+    park_entry_notes: Optional[str] = None
+    park_entry_photo: Optional[str] = None
+    parking_lot_photo: Optional[str] = None
+    facilities_options: Optional[List[str]] = None
     night_sky_viewing: Optional[str] = None
     natural_features: Optional[List[str]] = None
     outdoor_types: Optional[List[str]] = None

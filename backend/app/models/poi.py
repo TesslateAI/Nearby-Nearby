@@ -178,6 +178,11 @@ class PointOfInterest(Base):
     
     # Parks & Trails Additional Info
     payphone_location = Column(JSONB)  # {"lat": 0, "lng": 0}
+    payphone_locations = Column(JSONB)  # [{"lat": 0, "lng": 0, "description": "Near entrance"}] - multiple payphones
+    park_entry_notes = Column(Text)  # Park entry description/notes
+    park_entry_photo = Column(String)  # URL to park entry photo
+    parking_lot_photo = Column(String)  # URL to parking lot photo
+    facilities_options = Column(JSONB)  # List of park facilities (separate from key_facilities)
     night_sky_viewing = Column(Text)
     natural_features = Column(JSONB)  # List of natural features
     outdoor_types = Column(JSONB)  # List of outdoor space types
@@ -288,9 +293,15 @@ class Trail(Base):
     
     # Trailhead Information
     trailhead_location = Column(JSONB)  # {"lat": 0, "lng": 0}
+    trailhead_latitude = Column(Numeric(precision=10, scale=7))  # Separate lat field for trailhead
+    trailhead_longitude = Column(Numeric(precision=10, scale=7))  # Separate lng field for trailhead
     trailhead_entrance_photo = Column(String)
+    trailhead_photo = Column(String)  # Main trailhead photo
     trailhead_exit_location = Column(JSONB)  # {"lat": 0, "lng": 0}
+    trail_exit_latitude = Column(Numeric(precision=10, scale=7))  # Separate lat field for trail exit
+    trail_exit_longitude = Column(Numeric(precision=10, scale=7))  # Separate lng field for trail exit
     trailhead_exit_photo = Column(String)
+    trail_exit_photo = Column(String)  # Main trail exit photo
     trail_markings = Column(Text)
     trailhead_access_details = Column(Text)
     downloadable_trail_map = Column(String)  # URL to map file
@@ -317,6 +328,9 @@ class Event(Base):
     
     # Event-specific fields
     organizer_name = Column(String)
+    venue_settings = Column(JSONB)  # List of venue settings: Indoor, Outdoor, Hybrid, Online Only
+    event_entry_notes = Column(Text)  # Event entry description/notes
+    event_entry_photo = Column(String)  # URL to event entry photo
     food_and_drink_info = Column(Text)
     coat_check_options = Column(JSONB)  # List of coat check options
     

@@ -242,6 +242,36 @@ export const ENTERTAINMENT_OPTIONS = [
   'No Public Wifi'
 ];
 
+// Park Facilities Options (separate from key_facilities)
+export const PARK_FACILITIES = [
+  'Amphitheater',
+  'Benches',
+  'Bike Rack',
+  'Boat Ramp or Launch',
+  'Chargepoint Station',
+  'Drinking Fountain',
+  'Fire Pit',
+  'Fishing',
+  'Grill',
+  'Outdoor Classroom',
+  'Picnic Area - Uncovered',
+  'Picnic Area - Covered',
+  'Public Toilet',
+  'Rental Equipment',
+  'Rental Space',
+  'Wifi - Free Wifi',
+  'Wifi - Paid Wifi',
+  'Wifi - No Public Wifi'
+];
+
+// Event Venue Settings
+export const VENUE_SETTINGS = [
+  'Indoor',
+  'Outdoor',
+  'Hybrid (In-Person and Online)',
+  'Online Only'
+];
+
 // Vendor types for events
 export const VENDOR_TYPES = [
   { value: 'Food & Beverage', label: 'Food & Beverage', group: 'Food & Beverage' },

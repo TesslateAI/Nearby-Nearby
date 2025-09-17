@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Checkbox, Stack, Accordion, Text, Group, Badge } from '@mantine/core';
+import { Checkbox, Stack, Accordion, Text, Group, Badge, SimpleGrid } from '@mantine/core';
 import { IDEAL_FOR_OPTIONS } from '../utils/constants';
 
 export function IdealForSelector({ value = [], onChange, keyIdealFor = [], maxSelections, showAll = true }) {
@@ -55,9 +55,9 @@ export function IdealForSelector({ value = [], onChange, keyIdealFor = [], maxSe
   };
 
   if (!showAll) {
-    // Simple list view for free listings
+    // Simple grid view for free listings
     return (
-      <Stack spacing="xs">
+      <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing="xs">
         {IDEAL_FOR_OPTIONS.map((option) => (
           <Checkbox
             key={option.value}
@@ -67,7 +67,7 @@ export function IdealForSelector({ value = [], onChange, keyIdealFor = [], maxSe
             disabled={isDisabled(option.value)}
           />
         ))}
-      </Stack>
+      </SimpleGrid>
     );
   }
 
@@ -95,7 +95,7 @@ export function IdealForSelector({ value = [], onChange, keyIdealFor = [], maxSe
               </Group>
             </Accordion.Control>
             <Accordion.Panel>
-              <Stack spacing="xs">
+              <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing="xs">
                 {options.map((option) => (
                   <Checkbox
                     key={option.value}
@@ -105,7 +105,7 @@ export function IdealForSelector({ value = [], onChange, keyIdealFor = [], maxSe
                     disabled={isDisabled(option.value)}
                   />
                 ))}
-              </Stack>
+              </SimpleGrid>
             </Accordion.Panel>
           </Accordion.Item>
         ))}

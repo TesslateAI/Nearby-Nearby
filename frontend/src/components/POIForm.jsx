@@ -12,14 +12,14 @@ import { DateTimePicker } from '@mantine/dates';
 import { IconPlus, IconTrash, IconChevronUp } from '@tabler/icons-react';
 import { useWindowScroll } from '@mantine/hooks';
 import api from '../utils/api';
-import { 
-  LISTING_TYPES, BUSINESS_STATUS_OPTIONS, EVENT_STATUS_OPTIONS, IDEAL_FOR_OPTIONS, 
+import {
+  LISTING_TYPES, BUSINESS_STATUS_OPTIONS, EVENT_STATUS_OPTIONS, IDEAL_FOR_OPTIONS,
   getStatusOptions, getFieldsForListingType, IDEAL_FOR_KEY_OPTIONS,
   PARKING_OPTIONS, PAYMENT_METHODS, KEY_FACILITIES, ALCOHOL_OPTIONS,
   WHEELCHAIR_OPTIONS, SMOKING_OPTIONS, COAT_CHECK_OPTIONS, WIFI_OPTIONS,
   DRONE_USAGE_OPTIONS, PET_OPTIONS, PUBLIC_TOILET_OPTIONS, VENDOR_TYPES,
   PRICE_RANGE_OPTIONS, DISCOUNT_TYPES, GIFT_CARD_OPTIONS, YOUTH_AMENITIES,
-  BUSINESS_AMENITIES, ENTERTAINMENT_OPTIONS
+  BUSINESS_AMENITIES, ENTERTAINMENT_OPTIONS, PARK_FACILITIES, VENUE_SETTINGS
 } from '../utils/constants';
 import {
   PLAYGROUND_TYPES, PLAYGROUND_SURFACES, NATURAL_FEATURES, OUTDOOR_TYPES,
@@ -179,9 +179,15 @@ const emptyInitialValues = {
     difficulty_description: null,
     route_type: null,
     trailhead_location: null,
+    trailhead_latitude: null,
+    trailhead_longitude: null,
     trailhead_entrance_photo: '',
+    trailhead_photo: '',
     trailhead_exit_location: null,
+    trail_exit_latitude: null,
+    trail_exit_longitude: null,
     trailhead_exit_photo: '',
+    trail_exit_photo: '',
     trail_markings: '',
     trailhead_access_details: '',
     downloadable_trail_map: '',
@@ -198,6 +204,11 @@ const emptyInitialValues = {
   playground_location: null,
   // Parks & Trails Additional
   payphone_location: null,
+  payphone_locations: [],
+  park_entry_notes: '',
+  park_entry_photo: '',
+  parking_lot_photo: '',
+  facilities_options: [],
   night_sky_viewing: '',
   natural_features: [],
   outdoor_types: [],
@@ -222,6 +233,9 @@ const emptyInitialValues = {
     is_repeating: false,
     repeat_pattern: null,
     organizer_name: '',
+    venue_settings: [],
+    event_entry_notes: '',
+    event_entry_photo: '',
     food_and_drink_info: '',
     coat_check_options: [],
     has_vendors: false,
@@ -321,7 +335,8 @@ export default function POIForm() {
             'toilet_locations', 'rental_photos', 'menu_photos', 'delivery_links',
             'reservation_links', 'appointment_links', 'online_ordering_links',
             'service_locations', 'locally_found_at', 'article_links',
-            'organization_memberships', 'parking_photos'
+            'organization_memberships', 'parking_photos', 'payphone_locations',
+            'facilities_options'
           ];
 
           arrayFields.forEach(field => {
@@ -341,7 +356,7 @@ export default function POIForm() {
           }
 
           if (formData.event) {
-            const eventArrayFields = ['vendor_types', 'coat_check_options'];
+            const eventArrayFields = ['vendor_types', 'coat_check_options', 'venue_settings'];
             eventArrayFields.forEach(field => {
               if (formData.event[field] === null || formData.event[field] === undefined || !Array.isArray(formData.event[field])) {
                 formData.event[field] = [];
@@ -367,7 +382,8 @@ export default function POIForm() {
             'rental_pricing', 'rental_link', 'price_range_per_person', 'pricing', 'gift_cards',
             'menu_link', 'community_impact', 'night_sky_viewing', 'birding_wildlife',
             'hunting_fishing_info', 'membership_details', 'camping_lodging', 'playground_notes',
-            'pets_allowed', 'alcohol_available', 'public_toilets_available', 'toilet_photos'
+            'pets_allowed', 'alcohol_available', 'public_toilets_available', 'toilet_photos',
+            'park_entry_notes', 'park_entry_photo', 'parking_lot_photo'
           ];
 
           stringFields.forEach(field => {
@@ -380,7 +396,8 @@ export default function POIForm() {
           if (formData.trail) {
             const trailStringFields = [
               'length_text', 'difficulty', 'difficulty_description', 'route_type',
-              'trail_markings', 'trailhead_access_details', 'downloadable_trail_map'
+              'trail_markings', 'trailhead_access_details', 'downloadable_trail_map',
+              'trailhead_entrance_photo', 'trailhead_photo', 'trailhead_exit_photo', 'trail_exit_photo'
             ];
             trailStringFields.forEach(field => {
               if (formData.trail[field] === null) {
@@ -392,7 +409,8 @@ export default function POIForm() {
           if (formData.event) {
             const eventStringFields = [
               'organizer_name', 'food_and_drink_info', 'vendor_fee',
-              'vendor_application_info', 'vendor_requirements'
+              'vendor_application_info', 'vendor_requirements',
+              'event_entry_notes', 'event_entry_photo'
             ];
             eventStringFields.forEach(field => {
               if (formData.event[field] === null) {
@@ -678,6 +696,13 @@ export default function POIForm() {
                   {isEvent && (
                     <>
                       <Divider my="md" label="Event Details" />
+                      <Alert color="blue" variant="light" mb="md">
+                        <Text size="sm">
+                          <strong>Date Instructions:</strong>
+                          <br />• If your event takes place on multiple separate days, please create a Repeat Event and enter each day individually.
+                          <br />• If your event runs past midnight (for example, December 31st at 10:00 AM until January 1st at 3:00 AM), enter it as one single event since it's continuous.
+                        </Text>
+                      </Alert>
                       <SimpleGrid cols={{ base: 1, sm: 2 }}>
                         <DateTimePicker
                           label="Start Date & Time"
@@ -691,19 +716,20 @@ export default function POIForm() {
                           {...form.getInputProps('event.end_datetime')}
                         />
                       </SimpleGrid>
-                      <TextInput
-                        label="Organizer Name"
-                        placeholder="Name of event organizer"
-                        {...form.getInputProps('event.organizer_name')}
-                      />
-                      <Switch
-                        label="Repeating Event"
-                        {...form.getInputProps('event.is_repeating', { type: 'checkbox' })}
-                      />
+                      <Button
+                        variant="outline"
+                        leftSection={<IconPlus size={16} />}
+                        onClick={() => {
+                          // TODO: Implement recurring event pattern functionality
+                          alert('Recurring events functionality will be implemented in a future update');
+                        }}
+                      >
+                        Create Repeating Event
+                      </Button>
                     </>
                   )}
 
-                  {(isEvent || isPark || isTrail) && (
+                  {isEvent && (
                     <>
                       <Divider my="md" label="Cost Information" />
                       <SimpleGrid cols={{ base: 1, sm: 2 }}>
@@ -712,13 +738,11 @@ export default function POIForm() {
                           placeholder="e.g., $10 or $0-$50 or 0 (for free)"
                           {...form.getInputProps('cost')}
                         />
-                        {isEvent && (
-                          <TextInput
-                            label="Ticket Link"
-                            placeholder="URL to purchase tickets"
-                            {...form.getInputProps('ticket_link')}
-                          />
-                        )}
+                        <TextInput
+                          label="Ticket Link"
+                          placeholder="URL to purchase tickets"
+                          {...form.getInputProps('ticket_link')}
+                        />
                       </SimpleGrid>
                       <RichTextEditor
                         label="Pricing Details"
@@ -742,6 +766,20 @@ export default function POIForm() {
                         error={form.errors.history_paragraph}
                         minRows={3}
                       />
+                    </>
+                  )}
+
+                  {/* Key Facilities moved here for Parks and Events */}
+                  {(isPark || isEvent) && (
+                    <>
+                      <Divider my="md" label="Key Facilities" />
+                      <Checkbox.Group {...getCheckboxGroupProps('key_facilities')}>
+                        <SimpleGrid cols={{ base: 2, sm: 3 }}>
+                          {KEY_FACILITIES.map(facility => (
+                            <Checkbox key={facility} value={facility} label={facility} />
+                          ))}
+                        </SimpleGrid>
+                      </Checkbox.Group>
                     </>
                   )}
 
@@ -850,6 +888,73 @@ export default function POIForm() {
               </Accordion.Panel>
             </Accordion.Item>
 
+            {/* Pricing & Memberships Section - for Parks and Trails */}
+            {(isPark || isTrail) && (
+              <Accordion.Item value="pricing">
+                <Accordion.Control>
+                  <Group>
+                    <Text fw={600}>Pricing & Memberships</Text>
+                  </Group>
+                </Accordion.Control>
+                <Accordion.Panel>
+                  <Stack>
+                    <Divider my="md" label="Cost Information" />
+                    <SimpleGrid cols={{ base: 1, sm: 2 }}>
+                      <TextInput
+                        label="Cost"
+                        placeholder="e.g., $10 or $0-$50 or 0 (for free)"
+                        {...form.getInputProps('cost')}
+                      />
+                      <Select
+                        label="Gift Cards Available?"
+                        data={GIFT_CARD_OPTIONS}
+                        {...form.getInputProps('gift_cards')}
+                      />
+                    </SimpleGrid>
+                    <RichTextEditor
+                      label="Pricing Details"
+                      placeholder="Additional pricing info (e.g., Kids under 2 are free)"
+                      value={form.values.pricing_details || ''}
+                      onChange={(html) => form.setFieldValue('pricing_details', html)}
+                      error={form.errors.pricing_details}
+                      minRows={3}
+                    />
+
+                    <Divider my="md" label="Payment Methods" />
+                    <Checkbox.Group {...getCheckboxGroupProps('payment_methods')}>
+                      <SimpleGrid cols={{ base: 2, sm: 3 }}>
+                        {PAYMENT_METHODS.map(method => (
+                          <Checkbox key={method} value={method} label={method} />
+                        ))}
+                      </SimpleGrid>
+                    </Checkbox.Group>
+
+                    <Divider my="md" label="Discounts Offered" />
+                    <Text size="sm" c="dimmed">
+                      Do you offer an everyday discount for service members or community members, separate from seasonal or day-specific promotions?
+                    </Text>
+                    <Checkbox.Group {...getCheckboxGroupProps('discounts')}>
+                      <SimpleGrid cols={{ base: 2, sm: 3 }}>
+                        {DISCOUNT_TYPES.map(discount => (
+                          <Checkbox key={discount} value={discount} label={discount} />
+                        ))}
+                      </SimpleGrid>
+                    </Checkbox.Group>
+
+                    <Divider my="md" label="Membership & Pass Details" />
+                    <RichTextEditor
+                      label="Membership & Pass Details"
+                      placeholder="Information about shared passes or membership programs"
+                      value={form.values.membership_details || ''}
+                      onChange={(html) => form.setFieldValue('membership_details', html)}
+                      error={form.errors.membership_details}
+                      minRows={3}
+                    />
+                  </Stack>
+                </Accordion.Panel>
+              </Accordion.Item>
+            )}
+
             {/* Location & Parking Section */}
             <Accordion.Item value="location">
               <Accordion.Control>
@@ -936,6 +1041,58 @@ export default function POIForm() {
                     Use Map Pin for Lat/Long
                   </Button>
 
+                  {/* Park Entry Information */}
+                  {isPark && (
+                    <>
+                      <Divider my="md" label="Park Entry Information" />
+                      <RichTextEditor
+                        label="Park Entry Notes"
+                        placeholder="Describe how to enter the park, special instructions, etc."
+                        value={form.values.park_entry_notes || ''}
+                        onChange={(html) => form.setFieldValue('park_entry_notes', html)}
+                        error={form.errors.park_entry_notes}
+                        minRows={3}
+                      />
+                      <TextInput
+                        label="Park Entry Photo"
+                        placeholder="URL to photo of park entrance"
+                        {...form.getInputProps('park_entry_photo')}
+                      />
+                    </>
+                  )}
+
+                  {/* Event Venue Information */}
+                  {isEvent && (
+                    <>
+                      <Divider my="md" label="Venue Settings" />
+                      <Checkbox.Group
+                        label="Venue Settings"
+                        {...getCheckboxGroupProps('event.venue_settings')}
+                      >
+                        <SimpleGrid cols={{ base: 2, sm: 4 }}>
+                          {VENUE_SETTINGS.map(setting => (
+                            <Checkbox key={setting} value={setting} label={setting} />
+                          ))}
+                        </SimpleGrid>
+                      </Checkbox.Group>
+
+                      <Divider my="md" label="Event Entry Information" />
+                      <RichTextEditor
+                        label="Event Entry Notes"
+                        placeholder="Describe how to enter the event, special instructions, etc."
+                        value={form.values.event.event_entry_notes || ''}
+                        onChange={(html) => form.setFieldValue('event.event_entry_notes', html)}
+                        error={form.errors['event.event_entry_notes']}
+                        minRows={3}
+                      />
+                      <TextInput
+                        label="Event Entry Photo"
+                        placeholder="URL to photo of event entrance"
+                        {...form.getInputProps('event.event_entry_photo')}
+                      />
+                    </>
+                  )}
+
                   <Divider my="md" label="Parking Information" />
                   
                   <Checkbox.Group
@@ -975,15 +1132,168 @@ export default function POIForm() {
                       </Radio.Group>
                     </>
                   )}
+
+                  {/* Parking Locations for Parks - Add Another functionality */}
+                  {isPark && (
+                    <>
+                      <Divider my="md" label="Parking Locations" />
+                      {(form.values.parking_locations || []).map((parking, index) => (
+                        <Card key={index} withBorder p="md" mb="sm">
+                          <Stack>
+                            <SimpleGrid cols={{ base: 1, sm: 2 }}>
+                              <NumberInput
+                                label="Parking Latitude"
+                                placeholder="35.7128"
+                                precision={6}
+                                value={parking.lat || ''}
+                                onChange={(value) => {
+                                  const locations = [...(form.values.parking_locations || [])];
+                                  locations[index] = { ...locations[index], lat: value };
+                                  form.setFieldValue('parking_locations', locations);
+                                }}
+                              />
+                              <NumberInput
+                                label="Parking Longitude"
+                                placeholder="-79.0064"
+                                precision={6}
+                                value={parking.lng || ''}
+                                onChange={(value) => {
+                                  const locations = [...(form.values.parking_locations || [])];
+                                  locations[index] = { ...locations[index], lng: value };
+                                  form.setFieldValue('parking_locations', locations);
+                                }}
+                              />
+                            </SimpleGrid>
+                            <TextInput
+                              label="Parking Area Name"
+                              placeholder="e.g., Main Lot, Visitor Center Parking"
+                              value={parking.name || ''}
+                              onChange={(e) => {
+                                const locations = [...(form.values.parking_locations || [])];
+                                locations[index] = { ...locations[index], name: e.target.value };
+                                form.setFieldValue('parking_locations', locations);
+                              }}
+                            />
+                            <Button
+                              color="red"
+                              variant="light"
+                              size="xs"
+                              onClick={() => {
+                                const locations = [...(form.values.parking_locations || [])];
+                                locations.splice(index, 1);
+                                form.setFieldValue('parking_locations', locations);
+                              }}
+                            >
+                              Remove Parking Location
+                            </Button>
+                          </Stack>
+                        </Card>
+                      ))}
+                      <Button
+                        variant="light"
+                        leftSection={<IconPlus size={16} />}
+                        onClick={() => {
+                          const locations = [...(form.values.parking_locations || [])];
+                          locations.push({ lat: null, lng: null, name: '' });
+                          form.setFieldValue('parking_locations', locations);
+                        }}
+                      >
+                        Add Another Parking Location
+                      </Button>
+
+                      <TextInput
+                        label="Parking Lot Photo"
+                        placeholder="URL to photo of parking area"
+                        {...form.getInputProps('parking_lot_photo')}
+                      />
+                    </>
+                  )}
+
+                  {/* Parking Lot Photo for Events */}
+                  {isEvent && (
+                    <>
+                      <Divider my="md" label="Event Parking" />
+                      {(form.values.parking_locations || []).map((parking, index) => (
+                        <Card key={index} withBorder p="md" mb="sm">
+                          <Stack>
+                            <SimpleGrid cols={{ base: 1, sm: 2 }}>
+                              <NumberInput
+                                label="Parking Latitude"
+                                placeholder="35.7128"
+                                precision={6}
+                                value={parking.lat || ''}
+                                onChange={(value) => {
+                                  const locations = [...(form.values.parking_locations || [])];
+                                  locations[index] = { ...locations[index], lat: value };
+                                  form.setFieldValue('parking_locations', locations);
+                                }}
+                              />
+                              <NumberInput
+                                label="Parking Longitude"
+                                placeholder="-79.0064"
+                                precision={6}
+                                value={parking.lng || ''}
+                                onChange={(value) => {
+                                  const locations = [...(form.values.parking_locations || [])];
+                                  locations[index] = { ...locations[index], lng: value };
+                                  form.setFieldValue('parking_locations', locations);
+                                }}
+                              />
+                            </SimpleGrid>
+                            <TextInput
+                              label="Parking Area Name"
+                              placeholder="e.g., Main Lot, Event Parking"
+                              value={parking.name || ''}
+                              onChange={(e) => {
+                                const locations = [...(form.values.parking_locations || [])];
+                                locations[index] = { ...locations[index], name: e.target.value };
+                                form.setFieldValue('parking_locations', locations);
+                              }}
+                            />
+                            <Button
+                              color="red"
+                              variant="light"
+                              size="xs"
+                              onClick={() => {
+                                const locations = [...(form.values.parking_locations || [])];
+                                locations.splice(index, 1);
+                                form.setFieldValue('parking_locations', locations);
+                              }}
+                            >
+                              Remove Parking Location
+                            </Button>
+                          </Stack>
+                        </Card>
+                      ))}
+                      <Button
+                        variant="light"
+                        leftSection={<IconPlus size={16} />}
+                        onClick={() => {
+                          const locations = [...(form.values.parking_locations || [])];
+                          locations.push({ lat: null, lng: null, name: '' });
+                          form.setFieldValue('parking_locations', locations);
+                        }}
+                      >
+                        Add Another Parking Location
+                      </Button>
+
+                      <TextInput
+                        label="Parking Lot Photo"
+                        placeholder="URL to photo of parking area"
+                        {...form.getInputProps('parking_lot_photo')}
+                      />
+                    </>
+                  )}
                 </Stack>
               </Accordion.Panel>
             </Accordion.Item>
 
-            {/* Hours of Operation Section */}
-            <Accordion.Item value="hours">
-              <Accordion.Control>
-                <Text fw={600}>Hours of Operation</Text>
-              </Accordion.Control>
+            {/* Hours of Operation Section - Not for Events */}
+            {!isEvent && (
+              <Accordion.Item value="hours">
+                <Accordion.Control>
+                  <Text fw={600}>Hours of Operation</Text>
+                </Accordion.Control>
               <Accordion.Panel>
                 <Stack>
                   <HoursSelector
@@ -1012,6 +1322,7 @@ export default function POIForm() {
                 </Stack>
               </Accordion.Panel>
             </Accordion.Item>
+            )}
 
             {/* Contact & Social Media Section */}
             <Accordion.Item value="contact">
@@ -1020,6 +1331,14 @@ export default function POIForm() {
               </Accordion.Control>
               <Accordion.Panel>
                 <Stack>
+                  {/* Organizer Name moved here from Core Info for Events */}
+                  {isEvent && (
+                    <TextInput
+                      label="Organizer Name"
+                      placeholder="Name of event organizer"
+                      {...form.getInputProps('event.organizer_name')}
+                    />
+                  )}
                   <SimpleGrid cols={{ base: 1, sm: 3 }}>
                     <TextInput
                       label="Website"
@@ -1372,7 +1691,8 @@ export default function POIForm() {
               </Accordion.Control>
               <Accordion.Panel>
                 <Stack>
-                  {(isEvent || isPark || isTrail) && (
+                  {/* Key Facilities - only for Trails, Parks and Events moved to Core Information */}
+                  {isTrail && (
                     <>
                       <Divider my="md" label="Key Facilities" />
                       <Checkbox.Group {...getCheckboxGroupProps('key_facilities')}>
@@ -1385,14 +1705,234 @@ export default function POIForm() {
                     </>
                   )}
 
-                  <Divider my="md" label="Payment Methods" />
-                  <Checkbox.Group {...getCheckboxGroupProps('payment_methods')}>
-                    <SimpleGrid cols={{ base: 2, sm: 3 }}>
-                      {PAYMENT_METHODS.map(method => (
-                        <Checkbox key={method} value={method} label={method} />
+                  {/* Pay Phone Locations - Parks only */}
+                  {isPark && (
+                    <>
+                      <Divider my="md" label="Pay Phone Locations" />
+                      {(form.values.payphone_locations || []).map((phone, index) => (
+                        <Card key={index} withBorder p="md" mb="sm">
+                          <Stack>
+                            <SimpleGrid cols={{ base: 1, sm: 2 }}>
+                              <NumberInput
+                                label="Pay Phone Latitude"
+                                placeholder="35.7128"
+                                precision={6}
+                                value={phone.lat || ''}
+                                onChange={(value) => {
+                                  const phones = [...(form.values.payphone_locations || [])];
+                                  phones[index] = { ...phones[index], lat: value };
+                                  form.setFieldValue('payphone_locations', phones);
+                                }}
+                              />
+                              <NumberInput
+                                label="Pay Phone Longitude"
+                                placeholder="-79.0064"
+                                precision={6}
+                                value={phone.lng || ''}
+                                onChange={(value) => {
+                                  const phones = [...(form.values.payphone_locations || [])];
+                                  phones[index] = { ...phones[index], lng: value };
+                                  form.setFieldValue('payphone_locations', phones);
+                                }}
+                              />
+                            </SimpleGrid>
+                            <TextInput
+                              label="Description"
+                              placeholder="e.g., Near entrance, by visitor center"
+                              value={phone.description || ''}
+                              onChange={(e) => {
+                                const phones = [...(form.values.payphone_locations || [])];
+                                phones[index] = { ...phones[index], description: e.target.value };
+                                form.setFieldValue('payphone_locations', phones);
+                              }}
+                            />
+                            <Button
+                              color="red"
+                              variant="light"
+                              size="xs"
+                              onClick={() => {
+                                const phones = [...(form.values.payphone_locations || [])];
+                                phones.splice(index, 1);
+                                form.setFieldValue('payphone_locations', phones);
+                              }}
+                            >
+                              Remove Pay Phone
+                            </Button>
+                          </Stack>
+                        </Card>
                       ))}
-                    </SimpleGrid>
-                  </Checkbox.Group>
+                      <Button
+                        variant="light"
+                        leftSection={<IconPlus size={16} />}
+                        onClick={() => {
+                          const phones = [...(form.values.payphone_locations || [])];
+                          phones.push({ lat: null, lng: null, description: '' });
+                          form.setFieldValue('payphone_locations', phones);
+                        }}
+                      >
+                        Add Another Pay Phone Location
+                      </Button>
+                    </>
+                  )}
+
+                  {/* Downloadable Maps - Parks only */}
+                  {isPark && (
+                    <>
+                      <Divider my="md" label="Downloadable Maps" />
+                      {(form.values.downloadable_maps || []).map((map, index) => (
+                        <Card key={index} withBorder p="md" mb="sm">
+                          <Stack>
+                            <TextInput
+                              label="Map Title"
+                              placeholder="e.g., Main Trail Map, Facility Map"
+                              value={map.name || ''}
+                              onChange={(e) => {
+                                const maps = [...(form.values.downloadable_maps || [])];
+                                maps[index] = { ...maps[index], name: e.target.value };
+                                form.setFieldValue('downloadable_maps', maps);
+                              }}
+                            />
+                            <TextInput
+                              label="Map URL"
+                              placeholder="URL to PDF or image file"
+                              value={map.url || ''}
+                              onChange={(e) => {
+                                const maps = [...(form.values.downloadable_maps || [])];
+                                maps[index] = { ...maps[index], url: e.target.value };
+                                form.setFieldValue('downloadable_maps', maps);
+                              }}
+                            />
+                            <Button
+                              color="red"
+                              variant="light"
+                              size="xs"
+                              onClick={() => {
+                                const maps = [...(form.values.downloadable_maps || [])];
+                                maps.splice(index, 1);
+                                form.setFieldValue('downloadable_maps', maps);
+                              }}
+                            >
+                              Remove Map
+                            </Button>
+                          </Stack>
+                        </Card>
+                      ))}
+                      <Button
+                        variant="light"
+                        leftSection={<IconPlus size={16} />}
+                        onClick={() => {
+                          const maps = [...(form.values.downloadable_maps || [])];
+                          maps.push({ name: '', url: '' });
+                          form.setFieldValue('downloadable_maps', maps);
+                        }}
+                      >
+                        Add Another Map
+                      </Button>
+                    </>
+                  )}
+
+                  {/* Entertainment and Facilities Options - Parks only */}
+                  {isPark && (
+                    <>
+                      <Divider my="md" label="Entertainment" />
+                      <Checkbox.Group {...getCheckboxGroupProps('entertainment_options')}>
+                        <SimpleGrid cols={{ base: 2, sm: 3 }}>
+                          {ENTERTAINMENT_OPTIONS.map(option => (
+                            <Checkbox key={option} value={option} label={option} />
+                          ))}
+                        </SimpleGrid>
+                      </Checkbox.Group>
+
+                      <Divider my="md" label="Facilities" />
+                      <Checkbox.Group {...getCheckboxGroupProps('facilities_options')}>
+                        <SimpleGrid cols={{ base: 2, sm: 3 }}>
+                          {PARK_FACILITIES.map(facility => (
+                            <Checkbox key={facility} value={facility} label={facility} />
+                          ))}
+                        </SimpleGrid>
+                      </Checkbox.Group>
+                    </>
+                  )}
+
+                  {/* Downloadable Maps and Event Food - Events only */}
+                  {isEvent && (
+                    <>
+                      <Divider my="md" label="Downloadable Maps" />
+                      {(form.values.downloadable_maps || []).map((map, index) => (
+                        <Card key={index} withBorder p="md" mb="sm">
+                          <Stack>
+                            <TextInput
+                              label="Map Title"
+                              placeholder="e.g., Event Layout, Vendor Map"
+                              value={map.name || ''}
+                              onChange={(e) => {
+                                const maps = [...(form.values.downloadable_maps || [])];
+                                maps[index] = { ...maps[index], name: e.target.value };
+                                form.setFieldValue('downloadable_maps', maps);
+                              }}
+                            />
+                            <TextInput
+                              label="Map URL"
+                              placeholder="URL to PDF or image file"
+                              value={map.url || ''}
+                              onChange={(e) => {
+                                const maps = [...(form.values.downloadable_maps || [])];
+                                maps[index] = { ...maps[index], url: e.target.value };
+                                form.setFieldValue('downloadable_maps', maps);
+                              }}
+                            />
+                            <Button
+                              color="red"
+                              variant="light"
+                              size="xs"
+                              onClick={() => {
+                                const maps = [...(form.values.downloadable_maps || [])];
+                                maps.splice(index, 1);
+                                form.setFieldValue('downloadable_maps', maps);
+                              }}
+                            >
+                              Remove Map
+                            </Button>
+                          </Stack>
+                        </Card>
+                      ))}
+                      <Button
+                        variant="light"
+                        leftSection={<IconPlus size={16} />}
+                        onClick={() => {
+                          const maps = [...(form.values.downloadable_maps || [])];
+                          maps.push({ name: '', url: '' });
+                          form.setFieldValue('downloadable_maps', maps);
+                        }}
+                      >
+                        Add Another Map
+                      </Button>
+
+                      <Divider my="md" label="Event Food and Drink" />
+                      <RichTextEditor
+                        label="Event Food and Drink"
+                        placeholder="Will there be food, drinks to purchase? If so, what kind of food? Can attendees bring their own?"
+                        value={form.values.event.food_and_drink_info || ''}
+                        onChange={(html) => form.setFieldValue('event.food_and_drink_info', html)}
+                        error={form.errors['event.food_and_drink_info']}
+                        minRows={3}
+                      />
+                    </>
+                  )}
+
+                  {/* Payment Methods - only for Business and Events, Parks moved to Pricing & Memberships */}
+                  {!isPark && (
+                    <>
+                      <Divider my="md" label="Payment Methods" />
+                      <Checkbox.Group {...getCheckboxGroupProps('payment_methods')}>
+                        <SimpleGrid cols={{ base: 2, sm: 3 }}>
+                          {PAYMENT_METHODS.map(method => (
+                            <Checkbox key={method} value={method} label={method} />
+                          ))}
+                        </SimpleGrid>
+                      </Checkbox.Group>
+                    </>
+                  )}
 
                   <Divider my="md" label="Alcohol Availability" />
                   <Radio.Group
@@ -1512,11 +2052,11 @@ export default function POIForm() {
             </Accordion.Item>
             )}
 
-            {/* Public Amenities Section */}
+            {/* Public Restrooms Section (renamed from Public Amenities for Parks) */}
             {(!isBusiness || !isFreeListing) && (
               <Accordion.Item value="amenities">
               <Accordion.Control>
-                <Text fw={600}>Public Amenities</Text>
+                <Text fw={600}>{isPark ? 'Public Restrooms' : 'Public Amenities'}</Text>
               </Accordion.Control>
               <Accordion.Panel>
                 <Stack>
@@ -1553,64 +2093,194 @@ export default function POIForm() {
                         </SimpleGrid>
                       </Checkbox.Group>
 
-                      <Textarea
-                        label="Toilet Description"
-                        placeholder="e.g., For paying customers only, Location details"
-                        {...form.getInputProps('toilet_description')}
-                      />
+                      {/* Enhanced toilet locations for Parks */}
+                      {isPark ? (
+                        <>
+                          <Divider my="md" label="Restroom Locations" />
+                          {(form.values.toilet_locations || []).map((toilet, index) => (
+                            <Card key={index} withBorder p="md" mb="sm">
+                              <Stack>
+                                <SimpleGrid cols={{ base: 1, sm: 2 }}>
+                                  <NumberInput
+                                    label="Restroom Latitude"
+                                    placeholder="35.7128"
+                                    precision={6}
+                                    value={toilet.lat || ''}
+                                    onChange={(value) => {
+                                      const toilets = [...(form.values.toilet_locations || [])];
+                                      toilets[index] = { ...toilets[index], lat: value };
+                                      form.setFieldValue('toilet_locations', toilets);
+                                    }}
+                                  />
+                                  <NumberInput
+                                    label="Restroom Longitude"
+                                    placeholder="-79.0064"
+                                    precision={6}
+                                    value={toilet.lng || ''}
+                                    onChange={(value) => {
+                                      const toilets = [...(form.values.toilet_locations || [])];
+                                      toilets[index] = { ...toilets[index], lng: value };
+                                      form.setFieldValue('toilet_locations', toilets);
+                                    }}
+                                  />
+                                </SimpleGrid>
+                                <Textarea
+                                  label="Description"
+                                  placeholder="e.g., For paying customers only, Location details, accessibility info"
+                                  value={toilet.description || ''}
+                                  onChange={(e) => {
+                                    const toilets = [...(form.values.toilet_locations || [])];
+                                    toilets[index] = { ...toilets[index], description: e.target.value };
+                                    form.setFieldValue('toilet_locations', toilets);
+                                  }}
+                                />
+                                <TextInput
+                                  label="Photos"
+                                  placeholder="URLs to restroom photos (comma-separated)"
+                                  value={toilet.photos || ''}
+                                  onChange={(e) => {
+                                    const toilets = [...(form.values.toilet_locations || [])];
+                                    toilets[index] = { ...toilets[index], photos: e.target.value };
+                                    form.setFieldValue('toilet_locations', toilets);
+                                  }}
+                                />
+                                <Button
+                                  color="red"
+                                  variant="light"
+                                  size="xs"
+                                  onClick={() => {
+                                    const toilets = [...(form.values.toilet_locations || [])];
+                                    toilets.splice(index, 1);
+                                    form.setFieldValue('toilet_locations', toilets);
+                                  }}
+                                >
+                                  Remove Restroom
+                                </Button>
+                              </Stack>
+                            </Card>
+                          ))}
+                          <Button
+                            variant="light"
+                            leftSection={<IconPlus size={16} />}
+                            onClick={() => {
+                              const toilets = [...(form.values.toilet_locations || [])];
+                              toilets.push({ lat: null, lng: null, description: '', photos: '' });
+                              form.setFieldValue('toilet_locations', toilets);
+                            }}
+                          >
+                            Add Another Bathroom Location
+                          </Button>
+                        </>
+                      ) : (
+                        <>
+                          <Textarea
+                            label="Toilet Description"
+                            placeholder="e.g., For paying customers only, Location details"
+                            {...form.getInputProps('toilet_description')}
+                          />
 
-                      <SimpleGrid cols={{ base: 1, sm: 2 }}>
-                        <NumberInput
-                          label="Toilet Latitude"
-                          placeholder="e.g., 35.7128"
-                          precision={6}
-                          {...form.getInputProps('toilet_latitude')}
-                        />
-                        <NumberInput
-                          label="Toilet Longitude"
-                          placeholder="e.g., -79.0064"
-                          precision={6}
-                          {...form.getInputProps('toilet_longitude')}
-                        />
-                      </SimpleGrid>
+                          <SimpleGrid cols={{ base: 1, sm: 2 }}>
+                            <NumberInput
+                              label="Toilet Latitude"
+                              placeholder="e.g., 35.7128"
+                              precision={6}
+                              {...form.getInputProps('toilet_latitude')}
+                            />
+                            <NumberInput
+                              label="Toilet Longitude"
+                              placeholder="e.g., -79.0064"
+                              precision={6}
+                              {...form.getInputProps('toilet_longitude')}
+                            />
+                          </SimpleGrid>
 
-                      <TextInput
-                        label="Toilet Photos"
-                        placeholder="URLs to toilet photos (comma-separated)"
-                        {...form.getInputProps('toilet_photos')}
-                      />
+                          <TextInput
+                            label="Toilet Photos"
+                            placeholder="URLs to toilet photos (comma-separated)"
+                            {...form.getInputProps('toilet_photos')}
+                          />
+                        </>
+                      )}
                     </>
                   )}
 
-                  <Divider my="md" label="Rental Information" />
-                  <Switch
-                    label="Available for Rent"
-                    {...form.getInputProps('available_for_rent', { type: 'checkbox' })}
-                  />
-                  {form.values.available_for_rent && (
+                  {/* Rentals section - renamed for Parks */}
+                  {!isPark && (
                     <>
-                      <Textarea
-                        label="Rental Information"
-                        placeholder="What's available for rent?"
-                        {...form.getInputProps('rental_info')}
+                      <Divider my="md" label="Rental Information" />
+                      <Switch
+                        label="Available for Rent"
+                        {...form.getInputProps('available_for_rent', { type: 'checkbox' })}
                       />
-                      <SimpleGrid cols={{ base: 1, sm: 2 }}>
-                        <TextInput
-                          label="Rental Pricing"
-                          placeholder="Pricing information"
-                          {...form.getInputProps('rental_pricing')}
-                        />
-                        <TextInput
-                          label="Rental Link"
-                          placeholder="Link to rental information"
-                          {...form.getInputProps('rental_link')}
-                        />
-                      </SimpleGrid>
+                      {form.values.available_for_rent && (
+                        <>
+                          <Textarea
+                            label="Rental Information"
+                            placeholder="What's available for rent?"
+                            {...form.getInputProps('rental_info')}
+                          />
+                          <SimpleGrid cols={{ base: 1, sm: 2 }}>
+                            <TextInput
+                              label="Rental Pricing"
+                              placeholder="Pricing information"
+                              {...form.getInputProps('rental_pricing')}
+                            />
+                            <TextInput
+                              label="Rental Link"
+                              placeholder="Link to rental information"
+                              {...form.getInputProps('rental_link')}
+                            />
+                          </SimpleGrid>
+                        </>
+                      )}
                     </>
                   )}
                 </Stack>
               </Accordion.Panel>
             </Accordion.Item>
+            )}
+
+            {/* Rentals Section - for Parks only */}
+            {isPark && (
+              <Accordion.Item value="rentals">
+                <Accordion.Control>
+                  <Text fw={600}>Rentals</Text>
+                </Accordion.Control>
+                <Accordion.Panel>
+                  <Stack>
+                    <Switch
+                      label="Available for Rent"
+                      {...form.getInputProps('available_for_rent', { type: 'checkbox' })}
+                    />
+                    {form.values.available_for_rent && (
+                      <>
+                        <Textarea
+                          label="Rental Information"
+                          placeholder="What's available for rent?"
+                          {...form.getInputProps('rental_info')}
+                        />
+                        <SimpleGrid cols={{ base: 1, sm: 2 }}>
+                          <TextInput
+                            label="Rental Pricing"
+                            placeholder="Pricing information"
+                            {...form.getInputProps('rental_pricing')}
+                          />
+                          <TextInput
+                            label="Rental Link"
+                            placeholder="Link to rental information"
+                            {...form.getInputProps('rental_link')}
+                          />
+                        </SimpleGrid>
+                        <TextInput
+                          label="Photos of Rental"
+                          placeholder="URLs to rental photos (comma-separated)"
+                          {...form.getInputProps('rental_photos')}
+                        />
+                      </>
+                    )}
+                  </Stack>
+                </Accordion.Panel>
+              </Accordion.Item>
             )}
 
             {/* Event Vendors Section */}
@@ -1627,19 +2297,34 @@ export default function POIForm() {
                     />
                     {form.values.event.has_vendors && (
                       <>
-                        <Checkbox.Group
-                          label="Vendor Types"
-                          {...getCheckboxGroupProps('event.vendor_types')}
-                        >
-                          <SimpleGrid cols={{ base: 2, sm: 3 }}>
-                            {VENDOR_TYPES.map(type => (
-                              <Checkbox 
-                                key={typeof type === 'object' ? type.value : type} 
-                                value={typeof type === 'object' ? type.value : type} 
-                                label={typeof type === 'object' ? type.label : type} 
-                              />
+                        <Divider my="md" label="Vendor Types" />
+                        <Text size="sm" c="dimmed" mb="md">
+                          Select the types of vendors that will be present at your event:
+                        </Text>
+                        <Checkbox.Group {...getCheckboxGroupProps('event.vendor_types')}>
+                          <Stack spacing="md">
+                            {Object.entries(
+                              VENDOR_TYPES.reduce((groups, vendor) => {
+                                const group = vendor.group || 'Other';
+                                if (!groups[group]) groups[group] = [];
+                                groups[group].push(vendor);
+                                return groups;
+                              }, {})
+                            ).map(([groupName, vendors]) => (
+                              <div key={groupName}>
+                                <Text fw={500} size="sm" mb="xs">{groupName}</Text>
+                                <SimpleGrid cols={{ base: 2, sm: 3 }} ml="md">
+                                  {vendors.map(vendor => (
+                                    <Checkbox
+                                      key={vendor.value}
+                                      value={vendor.value}
+                                      label={vendor.label}
+                                    />
+                                  ))}
+                                </SimpleGrid>
+                              </div>
                             ))}
-                          </SimpleGrid>
+                          </Stack>
                         </Checkbox.Group>
 
                         <DateTimePicker
@@ -2002,31 +2687,78 @@ export default function POIForm() {
                       placeholder="URL to trail map PDF"
                       {...form.getInputProps('trail.downloadable_trail_map')}
                     />
+
+                    <Divider my="md" label="Trailhead Location" />
+                    <SimpleGrid cols={{ base: 1, sm: 2 }}>
+                      <NumberInput
+                        label="Trailhead Latitude"
+                        placeholder="35.7128"
+                        precision={6}
+                        {...form.getInputProps('trail.trailhead_latitude')}
+                      />
+                      <NumberInput
+                        label="Trailhead Longitude"
+                        placeholder="-79.0064"
+                        precision={6}
+                        {...form.getInputProps('trail.trailhead_longitude')}
+                      />
+                    </SimpleGrid>
+                    <TextInput
+                      label="Trailhead Photo"
+                      placeholder="URL to photo of trailhead entrance"
+                      {...form.getInputProps('trail.trailhead_photo')}
+                    />
+
+                    <Divider my="md" label="Trail Exit Location" />
+                    <SimpleGrid cols={{ base: 1, sm: 2 }}>
+                      <NumberInput
+                        label="Trail Exit Latitude"
+                        placeholder="35.7128"
+                        precision={6}
+                        {...form.getInputProps('trail.trail_exit_latitude')}
+                      />
+                      <NumberInput
+                        label="Trail Exit Longitude"
+                        placeholder="-79.0064"
+                        precision={6}
+                        {...form.getInputProps('trail.trail_exit_longitude')}
+                      />
+                    </SimpleGrid>
+                    <TextInput
+                      label="Trail Exit Photo"
+                      placeholder="URL to photo of trail exit"
+                      {...form.getInputProps('trail.trail_exit_photo')}
+                    />
                   </Stack>
                 </Accordion.Panel>
               </Accordion.Item>
             )}
 
-            {/* Memberships & Connections Section */}
+            {/* Connections Section (renamed from Memberships & Connections for Parks) */}
             {(isPark || isTrail) && (
               <Accordion.Item value="memberships">
                 <Accordion.Control>
-                  <Text fw={600}>Memberships & Connections</Text>
+                  <Text fw={600}>{isPark ? 'Connections' : 'Memberships & Connections'}</Text>
                 </Accordion.Control>
                 <Accordion.Panel>
                   <Stack>
-                    <Alert color="blue" variant="light">
-                      Use this section to indicate if this location shares memberships with other parks/trails
-                    </Alert>
-                    
-                    <RichTextEditor
-                      label="Membership & Pass Details"
-                      placeholder="Information about shared passes or membership programs"
-                      value={form.values.membership_details || ''}
-                      onChange={(html) => form.setFieldValue('membership_details', html)}
-                      error={form.errors.membership_details}
-                      minRows={3}
-                    />
+                    {/* Membership details moved to Pricing & Memberships section for Parks */}
+                    {!isPark && (
+                      <>
+                        <Alert color="blue" variant="light">
+                          Use this section to indicate if this location shares memberships with other parks/trails
+                        </Alert>
+
+                        <RichTextEditor
+                          label="Membership & Pass Details"
+                          placeholder="Information about shared passes or membership programs"
+                          value={form.values.membership_details || ''}
+                          onChange={(html) => form.setFieldValue('membership_details', html)}
+                          error={form.errors.membership_details}
+                          minRows={3}
+                        />
+                      </>
+                    )}
                     
                     <Textarea
                       label="Camping & Lodging"
