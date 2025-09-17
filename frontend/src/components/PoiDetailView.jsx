@@ -4,6 +4,7 @@ import { IconPencil, IconCheck, IconLink, IconPhone, IconMail, IconMapPin, IconB
 import { Link } from 'react-router-dom';
 import api from '../utils/api';
 import RelationshipManager from './RelationshipManager';
+import DOMPurify from 'dompurify';
 
 // Helper component to render a list from an array attribute
 const AttributeList = ({ title, data }) => {
@@ -18,10 +19,53 @@ const AttributeList = ({ title, data }) => {
     );
 };
 
-// Helper for single text attributes
+// Helper for single text attributes (with potential HTML content)
 const TextAttribute = ({ label, value }) => {
     if (!value) return null;
-    return <Text size="sm"><Text component="span" fw={500}>{label}:</Text> {value}</Text>;
+
+    return (
+        <Box>
+            <Text component="span" fw={500} size="sm">{label}:</Text>{' '}
+            <HtmlContent content={value} size="sm" style={{ display: 'inline' }} />
+        </Box>
+    );
+}
+
+// Helper component to render HTML content safely
+const HtmlContent = ({ content, ...props }) => {
+    if (!content) return null;
+
+    // Check if content looks like HTML (contains tags)
+    const isHtml = /<[^>]*>/.test(content);
+
+    if (isHtml) {
+        const sanitizedHtml = DOMPurify.sanitize(content, {
+            ALLOWED_TAGS: [
+                'p', 'br', 'strong', 'b', 'em', 'i', 'u', 'a',
+                'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'
+            ],
+            ALLOWED_ATTR: ['href', 'target', 'rel'],
+            ALLOW_DATA_ATTR: false,
+        });
+
+        return (
+            <Text
+                {...props}
+                dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
+                style={{
+                    '& p': { margin: 0, marginBottom: '0.5em' },
+                    '& p:last-child': { marginBottom: 0 },
+                    '& ul, & ol': { marginBottom: '0.5em', paddingLeft: '1.5em' },
+                    '& li': { marginBottom: '0.25em' },
+                    '& a': { color: 'var(--mantine-color-blue-6)', textDecoration: 'underline' },
+                    ...props.style
+                }}
+            />
+        );
+    }
+
+    // Fallback to plain text rendering
+    return <Text {...props}>{content}</Text>;
 }
 
 const NearbyPoiList = ({ poiId }) => {
@@ -181,7 +225,7 @@ const PoiDetailView = ({ poi, onEditClick }) => {
                     <Accordion.Panel>
                         <Stack>
                             {description ? (
-                                <Text>{description}</Text>
+                                <HtmlContent content={description} />
                             ) : (
                                 <Text c="dimmed">No description provided.</Text>
                             )}
@@ -251,9 +295,10 @@ const PoiDetailView = ({ poi, onEditClick }) => {
                                 <Box>
                                     <Text fw={500} size="sm" mb="xs">Additional Notes</Text>
                                     {Object.entries(custom_fields).map(([key, value]) => (
-                                        <Text key={key} size="sm" mb={4}>
-                                            <Text component="span" fw={500}>{key}:</Text> {value}
-                                        </Text>
+                                        <Box key={key} mb={4}>
+                                            <Text component="span" fw={500} size="sm">{key}:</Text>{' '}
+                                            <HtmlContent content={value} size="sm" style={{ display: 'inline' }} />
+                                        </Box>
                                     ))}
                                 </Box>
                             ) : (
@@ -294,9 +339,14 @@ const PoiDetailView = ({ poi, onEditClick }) => {
                                 <Box>
                                     <Text fw={500} size="sm" mb="xs">Additional Contact Info</Text>
                                     {Object.entries(contact_info).map(([key, value]) => (
-                                        <Text key={key} size="sm" mb={4}>
-                                            <Text component="span" fw={500}>{key}:</Text> {typeof value === 'object' ? JSON.stringify(value) : value}
-                                        </Text>
+                                        <Box key={key} mb={4}>
+                                            <Text component="span" fw={500} size="sm">{key}:</Text>{' '}
+                                            {typeof value === 'object' ? (
+                                                <Text component="span" size="sm">{JSON.stringify(value)}</Text>
+                                            ) : (
+                                                <HtmlContent content={value} size="sm" style={{ display: 'inline' }} />
+                                            )}
+                                        </Box>
                                     ))}
                                 </Box>
                             ) : (
@@ -319,9 +369,14 @@ const PoiDetailView = ({ poi, onEditClick }) => {
                                     <Box>
                                         <Text fw={500} size="sm" mb="xs">Compliance & Requirements</Text>
                                         {Object.entries(compliance).map(([key, value]) => (
-                                            <Text key={key} size="sm" mb={4}>
-                                                <Text component="span" fw={500}>{key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}:</Text> {typeof value === 'boolean' ? (value ? 'Yes' : 'No') : value}
-                                            </Text>
+                                            <Box key={key} mb={4}>
+                                                <Text component="span" fw={500} size="sm">{key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}:</Text>{' '}
+                                                {typeof value === 'boolean' ? (
+                                                    <Text component="span" size="sm">{value ? 'Yes' : 'No'}</Text>
+                                                ) : (
+                                                    <HtmlContent content={value} size="sm" style={{ display: 'inline' }} />
+                                                )}
+                                            </Box>
                                         ))}
                                     </Box>
                                 )}
@@ -339,9 +394,14 @@ const PoiDetailView = ({ poi, onEditClick }) => {
                                 <Box>
                                     <Text fw={500} size="sm" mb="xs" c="deep-purple.7">Business Attributes</Text>
                                     {Object.entries(business).map(([key, value]) => (
-                                        <Text key={key} size="sm" mb={4}>
-                                            <Text component="span" fw={500}>{key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}:</Text> {typeof value === 'boolean' ? (value ? 'Yes' : 'No') : value}
-                                        </Text>
+                                        <Box key={key} mb={4}>
+                                            <Text component="span" fw={500} size="sm">{key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}:</Text>{' '}
+                                            {typeof value === 'boolean' ? (
+                                                <Text component="span" size="sm">{value ? 'Yes' : 'No'}</Text>
+                                            ) : (
+                                                <HtmlContent content={value} size="sm" style={{ display: 'inline' }} />
+                                            )}
+                                        </Box>
                                     ))}
                                 </Box>
                             )}
@@ -349,9 +409,14 @@ const PoiDetailView = ({ poi, onEditClick }) => {
                                 <Box>
                                     <Text fw={500} size="sm" mb="xs" c="brand-green.7">Park Attributes</Text>
                                     {Object.entries(park).map(([key, value]) => (
-                                        <Text key={key} size="sm" mb={4}>
-                                            <Text component="span" fw={500}>{key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}:</Text> {typeof value === 'boolean' ? (value ? 'Yes' : 'No') : value}
-                                        </Text>
+                                        <Box key={key} mb={4}>
+                                            <Text component="span" fw={500} size="sm">{key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}:</Text>{' '}
+                                            {typeof value === 'boolean' ? (
+                                                <Text component="span" size="sm">{value ? 'Yes' : 'No'}</Text>
+                                            ) : (
+                                                <HtmlContent content={value} size="sm" style={{ display: 'inline' }} />
+                                            )}
+                                        </Box>
                                     ))}
                                 </Box>
                             )}
@@ -359,9 +424,14 @@ const PoiDetailView = ({ poi, onEditClick }) => {
                                 <Box>
                                     <Text fw={500} size="sm" mb="xs" c="blue.7">Trail Attributes</Text>
                                     {Object.entries(trail).map(([key, value]) => (
-                                        <Text key={key} size="sm" mb={4}>
-                                            <Text component="span" fw={500}>{key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}:</Text> {typeof value === 'boolean' ? (value ? 'Yes' : 'No') : value}
-                                        </Text>
+                                        <Box key={key} mb={4}>
+                                            <Text component="span" fw={500} size="sm">{key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}:</Text>{' '}
+                                            {typeof value === 'boolean' ? (
+                                                <Text component="span" size="sm">{value ? 'Yes' : 'No'}</Text>
+                                            ) : (
+                                                <HtmlContent content={value} size="sm" style={{ display: 'inline' }} />
+                                            )}
+                                        </Box>
                                     ))}
                                 </Box>
                             )}
@@ -369,9 +439,14 @@ const PoiDetailView = ({ poi, onEditClick }) => {
                                 <Box>
                                     <Text fw={500} size="sm" mb="xs" c="orange.7">Event Attributes</Text>
                                     {Object.entries(event).map(([key, value]) => (
-                                        <Text key={key} size="sm" mb={4}>
-                                            <Text component="span" fw={500}>{key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}:</Text> {typeof value === 'boolean' ? (value ? 'Yes' : 'No') : value}
-                                        </Text>
+                                        <Box key={key} mb={4}>
+                                            <Text component="span" fw={500} size="sm">{key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}:</Text>{' '}
+                                            {typeof value === 'boolean' ? (
+                                                <Text component="span" size="sm">{value ? 'Yes' : 'No'}</Text>
+                                            ) : (
+                                                <HtmlContent content={value} size="sm" style={{ display: 'inline' }} />
+                                            )}
+                                        </Box>
                                     ))}
                                 </Box>
                             )}

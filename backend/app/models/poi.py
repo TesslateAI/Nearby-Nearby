@@ -71,7 +71,7 @@ class PointOfInterest(Base):
     listing_type = Column(String(50), default='free')  # 'free', 'paid', 'paid_founding', 'sponsor', 'community_comped'
     
     # Main category (required)
-    main_category_id = Column(UUID(as_uuid=True), ForeignKey("categories.id"), nullable=True)
+    # Main category is now handled through poi_categories table with is_main=True
     
     # Cost fields (for Events, Parks, Trails)
     cost = Column(String(100))  # Flexible format: "$1000" or "$0.00-$1000.00" or "0" (shows as Free)
@@ -220,8 +220,6 @@ class PointOfInterest(Base):
     last_updated = Column(TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now())
 
     # Relationships
-    main_category = relationship("Category", foreign_keys=[main_category_id])
-    
     categories = relationship(
         "Category",
         secondary=poi_category_association,
@@ -250,6 +248,36 @@ class PointOfInterest(Base):
     @property
     def poi_type_str(self):
         return self.poi_type.value if isinstance(self.poi_type, enum.Enum) else self.poi_type
+
+    @property
+    def main_category(self):
+        """Get the main category for this POI (where is_main=True)"""
+        from sqlalchemy import and_
+        from app.models.category import Category, poi_category_association
+        if hasattr(self, '_sa_instance_state') and self._sa_instance_state.session:
+            session = self._sa_instance_state.session
+            return session.query(Category).join(poi_category_association).filter(
+                and_(
+                    poi_category_association.c.poi_id == self.id,
+                    poi_category_association.c.is_main == True
+                )
+            ).first()
+        return None
+
+    @property
+    def secondary_categories(self):
+        """Get the secondary categories for this POI (where is_main=False)"""
+        from sqlalchemy import and_
+        from app.models.category import Category, poi_category_association
+        if hasattr(self, '_sa_instance_state') and self._sa_instance_state.session:
+            session = self._sa_instance_state.session
+            return session.query(Category).join(poi_category_association).filter(
+                and_(
+                    poi_category_association.c.poi_id == self.id,
+                    poi_category_association.c.is_main == False
+                )
+            ).all()
+        return []
 
 
 class POIRelationship(Base):

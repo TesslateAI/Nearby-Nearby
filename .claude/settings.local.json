@@ -38,7 +38,9 @@
       "mcp__playwright__browser_snapshot",
       "Bash(cd:*)",
       "Bash(find:*)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(PYTHONPATH=. python:*)",
+      "mcp__playwright__browser_handle_dialog"
     ],
     "deny": [],
     "ask": []

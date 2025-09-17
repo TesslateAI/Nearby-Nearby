@@ -335,7 +335,8 @@ class PointOfInterestCreate(PointOfInterestBase):
     park: Optional[ParkCreate] = None
     trail: Optional[TrailCreate] = None
     event: Optional[EventCreate] = None
-    category_ids: Optional[List[uuid.UUID]] = []
+    main_category_id: Optional[uuid.UUID] = None  # Single main category
+    category_ids: Optional[List[uuid.UUID]] = []  # Secondary categories
 
     @model_validator(mode='before')
     @classmethod
@@ -485,7 +486,8 @@ class PointOfInterestUpdate(BaseModel):
     park: Optional[ParkCreate] = None
     trail: Optional[TrailCreate] = None
     event: Optional[EventCreate] = None
-    category_ids: Optional[List[uuid.UUID]] = None
+    main_category_id: Optional[uuid.UUID] = None  # Single main category
+    category_ids: Optional[List[uuid.UUID]] = None  # Secondary categories
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -497,11 +499,12 @@ class PointOfInterest(PointOfInterestBase):
     park: Optional[Park] = None
     trail: Optional[Trail] = None
     event: Optional[Event] = None
-    main_category: Optional[Category] = None
-    categories: List[Category] = []
+    main_category: Optional[Category] = None  # Will be populated via property
+    secondary_categories: List[Category] = []  # Will be populated via property
+    categories: List[Category] = []  # All categories (for backward compatibility)
     created_at: datetime
     last_updated: datetime
-    
+
     model_config = {'from_attributes': True, 'populate_by_name': True}
 
 # POI Relationship Schema

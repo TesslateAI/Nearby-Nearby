@@ -1108,16 +1108,20 @@ export default function POIForm() {
 
                   {!isFreeListing && (
                     <>
-                      <Textarea
+                      <RichTextEditor
                         label="Parking Notes"
                         placeholder="Additional parking information"
-                        {...form.getInputProps('parking_notes')}
+                        value={form.values.parking_notes || ''}
+                        onChange={(html) => form.setFieldValue('parking_notes', html)}
+                        error={form.errors.parking_notes}
                       />
 
-                      <Textarea
+                      <RichTextEditor
                         label="Public Transit Information"
                         placeholder="Bus routes, train stations, etc."
-                        {...form.getInputProps('public_transit_info')}
+                        value={form.values.public_transit_info || ''}
+                        onChange={(html) => form.setFieldValue('public_transit_info', html)}
+                        error={form.errors.public_transit_info}
                       />
 
                       <Radio.Group
@@ -1437,11 +1441,13 @@ export default function POIForm() {
                     {...form.getInputProps('offsite_emergency_contact')}
                   />
                   
-                  <Textarea
+                  <RichTextEditor
                     label="Emergency Protocols"
                     placeholder="Emergency procedures and protocols"
+                    value={form.values.emergency_protocols || ''}
+                    onChange={(html) => form.setFieldValue('emergency_protocols', html)}
+                    error={form.errors.emergency_protocols}
                     minRows={3}
-                    {...form.getInputProps('emergency_protocols')}
                   />
                 </Stack>
               </Accordion.Panel>
@@ -1975,10 +1981,12 @@ export default function POIForm() {
                       ))}
                     </SimpleGrid>
                   </Checkbox.Group>
-                  <Textarea
+                  <RichTextEditor
                     label="Additional Accessibility Details"
                     placeholder="Describe accessibility features"
-                    {...form.getInputProps('wheelchair_details')}
+                    value={form.values.wheelchair_details || ''}
+                    onChange={(html) => form.setFieldValue('wheelchair_details', html)}
+                    error={form.errors.wheelchair_details}
                   />
 
                   <Divider my="md" label="Smoking Policy" />
@@ -1989,10 +1997,12 @@ export default function POIForm() {
                       ))}
                     </SimpleGrid>
                   </Checkbox.Group>
-                  <Textarea
+                  <RichTextEditor
                     label="Smoking Policy Details"
                     placeholder="Additional smoking policy information"
-                    {...form.getInputProps('smoking_details')}
+                    value={form.values.smoking_details || ''}
+                    onChange={(html) => form.setFieldValue('smoking_details', html)}
+                    error={form.errors.smoking_details}
                   />
 
                   {isEvent && (
@@ -2040,10 +2050,12 @@ export default function POIForm() {
                         data={DRONE_USAGE_OPTIONS}
                         {...form.getInputProps('drone_usage')}
                       />
-                      <Textarea
+                      <RichTextEditor
                         label="Drone Policy Details"
                         placeholder="Additional drone policy information"
-                        {...form.getInputProps('drone_policy')}
+                        value={form.values.drone_policy || ''}
+                        onChange={(html) => form.setFieldValue('drone_policy', html)}
+                        error={form.errors.drone_policy}
                       />
                     </>
                   )}
@@ -2124,13 +2136,13 @@ export default function POIForm() {
                                     }}
                                   />
                                 </SimpleGrid>
-                                <Textarea
+                                <RichTextEditor
                                   label="Description"
                                   placeholder="e.g., For paying customers only, Location details, accessibility info"
                                   value={toilet.description || ''}
-                                  onChange={(e) => {
+                                  onChange={(html) => {
                                     const toilets = [...(form.values.toilet_locations || [])];
-                                    toilets[index] = { ...toilets[index], description: e.target.value };
+                                    toilets[index] = { ...toilets[index], description: html };
                                     form.setFieldValue('toilet_locations', toilets);
                                   }}
                                 />
@@ -2173,10 +2185,12 @@ export default function POIForm() {
                         </>
                       ) : (
                         <>
-                          <Textarea
+                          <RichTextEditor
                             label="Toilet Description"
                             placeholder="e.g., For paying customers only, Location details"
-                            {...form.getInputProps('toilet_description')}
+                            value={form.values.toilet_description || ''}
+                            onChange={(html) => form.setFieldValue('toilet_description', html)}
+                            error={form.errors.toilet_description}
                           />
 
                           <SimpleGrid cols={{ base: 1, sm: 2 }}>
@@ -2214,10 +2228,12 @@ export default function POIForm() {
                       />
                       {form.values.available_for_rent && (
                         <>
-                          <Textarea
+                          <RichTextEditor
                             label="Rental Information"
                             placeholder="What's available for rent?"
-                            {...form.getInputProps('rental_info')}
+                            value={form.values.rental_info || ''}
+                            onChange={(html) => form.setFieldValue('rental_info', html)}
+                            error={form.errors.rental_info}
                           />
                           <SimpleGrid cols={{ base: 1, sm: 2 }}>
                             <TextInput
@@ -2254,10 +2270,12 @@ export default function POIForm() {
                     />
                     {form.values.available_for_rent && (
                       <>
-                        <Textarea
+                        <RichTextEditor
                           label="Rental Information"
                           placeholder="What's available for rent?"
-                          {...form.getInputProps('rental_info')}
+                          value={form.values.rental_info || ''}
+                          onChange={(html) => form.setFieldValue('rental_info', html)}
+                          error={form.errors.rental_info}
                         />
                         <SimpleGrid cols={{ base: 1, sm: 2 }}>
                           <TextInput
@@ -2348,10 +2366,12 @@ export default function POIForm() {
                           {...form.getInputProps('event.vendor_fee')}
                         />
 
-                        <Textarea
+                        <RichTextEditor
                           label="Vendor Requirements"
                           placeholder="Requirements for vendors"
-                          {...form.getInputProps('event.vendor_requirements')}
+                          value={form.values.event?.vendor_requirements || ''}
+                          onChange={(html) => form.setFieldValue('event.vendor_requirements', html)}
+                          error={form.errors?.event?.vendor_requirements}
                         />
                       </>
                     )}
@@ -2398,10 +2418,12 @@ export default function POIForm() {
                           ))}
                         </SimpleGrid>
                       </Checkbox.Group>
-                      <Textarea
+                      <RichTextEditor
                         label="Additional Pet Policy Information"
                         placeholder="Additional pet policy information"
-                        {...form.getInputProps('pet_policy')}
+                        value={form.values.pet_policy || ''}
+                        onChange={(html) => form.setFieldValue('pet_policy', html)}
+                        error={form.errors.pet_policy}
                       />
                     </>
                   )}
@@ -2442,10 +2464,12 @@ export default function POIForm() {
                         </SimpleGrid>
                       </Checkbox.Group>
                       
-                      <Textarea
+                      <RichTextEditor
                         label="Playground Notes"
                         placeholder="Additional playground information"
-                        {...form.getInputProps('playground_notes')}
+                        value={form.values.playground_notes || ''}
+                        onChange={(html) => form.setFieldValue('playground_notes', html)}
+                        error={form.errors.playground_notes}
                       />
                     </>
                   )}
@@ -2670,16 +2694,20 @@ export default function POIForm() {
                       </SimpleGrid>
                     </Checkbox.Group>
                     
-                    <Textarea
+                    <RichTextEditor
                       label="Trail Markings"
                       placeholder="Describe trail markers and wayfinding"
-                      {...form.getInputProps('trail.trail_markings')}
+                      value={form.values.trail?.trail_markings || ''}
+                      onChange={(html) => form.setFieldValue('trail.trail_markings', html)}
+                      error={form.errors?.trail?.trail_markings}
                     />
                     
-                    <Textarea
+                    <RichTextEditor
                       label="Trailhead Access Details"
                       placeholder="Parking, access points, facilities at trailhead"
-                      {...form.getInputProps('trail.trailhead_access_details')}
+                      value={form.values.trail?.trailhead_access_details || ''}
+                      onChange={(html) => form.setFieldValue('trail.trailhead_access_details', html)}
+                      error={form.errors?.trail?.trailhead_access_details}
                     />
                     
                     <TextInput
@@ -2760,10 +2788,12 @@ export default function POIForm() {
                       </>
                     )}
                     
-                    <Textarea
+                    <RichTextEditor
                       label="Camping & Lodging"
                       placeholder="Available camping or lodging options"
-                      {...form.getInputProps('camping_lodging')}
+                      value={form.values.camping_lodging || ''}
+                      onChange={(html) => form.setFieldValue('camping_lodging', html)}
+                      error={form.errors.camping_lodging}
                     />
                   </Stack>
                 </Accordion.Panel>

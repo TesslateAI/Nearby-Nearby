@@ -17,8 +17,7 @@ def get_poi(db: Session, poi_id: uuid.UUID):
         joinedload(models.PointOfInterest.park),
         joinedload(models.PointOfInterest.trail),
         joinedload(models.PointOfInterest.event),
-        joinedload(models.PointOfInterest.categories),
-        joinedload(models.PointOfInterest.main_category)
+        joinedload(models.PointOfInterest.categories)
     ).filter(models.PointOfInterest.id == poi_id).first()
 
 
@@ -132,27 +131,47 @@ def create_poi(db: Session, poi: schemas.PointOfInterestCreate):
     # Create the POI with location
     poi_data = poi.model_dump(exclude={'location', 'business', 'park', 'trail', 'event', 'category_ids', 'main_category_id'})
 
-    # Sanitize HTML content in the POI data (temporarily disabled for testing)
+    # Sanitize HTML content in the POI data
     poi_data = sanitize_poi_fields(poi_data)
     db_poi = models.PointOfInterest(**poi_data)
-    
+
     # Set the location geometry
     db_poi.location = f'POINT({poi.location.coordinates[0]} {poi.location.coordinates[1]})'
 
-    # Set main category if provided
+    # First save the POI to get an ID
+    try:
+        db.add(db_poi)
+        db.flush()  # Get the ID without committing
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error creating POI: {e}")
+
+    # Handle main category via poi_categories table with is_main=True
     if hasattr(poi, 'main_category_id') and poi.main_category_id:
         main_category = get_category(db, poi.main_category_id)
         if main_category and main_category.is_main_category:
-            db_poi.main_category_id = poi.main_category_id
+            # Insert into poi_categories with is_main=True
+            from app.models.category import poi_category_association
+            db.execute(poi_category_association.insert().values(
+                poi_id=db_poi.id,
+                category_id=poi.main_category_id,
+                is_main=True
+            ))
         else:
             raise HTTPException(status_code=400, detail="Invalid main category")
 
-    # Add categories
+    # Add secondary categories via poi_categories table with is_main=False
     if poi.category_ids:
+        from app.models.category import poi_category_association
         for cat_id in poi.category_ids:
             category = get_category(db, cat_id)
             if category:
-                db_poi.categories.append(category)
+                # Insert into poi_categories with is_main=False
+                db.execute(poi_category_association.insert().values(
+                    poi_id=db_poi.id,
+                    category_id=cat_id,
+                    is_main=False
+                ))
 
     # Create subtype based on poi_type with HTML sanitization
     if poi.poi_type == 'BUSINESS' and poi.business:
@@ -185,7 +204,7 @@ def create_poi(db: Session, poi: schemas.PointOfInterestCreate):
 def update_poi(db: Session, *, db_obj: models.PointOfInterest, obj_in: schemas.PointOfInterestUpdate) -> models.PointOfInterest:
     update_data = obj_in.model_dump(exclude_unset=True)
 
-    # Sanitize HTML content in the update data (temporarily disabled for testing)
+    # Sanitize HTML content in the update data
     update_data = sanitize_poi_fields(update_data)
 
     # Handle location update
@@ -231,26 +250,49 @@ def update_poi(db: Session, *, db_obj: models.PointOfInterest, obj_in: schemas.P
         else:
             db_obj.event = models.Event(**event_data)
 
-    # Handle main category update
+    # Handle main category update via poi_categories table
     if 'main_category_id' in update_data:
         main_category_id = update_data.pop('main_category_id')
+        from app.models.category import poi_category_association
+
+        # Remove existing main category
+        db.execute(poi_category_association.delete().where(
+            poi_category_association.c.poi_id == db_obj.id,
+            poi_category_association.c.is_main == True
+        ))
+
+        # Add new main category if provided
         if main_category_id:
             main_category = get_category(db, main_category_id)
             if main_category and main_category.is_main_category:
-                db_obj.main_category_id = main_category_id
+                db.execute(poi_category_association.insert().values(
+                    poi_id=db_obj.id,
+                    category_id=main_category_id,
+                    is_main=True
+                ))
             else:
                 raise HTTPException(status_code=400, detail="Invalid main category")
-        else:
-            db_obj.main_category_id = None
 
-    # Handle category updates
+    # Handle secondary category updates via poi_categories table
     if 'category_ids' in update_data:
         category_ids = update_data.pop('category_ids')
-        db_obj.categories.clear()
+        from app.models.category import poi_category_association
+
+        # Remove existing secondary categories
+        db.execute(poi_category_association.delete().where(
+            poi_category_association.c.poi_id == db_obj.id,
+            poi_category_association.c.is_main == False
+        ))
+
+        # Add new secondary categories
         for cat_id in category_ids:
             category = get_category(db, cat_id)
             if category:
-                db_obj.categories.append(category)
+                db.execute(poi_category_association.insert().values(
+                    poi_id=db_obj.id,
+                    category_id=cat_id,
+                    is_main=False
+                ))
         db.flush()
 
     # Update remaining fields

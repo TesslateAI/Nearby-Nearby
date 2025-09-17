@@ -67,18 +67,17 @@ def get_main_categories_by_poi_type(db: Session, poi_type: str) -> List[models.C
 
 def get_secondary_categories_by_poi_type(db: Session, poi_type: str, parent_id: uuid.UUID = None) -> List[models.Category]:
     """
-    Get child categories for a specific POI type, optionally filtered by parent.
+    Get secondary categories for a specific POI type, optionally filtered by parent.
     """
     query = db.query(models.Category).filter(
         models.Category.is_active == True,
-        models.Category.applicable_to.contains([poi_type])
+        models.Category.applicable_to.contains([poi_type]),
+        models.Category.is_main_category == False  # Filter for secondary categories
     )
-    
+
     if parent_id:
         query = query.filter(models.Category.parent_id == parent_id)
-    else:
-        query = query.filter(models.Category.parent_id != None)
-    
+
     return query.order_by(models.Category.sort_order, models.Category.name).all()
 
 def delete_category(db: Session, category_id: uuid.UUID):

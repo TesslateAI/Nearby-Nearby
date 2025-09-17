@@ -5,10 +5,11 @@ from sqlalchemy.orm import relationship
 
 from app.database import Base
 
-# Association Table for the many-to-many relationship between POIs and Categories
-poi_category_association = Table('poi_category_association', Base.metadata,
+# POI Categories Association Table with is_main boolean as recommended in Story 3 Technical Notes
+poi_category_association = Table('poi_categories', Base.metadata,
     Column('poi_id', UUID(as_uuid=True), ForeignKey('points_of_interest.id'), primary_key=True),
-    Column('category_id', UUID(as_uuid=True), ForeignKey('categories.id'), primary_key=True)
+    Column('category_id', UUID(as_uuid=True), ForeignKey('categories.id'), primary_key=True),
+    Column('is_main', Boolean, default=False, nullable=False)  # Boolean to indicate if this is the main category
 )
 
 class Category(Base):
