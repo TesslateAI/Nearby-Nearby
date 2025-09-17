@@ -21,8 +21,14 @@ def get_poi(db: Session, poi_id: uuid.UUID):
     ).filter(models.PointOfInterest.id == poi_id).first()
 
 
-def get_pois(db: Session, skip: int = 0, limit: int = 100):
-    return db.query(models.PointOfInterest).order_by(
+def get_pois(db: Session, skip: int = 0, limit: int = 100, include_drafts: bool = False):
+    query = db.query(models.PointOfInterest)
+
+    # Filter by publication status for public view
+    if not include_drafts:
+        query = query.filter(models.PointOfInterest.publication_status == 'published')
+
+    return query.order_by(
         models.PointOfInterest.last_updated.desc()
     ).offset(skip).limit(limit).all()
 
@@ -31,9 +37,15 @@ def get_poi_by_slug(db: Session, slug: str):
     return db.query(models.PointOfInterest).filter(models.PointOfInterest.slug == slug).first()
 
 
-def search_pois(db: Session, query_str: str):
+def search_pois(db: Session, query_str: str, include_drafts: bool = False):
     search = f"%{query_str}%"
-    return db.query(models.PointOfInterest).filter(
+    query = db.query(models.PointOfInterest)
+
+    # Filter by publication status for public view
+    if not include_drafts:
+        query = query.filter(models.PointOfInterest.publication_status == 'published')
+
+    return query.filter(
         or_(
             models.PointOfInterest.name.ilike(search),
             models.PointOfInterest.description_long.ilike(search),
@@ -42,14 +54,20 @@ def search_pois(db: Session, query_str: str):
     ).limit(20).all()
 
 
-def search_pois_by_location(db: Session, location_str: str, limit: int = 8):
+def search_pois_by_location(db: Session, location_str: str, limit: int = 8, include_drafts: bool = False):
     """
     A simplified location search. It finds a POI that matches the location string
     and then finds other POIs near that one.
     """
     search = f"%{location_str}%"
+    query = db.query(models.PointOfInterest)
+
+    # Filter by publication status for public view
+    if not include_drafts:
+        query = query.filter(models.PointOfInterest.publication_status == 'published')
+
     # Find a POI that matches the text query
-    first_match_poi = db.query(models.PointOfInterest).filter(
+    first_match_poi = query.filter(
         or_(
             models.PointOfInterest.address_city.ilike(search),
             models.PointOfInterest.address_street.ilike(search),
@@ -62,8 +80,14 @@ def search_pois_by_location(db: Session, location_str: str, limit: int = 8):
 
     # Now find POIs near this location's coordinates
     distance_meters = 20000  # 20km radius for a general area search
-    
-    nearby_pois = db.query(models.PointOfInterest).filter(
+
+    nearby_query = db.query(models.PointOfInterest)
+
+    # Filter by publication status for public view
+    if not include_drafts:
+        nearby_query = nearby_query.filter(models.PointOfInterest.publication_status == 'published')
+
+    nearby_pois = nearby_query.filter(
         func.ST_DWithin(
             models.PointOfInterest.location,
             first_match_poi.location,
@@ -71,11 +95,11 @@ def search_pois_by_location(db: Session, location_str: str, limit: int = 8):
             use_spheroid=False  # Use faster box comparison for broad search
         )
     ).limit(limit).all()
-    
+
     return nearby_pois
 
 
-def get_pois_nearby(db: Session, *, poi_id: uuid.UUID, distance_km: float = 5.0, limit: int = 12):
+def get_pois_nearby(db: Session, *, poi_id: uuid.UUID, distance_km: float = 5.0, limit: int = 12, include_drafts: bool = False):
     origin_poi = get_poi(db, poi_id)
     if not origin_poi:
         raise HTTPException(status_code=404, detail="Origin POI not found.")
@@ -83,7 +107,13 @@ def get_pois_nearby(db: Session, *, poi_id: uuid.UUID, distance_km: float = 5.0,
     origin_point = origin_poi.location
     distance_meters = distance_km * 1000
 
-    nearby_pois = db.query(models.PointOfInterest).filter(
+    query = db.query(models.PointOfInterest)
+
+    # Filter by publication status for public view
+    if not include_drafts:
+        query = query.filter(models.PointOfInterest.publication_status == 'published')
+
+    nearby_pois = query.filter(
         func.ST_DWithin(
             origin_point,
             models.PointOfInterest.location,
@@ -105,8 +135,8 @@ def create_poi(db: Session, poi: schemas.PointOfInterestCreate):
     # Set the location geometry
     db_poi.location = f'POINT({poi.location.coordinates[0]} {poi.location.coordinates[1]})'
 
-    # Set main category
-    if poi.main_category_id:
+    # Set main category if provided
+    if hasattr(poi, 'main_category_id') and poi.main_category_id:
         main_category = get_category(db, poi.main_category_id)
         if main_category and main_category.is_main_category:
             db_poi.main_category_id = poi.main_category_id

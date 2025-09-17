@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Table, Button, Group, Title, Anchor, Text, Paper, ActionIcon, Tooltip } from '@mantine/core';
+import { Table, Button, Group, Title, Anchor, Text, Paper, ActionIcon, Tooltip, Badge } from '@mantine/core';
 import { Link, useNavigate } from 'react-router-dom';
 import { notifications } from '@mantine/notifications';
 import { IconPencil, IconTrash, IconPlus, IconLink } from '@tabler/icons-react';
@@ -17,7 +17,8 @@ function POIList() {
   const fetchPois = async () => {
     setLoading(true);
     try {
-      const response = await api.get('/pois/');
+      // Fetch from admin endpoint to see all POIs including drafts
+      const response = await api.get('/admin/pois/');
       if (response.ok) {
         const data = await response.json();
         setPois(data);
@@ -84,10 +85,19 @@ function POIList() {
       <Table.Td>{poi.address_city}</Table.Td>
       <Table.Td>
         <Group gap="xs">
-          <Text size="sm" c="dimmed">
-            {poi.is_verified ? '✓ Verified' : 'Unverified'}
-          </Text>
-          {/* Relationship count badge - this would need to be fetched separately */}
+          <Badge
+            color={poi.publication_status === 'published' ? 'green' :
+                   poi.publication_status === 'draft' ? 'gray' : 'orange'}
+            variant="filled"
+            size="sm"
+          >
+            {poi.publication_status || 'draft'}
+          </Badge>
+          {poi.is_verified && (
+            <Badge color="blue" variant="light" size="sm">
+              ✓ Verified
+            </Badge>
+          )}
         </Group>
       </Table.Td>
       <Table.Td>

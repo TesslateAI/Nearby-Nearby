@@ -55,6 +55,7 @@ const emptyInitialValues = {
   status_message: '',
   is_verified: false,
   is_disaster_hub: false,
+  publication_status: 'draft',
   dont_display_location: false,
   // Address fields
   address_full: '',
@@ -402,7 +403,7 @@ function POIForm() {
     }
   }, [id, isEditing]);
 
-  const handleSubmit = async (values) => {
+  const handleSubmit = async (values, publicationStatus = 'published') => {
     // Clean up empty string values and convert them to null for optional fields
     const cleanValues = { ...values };
 
@@ -468,6 +469,7 @@ function POIForm() {
       status_message: cleanValues.status_message,
       is_verified: cleanValues.is_verified,
       is_disaster_hub: cleanValues.is_disaster_hub,
+      publication_status: publicationStatus, // Set the publication status
       dont_display_location: cleanValues.dont_display_location,
       cost: cleanValues.cost,
       pricing_details: cleanValues.pricing_details,
@@ -2187,11 +2189,37 @@ function POIForm() {
       <Group justify="center" mt="xl">
         <Button variant="default" onClick={prevStep} disabled={activeStep === 0}>Back</Button>
         <Button onClick={nextStep} disabled={activeStep === getMaxSteps()}>Next</Button>
-        {activeStep === getMaxSteps() && <Button onClick={form.onSubmit(handleSubmit)} disabled={Object.keys(form.errors).length > 0}>Submit</Button>}
+        {activeStep === getMaxSteps() && (
+          <>
+            <Button
+              variant="light"
+              onClick={form.onSubmit((values) => handleSubmit(values, 'draft'))}
+              disabled={Object.keys(form.errors).length > 0}
+            >
+              Save Draft
+            </Button>
+            <Button
+              onClick={form.onSubmit((values) => handleSubmit(values, 'published'))}
+              disabled={Object.keys(form.errors).length > 0}
+            >
+              {isEditing && form.values.publication_status === 'published' ? 'Update' : 'Publish'}
+            </Button>
+            {isEditing && form.values.publication_status === 'published' && (
+              <Button
+                variant="outline"
+                color="orange"
+                onClick={form.onSubmit((values) => handleSubmit(values, 'draft'))}
+                disabled={Object.keys(form.errors).length > 0}
+              >
+                Unpublish
+              </Button>
+            )}
+          </>
+        )}
         {isEditing && (
-          <Button 
-            variant="outline" 
-            color="red" 
+          <Button
+            variant="outline"
+            color="red"
             onClick={() => navigate('/')}
           >
             Cancel

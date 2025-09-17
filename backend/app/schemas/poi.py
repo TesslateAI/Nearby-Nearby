@@ -111,6 +111,7 @@ class Event(EventBase):
 
 # Point of Interest Schemas
 POI_TYPES = Literal['BUSINESS', 'PARK', 'TRAIL', 'EVENT']
+PUBLICATION_STATUS = Literal['draft', 'published', 'archived']
 
 # Different status types for different POI types
 BUSINESS_STATUS_TYPES = Literal[
@@ -204,6 +205,9 @@ class PointOfInterestBase(BaseModel):
     status_message: Optional[str] = None
     is_verified: bool = False
     is_disaster_hub: bool = False
+
+    # Publication status (draft, published, archived)
+    publication_status: PUBLICATION_STATUS = 'draft'
     
     # Contact info
     website_url: Optional[str] = None
@@ -365,6 +369,7 @@ class PointOfInterestUpdate(BaseModel):
     status_message: Optional[str] = None
     is_verified: Optional[bool] = None
     is_disaster_hub: Optional[bool] = None
+    publication_status: Optional[PUBLICATION_STATUS] = None
     website_url: Optional[str] = None
     phone_number: Optional[str] = None
     email: Optional[str] = None

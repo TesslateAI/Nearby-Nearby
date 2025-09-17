@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 import uuid
 
 # The __init__.py files now allow these cleaner imports
@@ -30,24 +30,51 @@ def create_poi(
 
 @router.get("/pois/", response_model=List[schemas.PointOfInterest])
 def read_pois(
-    skip: int = 0, 
-    limit: int = 100, 
+    skip: int = 0,
+    limit: int = 100,
     search: str = Query(None, description="Search query for POI names"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: Optional[str] = Depends(lambda: None)  # Try to get current user but don't require it
 ):
+    # Public view - only show published POIs
     if search:
-        return crud.search_pois(db=db, query_str=search)
-    pois = crud.get_pois(db, skip=skip, limit=limit)
+        return crud.search_pois(db=db, query_str=search, include_drafts=False)
+    pois = crud.get_pois(db, skip=skip, limit=limit, include_drafts=False)
+    return pois
+
+@router.get("/admin/pois/", response_model=List[schemas.PointOfInterest])
+def read_pois_admin(
+    skip: int = 0,
+    limit: int = 100,
+    search: str = Query(None, description="Search query for POI names"),
+    db: Session = Depends(get_db),
+    current_user: str = Depends(get_current_user)  # Require authentication
+):
+    # Admin view - show all POIs including drafts
+    if search:
+        return crud.search_pois(db=db, query_str=search, include_drafts=True)
+    pois = crud.get_pois(db, skip=skip, limit=limit, include_drafts=True)
     return pois
 
 
 @router.get("/pois/search", response_model=List[schemas.PointOfInterest], summary="Search for POIs by text")
 def search_pois_endpoint(q: str = Query(..., min_length=3, description="Search query string"), db: Session = Depends(get_db)):
-    return crud.search_pois(db=db, query_str=q)
+    # Public search - only published POIs
+    return crud.search_pois(db=db, query_str=q, include_drafts=False)
+
+@router.get("/admin/pois/search", response_model=List[schemas.PointOfInterest], summary="Admin search for POIs by text")
+def search_pois_admin_endpoint(
+    q: str = Query(..., min_length=3, description="Search query string"),
+    db: Session = Depends(get_db),
+    current_user: str = Depends(get_current_user)
+):
+    # Admin search - include drafts
+    return crud.search_pois(db=db, query_str=q, include_drafts=True)
 
 @router.get("/pois/search-by-location", response_model=List[schemas.PointOfInterest], summary="Search for POIs by location text")
 def search_pois_by_location_endpoint(q: str = Query(..., min_length=3, description="Search location string"), db: Session = Depends(get_db)):
-    return crud.search_pois_by_location(db=db, location_str=q)
+    # Public search - only published POIs
+    return crud.search_pois_by_location(db=db, location_str=q, include_drafts=False)
 
 
 @router.get("/pois/{poi_id}", response_model=schemas.PointOfInterest)
@@ -60,12 +87,13 @@ def read_poi(poi_id: uuid.UUID, db: Session = Depends(get_db)):
 
 @router.get("/pois/{poi_id}/nearby", response_model=List[schemas.PointOfInterest], summary="Find nearby POIs")
 def get_nearby_pois_endpoint(
-    poi_id: uuid.UUID, 
-    distance_km: float = Query(5.0, description="Search radius in kilometers"), 
-    limit: int = Query(12, description="Maximum number of results to return"), 
+    poi_id: uuid.UUID,
+    distance_km: float = Query(5.0, description="Search radius in kilometers"),
+    limit: int = Query(12, description="Maximum number of results to return"),
     db: Session = Depends(get_db)
 ):
-    return crud.get_pois_nearby(db=db, poi_id=poi_id, distance_km=distance_km, limit=limit)
+    # Public endpoint - only show published nearby POIs
+    return crud.get_pois_nearby(db=db, poi_id=poi_id, distance_km=distance_km, limit=limit, include_drafts=False)
 
 
 @router.put("/pois/{poi_id}", response_model=schemas.PointOfInterest)

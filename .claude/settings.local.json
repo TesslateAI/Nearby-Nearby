@@ -23,7 +23,12 @@
       "Bash(taskkill:*)",
       "Bash(wmic:*)",
       "Bash(TASKKILL:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "WebSearch",
+      "mcp__playwright__browser_navigate",
+      "mcp__playwright__browser_type",
+      "mcp__playwright__browser_click",
+      "mcp__playwright__browser_evaluate"
     ],
     "deny": [],
     "ask": []

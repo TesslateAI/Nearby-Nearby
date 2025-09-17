@@ -323,7 +323,7 @@ const HoursSelector = memo(({ value = {}, onChange, poiType }) => {
   
   const defaultRegular = {};
   DAYS_OF_WEEK.forEach(day => {
-    defaultRegular[day.value] = value.regular?.[day.value] || getDefaultDayHours();
+    defaultRegular[day.value] = (value?.regular && value.regular[day.value]) || getDefaultDayHours();
   });
   
   const hours = {

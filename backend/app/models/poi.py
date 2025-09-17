@@ -45,6 +45,9 @@ class PointOfInterest(Base):
     status_message = Column(String(100))
     is_verified = Column(Boolean, default=False)
     is_disaster_hub = Column(Boolean, default=False)
+
+    # Publication status (draft, published, archived)
+    publication_status = Column(String(20), default='draft', nullable=False)
     
     # Contact info
     website_url = Column(String)

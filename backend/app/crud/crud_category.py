@@ -15,7 +15,9 @@ def create_category(db: Session, category: schemas.CategoryCreate) -> models.Cat
     db_category = models.Category(
         name=category.name,
         slug=category.slug,
-        parent_id=category.parent_id
+        parent_id=category.parent_id,
+        applicable_to=category.applicable_to,
+        is_main_category=category.is_main_category
     )
     db.add(db_category)
     db.commit()
@@ -59,6 +61,7 @@ def get_main_categories_by_poi_type(db: Session, poi_type: str) -> List[models.C
     return db.query(models.Category).filter(
         models.Category.is_active == True,
         models.Category.parent_id == None,
+        models.Category.is_main_category == True,
         models.Category.applicable_to.contains([poi_type])
     ).order_by(models.Category.sort_order, models.Category.name).all()
 

@@ -53,6 +53,7 @@ const emptyInitialValues = {
   status_message: '',
   is_verified: false,
   is_disaster_hub: false,
+  publication_status: 'draft',
   dont_display_location: false,
   // Address fields
   address_full: '',
@@ -231,6 +232,7 @@ export default function POIFormNew() {
   const isEditing = Boolean(id);
   const [scroll, scrollTo] = useWindowScroll();
   const [loading, setLoading] = useState(false);
+  const [renderError, setRenderError] = useState(null);
 
   const form = useForm({
     initialValues: emptyInitialValues,
@@ -242,14 +244,18 @@ export default function POIFormNew() {
       address_city: (value) => (!value ? 'City is required' : null),
       address_state: (value) => (!value ? 'State is required' : null),
       main_category_id: (value) => (!value ? 'Main category is required' : null),
-      category_ids: (value) => {
-        const fieldConfig = getFieldsForListingType(form.values.listing_type, form.values.poi_type);
+      category_ids: (value, values) => {
+        // Business POIs don't need secondary categories, only main category
+        if (values?.poi_type === 'BUSINESS') {
+          return null;
+        }
+        const fieldConfig = getFieldsForListingType(values?.listing_type, values?.poi_type);
         const maxCategories = fieldConfig?.maxCategories || 3;
-        return value.length === 0 ? 'At least one category is required' : 
-               value.length > maxCategories ? `Maximum ${maxCategories} categories allowed` : null;
+        return value?.length === 0 ? 'At least one category is required' :
+               value?.length > maxCategories ? `Maximum ${maxCategories} categories allowed` : null;
       },
-      'event.start_datetime': (value) => {
-        if (form.values.poi_type === 'EVENT' && !value) {
+      'event.start_datetime': (value, values) => {
+        if (values?.poi_type === 'EVENT' && !value) {
           return 'Start date/time is required for events';
         }
         return null;
@@ -263,26 +269,133 @@ export default function POIFormNew() {
       const fetchPOI = async () => {
         try {
           const response = await api.get(`/pois/${id}`);
-          const poi = response.data;
-          
+
+          // Check if response is ok
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          }
+
+          const poi = await response.json();
+          console.log('Fetched POI data:', poi); // Debug log
+
           // Transform the data to match form structure
           const formData = {
             ...emptyInitialValues,
             ...poi,
-            longitude: poi.location.coordinates[0],
-            latitude: poi.location.coordinates[1],
+            longitude: poi.location?.coordinates?.[0] || emptyInitialValues.longitude,
+            latitude: poi.location?.coordinates?.[1] || emptyInitialValues.latitude,
             category_ids: poi.categories ? poi.categories.map(c => c.id) : [],
             business: poi.business || emptyInitialValues.business,
             park: poi.park || emptyInitialValues.park,
             trail: poi.trail || emptyInitialValues.trail,
             event: poi.event || emptyInitialValues.event
           };
-          
-          form.setValues(formData);
+
+          // Ensure all array fields are arrays, not null
+          const arrayFields = [
+            'ideal_for', 'ideal_for_key', 'parking_types', 'payment_methods', 'key_facilities',
+            'alcohol_options', 'wheelchair_accessible', 'smoking_options', 'wifi_options',
+            'pet_options', 'public_toilets', 'youth_amenities', 'business_amenities',
+            'entertainment_options', 'natural_features', 'outdoor_types', 'things_to_do',
+            'hunting_types', 'fishing_types', 'licenses_required', 'playground_types',
+            'playground_surface_types', 'downloadable_maps', 'parking_locations',
+            'toilet_locations', 'rental_photos', 'menu_photos', 'delivery_links',
+            'reservation_links', 'appointment_links', 'online_ordering_links',
+            'service_locations', 'locally_found_at', 'article_links',
+            'organization_memberships', 'parking_photos'
+          ];
+
+          arrayFields.forEach(field => {
+            if (formData[field] === null || formData[field] === undefined || !Array.isArray(formData[field])) {
+              formData[field] = emptyInitialValues[field] || [];
+            }
+          });
+
+          // Handle nested array fields more thoroughly
+          if (formData.trail) {
+            const trailArrayFields = ['trail_surfaces', 'trail_conditions', 'trail_experiences'];
+            trailArrayFields.forEach(field => {
+              if (formData.trail[field] === null || formData.trail[field] === undefined || !Array.isArray(formData.trail[field])) {
+                formData.trail[field] = [];
+              }
+            });
+          }
+
+          if (formData.event) {
+            const eventArrayFields = ['vendor_types', 'coat_check_options'];
+            eventArrayFields.forEach(field => {
+              if (formData.event[field] === null || formData.event[field] === undefined || !Array.isArray(formData.event[field])) {
+                formData.event[field] = [];
+              }
+            });
+          }
+
+          // Handle hours field specially
+          if (!formData.hours || formData.hours === null) {
+            formData.hours = emptyInitialValues.hours || {};
+          }
+
+          // Handle all string/text fields - convert null to empty string or undefined
+          const stringFields = [
+            'name', 'teaser_paragraph', 'description_long', 'description_short', 'status_message',
+            'address_full', 'address_street', 'address_city', 'address_zip', 'website_url',
+            'phone_number', 'email', 'instagram_username', 'facebook_username', 'x_username',
+            'tiktok_username', 'linkedin_username', 'main_contact_name', 'main_contact_email',
+            'main_contact_phone', 'offsite_emergency_contact', 'emergency_protocols',
+            'cost', 'pricing_details', 'ticket_link', 'history_paragraph', 'featured_image',
+            'parking_notes', 'public_transit_info', 'wheelchair_details', 'smoking_details',
+            'drone_usage', 'drone_policy', 'pet_policy', 'toilet_description', 'rental_info',
+            'rental_pricing', 'rental_link', 'price_range_per_person', 'pricing', 'gift_cards',
+            'menu_link', 'community_impact', 'night_sky_viewing', 'birding_wildlife',
+            'hunting_fishing_info', 'membership_details', 'camping_lodging', 'playground_notes'
+          ];
+
+          stringFields.forEach(field => {
+            if (formData[field] === null) {
+              formData[field] = '';
+            }
+          });
+
+          // Handle nested string fields
+          if (formData.trail) {
+            const trailStringFields = [
+              'length_text', 'difficulty', 'difficulty_description', 'route_type',
+              'trail_markings', 'trailhead_access_details', 'downloadable_trail_map'
+            ];
+            trailStringFields.forEach(field => {
+              if (formData.trail[field] === null) {
+                formData.trail[field] = '';
+              }
+            });
+          }
+
+          if (formData.event) {
+            const eventStringFields = [
+              'organizer_name', 'food_and_drink_info', 'vendor_fee',
+              'vendor_application_info', 'vendor_requirements'
+            ];
+            eventStringFields.forEach(field => {
+              if (formData.event[field] === null) {
+                formData.event[field] = '';
+              }
+            });
+          }
+
+          console.log('Form data after transformation:', formData); // Debug log
+
+          // Set form values with error handling
+          try {
+            form.setValues(formData);
+            console.log('Form values set successfully');
+          } catch (formError) {
+            console.error('Error setting form values:', formError);
+            throw new Error(`Form validation error: ${formError.message}`);
+          }
         } catch (error) {
+          console.error('Error loading POI:', error); // Debug log
           notifications.show({
             title: 'Error',
-            message: 'Failed to load POI data',
+            message: `Failed to load POI data: ${error.message}`,
             color: 'red'
           });
         }
@@ -291,9 +404,9 @@ export default function POIFormNew() {
     }
   }, [id, isEditing]);
 
-  const handleSubmit = async (values) => {
+  const handleSubmit = async (values, publicationStatus = 'published') => {
     setLoading(true);
-    
+
     // Clean up empty string values and convert them to null for optional fields
     const cleanValues = { ...values };
 
@@ -320,6 +433,7 @@ export default function POIFormNew() {
     // Prepare the payload
     const payload = {
       ...cleanValues,
+      publication_status: publicationStatus, // Set the publication status
       location: {
         type: 'Point',
         coordinates: [cleanValues.longitude, cleanValues.latitude]
@@ -367,22 +481,31 @@ export default function POIFormNew() {
 
   const handleDelete = async () => {
     if (!window.confirm('Are you sure you want to delete this POI?')) return;
-    
+
     try {
       await api.delete(`/pois/${id}`);
-      notifications.show({ 
-        title: 'Success', 
-        message: 'POI deleted successfully!', 
-        color: 'green' 
+      notifications.show({
+        title: 'Success',
+        message: 'POI deleted successfully!',
+        color: 'green'
       });
       navigate('/pois');
     } catch (error) {
-      notifications.show({ 
-        title: 'Error', 
-        message: 'Failed to delete POI', 
-        color: 'red' 
+      notifications.show({
+        title: 'Error',
+        message: 'Failed to delete POI',
+        color: 'red'
       });
     }
+  };
+
+  // Helper function to get checkbox group props with null safety
+  const getCheckboxGroupProps = (fieldPath) => {
+    const inputProps = form.getInputProps(fieldPath);
+    return {
+      ...inputProps,
+      value: inputProps.value || []
+    };
   };
 
   // Memoize computed values to prevent unnecessary recalculations
@@ -399,9 +522,25 @@ export default function POIFormNew() {
     [form.values.listing_type]
   );
 
-  return (
-    <Container size="xl" px={{ base: 'xs', sm: 'md', lg: 'xl' }}>
-      <Stack spacing="xl" pb={100}>
+  // Early return for render errors
+  if (renderError) {
+    return (
+      <Container size="xl" px={{ base: 'xs', sm: 'md', lg: 'xl' }}>
+        <Stack spacing="xl" pb={100}>
+          <Alert color="red" title="Render Error">
+            <Text>An error occurred while rendering the form: {renderError.message}</Text>
+            <Button onClick={() => setRenderError(null)} mt="md">Try Again</Button>
+            <Button onClick={() => navigate('/pois')} mt="md" ml="sm">Back to POIs</Button>
+          </Alert>
+        </Stack>
+      </Container>
+    );
+  }
+
+  try {
+    return (
+      <Container size="xl" px={{ base: 'xs', sm: 'md', lg: 'xl' }}>
+        <Stack spacing="xl" pb={100}>
         <Box>
           <Title order={2} c="deep-purple.7" mb="md">
             {isEditing ? `Editing: ${form.values.name}` : 'Create New Point of Interest'}
@@ -605,14 +744,17 @@ export default function POIFormNew() {
                     error={form.errors.main_category_id}
                   />
                   
-                  <SecondaryCategoriesSelector
-                    value={form.values.category_ids || []}
-                    onChange={(value) => form.setFieldValue('category_ids', value)}
-                    poiType={form.values.poi_type}
-                    mainCategoryId={form.values.main_category_id}
-                    maxValues={getFieldsForListingType(form.values.listing_type, form.values.poi_type)?.maxCategories}
-                    error={form.errors.category_ids}
-                  />
+                  {/* Only show secondary categories for non-Business POIs */}
+                  {form.values.poi_type !== 'BUSINESS' && (
+                    <SecondaryCategoriesSelector
+                      value={form.values.category_ids || []}
+                      onChange={(value) => form.setFieldValue('category_ids', value)}
+                      poiType={form.values.poi_type}
+                      mainCategoryId={form.values.main_category_id}
+                      maxValues={getFieldsForListingType(form.values.listing_type, form.values.poi_type)?.maxCategories}
+                      error={form.errors.category_ids}
+                    />
+                  )}
 
                   {/* Ideal For */}
                   <Divider my="md" label="Target Audience" />
@@ -629,7 +771,7 @@ export default function POIFormNew() {
                           <Checkbox
                             key={option.value}
                             label={option.label}
-                            checked={form.values.ideal_for_key?.includes(option.value) || false}
+                            checked={(form.values.ideal_for_key || []).includes(option.value)}
                             onChange={(event) => {
                               const checked = event.currentTarget.checked;
                               if (checked && (form.values.ideal_for_key?.length || 0) < 3) {
@@ -640,7 +782,7 @@ export default function POIFormNew() {
                             }}
                             disabled={
                               form.values.ideal_for_key?.length >= 3 && 
-                              !form.values.ideal_for_key?.includes(option.value)
+                              !(form.values.ideal_for_key || []).includes(option.value)
                             }
                           />
                         ))}
@@ -733,7 +875,7 @@ export default function POIFormNew() {
                   
                   <Checkbox.Group
                     label="Parking Types Available"
-                    {...form.getInputProps('parking_types')}
+                    {...getCheckboxGroupProps('parking_types')}
                   >
                     <SimpleGrid cols={{ base: 2, sm: 3 }}>
                       {PARKING_OPTIONS.map(type => (
@@ -921,7 +1063,7 @@ export default function POIFormNew() {
                     />
 
                     <Divider my="md" label="Discounts Offered" />
-                    <Checkbox.Group {...form.getInputProps('discounts')}>
+                    <Checkbox.Group {...getCheckboxGroupProps('discounts')}>
                       <SimpleGrid cols={{ base: 2, sm: 3 }}>
                         {DISCOUNT_TYPES.map(discount => (
                           <Checkbox key={discount} value={discount} label={discount} />
@@ -930,7 +1072,7 @@ export default function POIFormNew() {
                     </Checkbox.Group>
 
                     <Divider my="md" label="Youth Amenities" />
-                    <Checkbox.Group {...form.getInputProps('youth_amenities')}>
+                    <Checkbox.Group {...getCheckboxGroupProps('youth_amenities')}>
                       <SimpleGrid cols={{ base: 2, sm: 3 }}>
                         {YOUTH_AMENITIES.map(amenity => (
                           <Checkbox key={amenity} value={amenity} label={amenity} />
@@ -939,7 +1081,7 @@ export default function POIFormNew() {
                     </Checkbox.Group>
 
                     <Divider my="md" label="Business Amenities" />
-                    <Checkbox.Group {...form.getInputProps('business_amenities')}>
+                    <Checkbox.Group {...getCheckboxGroupProps('business_amenities')}>
                       <SimpleGrid cols={{ base: 2, sm: 3 }}>
                         {BUSINESS_AMENITIES.map(amenity => (
                           <Checkbox key={amenity} value={amenity} label={amenity} />
@@ -948,7 +1090,7 @@ export default function POIFormNew() {
                     </Checkbox.Group>
 
                     <Divider my="md" label="Entertainment Options" />
-                    <Checkbox.Group {...form.getInputProps('entertainment_options')}>
+                    <Checkbox.Group {...getCheckboxGroupProps('entertainment_options')}>
                       <SimpleGrid cols={{ base: 2, sm: 3 }}>
                         {ENTERTAINMENT_OPTIONS.map(option => (
                           <Checkbox key={option} value={option} label={option} />
@@ -1076,7 +1218,7 @@ export default function POIFormNew() {
                   {(isEvent || isPark || isTrail) && (
                     <>
                       <Divider my="md" label="Key Facilities" />
-                      <Checkbox.Group {...form.getInputProps('key_facilities')}>
+                      <Checkbox.Group {...getCheckboxGroupProps('key_facilities')}>
                         <SimpleGrid cols={{ base: 2, sm: 3 }}>
                           {KEY_FACILITIES.map(facility => (
                             <Checkbox key={facility} value={facility} label={facility} />
@@ -1087,7 +1229,7 @@ export default function POIFormNew() {
                   )}
 
                   <Divider my="md" label="Payment Methods" />
-                  <Checkbox.Group {...form.getInputProps('payment_methods')}>
+                  <Checkbox.Group {...getCheckboxGroupProps('payment_methods')}>
                     <SimpleGrid cols={{ base: 2, sm: 3 }}>
                       {PAYMENT_METHODS.map(method => (
                         <Checkbox key={method} value={method} label={method} />
@@ -1096,7 +1238,7 @@ export default function POIFormNew() {
                   </Checkbox.Group>
 
                   <Divider my="md" label="Alcohol Availability" />
-                  <Checkbox.Group {...form.getInputProps('alcohol_options')}>
+                  <Checkbox.Group {...getCheckboxGroupProps('alcohol_options')}>
                     <SimpleGrid cols={{ base: 2, sm: 3 }}>
                       {ALCOHOL_OPTIONS.map(option => (
                         <Checkbox key={option} value={option} label={option} />
@@ -1105,7 +1247,7 @@ export default function POIFormNew() {
                   </Checkbox.Group>
 
                   <Divider my="md" label="Wheelchair Accessibility" />
-                  <Checkbox.Group {...form.getInputProps('wheelchair_accessible')}>
+                  <Checkbox.Group {...getCheckboxGroupProps('wheelchair_accessible')}>
                     <SimpleGrid cols={{ base: 2, sm: 3 }}>
                       {WHEELCHAIR_OPTIONS.map(option => (
                         <Checkbox key={option} value={option} label={option} />
@@ -1119,7 +1261,7 @@ export default function POIFormNew() {
                   />
 
                   <Divider my="md" label="Smoking Policy" />
-                  <Checkbox.Group {...form.getInputProps('smoking_options')}>
+                  <Checkbox.Group {...getCheckboxGroupProps('smoking_options')}>
                     <SimpleGrid cols={{ base: 2, sm: 3 }}>
                       {SMOKING_OPTIONS.map(option => (
                         <Checkbox key={option} value={option} label={option} />
@@ -1137,7 +1279,7 @@ export default function POIFormNew() {
                       <Divider my="md" label="Event Amenities" />
                       <Checkbox.Group
                         label="WiFi Options"
-                        {...form.getInputProps('wifi_options')}
+                        {...getCheckboxGroupProps('wifi_options')}
                       >
                         <SimpleGrid cols={{ base: 2, sm: 3 }}>
                           {WIFI_OPTIONS.map(option => (
@@ -1148,7 +1290,7 @@ export default function POIFormNew() {
 
                       <Checkbox.Group
                         label="Coat Check Options"
-                        {...form.getInputProps('event.coat_check_options')}
+                        {...getCheckboxGroupProps('event.coat_check_options')}
                       >
                         <SimpleGrid cols={{ base: 2, sm: 3 }}>
                           {COAT_CHECK_OPTIONS.map(option => (
@@ -1193,7 +1335,7 @@ export default function POIFormNew() {
               <Accordion.Panel>
                 <Stack>
                   <Divider my="md" label="Public Toilets" />
-                  <Checkbox.Group {...form.getInputProps('public_toilets')}>
+                  <Checkbox.Group {...getCheckboxGroupProps('public_toilets')}>
                     <SimpleGrid cols={{ base: 2, sm: 3 }}>
                       {PUBLIC_TOILET_OPTIONS.map(option => (
                         <Checkbox key={option} value={option} label={option} />
@@ -1252,7 +1394,7 @@ export default function POIFormNew() {
                       <>
                         <Checkbox.Group
                           label="Vendor Types"
-                          {...form.getInputProps('event.vendor_types')}
+                          {...getCheckboxGroupProps('event.vendor_types')}
                         >
                           <SimpleGrid cols={{ base: 2, sm: 3 }}>
                             {VENDOR_TYPES.map(type => (
@@ -1302,7 +1444,7 @@ export default function POIFormNew() {
               </Accordion.Control>
               <Accordion.Panel>
                 <Stack>
-                  <Checkbox.Group {...form.getInputProps('pet_options')}>
+                  <Checkbox.Group {...getCheckboxGroupProps('pet_options')}>
                     <SimpleGrid cols={{ base: 2, sm: 3 }}>
                       {PET_OPTIONS.map(option => (
                         <Checkbox key={option} value={option} label={option} />
@@ -1333,7 +1475,7 @@ export default function POIFormNew() {
                   {form.values.playground_available && (
                     <>
                       <Divider my="md" label="Playground Types" />
-                      <Checkbox.Group {...form.getInputProps('playground_types')}>
+                      <Checkbox.Group {...getCheckboxGroupProps('playground_types')}>
                         <SimpleGrid cols={{ base: 1, sm: 2 }}>
                           {PLAYGROUND_TYPES.map(type => (
                             <Checkbox key={type} value={type} label={type} />
@@ -1342,7 +1484,7 @@ export default function POIFormNew() {
                       </Checkbox.Group>
                       
                       <Divider my="md" label="Playground Surface Type" />
-                      <Checkbox.Group {...form.getInputProps('playground_surface_types')}>
+                      <Checkbox.Group {...getCheckboxGroupProps('playground_surface_types')}>
                         <SimpleGrid cols={{ base: 2, sm: 3 }}>
                           {PLAYGROUND_SURFACES.map(surface => (
                             <Checkbox key={surface} value={surface} label={surface} />
@@ -1370,7 +1512,7 @@ export default function POIFormNew() {
                 <Accordion.Panel>
                   <Stack>
                     <Divider my="md" label="Natural Features" />
-                    <Checkbox.Group {...form.getInputProps('natural_features')}>
+                    <Checkbox.Group {...getCheckboxGroupProps('natural_features')}>
                       <SimpleGrid cols={{ base: 2, sm: 3 }}>
                         {NATURAL_FEATURES.map(feature => (
                           <Checkbox key={feature} value={feature} label={feature} />
@@ -1379,7 +1521,7 @@ export default function POIFormNew() {
                     </Checkbox.Group>
                     
                     <Divider my="md" label="Outdoor Types" />
-                    <Checkbox.Group {...form.getInputProps('outdoor_types')}>
+                    <Checkbox.Group {...getCheckboxGroupProps('outdoor_types')}>
                       <SimpleGrid cols={{ base: 2, sm: 3 }}>
                         {OUTDOOR_TYPES.map(type => (
                           <Checkbox key={type} value={type} label={type} />
@@ -1388,7 +1530,7 @@ export default function POIFormNew() {
                     </Checkbox.Group>
                     
                     <Divider my="md" label="Things to Do" />
-                    <Checkbox.Group {...form.getInputProps('things_to_do')}>
+                    <Checkbox.Group {...getCheckboxGroupProps('things_to_do')}>
                       <SimpleGrid cols={{ base: 2, sm: 3 }}>
                         {THINGS_TO_DO.map(activity => (
                           <Checkbox key={activity} value={activity} label={activity} />
@@ -1434,7 +1576,7 @@ export default function POIFormNew() {
                     {(form.values.hunting_fishing_allowed === 'seasonal' || form.values.hunting_fishing_allowed === 'year_round') && (
                       <>
                         <Divider my="md" label="Hunting Types Allowed" />
-                        <Checkbox.Group {...form.getInputProps('hunting_types')}>
+                        <Checkbox.Group {...getCheckboxGroupProps('hunting_types')}>
                           <SimpleGrid cols={{ base: 2, sm: 3 }}>
                             {HUNTING_TYPES.map(type => (
                               <Checkbox key={type} value={type} label={type} />
@@ -1458,7 +1600,7 @@ export default function POIFormNew() {
                     {(form.values.fishing_allowed !== 'no') && (
                       <>
                         <Divider my="md" label="Fishing Types" />
-                        <Checkbox.Group {...form.getInputProps('fishing_types')}>
+                        <Checkbox.Group {...getCheckboxGroupProps('fishing_types')}>
                           <SimpleGrid cols={{ base: 2, sm: 3 }}>
                             {FISHING_TYPES.map(type => (
                               <Checkbox key={type} value={type} label={type} />
@@ -1471,7 +1613,7 @@ export default function POIFormNew() {
                     {(form.values.hunting_fishing_allowed !== 'no' || form.values.fishing_allowed !== 'no') && (
                       <>
                         <Divider my="md" label="Licenses & Permits" />
-                        <Checkbox.Group {...form.getInputProps('licenses_required')}>
+                        <Checkbox.Group {...getCheckboxGroupProps('licenses_required')}>
                           <SimpleGrid cols={{ base: 2, sm: 3 }}>
                             {LICENSE_TYPES.map(license => (
                               <Checkbox key={license} value={license} label={license} />
@@ -1539,7 +1681,7 @@ export default function POIFormNew() {
                         <div key={category}>
                           <Text fw={500} size="sm" mb="xs">{category}</Text>
                           <Checkbox.Group
-                            {...form.getInputProps('trail.trail_surfaces')}
+                            {...getCheckboxGroupProps('trail.trail_surfaces')}
                           >
                             <SimpleGrid cols={{ base: 2, sm: 3 }}>
                               {surfaces.map(surface => (
@@ -1552,7 +1694,7 @@ export default function POIFormNew() {
                     </Stack>
                     
                     <Divider my="md" label="Trail Conditions" />
-                    <Checkbox.Group {...form.getInputProps('trail.trail_conditions')}>
+                    <Checkbox.Group {...getCheckboxGroupProps('trail.trail_conditions')}>
                       <SimpleGrid cols={{ base: 1, sm: 2 }}>
                         {TRAIL_CONDITIONS.map(condition => (
                           <Checkbox key={condition} value={condition} label={condition} />
@@ -1561,7 +1703,7 @@ export default function POIFormNew() {
                     </Checkbox.Group>
                     
                     <Divider my="md" label="Trail Experiences" />
-                    <Checkbox.Group {...form.getInputProps('trail.trail_experiences')}>
+                    <Checkbox.Group {...getCheckboxGroupProps('trail.trail_experiences')}>
                       <SimpleGrid cols={{ base: 2, sm: 3 }}>
                         {TRAIL_EXPERIENCES.map(experience => (
                           <Checkbox key={experience} value={experience} label={experience} />
@@ -1693,12 +1835,33 @@ export default function POIFormNew() {
           <Group justify="center" mt="xl">
             <Button
               size="lg"
-              type="submit"
+              variant="light"
               loading={loading}
+              onClick={form.onSubmit((values) => handleSubmit(values, 'draft'))}
               disabled={Object.keys(form.errors).length > 0}
             >
-              {isEditing ? 'Update POI' : 'Create POI'}
+              Save Draft
             </Button>
+            <Button
+              size="lg"
+              loading={loading}
+              onClick={form.onSubmit((values) => handleSubmit(values, 'published'))}
+              disabled={Object.keys(form.errors).length > 0}
+            >
+              {isEditing && form.values.publication_status === 'published' ? 'Update' : 'Publish'}
+            </Button>
+            {isEditing && form.values.publication_status === 'published' && (
+              <Button
+                size="lg"
+                variant="outline"
+                color="orange"
+                loading={loading}
+                onClick={form.onSubmit((values) => handleSubmit(values, 'draft'))}
+                disabled={Object.keys(form.errors).length > 0}
+              >
+                Unpublish
+              </Button>
+            )}
             {isEditing && (
               <Button
                 size="lg"
@@ -1736,4 +1899,24 @@ export default function POIFormNew() {
       </Affix>
     </Container>
   );
+  } catch (error) {
+    console.error('Render error in POIFormNew:', error);
+
+    // Set the error in state to trigger the error UI
+    if (!renderError) {
+      setRenderError(error);
+    }
+
+    // Fallback render
+    return (
+      <Container size="xl" px={{ base: 'xs', sm: 'md', lg: 'xl' }}>
+        <Stack spacing="xl" pb={100}>
+          <Alert color="red" title="Component Error">
+            <Text>The form crashed while rendering. Please check the console for details.</Text>
+            <Button onClick={() => navigate('/pois')} mt="md">Back to POIs</Button>
+          </Alert>
+        </Stack>
+      </Container>
+    );
+  }
 }
