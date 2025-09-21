@@ -419,7 +419,11 @@ export default function POIForm() {
                   <Text fw={600}>Dynamic Attributes</Text>
                 </Accordion.Control>
                 <Accordion.Panel>
-                  <DynamicAttributeForm form={form} />
+                  <DynamicAttributeForm
+                    poiType={form.values.poi_type}
+                    value={form.values.dynamic_attributes || {}}
+                    onChange={(value) => form.setFieldValue('dynamic_attributes', value)}
+                  />
                 </Accordion.Panel>
               </Accordion.Item>
             </Accordion>

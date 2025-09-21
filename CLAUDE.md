@@ -6,7 +6,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Nearby Nearby is a comprehensive full-stack geospatial Points of Interest (POI) platform built with:
 - **Backend**: FastAPI (Python 3.10) with PostgreSQL 15 + PostGIS
-- **Frontend**: React 18 + Vite with Mantine UI
+- **Frontend**: React 18 + Vite with Mantine UI v8.3.1
+- **Rich Text**: TipTap editor with @mantine/tiptap integration
+- **Image Management**: Advanced file upload with binary storage and multiple image types
 - **Infrastructure**: Docker Compose with microservices architecture
 
 ## Common Development Commands
@@ -74,31 +76,39 @@ npm run lint
 ## High-Level Architecture
 
 ### Domain Model
-The system manages four POI types with shared base attributes and type-specific fields:
-- **Business**: Pricing tiers, business hours, payment methods
-- **Park**: Drone policies, outdoor amenities, facilities
-- **Trail**: Difficulty levels, trail length, route types
-- **Event**: Start/end times, venue relationships, costs
+The system manages four POI types with shared base attributes and extensive type-specific fields:
+- **Business**: Pricing tiers, business hours, payment methods, rich text descriptions, gallery images, menu/booking systems
+- **Park**: Drone policies, outdoor amenities, facilities, entry photos, playground features, hunting/fishing options
+- **Trail**: Difficulty levels, trail length, route types, trailhead coordinates, exit points, downloadable maps
+- **Event**: Start/end times, venue relationships, costs, vendor management, entry details, event-specific amenities
 
 ### Data Architecture
-- **PostGIS Integration**: All POIs have geospatial `location` field for proximity queries
-- **JSONB Fields**: Flexible schema for photos, hours, amenities, compliance, custom fields
+- **PostGIS Integration**: All POIs have geospatial `location` field for proximity queries with front door coordinates
+- **JSONB Fields**: Extensive flexible schema for photos, hours, amenities, compliance, facilities, venue settings
+- **Image Storage**: Binary storage system with multiple image types (main, gallery, entry, parking, restroom, rental, playground, menu, trail_head, trail_exit, map, downloadable_map)
+- **Rich Text Content**: HTML storage for long descriptions with TipTap editor integration
 - **Relationship System**: POI-to-POI relationships with type validation (venue, trail-in-park, service provider)
 - **Dynamic Attributes**: Admin-configurable attributes and categories without code changes
+- **Publication System**: Draft/published states with complete form validation
 
 ### API Structure
-- **RESTful Design**: `/api/pois/`, `/api/categories/`, `/api/attributes/`, `/api/relationships/`
+- **RESTful Design**: `/api/pois/`, `/api/categories/`, `/api/attributes/`, `/api/relationships/`, `/api/images/`
 - **Authentication**: JWT-based with `/api/auth/` endpoints
+- **Image Management**: `/api/images/` with upload, retrieval, and metadata endpoints
 - **Search Capabilities**: Text search, location-based search, nearby POI discovery
-- **Auto-documentation**: Swagger UI at `http://localhost:8000/docs`
+- **Auto-documentation**: Swagger UI at `http://localhost:8001/docs` (backend port 8001)
 
 ### Frontend Architecture
 
 #### Organization Structure
-- **Hybrid Architecture**: Feature-based modules (`/features/`) for domain logic, component-type organization (`/components/`) for reusable UI
-- **Features**: `auth`, `poi`, `categories`, `relationships` with self-contained business logic
-- **Components**: `common`, `forms`, `maps` for cross-feature reusable elements
-- **Pages**: Route-level containers that compose features and components
+- **Component-Focused Architecture**: Organized by component type with specialized directories
+- **Core Components**: `POIForm/`, `maps/`, `common/`, `ImageUpload/`, `relationships/` for reusable UI elements
+- **Modular POI Form**: Completely reorganized from single 3,400+ line file into structured sections:
+  - `sections/`: CoreInformation, Categories, Contact, BusinessDetails, LocationSection, etc.
+  - `hooks/`: usePOIForm, usePOIHandlers for form logic
+  - `constants/`: initialValues, validationRules, helpers
+  - `components/`: FormActions and other form-specific components
+- **Pages**: Route-level containers (`pages/`) that compose components
 
 #### State Management
 - **Context API**: `AuthContext` for global authentication state with JWT token management
@@ -106,9 +116,11 @@ The system manages four POI types with shared base attributes and type-specific 
 - **Custom Hooks**: Domain-specific API hooks (`usePOI`, `useCategories`, `useRelationships`) with integrated loading/error states
 
 #### Component Patterns
-- **Multi-Step Forms**: POIForm with step-based architecture in `/poi/POIForm/steps/`
-- **Step Validation**: Progressive form validation with stepper UI component
-- **Form Controllers**: Centralized form logic with `constants.js` and `utils.js` per form
+- **Accordion-Based Forms**: POIForm with section-based architecture using Mantine Accordion
+- **Rich Text Editing**: TipTap integration with @mantine/tiptap for HTML content editing
+- **Image Management**: Dedicated ImageUpload component with drag-and-drop functionality
+- **Section Validation**: Progressive form validation with conditional field rendering
+- **Form Controllers**: Centralized form logic with `constants/`, `hooks/`, and `utils/` organization
 
 #### Routing & Navigation
 - **React Router v6**: Public routes (`/poi/detail/{id}`) and protected admin routes
@@ -123,10 +135,12 @@ The system manages four POI types with shared base attributes and type-specific 
 - **Notification Integration**: Automatic success/error feedback via Mantine notifications
 
 #### Design System
-- **Mantine UI**: Custom theme with brand colors (deep-purple, brand-green)
-- **Component Theming**: Consistent styling patterns across Button, Paper, Table components
-- **Animation System**: CSS transitions in `/styles/animations.css`
+- **Mantine UI v8.3.1**: Latest version with enhanced components and accessibility features
+- **Component Theming**: Consistent styling patterns across Button, Paper, Table, Accordion components
+- **Icon System**: @tabler/icons-react for consistent iconography
+- **Animation System**: CSS transitions in `animations.css`
 - **Responsive Design**: Mobile-first approach with Mantine's responsive utilities
+- **Rich Media**: Advanced dropzone for file uploads with preview functionality
 
 #### Performance & UX
 - **Error Boundaries**: Component-level error containment
@@ -143,12 +157,13 @@ The system manages four POI types with shared base attributes and type-specific 
 ## Key Development Patterns
 
 ### Adding New POI Fields
-1. Update SQLAlchemy model in `backend/app/models/poi.py`
-2. Create Alembic migration
+1. Update SQLAlchemy model in `backend/app/models/poi.py` (or specific type models like `business.py`, `event.py`, `trail.py`)
+2. Create Alembic migration with `docker-compose exec backend alembic revision --autogenerate -m "Description"`
 3. Update Pydantic schemas in `backend/app/schemas/poi.py`
-4. Add field to appropriate POIForm step in `frontend/src/features/poi/POIForm/steps/`
-5. Update form constants and validation in `frontend/src/features/poi/POIForm/constants.js` and `utils.js`
-6. Extend field options if needed in `frontend/src/utils/fieldOptions.js`
+4. Add field to appropriate POIForm section in `frontend/src/components/POIForm/sections/`
+5. Update form constants and validation in `frontend/src/components/POIForm/constants/`
+6. Consider image fields: update `backend/app/models/image.py` for new ImageType enum values
+7. Extend field options if needed in `frontend/src/utils/fieldOptions.js`
 
 ### Creating API Endpoints
 1. Add endpoint in `backend/app/api/endpoints/`
@@ -158,11 +173,13 @@ The system manages four POI types with shared base attributes and type-specific 
 
 ### Frontend Data Flow
 1. **API Layer**: Base service in `frontend/src/services/api.js` and utilities in `frontend/src/utils/api.js`
-2. **Custom Hooks**: Domain-specific hooks in `frontend/src/hooks/useApi.js` with integrated loading/error states
+2. **Custom Hooks**: Domain-specific hooks for POI, categories, relationships with integrated loading/error states
 3. **Authentication**: Global state via `AuthContext.jsx` with secure token management in `secureStorage.js`
-4. **Form Management**: Multi-step forms with `useForm` hook, validation utilities, and step-based architecture
-5. **State Updates**: Optimistic updates with automatic sync and error rollback
-6. **User Feedback**: Integrated notifications via `@mantine/notifications` for all API operations
+4. **Form Management**: Accordion-based forms with `useForm` hook, organized in POIForm sections with `usePOIForm` and `usePOIHandlers` hooks
+5. **Image Management**: Dedicated ImageUpload component with binary storage, drag-and-drop, and preview functionality
+6. **Rich Text**: TipTap editor integration for HTML content with @mantine/tiptap
+7. **State Updates**: Optimistic updates with automatic sync and error rollback
+8. **User Feedback**: Integrated notifications via `@mantine/notifications` for all API operations
 
 ## Important Considerations
 
@@ -179,18 +196,52 @@ The system manages four POI types with shared base attributes and type-specific 
 - Docker layer caching for faster builds
 
 ### Environment Configuration
-- `.env` file required with database credentials
+- `.env` file required with database credentials and image storage paths
 - Separate test database configuration
 - CORS origins configurable via `ALLOWED_ORIGINS`
 - Production domain support via `PRODUCTION_DOMAIN`
+- Image storage configuration: `IMAGE_STORAGE_PATH` and `IMAGE_BASE_URL`
+- Frontend API base URL: `VITE_API_BASE_URL`
 
 ## Workflow Preferences
 - Focus only on task-relevant code areas
 - Write tests for major functionality
 - Maintain existing patterns unless explicitly changing architecture
-- Keep files under 300 lines (refactor when larger)
+- Keep files under 300 lines (refactor when larger) - POIForm has been successfully modularized
 - Never mock data for dev/prod environments
 - Always preserve existing `.env` configuration
+- Use component-based organization following the POIForm modular pattern
+- Leverage TipTap for rich text editing needs
+- Follow image upload patterns established in ImageUpload component
+
+## Current Key Technologies & Recent Changes
+
+### Major Technology Stack Updates
+- **Mantine UI v8.3.1**: Updated to latest version with enhanced components
+- **TipTap Rich Text Editor**: @mantine/tiptap integration for HTML content editing
+- **@hello-pangea/dnd**: Drag and drop functionality for UI components
+- **DOMPurify**: HTML sanitization for rich text content
+- **Binary Image Storage**: Advanced image management with multiple types and metadata
+
+### Architecture Improvements
+- **POI Form Modularization**: Successfully refactored from 3,400+ line monolith into organized sections
+- **Component Organization**: Moved from feature-based to component-type organization
+- **Image Management System**: Complete image upload, storage, and retrieval system
+- **Rich Text Integration**: TipTap editor with character counting and link support
+- **Enhanced Form Validation**: Improved validation patterns with section-based organization
+
+### Recent Database Enhancements
+- **Extended POI Fields**: Added numerous fields for all POI types (business, park, trail, event)
+- **Image Storage Tables**: Complete image metadata and binary storage system
+- **Enhanced JSONB Usage**: More flexible field storage for amenities, facilities, settings
+- **Geospatial Improvements**: Front door coordinates, trailhead coordinates, and enhanced location data
+- **Publication System**: Draft/published states with proper validation
+
+### Current Development Status
+- **Frontend**: Fully modularized with improved component architecture
+- **Backend**: Enhanced API endpoints with comprehensive image management
+- **Database**: Extended schema with all POI type requirements implemented
+- **Testing**: Maintained test coverage through architectural changes
 
 ## AI Coding Conventions
 

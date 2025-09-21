@@ -125,15 +125,15 @@ const RelatedPoiList = ({ poiId, poiName, poiType }) => {
 };
 
 const PoiDetailView = ({ poi, onEditClick }) => {
-    const { 
-        id, 
-        name, 
-        description_long, 
-        description_short, 
-        poi_type, 
-        status, 
-        status_message, 
-        is_verified, 
+    const {
+        id,
+        name,
+        description_long,
+        description_short,
+        poi_type,
+        status,
+        status_message,
+        is_verified,
         is_disaster_hub,
         address_full,
         address_street,
@@ -143,6 +143,7 @@ const PoiDetailView = ({ poi, onEditClick }) => {
         website_url,
         phone_number,
         email,
+        cost,
         photos,
         hours,
         amenities,
@@ -271,9 +272,9 @@ const PoiDetailView = ({ poi, onEditClick }) => {
                                     <Text component="span" fw={500}>Event End:</Text> {new Date(event.end_datetime).toLocaleString()}
                                 </Text>
                             ) : null}
-                            {event?.cost_text ? (
+                            {cost ? (
                                 <Text size="sm">
-                                    <Text component="span" fw={500}>Cost:</Text> {event.cost_text}
+                                    <Text component="span" fw={500}>Cost:</Text> {cost}
                                 </Text>
                             ) : null}
                         </Stack>

@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Table, Button, Group, Title, Anchor, Text, Paper, ActionIcon, Tooltip, Badge } from '@mantine/core';
+import { Table, Button, Group, Title, Anchor, Text, Paper, ActionIcon, Tooltip, Badge, UnstyledButton, Center, TextInput, Select, Stack } from '@mantine/core';
 import { Link, useNavigate } from 'react-router-dom';
 import { notifications } from '@mantine/notifications';
-import { IconPencil, IconTrash, IconPlus, IconLink } from '@tabler/icons-react';
+import { IconPencil, IconTrash, IconPlus, IconLink, IconChevronUp, IconChevronDown, IconSelector, IconSearch, IconX } from '@tabler/icons-react';
 import api from '../utils/api';
 import { useAuth } from '../utils/AuthContext';
 import RelationshipManager from './RelationshipManager';
@@ -12,6 +12,12 @@ function POIList() {
   const [loading, setLoading] = useState(true);
   const [relationshipsModalOpen, setRelationshipsModalOpen] = useState(false);
   const [selectedPoi, setSelectedPoi] = useState(null);
+  const [sortBy, setSortBy] = useState(null);
+  const [sortOrder, setSortOrder] = useState('asc');
+  const [searchText, setSearchText] = useState('');
+  const [typeFilter, setTypeFilter] = useState('');
+  const [cityFilter, setCityFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
   const navigate = useNavigate();
 
   const fetchPois = async () => {
@@ -82,7 +88,105 @@ function POIList() {
     setSelectedPoi(null);
   };
 
-  const rows = pois.map((poi) => (
+  const handleSort = (field) => {
+    if (sortBy === field) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(field);
+      setSortOrder('asc');
+    }
+  };
+
+  const getSortIcon = (field) => {
+    if (sortBy !== field) {
+      return <IconSelector size={14} />;
+    }
+    return sortOrder === 'asc' ? <IconChevronUp size={14} /> : <IconChevronDown size={14} />;
+  };
+
+  const getUniqueTypes = () => {
+    const types = [...new Set(pois.map(poi => poi.poi_type).filter(Boolean))];
+    return types.map(type => ({ value: type, label: type.charAt(0).toUpperCase() + type.slice(1) }));
+  };
+
+  const getUniqueCities = () => {
+    const cities = [...new Set(pois.map(poi => poi.address_city).filter(Boolean))];
+    return cities.map(city => ({ value: city, label: city }));
+  };
+
+  const getUniqueStatuses = () => {
+    const statuses = [...new Set(pois.map(poi => poi.publication_status || 'draft'))];
+    return statuses.map(status => ({ value: status, label: status.charAt(0).toUpperCase() + status.slice(1) }));
+  };
+
+  const clearFilters = () => {
+    setSearchText('');
+    setTypeFilter('');
+    setCityFilter('');
+    setStatusFilter('');
+  };
+
+  const filteredAndSortedPois = [...pois]
+    .filter((poi) => {
+      // Text search filter
+      if (searchText) {
+        const searchLower = searchText.toLowerCase();
+        const matchesName = poi.name?.toLowerCase().includes(searchLower);
+        const matchesType = poi.poi_type?.toLowerCase().includes(searchLower);
+        const matchesCity = poi.address_city?.toLowerCase().includes(searchLower);
+        if (!matchesName && !matchesType && !matchesCity) {
+          return false;
+        }
+      }
+
+      // Type filter
+      if (typeFilter && poi.poi_type !== typeFilter) {
+        return false;
+      }
+
+      // City filter
+      if (cityFilter && poi.address_city !== cityFilter) {
+        return false;
+      }
+
+      // Status filter
+      if (statusFilter && (poi.publication_status || 'draft') !== statusFilter) {
+        return false;
+      }
+
+      return true;
+    })
+    .sort((a, b) => {
+      if (!sortBy) return 0;
+
+      let aValue = a[sortBy];
+      let bValue = b[sortBy];
+
+      // Handle different data types
+      if (sortBy === 'name') {
+        aValue = aValue?.toLowerCase() || '';
+        bValue = bValue?.toLowerCase() || '';
+      } else if (sortBy === 'poi_type') {
+        aValue = aValue?.toLowerCase() || '';
+        bValue = bValue?.toLowerCase() || '';
+      } else if (sortBy === 'address_city') {
+        aValue = aValue?.toLowerCase() || '';
+        bValue = bValue?.toLowerCase() || '';
+      } else if (sortBy === 'publication_status') {
+        aValue = aValue || 'draft';
+        bValue = bValue || 'draft';
+        // Custom order: published > draft > other
+        const statusOrder = { published: 0, draft: 1 };
+        aValue = statusOrder[aValue] !== undefined ? statusOrder[aValue] : 2;
+        bValue = statusOrder[bValue] !== undefined ? statusOrder[bValue] : 2;
+      }
+
+      if (aValue < bValue) return sortOrder === 'asc' ? -1 : 1;
+      if (aValue > bValue) return sortOrder === 'asc' ? 1 : -1;
+      return 0;
+    });
+
+  const rows = filteredAndSortedPois.map((poi) => (
     <Table.Tr key={poi.id} style={{ transition: 'background-color 0.2s' }}>
       <Table.Td>
         <Anchor component={Link} to={`/poi/${poi.id}/edit`} fw={500}>
@@ -145,19 +249,94 @@ function POIList() {
             Create New POI
         </Button>
       </Group>
+
+      {/* Filters */}
+      <Stack gap="md" mb="lg">
+        <Group align="flex-end">
+          <TextInput
+            placeholder="Search by name, type, or city..."
+            value={searchText}
+            onChange={(event) => setSearchText(event.currentTarget.value)}
+            leftSection={<IconSearch size={16} />}
+            style={{ flex: 1, minWidth: 300 }}
+          />
+          <Select
+            placeholder="Filter by Type"
+            value={typeFilter}
+            onChange={setTypeFilter}
+            data={getUniqueTypes()}
+            clearable
+            style={{ minWidth: 150 }}
+          />
+          <Select
+            placeholder="Filter by City"
+            value={cityFilter}
+            onChange={setCityFilter}
+            data={getUniqueCities()}
+            clearable
+            style={{ minWidth: 150 }}
+          />
+          <Select
+            placeholder="Filter by Status"
+            value={statusFilter}
+            onChange={setStatusFilter}
+            data={getUniqueStatuses()}
+            clearable
+            style={{ minWidth: 150 }}
+          />
+          {(searchText || typeFilter || cityFilter || statusFilter) && (
+            <Button variant="light" color="gray" onClick={clearFilters} leftSection={<IconX size={16} />}>
+              Clear Filters
+            </Button>
+          )}
+        </Group>
+        {(searchText || typeFilter || cityFilter || statusFilter) && (
+          <Text size="sm" c="dimmed">
+            Showing {filteredAndSortedPois.length} of {pois.length} POIs
+          </Text>
+        )}
+      </Stack>
       
       {loading ? (
         <Text c="dimmed" ta="center" py="xl">
           Loading POIs...
         </Text>
-      ) : pois.length > 0 ? (
+      ) : filteredAndSortedPois.length > 0 ? (
         <Table striped highlightOnHover withTableBorder>
-          <Table.Thead>
+          <Table.Thead style={{ backgroundColor: 'var(--mantine-color-deep-purple-0)' }}>
             <Table.Tr>
-              <Table.Th>Name</Table.Th>
-              <Table.Th>Type</Table.Th>
-              <Table.Th>City</Table.Th>
-              <Table.Th>Status</Table.Th>
+              <Table.Th>
+                <UnstyledButton onClick={() => handleSort('name')} style={{ width: '100%' }}>
+                  <Group justify="space-between">
+                    <Text fw={500}>Name</Text>
+                    <Center>{getSortIcon('name')}</Center>
+                  </Group>
+                </UnstyledButton>
+              </Table.Th>
+              <Table.Th>
+                <UnstyledButton onClick={() => handleSort('poi_type')} style={{ width: '100%' }}>
+                  <Group justify="space-between">
+                    <Text fw={500}>Type</Text>
+                    <Center>{getSortIcon('poi_type')}</Center>
+                  </Group>
+                </UnstyledButton>
+              </Table.Th>
+              <Table.Th>
+                <UnstyledButton onClick={() => handleSort('address_city')} style={{ width: '100%' }}>
+                  <Group justify="space-between">
+                    <Text fw={500}>City</Text>
+                    <Center>{getSortIcon('address_city')}</Center>
+                  </Group>
+                </UnstyledButton>
+              </Table.Th>
+              <Table.Th>
+                <UnstyledButton onClick={() => handleSort('publication_status')} style={{ width: '100%' }}>
+                  <Group justify="space-between">
+                    <Text fw={500}>Status</Text>
+                    <Center>{getSortIcon('publication_status')}</Center>
+                  </Group>
+                </UnstyledButton>
+              </Table.Th>
               <Table.Th style={{ textAlign: 'right' }}>Actions</Table.Th>
             </Table.Tr>
           </Table.Thead>
@@ -165,7 +344,10 @@ function POIList() {
         </Table>
       ) : (
         <Text c="dimmed" ta="center" py="xl">
-            No points of interest found. Create one to get started!
+          {pois.length === 0
+            ? "No points of interest found. Create one to get started!"
+            : "No POIs match your current filters. Try adjusting your search criteria."
+          }
         </Text>
       )}
 

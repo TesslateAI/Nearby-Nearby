@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
 import {
   Table, Button, Group, Box, Title, TextInput, Select, Switch, Stack,
-  Modal, Textarea, NumberInput, ActionIcon, Text, Badge
+  Modal, Textarea, NumberInput, ActionIcon, Text, Badge, UnstyledButton,
+  Center, Paper
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { notifications } from '@mantine/notifications';
-import { IconEdit, IconTrash, IconPlus } from '@tabler/icons-react';
+import { IconEdit, IconTrash, IconPlus, IconSearch, IconChevronUp, IconChevronDown, IconSelector, IconX } from '@tabler/icons-react';
 import api from '../utils/api';
+import { handleSort, clearAllFilters, sortData, filterByText, filterByField, filterByBoolean, getUniqueValues } from '../utils/filterUtils';
 
 const ATTRIBUTE_TYPES = [
   'PAYMENT_METHOD', 'AMENITY', 'ENTERTAINMENT', 'IDEAL_FOR', 'FACILITY',
@@ -21,6 +23,12 @@ function AttributeManager() {
   const [loading, setLoading] = useState(true);
   const [modalOpened, setModalOpened] = useState(false);
   const [editingAttribute, setEditingAttribute] = useState(null);
+  const [searchText, setSearchText] = useState('');
+  const [typeFilter, setTypeFilter] = useState('');
+  const [poiTypeFilter, setPoiTypeFilter] = useState('');
+  const [activeFilter, setActiveFilter] = useState('');
+  const [sortBy, setSortBy] = useState('name');
+  const [sortOrder, setSortOrder] = useState('asc');
 
   const form = useForm({
     initialValues: {
@@ -53,6 +61,7 @@ function AttributeManager() {
       setLoading(false);
     }
   };
+
 
   useEffect(() => {
     fetchAttributes();
@@ -139,7 +148,46 @@ function AttributeManager() {
     setModalOpened(true);
   };
 
-  const rows = attributes.map((attribute) => (
+  const handleSortClick = (field) => {
+    handleSort(field, sortBy, sortOrder, setSortBy, setSortOrder);
+  };
+
+  const getSortIcon = (field) => {
+    if (sortBy !== field) {
+      return <IconSelector size={14} />;
+    }
+    return sortOrder === 'asc' ? <IconChevronUp size={14} /> : <IconChevronDown size={14} />;
+  };
+
+  const clearFilters = () => {
+    clearAllFilters(setSearchText, setTypeFilter, setPoiTypeFilter, setActiveFilter);
+  };
+
+  const filteredAndSortedAttributes = () => {
+    let filtered = attributes;
+
+    // Apply filters
+    filtered = filterByText(filtered, searchText, ['name', 'type']);
+    filtered = filterByField(filtered, typeFilter, 'type');
+    filtered = filterByField(filtered, poiTypeFilter, 'applicable_to');
+    filtered = filterByBoolean(filtered, activeFilter, 'is_active');
+
+    // Apply sorting
+    const customSortHandlers = {
+      applicable_to: (a, b, sortOrder) => {
+        const aValue = a.applicable_to?.join(', ').toLowerCase() || '';
+        const bValue = b.applicable_to?.join(', ').toLowerCase() || '';
+        if (aValue < bValue) return sortOrder === 'asc' ? -1 : 1;
+        if (aValue > bValue) return sortOrder === 'asc' ? 1 : -1;
+        return 0;
+      }
+    };
+
+    return sortData(filtered, sortBy, sortOrder, customSortHandlers);
+  };
+
+  const filteredAttributes = filteredAndSortedAttributes();
+  const rows = filteredAttributes.map((attribute) => (
     <Table.Tr key={attribute.id}>
       <Table.Td>{attribute.name}</Table.Td>
       <Table.Td>
@@ -180,26 +228,126 @@ function AttributeManager() {
   ));
 
   return (
-    <Box>
-      <Group justify="space-between" mb="md">
-        <Title order={2}>Manage Attributes</Title>
+    <Paper>
+      <Group justify="space-between" mb="lg">
+        <Title order={2} c="deep-purple.7">Manage Attributes</Title>
         <Button leftSection={<IconPlus size="1rem" />} onClick={openCreateModal}>
           Add Attribute
         </Button>
       </Group>
 
-      <Table>
-        <Table.Thead>
+      {/* Filters */}
+      <Stack gap="md" mb="lg">
+        <Group align="flex-end">
+          <TextInput
+            placeholder="Search attributes..."
+            value={searchText}
+            onChange={(event) => setSearchText(event.currentTarget.value)}
+            leftSection={<IconSearch size={16} />}
+            style={{ flex: 1, minWidth: 300 }}
+          />
+          <Select
+            placeholder="Filter by Type"
+            value={typeFilter}
+            onChange={setTypeFilter}
+            data={getUniqueValues(attributes, 'type')}
+            clearable
+            style={{ minWidth: 150 }}
+          />
+          <Select
+            placeholder="Filter by POI Type"
+            value={poiTypeFilter}
+            onChange={setPoiTypeFilter}
+            data={POI_TYPES.map(type => ({ value: type, label: type }))}
+            clearable
+            style={{ minWidth: 150 }}
+          />
+          <Select
+            placeholder="Filter by Status"
+            value={activeFilter}
+            onChange={setActiveFilter}
+            data={[
+              { value: 'true', label: 'Active Only' },
+              { value: 'false', label: 'Inactive Only' }
+            ]}
+            clearable
+            style={{ minWidth: 150 }}
+          />
+          {(searchText || typeFilter || poiTypeFilter || activeFilter) && (
+            <Button variant="light" color="gray" onClick={clearFilters} leftSection={<IconX size={16} />}>
+              Clear Filters
+            </Button>
+          )}
+        </Group>
+        {(searchText || typeFilter || poiTypeFilter || activeFilter) && (
+          <Text size="sm" c="dimmed">
+            Showing {filteredAttributes.length} of {attributes.length} attributes
+          </Text>
+        )}
+      </Stack>
+
+      <Table striped highlightOnHover withTableBorder>
+        <Table.Thead style={{ backgroundColor: 'var(--mantine-color-deep-purple-0)' }}>
           <Table.Tr>
-            <Table.Th>Name</Table.Th>
-            <Table.Th>Type</Table.Th>
-            <Table.Th>Applicable To</Table.Th>
-            <Table.Th>Active</Table.Th>
-            <Table.Th>Sort Order</Table.Th>
-            <Table.Th>Actions</Table.Th>
+            <Table.Th>
+              <UnstyledButton onClick={() => handleSortClick('name')} style={{ width: '100%' }}>
+                <Group justify="space-between">
+                  <Text fw={500}>Name</Text>
+                  <Center>{getSortIcon('name')}</Center>
+                </Group>
+              </UnstyledButton>
+            </Table.Th>
+            <Table.Th>
+              <UnstyledButton onClick={() => handleSortClick('type')} style={{ width: '100%' }}>
+                <Group justify="space-between">
+                  <Text fw={500}>Type</Text>
+                  <Center>{getSortIcon('type')}</Center>
+                </Group>
+              </UnstyledButton>
+            </Table.Th>
+            <Table.Th>
+              <UnstyledButton onClick={() => handleSortClick('applicable_to')} style={{ width: '100%' }}>
+                <Group justify="space-between">
+                  <Text fw={500}>Applicable To</Text>
+                  <Center>{getSortIcon('applicable_to')}</Center>
+                </Group>
+              </UnstyledButton>
+            </Table.Th>
+            <Table.Th>
+              <UnstyledButton onClick={() => handleSortClick('is_active')} style={{ width: '100%' }}>
+                <Group justify="space-between">
+                  <Text fw={500}>Active</Text>
+                  <Center>{getSortIcon('is_active')}</Center>
+                </Group>
+              </UnstyledButton>
+            </Table.Th>
+            <Table.Th>
+              <UnstyledButton onClick={() => handleSortClick('sort_order')} style={{ width: '100%' }}>
+                <Group justify="space-between">
+                  <Text fw={500}>Sort Order</Text>
+                  <Center>{getSortIcon('sort_order')}</Center>
+                </Group>
+              </UnstyledButton>
+            </Table.Th>
+            <Table.Th style={{ textAlign: 'right' }}>Actions</Table.Th>
           </Table.Tr>
         </Table.Thead>
-        <Table.Tbody>{rows}</Table.Tbody>
+        <Table.Tbody>
+          {filteredAttributes.length === 0 ? (
+            <Table.Tr>
+              <Table.Td colSpan={6}>
+                <Text c="dimmed" ta="center" py="xl">
+                  {attributes.length === 0
+                    ? "No attributes found. Create your first attribute to get started!"
+                    : "No attributes match your current filters. Try adjusting your search criteria."
+                  }
+                </Text>
+              </Table.Td>
+            </Table.Tr>
+          ) : (
+            rows
+          )}
+        </Table.Tbody>
       </Table>
 
       <Modal
@@ -257,7 +405,7 @@ function AttributeManager() {
           </Stack>
         </form>
       </Modal>
-    </Box>
+    </Paper>
   );
 }
 
