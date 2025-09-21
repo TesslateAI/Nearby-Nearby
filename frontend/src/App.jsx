@@ -3,7 +3,7 @@ import { useDisclosure } from '@mantine/hooks';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
 import { IconRocket, IconSettings, IconLogout } from '@tabler/icons-react';
 import POIList from './components/POIList';
-import POIForm from './components/POIForm';
+import POIForm from './components/POIForm/POIForm';
 import POIMap from './components/POIMap';
 import CategoryList from './components/CategoryList'; 
 import CategoryForm from './components/CategoryForm';
@@ -76,11 +76,10 @@ function App() {
           <NavLink label="Manage Categories" component={Link} to="/categories" />
           <NavLink label="Manage Attributes" component={Link} to="/attributes" />
           <NavLink label="Create New POI" component={Link} to="/poi/new" />
-          <NavLink 
-            label="Launch Nearby Nearby" 
-            component={Link} 
-            to="/launch" 
-            target="_blank" // Open in new tab
+          <NavLink
+            label="Launch Nearby Nearby"
+            component={Link}
+            to="/launch"
             leftSection={<IconRocket size="1rem" />}
             color="teal"
             variant="filled"

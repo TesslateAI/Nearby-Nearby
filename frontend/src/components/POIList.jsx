@@ -17,11 +17,21 @@ function POIList() {
   const fetchPois = async () => {
     setLoading(true);
     try {
-      // Fetch from admin endpoint to see all POIs including drafts
+      // Try admin endpoint first to see all POIs including drafts
       const response = await api.get('/admin/pois/');
       if (response.ok) {
         const data = await response.json();
         setPois(data);
+      } else if (response.status === 403) {
+        // If forbidden (not authenticated), fallback to public endpoint
+        console.warn('Admin access denied, falling back to public POI list');
+        const publicResponse = await api.get('/pois/?limit=1000');
+        if (publicResponse.ok) {
+          const data = await publicResponse.json();
+          setPois(data);
+        } else {
+          throw new Error('Failed to fetch POIs from public endpoint');
+        }
       } else {
         throw new Error('Failed to fetch POIs');
       }

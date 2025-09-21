@@ -16,7 +16,7 @@ const PoiCard = ({ poi }) => {
     const isEvent = poi.poi_type === 'event';
     return (
         <Paper withBorder radius="md" p={0} component={Link} to={`/poi/detail/${poi.id}`} style={{ textDecoration: 'none' }}>
-            <Image src={poi.featured_image_url || 'https://images.unsplash.com/photo-1555949963-ff9fe0c870eb?ixlib=rb-4.0.3&auto=format&fit=crop&w=1470&q=80'} height={160} />
+            <Image src={poi.featured_image || 'https://images.unsplash.com/photo-1555949963-ff9fe0c870eb?ixlib=rb-4.0.3&auto=format&fit=crop&w=1470&q=80'} height={160} />
             <Stack p="md" spacing="xs">
                 {poi.categories.length > 0 && <Group>{poi.categories.slice(0, 2).map(cat => <Badge key={cat.id} color="teal">{cat.name}</Badge>)}</Group>}
                 <Title order={4}>{poi.name}</Title>

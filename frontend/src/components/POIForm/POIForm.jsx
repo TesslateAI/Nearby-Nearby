@@ -1,0 +1,473 @@
+import { useState, lazy, Suspense } from 'react';
+import { useParams } from 'react-router-dom';
+import {
+  Container, Stack, Box, Title, Text, Accordion, Group, Badge,
+  Alert, Button, Affix, Transition, rem
+} from '@mantine/core';
+import { useWindowScroll } from '@mantine/hooks';
+import { IconChevronUp } from '@tabler/icons-react';
+
+// Hooks
+import { usePOIForm } from './hooks/usePOIForm';
+import { usePOIHandlers } from './hooks/usePOIHandlers';
+
+// Components
+import { FormActions } from './components/FormActions';
+import { CoreInformationSection } from './sections/CoreInformationSection';
+import { CategoriesSection } from './sections/CategoriesSection';
+import { ContactSection } from './sections/ContactSection';
+
+// Additional sections
+import HoursSelector from '../HoursSelector';
+import DynamicAttributeForm from '../DynamicAttributeForm';
+
+// Import all section components
+import { LocationSection } from './sections/LocationSection';
+import {
+  BusinessDetailsSection,
+  MenuBookingSection,
+  BusinessGallerySection,
+  BusinessEntrySection
+} from './sections/BusinessDetailsSection';
+import {
+  FacilitiesSection,
+  PublicAmenitiesSection,
+  RentalsSection
+} from './sections/FacilitiesSection';
+import {
+  EventVendorsSection,
+  EventAmenitiesSection,
+  EventMapsSection
+} from './sections/EventSpecificSections';
+import { TrailDetailsSection } from './sections/TrailSpecificSections';
+import {
+  OutdoorFeaturesSection,
+  HuntingFishingSection,
+  PetPolicySection,
+  PlaygroundSection
+} from './sections/OutdoorFeaturesSection';
+import {
+  InternalContactSection,
+  PricingMembershipsSection,
+  ConnectionsSection,
+  CommunityConnectionsSection,
+  CorporateComplianceSection
+} from './sections/MiscellaneousSections';
+
+// Lazy load the map component to improve performance
+const LocationMap = lazy(() => import('../LocationMap'));
+import { LocationMapSkeleton } from '../LocationMap';
+
+export default function POIForm() {
+  const { id } = useParams();
+  const isEditing = Boolean(id);
+  const [scroll, scrollTo] = useWindowScroll();
+  const [renderError, setRenderError] = useState(null);
+
+  // Custom hooks for form management
+  const { form, isBusiness, isPark, isTrail, isEvent, isPaidListing, isFreeListing } = usePOIForm();
+  const { loading, handleSubmit, handleDelete } = usePOIHandlers(id, isEditing, form);
+
+  // Early return for render errors
+  if (renderError) {
+    return (
+      <Container size="xl" px={{ base: 'xs', sm: 'md', lg: 'xl' }}>
+        <Stack spacing="xl" pb={100}>
+          <Alert color="red" title="Render Error">
+            <Text>An error occurred while rendering the form: {renderError.message}</Text>
+            <Button onClick={() => setRenderError(null)} mt="md">Try Again</Button>
+          </Alert>
+        </Stack>
+      </Container>
+    );
+  }
+
+  try {
+    return (
+      <Container size="xl" px={{ base: 'xs', sm: 'md', lg: 'xl' }}>
+        <Stack spacing="xl" pb={100}>
+          <Box>
+            <Title order={2} c="deep-purple.7" mb="md">
+              {isEditing ? `Editing: ${form.values.name}` : 'Create New Point of Interest'}
+            </Title>
+            <Text size="sm" c="dimmed">Fields marked with * are required</Text>
+          </Box>
+
+          <form onSubmit={form.onSubmit(handleSubmit)}>
+            <Accordion
+              defaultValue={['core', 'categories', 'location', 'hours']}
+              multiple
+              variant="separated"
+            >
+              {/* Core Information Section */}
+              <Accordion.Item value="core">
+                <Accordion.Control>
+                  <Group>
+                    <Text fw={600}>Core Information</Text>
+                    <Badge size="sm" variant="light">Required</Badge>
+                  </Group>
+                </Accordion.Control>
+                <Accordion.Panel>
+                  <CoreInformationSection
+                    form={form}
+                    isBusiness={isBusiness}
+                    isPark={isPark}
+                    isTrail={isTrail}
+                    isEvent={isEvent}
+                    isPaidListing={isPaidListing}
+                    isFreeListing={isFreeListing}
+                    id={id}
+                  />
+                </Accordion.Panel>
+              </Accordion.Item>
+
+              {/* Categories & Ideal For Section */}
+              <Accordion.Item value="categories">
+                <Accordion.Control>
+                  <Group>
+                    <Text fw={600}>Categories & Target Audience</Text>
+                    <Badge size="sm" variant="light">Required</Badge>
+                  </Group>
+                </Accordion.Control>
+                <Accordion.Panel>
+                  <CategoriesSection
+                    form={form}
+                    isPaidListing={isPaidListing}
+                    isFreeListing={isFreeListing}
+                  />
+                </Accordion.Panel>
+              </Accordion.Item>
+
+              {/* Location & Parking Section */}
+              <Accordion.Item value="location">
+                <Accordion.Control>
+                  <Group>
+                    <Text fw={600}>Location & Parking</Text>
+                    <Badge size="sm" variant="light">Required</Badge>
+                  </Group>
+                </Accordion.Control>
+                <Accordion.Panel>
+                  <LocationSection
+                    form={form}
+                    isPark={isPark}
+                    isEvent={isEvent}
+                    isFreeListing={isFreeListing}
+                    id={id}
+                  />
+                </Accordion.Panel>
+              </Accordion.Item>
+
+              {/* Hours of Operation Section - Not for Events */}
+              {!isEvent && (
+                <Accordion.Item value="hours">
+                  <Accordion.Control>
+                    <Text fw={600}>Hours of Operation</Text>
+                  </Accordion.Control>
+                  <Accordion.Panel>
+                    <Stack>
+                      <HoursSelector
+                        value={form.values.hours}
+                        onChange={(value) => form.setFieldValue('hours', value)}
+                        poiType={form.values.poi_type}
+                      />
+                    </Stack>
+                  </Accordion.Panel>
+                </Accordion.Item>
+              )}
+
+              {/* Contact & Social Media Section */}
+              <Accordion.Item value="contact">
+                <Accordion.Control>
+                  <Text fw={600}>Contact & Social Media</Text>
+                </Accordion.Control>
+                <Accordion.Panel>
+                  <ContactSection
+                    form={form}
+                    isEvent={isEvent}
+                    isFreeListing={isFreeListing}
+                  />
+                </Accordion.Panel>
+              </Accordion.Item>
+
+              {/* Pricing & Memberships Section - for Parks and Trails */}
+              {(isPark || isTrail) && (
+                <Accordion.Item value="pricing">
+                  <Accordion.Control>
+                    <Group>
+                      <Text fw={600}>Pricing & Memberships</Text>
+                    </Group>
+                  </Accordion.Control>
+                  <Accordion.Panel>
+                    <PricingMembershipsSection form={form} />
+                  </Accordion.Panel>
+                </Accordion.Item>
+              )}
+
+              {/* Internal Contacts Section */}
+              <Accordion.Item value="internal">
+                <Accordion.Control>
+                  <Text fw={600}>Internal Contact Information</Text>
+                </Accordion.Control>
+                <Accordion.Panel>
+                  <InternalContactSection form={form} />
+                </Accordion.Panel>
+              </Accordion.Item>
+
+              {/* Business Details Section */}
+              {isBusiness && (
+                <Accordion.Item value="business">
+                  <Accordion.Control>
+                    <Text fw={600}>Business Details</Text>
+                  </Accordion.Control>
+                  <Accordion.Panel>
+                    <BusinessDetailsSection
+                      form={form}
+                      isFreeListing={isFreeListing}
+                      id={id}
+                    />
+                  </Accordion.Panel>
+                </Accordion.Item>
+              )}
+
+              {/* Menu & Online Booking Section */}
+              {isBusiness && !isFreeListing && (
+                <Accordion.Item value="menu">
+                  <Accordion.Control>
+                    <Text fw={600}>Menu & Online Booking</Text>
+                  </Accordion.Control>
+                  <Accordion.Panel>
+                    <MenuBookingSection form={form} id={id} />
+                  </Accordion.Panel>
+                </Accordion.Item>
+              )}
+
+              {/* Gallery Section - PAID Business only */}
+              {isBusiness && !isFreeListing && (
+                <Accordion.Item value="gallery">
+                  <Accordion.Control>
+                    <Text fw={600}>Gallery</Text>
+                  </Accordion.Control>
+                  <Accordion.Panel>
+                    <BusinessGallerySection form={form} id={id} />
+                  </Accordion.Panel>
+                </Accordion.Item>
+              )}
+
+              {/* Business Entry Details - PAID Business only */}
+              {isBusiness && !isFreeListing && (
+                <Accordion.Item value="business-entry">
+                  <Accordion.Control>
+                    <Text fw={600}>Business Entry Details</Text>
+                  </Accordion.Control>
+                  <Accordion.Panel>
+                    <BusinessEntrySection form={form} id={id} />
+                  </Accordion.Panel>
+                </Accordion.Item>
+              )}
+
+              {/* Facilities & Accessibility Section */}
+              {(!isBusiness || !isFreeListing) && (
+                <Accordion.Item value="facilities">
+                  <Accordion.Control>
+                    <Text fw={600}>Facilities & Accessibility</Text>
+                  </Accordion.Control>
+                  <Accordion.Panel>
+                    <FacilitiesSection
+                      form={form}
+                      isBusiness={isBusiness}
+                      isPark={isPark}
+                      isTrail={isTrail}
+                      isEvent={isEvent}
+                      isFreeListing={isFreeListing}
+                      id={id}
+                    />
+                  </Accordion.Panel>
+                </Accordion.Item>
+              )}
+
+              {/* Public Amenities Section */}
+              {(!isBusiness || !isFreeListing) && (
+                <Accordion.Item value="amenities">
+                  <Accordion.Control>
+                    <Text fw={600}>{isPark ? 'Public Restrooms' : 'Public Amenities'}</Text>
+                  </Accordion.Control>
+                  <Accordion.Panel>
+                    <PublicAmenitiesSection form={form} isPark={isPark} id={id} />
+                  </Accordion.Panel>
+                </Accordion.Item>
+              )}
+
+              {/* Rentals Section - for Parks only */}
+              {isPark && (
+                <Accordion.Item value="rentals">
+                  <Accordion.Control>
+                    <Text fw={600}>Rentals</Text>
+                  </Accordion.Control>
+                  <Accordion.Panel>
+                    <RentalsSection form={form} id={id} />
+                  </Accordion.Panel>
+                </Accordion.Item>
+              )}
+
+              {/* Event Vendors Section */}
+              {isEvent && (
+                <Accordion.Item value="vendors">
+                  <Accordion.Control>
+                    <Text fw={600}>Event Vendors</Text>
+                  </Accordion.Control>
+                  <Accordion.Panel>
+                    <EventVendorsSection form={form} id={id} />
+                  </Accordion.Panel>
+                </Accordion.Item>
+              )}
+
+              {/* Pet Policy Section */}
+              <Accordion.Item value="pets">
+                <Accordion.Control>
+                  <Text fw={600}>Pet Policy</Text>
+                </Accordion.Control>
+                <Accordion.Panel>
+                  <PetPolicySection form={form} />
+                </Accordion.Panel>
+              </Accordion.Item>
+
+              {/* Playground Section */}
+              {(!isBusiness || !isFreeListing) && (
+                <Accordion.Item value="playground">
+                  <Accordion.Control>
+                    <Text fw={600}>Playground Information</Text>
+                  </Accordion.Control>
+                  <Accordion.Panel>
+                    <PlaygroundSection form={form} id={id} />
+                  </Accordion.Panel>
+                </Accordion.Item>
+              )}
+
+              {/* Outdoor Features Section */}
+              {(isPark || isTrail) && (
+                <Accordion.Item value="outdoor">
+                  <Accordion.Control>
+                    <Text fw={600}>Outdoor Features</Text>
+                  </Accordion.Control>
+                  <Accordion.Panel>
+                    <OutdoorFeaturesSection form={form} />
+                  </Accordion.Panel>
+                </Accordion.Item>
+              )}
+
+              {/* Hunting & Fishing Section */}
+              {(isPark || isTrail) && (
+                <Accordion.Item value="hunting">
+                  <Accordion.Control>
+                    <Text fw={600}>Hunting & Fishing</Text>
+                  </Accordion.Control>
+                  <Accordion.Panel>
+                    <HuntingFishingSection form={form} />
+                  </Accordion.Panel>
+                </Accordion.Item>
+              )}
+
+              {/* Trail Details Section */}
+              {isTrail && (
+                <Accordion.Item value="trail">
+                  <Accordion.Control>
+                    <Text fw={600}>Trail Details</Text>
+                  </Accordion.Control>
+                  <Accordion.Panel>
+                    <TrailDetailsSection form={form} id={id} />
+                  </Accordion.Panel>
+                </Accordion.Item>
+              )}
+
+              {/* Connections Section */}
+              {(isPark || isTrail) && (
+                <Accordion.Item value="memberships">
+                  <Accordion.Control>
+                    <Text fw={600}>{isPark ? 'Connections' : 'Memberships & Connections'}</Text>
+                  </Accordion.Control>
+                  <Accordion.Panel>
+                    <ConnectionsSection form={form} isBusiness={isBusiness} isPark={isPark} />
+                  </Accordion.Panel>
+                </Accordion.Item>
+              )}
+
+              {/* Community Connections Section */}
+              {(isBusiness || isPark || isTrail) && (
+                <Accordion.Item value="community">
+                  <Accordion.Control>
+                    <Text fw={600}>Community Connections</Text>
+                  </Accordion.Control>
+                  <Accordion.Panel>
+                    <CommunityConnectionsSection form={form} />
+                  </Accordion.Panel>
+                </Accordion.Item>
+              )}
+
+              {/* Corporate Compliance Section */}
+              <Accordion.Item value="compliance">
+                <Accordion.Control>
+                  <Text fw={600}>Corporate Compliance</Text>
+                </Accordion.Control>
+                <Accordion.Panel>
+                  <CorporateComplianceSection form={form} />
+                </Accordion.Panel>
+              </Accordion.Item>
+
+              {/* Dynamic Attributes Section */}
+              <Accordion.Item value="attributes">
+                <Accordion.Control>
+                  <Text fw={600}>Dynamic Attributes</Text>
+                </Accordion.Control>
+                <Accordion.Panel>
+                  <DynamicAttributeForm form={form} />
+                </Accordion.Panel>
+              </Accordion.Item>
+            </Accordion>
+
+            {/* Form Actions */}
+            <FormActions
+              form={form}
+              loading={loading}
+              isEditing={isEditing}
+              handleSubmit={handleSubmit}
+              handleDelete={handleDelete}
+            />
+          </form>
+        </Stack>
+
+        {/* Scroll to top button */}
+        <Affix position={{ bottom: 20, right: 20 }}>
+          <Transition transition="slide-up" mounted={scroll.y > 0}>
+            {(transitionStyles) => (
+              <Button
+                leftSection={<IconChevronUp size={16} />}
+                style={transitionStyles}
+                onClick={() => scrollTo({ y: 0 })}
+              >
+                Scroll to top
+              </Button>
+            )}
+          </Transition>
+        </Affix>
+      </Container>
+    );
+  } catch (error) {
+    console.error('Render error in POIForm:', error);
+
+    // Set the error in state to trigger the error UI
+    if (!renderError) {
+      setRenderError(error);
+    }
+
+    // Fallback render
+    return (
+      <Container size="xl" px={{ base: 'xs', sm: 'md', lg: 'xl' }}>
+        <Stack spacing="xl" pb={100}>
+          <Alert color="red" title="Component Error">
+            <Text>The form crashed while rendering. Please check the console for details.</Text>
+          </Alert>
+        </Stack>
+      </Container>
+    );
+  }
+}

@@ -46,7 +46,10 @@
       "mcp__playwright__browser_file_upload",
       "Bash(npm run build:*)",
       "Read(//c/**)",
-      "mcp__playwright__browser_console_messages"
+      "mcp__playwright__browser_console_messages",
+      "Bash(awk:*)",
+      "Bash(timeout 10 docker-compose logs -f frontend)",
+      "Bash(timeout 5 docker-compose logs -f frontend)"
     ],
     "deny": [],
     "ask": []
