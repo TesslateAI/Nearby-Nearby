@@ -91,7 +91,8 @@ export const usePOIHandlers = (id, isEditing, form) => {
             'hunting_fishing_info', 'membership_details', 'camping_lodging', 'playground_notes',
             'pets_allowed', 'alcohol_available', 'public_toilets_available', 'toilet_photos',
             'park_entry_notes', 'park_entry_photo', 'parking_lot_photo', 'business_entry_notes',
-            'business_entry_photo', 'appointment_booking_url'
+            'business_entry_photo', 'appointment_booking_url', 'shopping_center', 'park_system',
+            'park_manager'
           ];
 
           stringFields.forEach(field => {

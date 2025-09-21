@@ -163,6 +163,29 @@ export function ConnectionsSection({ form, isBusiness, isPark }) {
         onChange={(html) => form.setFieldValue('camping_lodging', html)}
         error={form.errors.camping_lodging}
       />
+
+      {/* Park System and Management Fields for Parks */}
+      {isPark && (
+        <>
+          <Divider my="md" label="Park System & Management" />
+          <TextInput
+            label="Park System"
+            placeholder="e.g., Town of Pittsboro Parks & Recreation"
+            {...form.getInputProps('park_system')}
+            description="The organization that manages this park"
+          />
+
+          <RichTextEditor
+            label="Park Manager"
+            placeholder="Manager contact information with links if available"
+            value={form.values.park_manager || ''}
+            onChange={(html) => form.setFieldValue('park_manager', html)}
+            error={form.errors.park_manager}
+            minRows={3}
+            description="You can format this with links to contact pages"
+          />
+        </>
+      )}
     </Stack>
   );
 }

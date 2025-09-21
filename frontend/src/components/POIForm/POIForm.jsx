@@ -149,6 +149,7 @@ export default function POIForm() {
                 <Accordion.Panel>
                   <LocationSection
                     form={form}
+                    isBusiness={isBusiness}
                     isPark={isPark}
                     isEvent={isEvent}
                     isFreeListing={isFreeListing}

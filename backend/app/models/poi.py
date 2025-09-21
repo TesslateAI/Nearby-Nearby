@@ -37,6 +37,8 @@ class PointOfInterest(Base):
     address_state = Column(String)
     address_zip = Column(String)
     address_county = Column(String)
+    # Shopping center relationship (for businesses)
+    shopping_center = Column(String)  # Text field for shopping center name
 
     # Front door coordinates (separate from main location for map pin)
     front_door_latitude = Column(Numeric(precision=10, scale=7))
@@ -204,6 +206,10 @@ class PointOfInterest(Base):
     # Trail connections
     associated_trails = Column(JSONB)  # POI IDs of connected trails
     camping_lodging = Column(Text)
+
+    # Park system and management (for parks)
+    park_system = Column(String)  # Text field for park system name
+    park_manager = Column(Text)  # Rich text field for park manager info with links
     
     # JSONB fields for flexible attributes
     photos = Column(JSONB)  # {"featured": "url", "gallery": ["url1", "url2"]}

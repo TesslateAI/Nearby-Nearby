@@ -19,6 +19,7 @@ import { LocationMapSkeleton } from '../../LocationMap';
 
 export function LocationSection({
   form,
+  isBusiness,
   isPark,
   isEvent,
   isFreeListing,
@@ -75,6 +76,16 @@ export function LocationSection({
           {...getControlledInputProps(form, 'address_zip')}
         />
       </SimpleGrid>
+
+      {/* Shopping Center Field for Businesses */}
+      {isBusiness && (
+        <TextInput
+          label="Shopping Center"
+          placeholder="Name of shopping center or plaza"
+          {...getControlledInputProps(form, 'shopping_center')}
+          description="Note: This will eventually connect to other businesses in the same center"
+        />
+      )}
 
       <Divider my="md" label="Coordinates" />
       <SimpleGrid cols={{ base: 1, sm: 2 }}>

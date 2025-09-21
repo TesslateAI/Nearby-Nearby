@@ -19,6 +19,8 @@ export const emptyInitialValues = {
   address_state: 'NC',
   address_zip: '',
   address_county: '',
+  // Shopping center (for businesses)
+  shopping_center: '',
   // Front door coordinates
   front_door_latitude: null,
   front_door_longitude: null,
@@ -182,6 +184,9 @@ export const emptyInitialValues = {
   membership_details: '',
   associated_trails: [],
   camping_lodging: '',
+  // Park system and management (for parks)
+  park_system: '',
+  park_manager: '',
   // Event specific
   event: {
     start_datetime: '',

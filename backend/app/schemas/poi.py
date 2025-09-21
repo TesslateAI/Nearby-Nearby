@@ -220,6 +220,8 @@ class PointOfInterestBase(BaseModel):
     address_state: Optional[str] = None
     address_zip: Optional[str] = None
     address_county: Optional[str] = None
+    # Shopping center relationship (for businesses)
+    shopping_center: Optional[str] = None
 
     # Front door coordinates (separate from main location for map pin)
     front_door_latitude: Optional[float] = None
@@ -318,7 +320,11 @@ class PointOfInterestBase(BaseModel):
     # Trail connections
     associated_trails: Optional[List[uuid.UUID]] = None
     camping_lodging: Optional[str] = None
-    
+
+    # Park system and management (for parks)
+    park_system: Optional[str] = None
+    park_manager: Optional[str] = None
+
     # JSONB fields
     photos: Optional[Dict[str, Any]] = None
     hours: Optional[Dict[str, Any]] = None  # Complex hours with multiple periods, seasonal
@@ -402,6 +408,7 @@ class PointOfInterestUpdate(BaseModel):
     address_state: Optional[str] = None
     address_zip: Optional[str] = None
     address_county: Optional[str] = None
+    shopping_center: Optional[str] = None
     front_door_latitude: Optional[float] = None
     front_door_longitude: Optional[float] = None
     status: Optional[str] = None
@@ -472,6 +479,8 @@ class PointOfInterestUpdate(BaseModel):
     membership_details: Optional[str] = None
     associated_trails: Optional[List[uuid.UUID]] = None
     camping_lodging: Optional[str] = None
+    park_system: Optional[str] = None
+    park_manager: Optional[str] = None
     photos: Optional[Dict[str, Any]] = None
     hours: Optional[Dict[str, Any]] = None
     holiday_hours: Optional[Dict[str, Any]] = None
