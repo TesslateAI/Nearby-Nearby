@@ -78,8 +78,12 @@ export function ImageUploadField({
 
   const loadExistingImages = async () => {
     try {
-      const response = await api.get(`/api/images/poi/${poiId}`);
-      let filteredImages = response.data.filter(img => img.image_type === imageType);
+      const response = await api.get(`/images/poi/${poiId}`);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      let filteredImages = data.filter(img => img.image_type === imageType);
 
       if (context) {
         filteredImages = filteredImages.filter(img => img.image_context === context);
@@ -136,19 +140,21 @@ export function ImageUploadField({
         }
         fileFormData.append('display_order', images.length + i);
 
-        const response = await api.post(`/api/images/upload/${poiId}`, fileFormData, {
-          headers: {
-            'Content-Type': 'multipart/form-data'
-          },
-          onUploadProgress: (progressEvent) => {
-            const percentCompleted = Math.round(
-              ((i + progressEvent.loaded / progressEvent.total) / files.length) * 100
-            );
-            setUploadProgress(percentCompleted);
-          }
+        const response = await api.request(`/images/upload/${poiId}`, {
+          method: 'POST',
+          body: fileFormData
         });
 
-        uploadedImages.push(response.data);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const uploadedImage = await response.json();
+        uploadedImages.push(uploadedImage);
+
+        // Update progress
+        const percentCompleted = Math.round(((i + 1) / files.length) * 100);
+        setUploadProgress(percentCompleted);
       }
 
       // Reload images after successful upload
@@ -184,7 +190,11 @@ export function ImageUploadField({
       confirmProps: { color: 'red' },
       onConfirm: async () => {
         try {
-          await api.delete(`/api/images/image/${imageId}`);
+          const response = await api.delete(`/images/image/${imageId}`);
+
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
 
           // Reload images
           await loadExistingImages();
@@ -197,7 +207,7 @@ export function ImageUploadField({
         } catch (error) {
           notifications.show({
             title: 'Delete Failed',
-            message: error.response?.data?.detail || 'Failed to delete image',
+            message: error.message || 'Failed to delete image',
             color: 'red'
           });
         }
@@ -215,9 +225,13 @@ export function ImageUploadField({
     clearTimeout(handleUpdateMetadata.timer);
     handleUpdateMetadata.timer = setTimeout(async () => {
       try {
-        await api.put(`/api/images/image/${imageId}`, {
+        const response = await api.put(`/images/image/${imageId}`, {
           [field]: value
         });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
       } catch (error) {
         console.error('Error updating image metadata:', error);
       }
@@ -236,9 +250,13 @@ export function ImageUploadField({
     // Update display order in backend
     try {
       const imageIds = items.map(img => img.id);
-      await api.put(`/api/images/poi/${poiId}/reorder/${imageType}`, {
+      const response = await api.put(`/images/poi/${poiId}/reorder/${imageType}`, {
         image_ids: imageIds
       });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
     } catch (error) {
       console.error('Error reordering images:', error);
       // Reload to get correct order from server

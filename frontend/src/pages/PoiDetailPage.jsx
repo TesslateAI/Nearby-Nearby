@@ -317,17 +317,19 @@ const PoiDetailPage = () => {
     }
     
     // Extract data from different sources
-    const attributes = poi.business?.attributes || poi.outdoors?.attributes || {};
     const amenities = poi.amenities || {};
     const contactInfo = poi.contact_info || {};
     const compliance = poi.compliance || {};
     const customFields = poi.custom_fields || {};
     
     const keyFeatures = [
-        attributes.public_toilets?.includes('yes') ? 'Public Toilet' : null,
-        attributes.wheelchair_accessible === 'yes' ? 'Wheelchair Friendly' : null,
-        attributes.parking?.includes('street') ? 'Parking on Street' : null,
-        attributes.parking?.includes('lot') ? 'Parking Lot' : null,
+        poi.public_toilets?.includes('yes') ? 'Public Toilet' : null,
+        poi.wheelchair_accessible?.includes('yes') ? 'Wheelchair Friendly' : null,
+        poi.parking_types?.includes('street') ? 'Parking on Street' : null,
+        poi.parking_types?.includes('lot') ? 'Parking Lot' : null,
+        poi.playground_available ? 'Playground Available' : null,
+        poi.pet_options?.includes('allowed') ? 'Pet Friendly' : null,
+        poi.wifi_options?.includes('free') ? 'Free WiFi' : null,
     ].filter(Boolean);
 
     // Get POI type specific data
@@ -335,24 +337,39 @@ const PoiDetailPage = () => {
         switch (poi.poi_type) {
             case 'BUSINESS':
                 return {
-                    priceRange: poi.business?.price_range,
-                    listingTier: poi.business?.listing_tier,
+                    priceRange: poi.business?.price_range || poi.price_range_per_person,
+                    listingTier: poi.listing_type,
+                    businessAmenities: poi.business_amenities,
+                    entertainmentOptions: poi.entertainment_options,
+                    youthAmenities: poi.youth_amenities,
+                    menuLink: poi.menu_link,
+                    deliveryLinks: poi.delivery_links,
+                    reservationLinks: poi.reservation_links,
                 };
             case 'TRAIL':
                 return {
                     length: poi.trail?.length_text,
                     difficulty: poi.trail?.difficulty,
                     routeType: poi.trail?.route_type,
+                    trailSurfaces: poi.trail?.trail_surfaces,
+                    trailExperiences: poi.trail?.trail_experiences,
+                    downloadableMap: poi.trail?.downloadable_trail_map,
                 };
             case 'PARK':
                 return {
-                    dronePolicy: poi.park?.drone_usage_policy,
+                    dronePolicy: poi.park?.drone_usage_policy || poi.drone_policy,
+                    naturalFeatures: poi.natural_features,
+                    thingsToDo: poi.things_to_do,
+                    huntingFishing: poi.hunting_fishing_allowed,
                 };
             case 'EVENT':
                 return {
                     startTime: poi.event?.start_datetime,
                     endTime: poi.event?.end_datetime,
-                    cost: poi.event?.cost_text,
+                    cost: poi.cost || poi.pricing,
+                    organizer: poi.event?.organizer_name,
+                    venueSettings: poi.event?.venue_settings,
+                    hasVendors: poi.event?.has_vendors,
                 };
             default:
                 return {};
@@ -407,21 +424,27 @@ const PoiDetailPage = () => {
                                 icon={{ type: IconMapPin, props: {} }} 
                             />
                             <DetailItem label="Category" value={poi.categories?.map(c => c.name).join(', ')} icon={{ type: IconInfoCircle, props: {} }} />
-                            <DetailItem label="Cost" value={poiTypeData.priceRange || poiTypeData.cost} icon={{ type: IconBuilding, props: {} }} />
-                            <DetailItem label="Phone Number" value={poi.phone_number || attributes.phone} icon={{ type: IconPhone, props: {} }} />
-                            <DetailItem label="Website" value={poi.website_url || attributes.website} icon={{ type: IconWorldWww, props: {} }} />
-                            <DetailItem label="Good For" value={amenities.ideal_for} icon={{ type: IconCheck, props: {} }} />
+                            <DetailItem label="Cost" value={poiTypeData.priceRange || poiTypeData.cost || poi.cost || poi.pricing} icon={{ type: IconBuilding, props: {} }} />
+                            {poi.pricing_details && (
+                                <DetailItem label="Pricing Details" value={poi.pricing_details} icon={{ type: IconBuilding, props: {} }} />
+                            )}
+                            {poi.ticket_link && (
+                                <DetailItem label="Tickets" value={poi.ticket_link} icon={{ type: IconLink, props: {} }} />
+                            )}
+                            <DetailItem label="Phone Number" value={poi.phone_number} icon={{ type: IconPhone, props: {} }} />
+                            <DetailItem label="Website" value={poi.website_url} icon={{ type: IconWorldWww, props: {} }} />
+                            <DetailItem label="Good For" value={poi.ideal_for || poi.ideal_for_key} icon={{ type: IconCheck, props: {} }} />
                             <DetailItem label="Key Features" value={keyFeatures} icon={{ type: IconCheck, props: {} }} />
-                            <DetailItem label="Pets" value={attributes.pets} icon={{ type: IconInfoCircle, props: {} }} />
+                            <DetailItem label="Pets" value={poi.pet_options} icon={{ type: IconInfoCircle, props: {} }} />
                         </Stack>
                     </Grid.Col>
                     <Grid.Col span={{ base: 12, md: 8 }}>
-                        {poi.photos?.featured || poi.photos?.gallery?.length > 0 || attributes.photo_gallery?.length > 0 ? (
+                        {poi.photos?.featured || poi.photos?.gallery?.length > 0 || poi.gallery_photos?.length > 0 || poi.featured_image ? (
                             <SimpleGrid cols={2} gap="sm">
-                                {poi.photos?.featured && (
-                                    <Image 
-                                        src={poi.photos.featured} 
-                                        radius="md" 
+                                {(poi.photos?.featured || poi.featured_image) && (
+                                    <Image
+                                        src={poi.photos?.featured || poi.featured_image}
+                                        radius="md"
                                         style={{ aspectRatio: '1', objectFit: 'cover' }}
                                     />
                                 )}
@@ -433,11 +456,11 @@ const PoiDetailPage = () => {
                                         style={{ aspectRatio: '1', objectFit: 'cover' }}
                                     />
                                 ))}
-                                {attributes.photo_gallery?.slice(0, 2).map((url, i) => (
-                                    <Image 
-                                        key={`attr-${i}`} 
-                                        src={url} 
-                                        radius="md" 
+                                {poi.gallery_photos?.slice(0, 2).map((url, i) => (
+                                    <Image
+                                        key={`gallery-${i}`}
+                                        src={url}
+                                        radius="md"
                                         style={{ aspectRatio: '1', objectFit: 'cover' }}
                                     />
                                 ))}
@@ -507,7 +530,16 @@ const PoiDetailPage = () => {
                                 {poi.description_short && (
                                     <DetailItem label="Short Description" value={poi.description_short} />
                                 )}
+                                {poi.teaser_paragraph && (
+                                    <DetailItem label="Summary" value={poi.teaser_paragraph} />
+                                )}
+                                {poi.history_paragraph && (
+                                    <DetailItem label="History" value={poi.history_paragraph} />
+                                )}
                                 <HoursDisplay hours={poi.hours} />
+                                {poi.holiday_hours && (
+                                    <DetailItem label="Holiday Hours" value={JSON.stringify(poi.holiday_hours)} />
+                                )}
                                 {poiTypeData.length && (
                                     <DetailItem label="Length" value={poiTypeData.length} icon={{ type: IconRoute, props: {} }} />
                                 )}
@@ -516,6 +548,24 @@ const PoiDetailPage = () => {
                                 )}
                                 {poiTypeData.routeType && (
                                     <DetailItem label="Route Type" value={poiTypeData.routeType} icon={{ type: IconRoute, props: {} }} />
+                                )}
+                                {poiTypeData.trailSurfaces && (
+                                    <DetailItem label="Trail Surfaces" value={poiTypeData.trailSurfaces} icon={{ type: IconRoute, props: {} }} />
+                                )}
+                                {poiTypeData.trailExperiences && (
+                                    <DetailItem label="Trail Experience" value={poiTypeData.trailExperiences} icon={{ type: IconRoute, props: {} }} />
+                                )}
+                                {poiTypeData.naturalFeatures && (
+                                    <DetailItem label="Natural Features" value={poiTypeData.naturalFeatures} icon={{ type: IconTree, props: {} }} />
+                                )}
+                                {poiTypeData.thingsToDo && (
+                                    <DetailItem label="Activities" value={poiTypeData.thingsToDo} icon={{ type: IconCheck, props: {} }} />
+                                )}
+                                {poiTypeData.organizer && (
+                                    <DetailItem label="Event Organizer" value={poiTypeData.organizer} icon={{ type: IconInfoCircle, props: {} }} />
+                                )}
+                                {poiTypeData.venueSettings && (
+                                    <DetailItem label="Venue Type" value={poiTypeData.venueSettings} icon={{ type: IconBuilding, props: {} }} />
                                 )}
                             </Stack>
                         </Accordion.Panel>
@@ -527,9 +577,15 @@ const PoiDetailPage = () => {
                         </Accordion.Control>
                         <Accordion.Panel>
                             <Stack gap="md">
-                                <DetailItem label="Email" value={poi.email || attributes.email} icon={{ type: IconMail, props: {} }} />
-                                <DetailItem label="Phone" value={poi.phone_number || attributes.phone} icon={{ type: IconPhone, props: {} }} />
-                                <DetailItem label="Website" value={poi.website_url || attributes.website} icon={{ type: IconWorldWww, props: {} }} />
+                                <DetailItem label="Email" value={poi.email} icon={{ type: IconMail, props: {} }} />
+                                <DetailItem label="Phone" value={poi.phone_number} icon={{ type: IconPhone, props: {} }} />
+                                <DetailItem label="Website" value={poi.website_url} icon={{ type: IconWorldWww, props: {} }} />
+                                {poi.instagram_username && (
+                                    <DetailItem label="Instagram" value={`@${poi.instagram_username}`} icon={{ type: IconLink, props: {} }} />
+                                )}
+                                {poi.facebook_username && (
+                                    <DetailItem label="Facebook" value={poi.facebook_username} icon={{ type: IconLink, props: {} }} />
+                                )}
                                 {contactInfo.best && (
                                     <DetailItem label="Best Contact" value={`${contactInfo.best.name} - ${contactInfo.best.phone}`} icon={{ type: IconPhone, props: {} }} />
                                 )}
@@ -551,9 +607,12 @@ const PoiDetailPage = () => {
                                 <DetailItem label="City" value={poi.address_city} icon={{ type: IconMapPin, props: {} }} />
                                 <DetailItem label="State" value={poi.address_state} icon={{ type: IconMapPin, props: {} }} />
                                 <DetailItem label="ZIP Code" value={poi.address_zip} icon={{ type: IconMapPin, props: {} }} />
-                                <DetailItem label="Parking Options" value={attributes.parking} icon={{ type: IconCar, props: {} }} />
-                                <DetailItem label="Parking Notes" value={attributes.parking_notes} icon={{ type: IconCar, props: {} }} />
-                                <DetailItem label="Wheelchair Accessible" value={attributes.wheelchair_accessible} icon={{ type: IconInfoCircle, props: {} }} />
+                                <DetailItem label="Parking Options" value={poi.parking_types} icon={{ type: IconCar, props: {} }} />
+                                <DetailItem label="Parking Notes" value={poi.parking_notes} icon={{ type: IconCar, props: {} }} />
+                                <DetailItem label="Expected Parking Cost" value={poi.expect_to_pay_parking} icon={{ type: IconCar, props: {} }} />
+                                <DetailItem label="Public Transit" value={poi.public_transit_info} icon={{ type: IconCar, props: {} }} />
+                                <DetailItem label="Wheelchair Accessible" value={poi.wheelchair_accessible} icon={{ type: IconInfoCircle, props: {} }} />
+                                <DetailItem label="Accessibility Details" value={poi.wheelchair_details} icon={{ type: IconInfoCircle, props: {} }} />
                             </Stack>
                         </Accordion.Panel>
                     </Accordion.Item>
@@ -564,10 +623,15 @@ const PoiDetailPage = () => {
                         </Accordion.Control>
                         <Accordion.Panel>
                             <Stack gap="md">
-                                <DetailItem label="Payment Methods" value={amenities.payment_methods} icon={{ type: IconInfoCircle, props: {} }} />
-                                <DetailItem label="Ideal For" value={amenities.ideal_for} icon={{ type: IconCheck, props: {} }} />
-                                <DetailItem label="Public Toilets" value={attributes.public_toilets} icon={{ type: IconInfoCircle, props: {} }} />
-                                <DetailItem label="Pets Allowed" value={attributes.pets} icon={{ type: IconInfoCircle, props: {} }} />
+                                <DetailItem label="Payment Methods" value={poi.payment_methods} icon={{ type: IconInfoCircle, props: {} }} />
+                                <DetailItem label="Ideal For" value={poi.ideal_for || poi.ideal_for_key} icon={{ type: IconCheck, props: {} }} />
+                                <DetailItem label="Public Toilets" value={poi.public_toilets} icon={{ type: IconInfoCircle, props: {} }} />
+                                <DetailItem label="Toilet Details" value={poi.toilet_description} icon={{ type: IconInfoCircle, props: {} }} />
+                                <DetailItem label="Pets Allowed" value={poi.pet_options} icon={{ type: IconInfoCircle, props: {} }} />
+                                <DetailItem label="Pet Policy" value={poi.pet_policy} icon={{ type: IconInfoCircle, props: {} }} />
+                                <DetailItem label="Alcohol Available" value={poi.alcohol_options} icon={{ type: IconInfoCircle, props: {} }} />
+                                <DetailItem label="WiFi Available" value={poi.wifi_options} icon={{ type: IconInfoCircle, props: {} }} />
+                                <DetailItem label="Key Facilities" value={poi.key_facilities} icon={{ type: IconCheck, props: {} }} />
                                 {poiTypeData.dronePolicy && (
                                     <DetailItem label="Drone Policy" value={poiTypeData.dronePolicy} icon={{ type: IconTree, props: {} }} />
                                 )}
@@ -576,6 +640,30 @@ const PoiDetailPage = () => {
                                 )}
                                 {compliance.lead_time && (
                                     <DetailItem label="Lead Time" value={compliance.lead_time} icon={{ type: IconClock, props: {} }} />
+                                )}
+                                {poi.available_for_rent && (
+                                    <DetailItem label="Available for Rent" value="Yes" icon={{ type: IconCheck, props: {} }} />
+                                )}
+                                {poi.rental_info && (
+                                    <DetailItem label="Rental Information" value={poi.rental_info} icon={{ type: IconInfoCircle, props: {} }} />
+                                )}
+                                {poi.rental_pricing && (
+                                    <DetailItem label="Rental Pricing" value={poi.rental_pricing} icon={{ type: IconBuilding, props: {} }} />
+                                )}
+                                {poi.playground_available && (
+                                    <DetailItem label="Playground" value="Available" icon={{ type: IconCheck, props: {} }} />
+                                )}
+                                {poi.playground_notes && (
+                                    <DetailItem label="Playground Details" value={poi.playground_notes} icon={{ type: IconInfoCircle, props: {} }} />
+                                )}
+                                {poiTypeData.businessAmenities && (
+                                    <DetailItem label="Business Amenities" value={poiTypeData.businessAmenities} icon={{ type: IconCheck, props: {} }} />
+                                )}
+                                {poiTypeData.entertainmentOptions && (
+                                    <DetailItem label="Entertainment" value={poiTypeData.entertainmentOptions} icon={{ type: IconCheck, props: {} }} />
+                                )}
+                                {poiTypeData.menuLink && (
+                                    <DetailItem label="Menu" value={poiTypeData.menuLink} icon={{ type: IconLink, props: {} }} />
                                 )}
                             </Stack>
                         </Accordion.Panel>
@@ -620,11 +708,41 @@ const PoiDetailPage = () => {
                                         </SimpleGrid>
                                     </Box>
                                 )}
-                                {attributes.photo_gallery && attributes.photo_gallery.length > 0 && (
+                                {poi.gallery_photos && poi.gallery_photos.length > 0 && (
                                     <Box>
-                                        <Text size="sm" c="dimmed" mb="xs">Additional Photos</Text>
+                                        <Text size="sm" c="dimmed" mb="xs">Gallery Photos</Text>
                                         <SimpleGrid cols={3}>
-                                            {attributes.photo_gallery.filter(url => url).map((url, i) => (
+                                            {poi.gallery_photos.filter(url => url).map((url, i) => (
+                                                <Image key={i} src={url} radius="md" />
+                                            ))}
+                                        </SimpleGrid>
+                                    </Box>
+                                )}
+                                {poi.menu_photos && poi.menu_photos.length > 0 && (
+                                    <Box>
+                                        <Text size="sm" c="dimmed" mb="xs">Menu Photos</Text>
+                                        <SimpleGrid cols={3}>
+                                            {poi.menu_photos.filter(url => url).map((url, i) => (
+                                                <Image key={i} src={url} radius="md" />
+                                            ))}
+                                        </SimpleGrid>
+                                    </Box>
+                                )}
+                                {poi.parking_photos && poi.parking_photos.length > 0 && (
+                                    <Box>
+                                        <Text size="sm" c="dimmed" mb="xs">Parking Photos</Text>
+                                        <SimpleGrid cols={3}>
+                                            {poi.parking_photos.filter(url => url).map((url, i) => (
+                                                <Image key={i} src={url} radius="md" />
+                                            ))}
+                                        </SimpleGrid>
+                                    </Box>
+                                )}
+                                {poi.playground_photos && poi.playground_photos.length > 0 && (
+                                    <Box>
+                                        <Text size="sm" c="dimmed" mb="xs">Playground Photos</Text>
+                                        <SimpleGrid cols={3}>
+                                            {poi.playground_photos.filter(url => url).map((url, i) => (
                                                 <Image key={i} src={url} radius="md" />
                                             ))}
                                         </SimpleGrid>
@@ -634,6 +752,42 @@ const PoiDetailPage = () => {
                         </Accordion.Panel>
                     </Accordion.Item>
                     
+                    {poi.poi_type === 'BUSINESS' && (poiTypeData.deliveryLinks || poiTypeData.reservationLinks || poi.appointment_links || poi.online_ordering_links) && (
+                        <Accordion.Item value="business-services">
+                            <Accordion.Control icon={<IconLink size={18} />}>
+                                Business Services & Links
+                            </Accordion.Control>
+                            <Accordion.Panel>
+                                <Stack gap="md">
+                                    {poiTypeData.deliveryLinks && (
+                                        <DetailItem label="Delivery Services" value={poiTypeData.deliveryLinks} icon={{ type: IconLink, props: {} }} />
+                                    )}
+                                    {poiTypeData.reservationLinks && (
+                                        <DetailItem label="Make Reservations" value={poiTypeData.reservationLinks} icon={{ type: IconLink, props: {} }} />
+                                    )}
+                                    {poi.appointment_links && (
+                                        <DetailItem label="Book Appointment" value={poi.appointment_links} icon={{ type: IconLink, props: {} }} />
+                                    )}
+                                    {poi.online_ordering_links && (
+                                        <DetailItem label="Order Online" value={poi.online_ordering_links} icon={{ type: IconLink, props: {} }} />
+                                    )}
+                                    {poi.appointment_booking_url && (
+                                        <DetailItem label="Appointment Booking" value={poi.appointment_booking_url} icon={{ type: IconLink, props: {} }} />
+                                    )}
+                                    {poi.hours_but_appointment_required && (
+                                        <DetailItem label="Appointment Required" value="Yes" icon={{ type: IconInfoCircle, props: {} }} />
+                                    )}
+                                    {poi.discounts && (
+                                        <DetailItem label="Available Discounts" value={poi.discounts} icon={{ type: IconCheck, props: {} }} />
+                                    )}
+                                    {poi.gift_cards && (
+                                        <DetailItem label="Gift Cards" value={poi.gift_cards} icon={{ type: IconCheck, props: {} }} />
+                                    )}
+                                </Stack>
+                            </Accordion.Panel>
+                        </Accordion.Item>
+                    )}
+
                     {Object.keys(customFields).length > 0 && (
                         <Accordion.Item value="custom">
                             <Accordion.Control icon={<IconInfoCircle size={18} />}>

@@ -7,14 +7,15 @@ import uuid
 from app import crud, schemas
 from app.database import get_db
 from app.core.security import get_current_user
+from app.core.permissions import require_admin_or_editor
 
 router = APIRouter()
 
 @router.post("/pois/", response_model=schemas.PointOfInterest, status_code=201)
 def create_poi(
-    poi: schemas.PointOfInterestCreate, 
+    poi: schemas.PointOfInterestCreate,
     db: Session = Depends(get_db),
-    current_user: str = Depends(get_current_user)
+    current_user = Depends(require_admin_or_editor())
 ):
     if poi.poi_type == 'BUSINESS' and not poi.business:
         raise HTTPException(status_code=400, detail="Business data required for poi_type 'BUSINESS'")
@@ -48,7 +49,7 @@ def read_pois_admin(
     limit: int = 100,
     search: str = Query(None, description="Search query for POI names"),
     db: Session = Depends(get_db),
-    current_user: str = Depends(get_current_user)  # Require authentication
+    current_user = Depends(require_admin_or_editor())  # Require admin or editor role
 ):
     # Admin view - show all POIs including drafts
     if search:
@@ -66,7 +67,7 @@ def search_pois_endpoint(q: str = Query(..., min_length=3, description="Search q
 def search_pois_admin_endpoint(
     q: str = Query(..., min_length=3, description="Search query string"),
     db: Session = Depends(get_db),
-    current_user: str = Depends(get_current_user)
+    current_user = Depends(require_admin_or_editor())
 ):
     # Admin search - include drafts
     return crud.search_pois(db=db, query_str=q, include_drafts=True)
@@ -98,10 +99,10 @@ def get_nearby_pois_endpoint(
 
 @router.put("/pois/{poi_id}", response_model=schemas.PointOfInterest)
 def update_poi(
-    poi_id: uuid.UUID, 
-    poi_in: schemas.PointOfInterestUpdate, 
+    poi_id: uuid.UUID,
+    poi_in: schemas.PointOfInterestUpdate,
     db: Session = Depends(get_db),
-    current_user: str = Depends(get_current_user)
+    current_user = Depends(require_admin_or_editor())
 ):
     db_poi = crud.get_poi(db, poi_id=poi_id)
     if not db_poi:
@@ -113,9 +114,9 @@ def update_poi(
 
 @router.delete("/pois/{poi_id}", response_model=schemas.PointOfInterest)
 def delete_poi(
-    poi_id: uuid.UUID, 
+    poi_id: uuid.UUID,
     db: Session = Depends(get_db),
-    current_user: str = Depends(get_current_user)
+    current_user = Depends(require_admin_or_editor())
 ):
     db_poi = crud.delete_poi(db, poi_id=poi_id)
     if db_poi is None:

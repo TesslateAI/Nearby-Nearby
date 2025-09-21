@@ -47,6 +47,8 @@ import {
   TrailHeadPhotoUpload,
   TrailExitPhotoUpload,
   DownloadableMapsUpload,
+  RestroomPhotosUpload,
+  RentalPhotosUpload,
   shouldUseImageUpload
 } from './POIForm/ImageIntegration';
 
@@ -357,23 +359,18 @@ export default function POIForm() {
             }
           });
 
-          // Handle nested array fields more thoroughly
-          if (formData.trail) {
-            const trailArrayFields = ['trail_surfaces', 'trail_conditions', 'trail_experiences'];
-            trailArrayFields.forEach(field => {
-              if (formData.trail[field] === null || formData.trail[field] === undefined || !Array.isArray(formData.trail[field])) {
-                formData.trail[field] = [];
-              }
-            });
+          // Ensure all subtype objects exist with proper initialization
+          if (!formData.business && formData.poi_type === 'BUSINESS') {
+            formData.business = { ...emptyInitialValues.business };
           }
-
-          if (formData.event) {
-            const eventArrayFields = ['vendor_types', 'coat_check_options', 'venue_settings'];
-            eventArrayFields.forEach(field => {
-              if (formData.event[field] === null || formData.event[field] === undefined || !Array.isArray(formData.event[field])) {
-                formData.event[field] = [];
-              }
-            });
+          if (!formData.park && formData.poi_type === 'PARK') {
+            formData.park = { ...emptyInitialValues.park };
+          }
+          if (!formData.trail && formData.poi_type === 'TRAIL') {
+            formData.trail = { ...emptyInitialValues.trail };
+          }
+          if (!formData.event && formData.poi_type === 'EVENT') {
+            formData.event = { ...emptyInitialValues.event };
           }
 
           // Handle hours field specially
@@ -395,12 +392,24 @@ export default function POIForm() {
             'menu_link', 'community_impact', 'night_sky_viewing', 'birding_wildlife',
             'hunting_fishing_info', 'membership_details', 'camping_lodging', 'playground_notes',
             'pets_allowed', 'alcohol_available', 'public_toilets_available', 'toilet_photos',
-            'park_entry_notes', 'park_entry_photo', 'parking_lot_photo'
+            'park_entry_notes', 'park_entry_photo', 'parking_lot_photo', 'business_entry_notes',
+            'business_entry_photo', 'appointment_booking_url'
           ];
 
           stringFields.forEach(field => {
-            if (formData[field] === null) {
+            if (formData[field] === null || formData[field] === undefined) {
               formData[field] = '';
+            }
+          });
+
+          // Handle numeric fields that should be null or numbers
+          const numericFields = [
+            'front_door_latitude', 'front_door_longitude'
+          ];
+
+          numericFields.forEach(field => {
+            if (formData[field] === '' || formData[field] === 'null') {
+              formData[field] = null;
             }
           });
 
@@ -412,8 +421,18 @@ export default function POIForm() {
               'trailhead_entrance_photo', 'trailhead_photo', 'trailhead_exit_photo', 'trail_exit_photo'
             ];
             trailStringFields.forEach(field => {
-              if (formData.trail[field] === null) {
+              if (formData.trail[field] === null || formData.trail[field] === undefined) {
                 formData.trail[field] = '';
+              }
+            });
+
+            // Handle trail numeric fields
+            const trailNumericFields = [
+              'trailhead_latitude', 'trailhead_longitude', 'trail_exit_latitude', 'trail_exit_longitude'
+            ];
+            trailNumericFields.forEach(field => {
+              if (formData.trail[field] === '' || formData.trail[field] === 'null') {
+                formData.trail[field] = null;
               }
             });
           }
@@ -425,12 +444,41 @@ export default function POIForm() {
               'event_entry_notes', 'event_entry_photo'
             ];
             eventStringFields.forEach(field => {
-              if (formData.event[field] === null) {
+              if (formData.event[field] === null || formData.event[field] === undefined) {
                 formData.event[field] = '';
               }
             });
           }
 
+          // Final validation: ensure no undefined values that could cause controlled/uncontrolled warnings
+          const ensureNoUndefined = (obj, path = '') => {
+            Object.keys(obj).forEach(key => {
+              const currentPath = path ? `${path}.${key}` : key;
+              if (obj[key] === undefined) {
+                console.warn(`⚠️ Found undefined value at ${currentPath}, setting to appropriate default`);
+                // Set appropriate default based on expected type
+                if (emptyInitialValues[key] !== undefined) {
+                  obj[key] = emptyInitialValues[key];
+                } else if (Array.isArray(emptyInitialValues[key])) {
+                  obj[key] = [];
+                } else if (typeof emptyInitialValues[key] === 'object' && emptyInitialValues[key] !== null) {
+                  obj[key] = {};
+                } else if (typeof emptyInitialValues[key] === 'string') {
+                  obj[key] = '';
+                } else if (typeof emptyInitialValues[key] === 'number') {
+                  obj[key] = null;
+                } else if (typeof emptyInitialValues[key] === 'boolean') {
+                  obj[key] = false;
+                } else {
+                  obj[key] = '';
+                }
+              } else if (obj[key] && typeof obj[key] === 'object' && !Array.isArray(obj[key])) {
+                ensureNoUndefined(obj[key], currentPath);
+              }
+            });
+          };
+
+          ensureNoUndefined(formData);
           console.log('Form data after transformation:', formData); // Debug log
 
           // Set form values with error handling
@@ -456,6 +504,22 @@ export default function POIForm() {
 
   const handleSubmit = async (values, publicationStatus = 'published') => {
     setLoading(true);
+
+    console.log('📝 Form submission started:', { isEditing, publicationStatus, id });
+    console.log('📋 Form values:', values);
+    console.log('🔍 Form errors:', form.errors);
+
+    // Show loading notification
+    const actionText = publicationStatus === 'draft' ?
+      (isEditing && form.values.publication_status === 'published' ? 'unpublishing' : 'saving draft') :
+      (isEditing ? 'updating' : 'publishing');
+
+    const loadingNotification = notifications.show({
+      title: `${actionText.charAt(0).toUpperCase() + actionText.slice(1)}...`,
+      message: `Please wait while we ${actionText} your POI`,
+      loading: true,
+      autoClose: false,
+    });
 
     // Clean up empty string values and convert them to null for optional fields
     const cleanValues = { ...values };
@@ -500,29 +564,59 @@ export default function POIForm() {
     if (payload.poi_type !== 'TRAIL') delete payload.trail;
     if (payload.poi_type !== 'EVENT') delete payload.event;
 
+    console.log('📦 Final payload:', payload);
+
     try {
+      let response;
       if (isEditing) {
-        await api.put(`/pois/${id}`, payload);
-        notifications.show({ 
-          title: 'Success', 
-          message: 'POI updated successfully!', 
-          color: 'green' 
+        console.log(`🔄 Updating POI ${id}...`);
+        response = await api.put(`/pois/${id}`, payload);
+        console.log('✅ Update response:', response);
+
+        notifications.update({
+          id: loadingNotification,
+          title: 'Success!',
+          message: publicationStatus === 'draft' && form.values.publication_status === 'published' ?
+            'POI unpublished successfully!' :
+            `POI ${publicationStatus === 'draft' ? 'saved as draft' : 'updated'} successfully!`,
+          color: 'green',
+          loading: false,
+          autoClose: 3000
         });
       } else {
-        await api.post('/pois/', payload);
-        notifications.show({ 
-          title: 'Success', 
-          message: 'POI created successfully!', 
-          color: 'green' 
+        console.log('➕ Creating new POI...');
+        response = await api.post('/pois/', payload);
+        console.log('✅ Create response:', response);
+
+        notifications.update({
+          id: loadingNotification,
+          title: 'Success!',
+          message: `POI ${publicationStatus === 'draft' ? 'saved as draft' : 'published'} successfully!`,
+          color: 'green',
+          loading: false,
+          autoClose: 3000
         });
       }
       navigate('/pois');
     } catch (error) {
-      console.error('Error:', error);
-      notifications.show({ 
-        title: 'Error', 
-        message: error.message || `Failed to ${isEditing ? 'update' : 'create'} POI.`, 
-        color: 'red' 
+      console.error('❌ API Error:', error);
+      console.error('❌ Error details:', error.response || error.message);
+
+      let errorMessage = 'An unknown error occurred';
+      if (error.response) {
+        errorMessage = `HTTP ${error.response.status}: ${error.response.data?.detail || error.response.statusText}`;
+        console.error('❌ Response data:', error.response.data);
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      notifications.update({
+        id: loadingNotification,
+        title: 'Error',
+        message: errorMessage,
+        color: 'red',
+        loading: false,
+        autoClose: 5000
       });
     } finally {
       setLoading(false);
@@ -530,22 +624,38 @@ export default function POIForm() {
   };
 
   const handleDelete = async () => {
-    if (!window.confirm('Are you sure you want to delete this POI?')) return;
+    if (!window.confirm('Are you sure you want to delete this POI? This action cannot be undone.')) return;
+
+    setLoading(true);
+    const loadingNotification = notifications.show({
+      title: 'Deleting...',
+      message: 'Please wait while we delete your POI',
+      loading: true,
+      autoClose: false,
+    });
 
     try {
       await api.delete(`/pois/${id}`);
-      notifications.show({
-        title: 'Success',
+      notifications.update({
+        id: loadingNotification,
+        title: 'Success!',
         message: 'POI deleted successfully!',
-        color: 'green'
+        color: 'green',
+        loading: false,
+        autoClose: 3000
       });
       navigate('/pois');
     } catch (error) {
-      notifications.show({
+      notifications.update({
+        id: loadingNotification,
         title: 'Error',
-        message: 'Failed to delete POI',
-        color: 'red'
+        message: 'Failed to delete POI. Please try again.',
+        color: 'red',
+        loading: false,
+        autoClose: 5000
       });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -555,6 +665,24 @@ export default function POIForm() {
     return {
       ...inputProps,
       value: inputProps.value || []
+    };
+  };
+
+  // Helper function to get input props with guaranteed controlled values
+  const getControlledInputProps = (fieldPath, defaultValue = '') => {
+    const inputProps = form.getInputProps(fieldPath);
+    return {
+      ...inputProps,
+      value: inputProps.value === null || inputProps.value === undefined ? defaultValue : inputProps.value
+    };
+  };
+
+  // Helper function for numeric inputs
+  const getNumericInputProps = (fieldPath) => {
+    const inputProps = form.getInputProps(fieldPath);
+    return {
+      ...inputProps,
+      value: inputProps.value === null || inputProps.value === undefined ? '' : inputProps.value
     };
   };
 
@@ -638,7 +766,7 @@ export default function POIForm() {
                   <TextInput
                     label="Name"
                     placeholder="Enter POI name"
-                    {...form.getInputProps('name')}
+                    {...getControlledInputProps('name')}
                     withAsterisk
                   />
 
@@ -684,7 +812,7 @@ export default function POIForm() {
                       label="Status Message"
                       placeholder="Additional status info (max 100 chars)"
                       maxLength={100}
-                      {...form.getInputProps('status_message')}
+                      {...getControlledInputProps('status_message')}
                     />
                   </SimpleGrid>
 
@@ -748,12 +876,12 @@ export default function POIForm() {
                         <TextInput
                           label="Cost"
                           placeholder="e.g., $10 or $0-$50 or 0 (for free)"
-                          {...form.getInputProps('cost')}
+                          {...getControlledInputProps('cost')}
                         />
                         <TextInput
                           label="Ticket Link"
                           placeholder="URL to purchase tickets"
-                          {...form.getInputProps('ticket_link')}
+                          {...getControlledInputProps('ticket_link')}
                         />
                       </SimpleGrid>
                       <RichTextEditor
@@ -1001,12 +1129,12 @@ export default function POIForm() {
                     <TextInput
                       label="Street Address"
                       placeholder="123 Main St"
-                      {...form.getInputProps('address_street')}
+                      {...getControlledInputProps('address_street')}
                     />
                     <TextInput
                       label="Address Line 2 (Suite, Unit, etc.)"
                       placeholder="Suite 100, Unit B, etc."
-                      {...form.getInputProps('address_full')}
+                      {...getControlledInputProps('address_full')}
                     />
                   </SimpleGrid>
 
@@ -1014,13 +1142,13 @@ export default function POIForm() {
                     <TextInput
                       label="City"
                       placeholder="City name"
-                      {...form.getInputProps('address_city')}
+                      {...getControlledInputProps('address_city')}
                       withAsterisk
                     />
                     <TextInput
                       label="County"
                       placeholder="County name"
-                      {...form.getInputProps('address_county')}
+                      {...getControlledInputProps('address_county')}
                     />
                     <Select
                       label="State"
@@ -1032,7 +1160,7 @@ export default function POIForm() {
                     <TextInput
                       label="ZIP Code"
                       placeholder="12345"
-                      {...form.getInputProps('address_zip')}
+                      {...getControlledInputProps('address_zip')}
                     />
                   </SimpleGrid>
 
@@ -1042,13 +1170,13 @@ export default function POIForm() {
                       label="Front Door Latitude"
                       placeholder="35.7128"
                       precision={6}
-                      {...form.getInputProps('front_door_latitude')}
+                      {...getNumericInputProps('front_door_latitude')}
                     />
                     <NumberInput
                       label="Front Door Longitude"
                       placeholder="-79.0064"
                       precision={6}
-                      {...form.getInputProps('front_door_longitude')}
+                      {...getNumericInputProps('front_door_longitude')}
                     />
                   </SimpleGrid>
                   <Button
@@ -1388,17 +1516,17 @@ export default function POIForm() {
                     <TextInput
                       label="Website"
                       placeholder="https://example.com"
-                      {...form.getInputProps('website_url')}
+                      {...getControlledInputProps('website_url')}
                     />
                     <TextInput
                       label="Phone Number"
                       placeholder="(555) 123-4567"
-                      {...form.getInputProps('phone_number')}
+                      {...getControlledInputProps('phone_number')}
                     />
                     <TextInput
                       label="Email"
                       placeholder="contact@example.com"
-                      {...form.getInputProps('email')}
+                      {...getControlledInputProps('email')}
                     />
                   </SimpleGrid>
 
@@ -1414,27 +1542,27 @@ export default function POIForm() {
                     <TextInput
                       label="Instagram"
                       placeholder="@username"
-                      {...form.getInputProps('instagram_username')}
+                      {...getControlledInputProps('instagram_username')}
                     />
                     <TextInput
                       label="Facebook"
                       placeholder="pagename"
-                      {...form.getInputProps('facebook_username')}
+                      {...getControlledInputProps('facebook_username')}
                     />
                     <TextInput
                       label="X (Twitter)"
                       placeholder="@username"
-                      {...form.getInputProps('x_username')}
+                      {...getControlledInputProps('x_username')}
                     />
                     <TextInput
                       label="TikTok"
                       placeholder="@username"
-                      {...form.getInputProps('tiktok_username')}
+                      {...getControlledInputProps('tiktok_username')}
                     />
                     <TextInput
                       label="LinkedIn"
                       placeholder="company-name"
-                      {...form.getInputProps('linkedin_username')}
+                      {...getControlledInputProps('linkedin_username')}
                     />
                   </SimpleGrid>
                 </Stack>
@@ -2220,16 +2348,32 @@ export default function POIForm() {
                                     form.setFieldValue('toilet_locations', toilets);
                                   }}
                                 />
-                                <TextInput
-                                  label="Photos"
-                                  placeholder="URLs to restroom photos (comma-separated)"
-                                  value={toilet.photos || ''}
-                                  onChange={(e) => {
-                                    const toilets = [...(form.values.toilet_locations || [])];
-                                    toilets[index] = { ...toilets[index], photos: e.target.value };
-                                    form.setFieldValue('toilet_locations', toilets);
-                                  }}
-                                />
+                                {shouldUseImageUpload(id) ? (
+                                  <RestroomPhotosUpload
+                                    poiId={id}
+                                    restroomIndex={index}
+                                    form={{
+                                      values: { toilets: form.values.toilet_locations },
+                                      setFieldValue: (field, value) => {
+                                        if (field === 'toilets') {
+                                          form.setFieldValue('toilet_locations', value);
+                                        }
+                                      }
+                                    }}
+                                  />
+                                ) : (
+                                  <TextInput
+                                    label="Photos"
+                                    placeholder="URLs to restroom photos (comma-separated)"
+                                    value={toilet.photos || ''}
+                                    onChange={(e) => {
+                                      const toilets = [...(form.values.toilet_locations || [])];
+                                      toilets[index] = { ...toilets[index], photos: e.target.value };
+                                      form.setFieldValue('toilet_locations', toilets);
+                                    }}
+                                    description="Save the POI first to enable image upload"
+                                  />
+                                )}
                                 <Button
                                   color="red"
                                   variant="light"
@@ -2282,11 +2426,27 @@ export default function POIForm() {
                             />
                           </SimpleGrid>
 
-                          <TextInput
-                            label="Toilet Photos"
-                            placeholder="URLs to toilet photos (comma-separated)"
-                            {...form.getInputProps('toilet_photos')}
-                          />
+                          {shouldUseImageUpload(id) ? (
+                            <RestroomPhotosUpload
+                              poiId={id}
+                              restroomIndex={0}
+                              form={{
+                                values: { toilets: [{ photos: form.values.toilet_photos }] },
+                                setFieldValue: (field, value) => {
+                                  if (field === 'toilets' && value[0]) {
+                                    form.setFieldValue('toilet_photos', value[0].photos);
+                                  }
+                                }
+                              }}
+                            />
+                          ) : (
+                            <TextInput
+                              label="Toilet Photos"
+                              placeholder="URLs to toilet photos (comma-separated)"
+                              {...form.getInputProps('toilet_photos')}
+                              description="Save the POI first to enable image upload"
+                            />
+                          )}
                         </>
                       )}
                     </>
@@ -2363,11 +2523,16 @@ export default function POIForm() {
                             {...form.getInputProps('rental_link')}
                           />
                         </SimpleGrid>
-                        <TextInput
-                          label="Photos of Rental"
-                          placeholder="URLs to rental photos (comma-separated)"
-                          {...form.getInputProps('rental_photos')}
-                        />
+                        {shouldUseImageUpload(id) ? (
+                          <RentalPhotosUpload poiId={id} form={form} />
+                        ) : (
+                          <TextInput
+                            label="Photos of Rental"
+                            placeholder="URLs to rental photos (comma-separated)"
+                            {...form.getInputProps('rental_photos')}
+                            description="Save the POI first to enable image upload"
+                          />
+                        )}
                       </>
                     )}
                   </Stack>
@@ -2545,6 +2710,17 @@ export default function POIForm() {
                         onChange={(html) => form.setFieldValue('playground_notes', html)}
                         error={form.errors.playground_notes}
                       />
+
+                      {shouldUseImageUpload(id) ? (
+                        <PlaygroundPhotosUpload poiId={id} form={form} />
+                      ) : (
+                        <TextInput
+                          label="Playground Photos"
+                          placeholder="URLs to playground photos (comma-separated)"
+                          {...form.getInputProps('playground_photos')}
+                          description="Save the POI first to enable image upload"
+                        />
+                      )}
                     </>
                   )}
                 </Stack>
@@ -3095,18 +3271,45 @@ export default function POIForm() {
               size="lg"
               variant="light"
               loading={loading}
-              onClick={form.onSubmit((values) => handleSubmit(values, 'draft'))}
-              disabled={Object.keys(form.errors).length > 0}
+              onClick={() => {
+                form.validate();
+                if (Object.keys(form.errors).length > 0) {
+                  notifications.show({
+                    title: 'Form Validation Error',
+                    message: 'Please fix the errors in the form before saving',
+                    color: 'red',
+                    autoClose: 5000
+                  });
+                  return;
+                }
+                form.onSubmit((values) => handleSubmit(values, 'draft'))();
+              }}
+              loaderProps={{ type: 'dots' }}
             >
-              Save Draft
+              {loading ? 'Saving...' : 'Save Draft'}
             </Button>
             <Button
               size="lg"
               loading={loading}
-              onClick={form.onSubmit((values) => handleSubmit(values, 'published'))}
-              disabled={Object.keys(form.errors).length > 0}
+              onClick={() => {
+                form.validate();
+                if (Object.keys(form.errors).length > 0) {
+                  notifications.show({
+                    title: 'Form Validation Error',
+                    message: 'Please fix the errors in the form before publishing',
+                    color: 'red',
+                    autoClose: 5000
+                  });
+                  return;
+                }
+                form.onSubmit((values) => handleSubmit(values, 'published'))();
+              }}
+              loaderProps={{ type: 'dots' }}
             >
-              {isEditing && form.values.publication_status === 'published' ? 'Update' : 'Publish'}
+              {loading ?
+                (isEditing && form.values.publication_status === 'published' ? 'Updating...' : 'Publishing...') :
+                (isEditing && form.values.publication_status === 'published' ? 'Update' : 'Publish')
+              }
             </Button>
             {isEditing && form.values.publication_status === 'published' && (
               <Button
@@ -3114,10 +3317,22 @@ export default function POIForm() {
                 variant="outline"
                 color="orange"
                 loading={loading}
-                onClick={form.onSubmit((values) => handleSubmit(values, 'draft'))}
-                disabled={Object.keys(form.errors).length > 0}
+                onClick={() => {
+                  form.validate();
+                  if (Object.keys(form.errors).length > 0) {
+                    notifications.show({
+                      title: 'Form Validation Error',
+                      message: 'Please fix the errors in the form before unpublishing',
+                      color: 'red',
+                      autoClose: 5000
+                    });
+                    return;
+                  }
+                  form.onSubmit((values) => handleSubmit(values, 'draft'))();
+                }}
+                loaderProps={{ type: 'dots' }}
               >
-                Unpublish
+                {loading ? 'Unpublishing...' : 'Unpublish'}
               </Button>
             )}
             {isEditing && (
@@ -3125,15 +3340,19 @@ export default function POIForm() {
                 size="lg"
                 color="red"
                 variant="outline"
+                loading={loading}
                 onClick={handleDelete}
+                disabled={loading}
+                loaderProps={{ type: 'dots' }}
               >
-                Delete POI
+                {loading ? 'Deleting...' : 'Delete POI'}
               </Button>
             )}
             <Button
               size="lg"
               variant="default"
               onClick={() => navigate('/pois')}
+              disabled={loading}
             >
               Cancel
             </Button>

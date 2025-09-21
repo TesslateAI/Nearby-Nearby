@@ -5,7 +5,7 @@ import Underline from '@tiptap/extension-underline';
 import LinkExtension from '@tiptap/extension-link';
 import CharacterCount from '@tiptap/extension-character-count';
 import DOMPurify from 'dompurify';
-import { forwardRef, useCallback } from 'react';
+import { forwardRef, useCallback, useEffect } from 'react';
 import { Text, Box, Button, Group, Tooltip } from '@mantine/core';
 
 const CustomRichTextEditor = forwardRef(({
@@ -63,10 +63,12 @@ const CustomRichTextEditor = forwardRef(({
     }
   });
 
-  // Update editor content when value prop changes
-  if (editor && editor.getHTML() !== value) {
-    editor.commands.setContent(value || '');
-  }
+  // Update editor content when value prop changes (using useEffect to avoid render warnings)
+  useEffect(() => {
+    if (editor && editor.getHTML() !== (value || '')) {
+      editor.commands.setContent(value || '');
+    }
+  }, [editor, value]);
 
   if (!editor) {
     return <div>Loading editor...</div>;

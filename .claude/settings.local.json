@@ -42,7 +42,11 @@
       "Bash(PYTHONPATH=. python:*)",
       "mcp__playwright__browser_handle_dialog",
       "Bash(chmod:*)",
-      "Bash(docker-compose:*)"
+      "Bash(docker-compose:*)",
+      "mcp__playwright__browser_file_upload",
+      "Bash(npm run build:*)",
+      "Read(//c/**)",
+      "mcp__playwright__browser_console_messages"
     ],
     "deny": [],
     "ask": []
