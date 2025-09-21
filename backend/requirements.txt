@@ -13,6 +13,14 @@ python-jose[cryptography]
 python-multipart
 bleach
 
+# Image processing
+Pillow
+aiofiles
+
+# Cloud storage
+boto3
+botocore
+
 # Test dependencies
 pytest
 httpx

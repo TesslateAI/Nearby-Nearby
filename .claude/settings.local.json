@@ -40,7 +40,9 @@
       "Bash(find:*)",
       "Bash(node:*)",
       "Bash(PYTHONPATH=. python:*)",
-      "mcp__playwright__browser_handle_dialog"
+      "mcp__playwright__browser_handle_dialog",
+      "Bash(chmod:*)",
+      "Bash(docker-compose:*)"
     ],
     "deny": [],
     "ask": []

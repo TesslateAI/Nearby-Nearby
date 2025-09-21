@@ -33,10 +33,22 @@ import { SecondaryCategoriesSelector } from './SecondaryCategoriesSelector';
 import { IdealForSelector } from './IdealForSelector';
 import DynamicAttributeForm from './DynamicAttributeForm';
 import HoursSelector from './HoursSelector';
-import { 
-  addLink, removeLink, updateLink, 
-  addParkingLocation, removeParkingLocation, updateParkingLocation 
+import {
+  addLink, removeLink, updateLink,
+  addParkingLocation, removeParkingLocation, updateParkingLocation
 } from '../utils/fieldHelpers';
+import {
+  FeaturedImageUpload,
+  GalleryPhotosUpload,
+  MenuPhotosUpload,
+  EntryPhotoUpload,
+  ParkingPhotosUpload,
+  PlaygroundPhotosUpload,
+  TrailHeadPhotoUpload,
+  TrailExitPhotoUpload,
+  DownloadableMapsUpload,
+  shouldUseImageUpload
+} from './POIForm/ImageIntegration';
 
 // Lazy load the map component to improve performance
 const LocationMap = lazy(() => import('./LocationMap'));
@@ -783,12 +795,21 @@ export default function POIForm() {
                     </>
                   )}
 
-                  <TextInput
-                    label={isBusiness && isFreeListing ? "Logo" : "Featured Image"}
-                    placeholder={isBusiness && isFreeListing ? "URL to business logo" : "URL to featured image"}
-                    {...form.getInputProps('featured_image')}
-                    description="Upload image instead of URL"
-                  />
+                  {shouldUseImageUpload(id) ? (
+                    <FeaturedImageUpload
+                      poiId={id}
+                      isBusiness={isBusiness}
+                      isFreeListing={isFreeListing}
+                      form={form}
+                    />
+                  ) : (
+                    <TextInput
+                      label={isBusiness && isFreeListing ? "Logo" : "Featured Image"}
+                      placeholder={isBusiness && isFreeListing ? "URL to business logo" : "URL to featured image"}
+                      {...form.getInputProps('featured_image')}
+                      description="Save the POI first to enable image upload"
+                    />
+                  )}
                 </Stack>
               </Accordion.Panel>
             </Accordion.Item>
@@ -1053,11 +1074,16 @@ export default function POIForm() {
                         error={form.errors.park_entry_notes}
                         minRows={3}
                       />
-                      <TextInput
-                        label="Park Entry Photo"
-                        placeholder="URL to photo of park entrance"
-                        {...form.getInputProps('park_entry_photo')}
-                      />
+                      {shouldUseImageUpload(id) ? (
+                        <EntryPhotoUpload poiId={id} poiType="Park" form={form} />
+                      ) : (
+                        <TextInput
+                          label="Park Entry Photo"
+                          placeholder="URL to photo of park entrance"
+                          {...form.getInputProps('park_entry_photo')}
+                          description="Save the POI first to enable image upload"
+                        />
+                      )}
                     </>
                   )}
 
@@ -1085,11 +1111,16 @@ export default function POIForm() {
                         error={form.errors['event.event_entry_notes']}
                         minRows={3}
                       />
-                      <TextInput
-                        label="Event Entry Photo"
-                        placeholder="URL to photo of event entrance"
-                        {...form.getInputProps('event.event_entry_photo')}
-                      />
+                      {shouldUseImageUpload(id) ? (
+                        <EntryPhotoUpload poiId={id} poiType="Event" form={form} />
+                      ) : (
+                        <TextInput
+                          label="Event Entry Photo"
+                          placeholder="URL to photo of event entrance"
+                          {...form.getInputProps('event.event_entry_photo')}
+                          description="Save the POI first to enable image upload"
+                        />
+                      )}
                     </>
                   )}
 
@@ -1205,11 +1236,16 @@ export default function POIForm() {
                         Add Another Parking Location
                       </Button>
 
-                      <TextInput
-                        label="Parking Lot Photo"
-                        placeholder="URL to photo of parking area"
-                        {...form.getInputProps('parking_lot_photo')}
-                      />
+                      {shouldUseImageUpload(id) ? (
+                        <ParkingPhotosUpload poiId={id} form={form} />
+                      ) : (
+                        <TextInput
+                          label="Parking Lot Photo"
+                          placeholder="URL to photo of parking area"
+                          {...form.getInputProps('parking_lot_photo')}
+                          description="Save the POI first to enable image upload"
+                        />
+                      )}
                     </>
                   )}
 
@@ -1281,11 +1317,16 @@ export default function POIForm() {
                         Add Another Parking Location
                       </Button>
 
-                      <TextInput
-                        label="Parking Lot Photo"
-                        placeholder="URL to photo of parking area"
-                        {...form.getInputProps('parking_lot_photo')}
-                      />
+                      {shouldUseImageUpload(id) ? (
+                        <ParkingPhotosUpload poiId={id} form={form} />
+                      ) : (
+                        <TextInput
+                          label="Parking Lot Photo"
+                          placeholder="URL to photo of parking area"
+                          {...form.getInputProps('parking_lot_photo')}
+                          description="Save the POI first to enable image upload"
+                        />
+                      )}
                     </>
                   )}
                 </Stack>
@@ -1546,11 +1587,16 @@ export default function POIForm() {
 
                     <Divider my="md" label="Menu Photos" />
                     <Text size="sm" c="dimmed">Upload photos of your menu</Text>
-                    <TextInput
-                      label="Menu Photos"
-                      placeholder="URLs to menu photos (comma-separated)"
-                      {...form.getInputProps('menu_photos')}
-                    />
+                    {shouldUseImageUpload(id) ? (
+                      <MenuPhotosUpload poiId={id} form={form} />
+                    ) : (
+                      <TextInput
+                        label="Menu Photos"
+                        placeholder="URLs to menu photos (comma-separated)"
+                        {...form.getInputProps('menu_photos')}
+                        description="Save the POI first to enable image upload"
+                      />
+                    )}
 
                     <Divider my="md" label="Delivery Services" />
                     {(form.values.delivery_links || []).map((link, index) => (
@@ -1653,11 +1699,16 @@ export default function POIForm() {
                 <Accordion.Panel>
                   <Stack>
                     <Text size="sm" c="dimmed">Upload extra photos to showcase your business</Text>
-                    <TextInput
-                      label="Gallery Photos"
-                      placeholder="URLs to extra photos (comma-separated)"
-                      {...form.getInputProps('gallery_photos')}
-                    />
+                    {shouldUseImageUpload(id) ? (
+                      <GalleryPhotosUpload poiId={id} form={form} />
+                    ) : (
+                      <TextInput
+                        label="Gallery Photos"
+                        placeholder="URLs to extra photos (comma-separated)"
+                        {...form.getInputProps('gallery_photos')}
+                        description="Save the POI first to enable image upload"
+                      />
+                    )}
                   </Stack>
                 </Accordion.Panel>
               </Accordion.Item>
@@ -1679,11 +1730,16 @@ export default function POIForm() {
                       error={form.errors.business_entry_notes}
                       minRows={3}
                     />
-                    <TextInput
-                      label="Entry Photo"
-                      placeholder="URL to photo of business entrance"
-                      {...form.getInputProps('business_entry_photo')}
-                    />
+                    {shouldUseImageUpload(id) ? (
+                      <EntryPhotoUpload poiId={id} poiType="Business" form={form} />
+                    ) : (
+                      <TextInput
+                        label="Entry Photo"
+                        placeholder="URL to photo of business entrance"
+                        {...form.getInputProps('business_entry_photo')}
+                        description="Save the POI first to enable image upload"
+                      />
+                    )}
                   </Stack>
                 </Accordion.Panel>
               </Accordion.Item>
@@ -1785,55 +1841,64 @@ export default function POIForm() {
                   {isPark && (
                     <>
                       <Divider my="md" label="Downloadable Maps" />
-                      {(form.values.downloadable_maps || []).map((map, index) => (
-                        <Card key={index} withBorder p="md" mb="sm">
-                          <Stack>
-                            <TextInput
-                              label="Map Title"
-                              placeholder="e.g., Main Trail Map, Facility Map"
-                              value={map.name || ''}
-                              onChange={(e) => {
-                                const maps = [...(form.values.downloadable_maps || [])];
-                                maps[index] = { ...maps[index], name: e.target.value };
-                                form.setFieldValue('downloadable_maps', maps);
-                              }}
-                            />
-                            <TextInput
-                              label="Map URL"
-                              placeholder="URL to PDF or image file"
-                              value={map.url || ''}
-                              onChange={(e) => {
-                                const maps = [...(form.values.downloadable_maps || [])];
-                                maps[index] = { ...maps[index], url: e.target.value };
-                                form.setFieldValue('downloadable_maps', maps);
-                              }}
-                            />
-                            <Button
-                              color="red"
-                              variant="light"
-                              size="xs"
-                              onClick={() => {
-                                const maps = [...(form.values.downloadable_maps || [])];
-                                maps.splice(index, 1);
-                                form.setFieldValue('downloadable_maps', maps);
-                              }}
-                            >
-                              Remove Map
-                            </Button>
-                          </Stack>
-                        </Card>
-                      ))}
-                      <Button
-                        variant="light"
-                        leftSection={<IconPlus size={16} />}
-                        onClick={() => {
-                          const maps = [...(form.values.downloadable_maps || [])];
-                          maps.push({ name: '', url: '' });
-                          form.setFieldValue('downloadable_maps', maps);
-                        }}
-                      >
-                        Add Another Map
-                      </Button>
+                      {shouldUseImageUpload(id) ? (
+                        <DownloadableMapsUpload poiId={id} form={form} />
+                      ) : (
+                        <>
+                          {(form.values.downloadable_maps || []).map((map, index) => (
+                            <Card key={index} withBorder p="md" mb="sm">
+                              <Stack>
+                                <TextInput
+                                  label="Map Title"
+                                  placeholder="e.g., Main Trail Map, Facility Map"
+                                  value={map.name || ''}
+                                  onChange={(e) => {
+                                    const maps = [...(form.values.downloadable_maps || [])];
+                                    maps[index] = { ...maps[index], name: e.target.value };
+                                    form.setFieldValue('downloadable_maps', maps);
+                                  }}
+                                />
+                                <TextInput
+                                  label="Map URL"
+                                  placeholder="URL to PDF or image file"
+                                  value={map.url || ''}
+                                  onChange={(e) => {
+                                    const maps = [...(form.values.downloadable_maps || [])];
+                                    maps[index] = { ...maps[index], url: e.target.value };
+                                    form.setFieldValue('downloadable_maps', maps);
+                                  }}
+                                />
+                                <Button
+                                  color="red"
+                                  variant="light"
+                                  size="xs"
+                                  onClick={() => {
+                                    const maps = [...(form.values.downloadable_maps || [])];
+                                    maps.splice(index, 1);
+                                    form.setFieldValue('downloadable_maps', maps);
+                                  }}
+                                >
+                                  Remove Map
+                                </Button>
+                              </Stack>
+                            </Card>
+                          ))}
+                          <Button
+                            variant="light"
+                            leftSection={<IconPlus size={16} />}
+                            onClick={() => {
+                              const maps = [...(form.values.downloadable_maps || [])];
+                              maps.push({ name: '', url: '' });
+                              form.setFieldValue('downloadable_maps', maps);
+                            }}
+                          >
+                            Add Another Map
+                          </Button>
+                          <Text size="xs" c="dimmed" mt="xs">
+                            Save the POI first to enable file upload
+                          </Text>
+                        </>
+                      )}
                     </>
                   )}
 
@@ -1864,55 +1929,64 @@ export default function POIForm() {
                   {isEvent && (
                     <>
                       <Divider my="md" label="Downloadable Maps" />
-                      {(form.values.downloadable_maps || []).map((map, index) => (
-                        <Card key={index} withBorder p="md" mb="sm">
-                          <Stack>
-                            <TextInput
-                              label="Map Title"
-                              placeholder="e.g., Event Layout, Vendor Map"
-                              value={map.name || ''}
-                              onChange={(e) => {
-                                const maps = [...(form.values.downloadable_maps || [])];
-                                maps[index] = { ...maps[index], name: e.target.value };
-                                form.setFieldValue('downloadable_maps', maps);
-                              }}
-                            />
-                            <TextInput
-                              label="Map URL"
-                              placeholder="URL to PDF or image file"
-                              value={map.url || ''}
-                              onChange={(e) => {
-                                const maps = [...(form.values.downloadable_maps || [])];
-                                maps[index] = { ...maps[index], url: e.target.value };
-                                form.setFieldValue('downloadable_maps', maps);
-                              }}
-                            />
-                            <Button
-                              color="red"
-                              variant="light"
-                              size="xs"
-                              onClick={() => {
-                                const maps = [...(form.values.downloadable_maps || [])];
-                                maps.splice(index, 1);
-                                form.setFieldValue('downloadable_maps', maps);
-                              }}
-                            >
-                              Remove Map
-                            </Button>
-                          </Stack>
-                        </Card>
-                      ))}
-                      <Button
-                        variant="light"
-                        leftSection={<IconPlus size={16} />}
-                        onClick={() => {
-                          const maps = [...(form.values.downloadable_maps || [])];
-                          maps.push({ name: '', url: '' });
-                          form.setFieldValue('downloadable_maps', maps);
-                        }}
-                      >
-                        Add Another Map
-                      </Button>
+                      {shouldUseImageUpload(id) ? (
+                        <DownloadableMapsUpload poiId={id} form={form} />
+                      ) : (
+                        <>
+                          {(form.values.downloadable_maps || []).map((map, index) => (
+                            <Card key={index} withBorder p="md" mb="sm">
+                              <Stack>
+                                <TextInput
+                                  label="Map Title"
+                                  placeholder="e.g., Event Layout, Vendor Map"
+                                  value={map.name || ''}
+                                  onChange={(e) => {
+                                    const maps = [...(form.values.downloadable_maps || [])];
+                                    maps[index] = { ...maps[index], name: e.target.value };
+                                    form.setFieldValue('downloadable_maps', maps);
+                                  }}
+                                />
+                                <TextInput
+                                  label="Map URL"
+                                  placeholder="URL to PDF or image file"
+                                  value={map.url || ''}
+                                  onChange={(e) => {
+                                    const maps = [...(form.values.downloadable_maps || [])];
+                                    maps[index] = { ...maps[index], url: e.target.value };
+                                    form.setFieldValue('downloadable_maps', maps);
+                                  }}
+                                />
+                                <Button
+                                  color="red"
+                                  variant="light"
+                                  size="xs"
+                                  onClick={() => {
+                                    const maps = [...(form.values.downloadable_maps || [])];
+                                    maps.splice(index, 1);
+                                    form.setFieldValue('downloadable_maps', maps);
+                                  }}
+                                >
+                                  Remove Map
+                                </Button>
+                              </Stack>
+                            </Card>
+                          ))}
+                          <Button
+                            variant="light"
+                            leftSection={<IconPlus size={16} />}
+                            onClick={() => {
+                              const maps = [...(form.values.downloadable_maps || [])];
+                              maps.push({ name: '', url: '' });
+                              form.setFieldValue('downloadable_maps', maps);
+                            }}
+                          >
+                            Add Another Map
+                          </Button>
+                          <Text size="xs" c="dimmed" mt="xs">
+                            Save the POI first to enable file upload
+                          </Text>
+                        </>
+                      )}
 
                       <Divider my="md" label="Event Food and Drink" />
                       <RichTextEditor
@@ -2731,11 +2805,16 @@ export default function POIForm() {
                         {...form.getInputProps('trail.trailhead_longitude')}
                       />
                     </SimpleGrid>
-                    <TextInput
-                      label="Trailhead Photo"
-                      placeholder="URL to photo of trailhead entrance"
-                      {...form.getInputProps('trail.trailhead_photo')}
-                    />
+                    {shouldUseImageUpload(id) ? (
+                      <TrailHeadPhotoUpload poiId={id} form={form} />
+                    ) : (
+                      <TextInput
+                        label="Trailhead Photo"
+                        placeholder="URL to photo of trailhead entrance"
+                        {...form.getInputProps('trail.trailhead_photo')}
+                        description="Save the POI first to enable image upload"
+                      />
+                    )}
 
                     <Divider my="md" label="Trail Exit Location" />
                     <SimpleGrid cols={{ base: 1, sm: 2 }}>
@@ -2752,11 +2831,16 @@ export default function POIForm() {
                         {...form.getInputProps('trail.trail_exit_longitude')}
                       />
                     </SimpleGrid>
-                    <TextInput
-                      label="Trail Exit Photo"
-                      placeholder="URL to photo of trail exit"
-                      {...form.getInputProps('trail.trail_exit_photo')}
-                    />
+                    {shouldUseImageUpload(id) ? (
+                      <TrailExitPhotoUpload poiId={id} form={form} />
+                    ) : (
+                      <TextInput
+                        label="Trail Exit Photo"
+                        placeholder="URL to photo of trail exit"
+                        {...form.getInputProps('trail.trail_exit_photo')}
+                        description="Save the POI first to enable image upload"
+                      />
+                    )}
                   </Stack>
                 </Accordion.Panel>
               </Accordion.Item>

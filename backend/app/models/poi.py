@@ -245,6 +245,9 @@ class PointOfInterest(Base):
     trail = relationship("Trail", back_populates="poi", uselist=False, cascade="all, delete-orphan")
     event = relationship("Event", back_populates="poi", uselist=False, cascade="all, delete-orphan")
 
+    # Images relationship
+    images = relationship("Image", back_populates="poi", cascade="all, delete-orphan")
+
     @property
     def poi_type_str(self):
         return self.poi_type.value if isinstance(self.poi_type, enum.Enum) else self.poi_type

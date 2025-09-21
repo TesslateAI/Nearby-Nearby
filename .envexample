@@ -61,10 +61,10 @@ PRODUCTION_DOMAIN=yourdomain.com
 VITE_API_BASE_URL=
 
 #==============================================================================
-# 🔧 PRODUCTION ENVIRONMENT EXAMPLE
+# 🔧 PRODUCTION ENVIRONMENT EXAMPLES
 #==============================================================================
-# For production deployment, use these settings:
-#
+
+# Example 1: Production with Database Storage
 # SECRET_KEY=your_32_character_secret_generated_with_openssl_rand
 # ENVIRONMENT=production
 # DATABASE_URL=postgresql://username:password@your-production-db:5432/database
@@ -73,6 +73,60 @@ VITE_API_BASE_URL=
 # PRODUCTION_DOMAIN=yourdomain.com
 # VITE_API_BASE_URL=http://your-ec2-ip:8000/api
 # POSTGRES_PASSWORD=very_secure_production_password
+# STORAGE_PROVIDER=database
+
+# Example 2: Production with S3 Storage + CloudFront CDN
+# SECRET_KEY=your_32_character_secret_generated_with_openssl_rand
+# ENVIRONMENT=production
+# DATABASE_URL=postgresql://username:password@your-production-db:5432/database
+# ALLOWED_ORIGINS=https://yourdomain.com
+# ALLOWED_HOSTS=yourdomain.com
+# PRODUCTION_DOMAIN=yourdomain.com
+# VITE_API_BASE_URL=http://your-ec2-ip:8000/api
+# POSTGRES_PASSWORD=very_secure_production_password
+# STORAGE_PROVIDER=s3
+# AWS_S3_BUCKET=your-production-bucket
+# AWS_REGION=us-east-1
+# AWS_ACCESS_KEY_ID=your-production-access-key
+# AWS_SECRET_ACCESS_KEY=your-production-secret-key
+# AWS_CLOUDFRONT_DOMAIN=d123abc456def.cloudfront.net
+
+# Example 3: Production with S3 + IAM Roles (Recommended)
+# SECRET_KEY=your_32_character_secret_generated_with_openssl_rand
+# ENVIRONMENT=production
+# DATABASE_URL=postgresql://username:password@your-production-db:5432/database
+# ALLOWED_ORIGINS=https://yourdomain.com
+# ALLOWED_HOSTS=yourdomain.com
+# PRODUCTION_DOMAIN=yourdomain.com
+# VITE_API_BASE_URL=http://your-ec2-ip:8000/api
+# POSTGRES_PASSWORD=very_secure_production_password
+# STORAGE_PROVIDER=s3
+# AWS_S3_BUCKET=your-production-bucket
+# AWS_REGION=us-east-1
+# AWS_CLOUDFRONT_DOMAIN=d123abc456def.cloudfront.net
+# # No AWS keys needed - IAM role will be used automatically
+
+#==============================================================================
+# 📸 IMAGE STORAGE CONFIGURATION
+#==============================================================================
+
+# Image storage provider: "database" (default) or "s3"
+STORAGE_PROVIDER=database
+
+# AWS S3 Configuration (only required if STORAGE_PROVIDER=s3)
+# Uncomment and configure these if using S3 storage:
+# AWS_S3_BUCKET=your-bucket-name
+# AWS_REGION=us-east-1
+# AWS_ACCESS_KEY_ID=your-access-key-id
+# AWS_SECRET_ACCESS_KEY=your-secret-access-key
+
+# Optional S3 Features
+# AWS_CLOUDFRONT_DOMAIN=d123abc456def.cloudfront.net  # CDN for faster delivery
+# AWS_USE_SSL=true                                     # Use HTTPS (default: true)
+# AWS_SIGNATURE_VERSION=s3v4                           # Signature version (default: s3v4)
+
+# For EC2 instances with IAM roles, you can omit ACCESS_KEY_ID and SECRET_ACCESS_KEY
+# The system will automatically detect and use IAM roles
 
 #==============================================================================
 # 📝 USAGE NOTES
@@ -82,3 +136,5 @@ VITE_API_BASE_URL=
 # 3. NEVER commit .env files to version control
 # 4. Use different values for development, staging, and production
 # 5. Generate SECRET_KEY with: openssl rand -hex 32
+# 6. For S3 storage: set STORAGE_PROVIDER=s3 and configure AWS variables
+# 7. For database storage: leave STORAGE_PROVIDER=database (default)

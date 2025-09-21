@@ -59,6 +59,16 @@ def db_session():
     with engine.connect() as conn:
         conn.execute(text("DROP SCHEMA public CASCADE;"))
         conn.execute(text("CREATE SCHEMA public;"))
+
+        # Create enum types that might be needed
+        conn.execute(text("""
+            CREATE TYPE imagetype AS ENUM (
+                'main', 'gallery', 'entry', 'parking', 'restroom',
+                'rental', 'playground', 'menu', 'trail_head',
+                'trail_exit', 'map', 'downloadable_map'
+            );
+        """))
+
     Base.metadata.create_all(bind=engine)
     db = TestingSessionLocal()
     try:
