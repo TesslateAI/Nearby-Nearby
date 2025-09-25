@@ -2,7 +2,7 @@ import { useState, lazy, Suspense, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import {
   Container, Stack, Box, Title, Text, Accordion, Group, Badge,
-  Alert, Button, Affix, Transition, rem
+  Alert, Button, Affix, Transition, rem, Loader
 } from '@mantine/core';
 import { useWindowScroll } from '@mantine/hooks';
 import { IconChevronUp } from '@tabler/icons-react';
@@ -11,6 +11,7 @@ import { modals } from '@mantine/modals';
 // Hooks
 import { usePOIForm } from './hooks/usePOIForm';
 import { usePOIHandlers } from './hooks/usePOIHandlers.jsx';
+import { useAutoSave } from './hooks/useAutoSave';
 
 // Components
 import { FormActions } from './components/FormActions';
@@ -74,6 +75,9 @@ export default function POIForm() {
   // Custom hooks for form management
   const { form, isBusiness, isPark, isTrail, isEvent, isPaidListing, isFreeListing } = usePOIForm();
   const { loading, handleSubmit, handleDelete, handleSilentDelete, handleAutoCreate } = usePOIHandlers(poiId, isEditing, form, setPoiId);
+
+  // Auto-save hook (only when editing existing POI)
+  const { isSaving, lastSaved, triggerAutoSave } = useAutoSave(form, poiId, isEditing);
 
   // Check if this is a draft with potentially minimal content that needs confirmation before navigation
   const isDraftThatMightNeedConfirmation = poiId && form.values.publication_status === 'draft';
@@ -243,9 +247,22 @@ export default function POIForm() {
       <Container size="xl" px={{ base: 'xs', sm: 'md', lg: 'xl' }}>
         <Stack spacing="xl" pb={100}>
           <Box>
-            <Title order={2} c="deep-purple.7" mb="md">
-              {isEditing ? `Editing: ${form.values.name || 'New POI'}` : 'Create New Point of Interest'}
-            </Title>
+            <Group align="center" mb="md">
+              <Title order={2} c="deep-purple.7">
+                {isEditing ? `Editing: ${form.values.name || 'New POI'}` : 'Create New Point of Interest'}
+              </Title>
+              {isSaving && (
+                <Group gap="xs">
+                  <Loader size="sm" />
+                  <Text size="sm" c="dimmed">Saving...</Text>
+                </Group>
+              )}
+              {!isSaving && lastSaved && isEditing && (
+                <Text size="sm" c="dimmed">
+                  Last saved: {lastSaved.toLocaleTimeString()}
+                </Text>
+              )}
+            </Group>
             <Text size="sm" c="dimmed">Fields marked with * are required</Text>
             {isAutoCreating && (
               <Alert color="blue" mt="sm">

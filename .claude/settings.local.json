@@ -55,7 +55,10 @@
       "Bash(move:*)",
       "Bash(docker-compose exec backend python:*)",
       "Bash(docker-compose up:*)",
-      "Bash(docker-compose logs:*)"
+      "Bash(docker-compose logs:*)",
+      "Bash(npm run --prefix frontend lint)",
+      "Bash(npx eslint:*)",
+      "Bash(npm run:*)"
     ],
     "deny": [],
     "ask": []
