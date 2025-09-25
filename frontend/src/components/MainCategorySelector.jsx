@@ -13,12 +13,16 @@ export function MainCategorySelector({ value, onChange, poiType, error }) {
     setLoading(true);
     try {
       const response = await api.get(`/categories/main/${poiType}`);
+
       if (response.ok) {
         const data = await response.json();
-        setCategories(data.map(cat => ({
+        const formattedCategories = data.map(cat => ({
           value: cat.id,
           label: cat.name
-        })));
+        }));
+        setCategories(formattedCategories);
+      } else {
+        console.error('Failed to fetch main categories:', response.status, response.statusText);
       }
     } catch (error) {
       console.error('Error fetching main categories:', error);
@@ -33,7 +37,7 @@ export function MainCategorySelector({ value, onChange, poiType, error }) {
 
   return (
     <div>
-      <Group justify="space-between" mb="xs">
+      <Group justify="space-between" mb="xs" align="flex-end">
         <div style={{ flex: 1 }}>
           <Select
             label="Main Category"
@@ -56,7 +60,6 @@ export function MainCategorySelector({ value, onChange, poiType, error }) {
           onClick={fetchCategories}
           loading={loading}
           disabled={!poiType}
-          style={{ marginTop: '25px' }}
         >
           <IconRefresh size={16} />
         </Button>

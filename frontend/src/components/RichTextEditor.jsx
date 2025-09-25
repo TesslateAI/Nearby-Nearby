@@ -187,12 +187,20 @@ const CustomRichTextEditor = forwardRef(({
               variant={editor?.isActive('italic') ? 'light' : 'subtle'}
               onClick={() => editor?.chain().focus().toggleItalic().run()}
               style={{
-                minWidth: '26px',
-                height: '24px',
-                fontStyle: 'italic',
-                fontSize: '12px',
-                color: 'var(--mantine-color-dark-7)',
-                textAlign: 'center'
+                minWidth: '28px !important',
+                width: '28px !important',
+                height: '24px !important',
+                fontStyle: 'italic !important',
+                fontSize: '14px !important',
+                fontWeight: 'normal !important',
+                color: 'var(--mantine-color-dark-7) !important',
+                display: 'flex !important',
+                alignItems: 'center !important',
+                justifyContent: 'center !important',
+                padding: '0 !important',
+                overflow: 'visible !important',
+                textOverflow: 'visible !important',
+                whiteSpace: 'nowrap !important'
               }}
             >
               I

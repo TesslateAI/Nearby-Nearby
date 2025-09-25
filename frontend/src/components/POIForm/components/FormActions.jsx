@@ -7,20 +7,27 @@ export function FormActions({
   loading,
   isEditing,
   handleSubmit,
-  handleDelete
+  handleDelete,
+  handleNavigation
 }) {
   const navigate = useNavigate();
 
-  const validateAndSubmit = (publicationStatus) => {
-    form.validate();
-    if (Object.keys(form.errors).length > 0) {
-      notifications.show({
-        title: 'Form Validation Error',
-        message: `Please fix the errors in the form before ${publicationStatus === 'draft' ? 'saving' : 'publishing'}`,
-        color: 'red',
-        autoClose: 5000
-      });
-      return;
+  // Use custom navigation handler if provided, otherwise use default navigate
+  const navigateHandler = handleNavigation || navigate;
+
+  const validateAndSubmit = (publicationStatus, skipValidation = false) => {
+    // Skip validation for unpublishing or when explicitly requested
+    if (!skipValidation) {
+      form.validate();
+      if (Object.keys(form.errors).length > 0) {
+        notifications.show({
+          title: 'Form Validation Error',
+          message: `Please fix the errors in the form before ${publicationStatus === 'draft' ? 'saving draft' : 'publishing'}`,
+          color: 'red',
+          autoClose: 5000
+        });
+        return;
+      }
     }
     form.onSubmit((values) => handleSubmit(values, publicationStatus))();
   };
@@ -55,7 +62,7 @@ export function FormActions({
           variant="outline"
           color="orange"
           loading={loading}
-          onClick={() => validateAndSubmit('draft')}
+          onClick={() => validateAndSubmit('draft', true)}
           loaderProps={{ type: 'dots' }}
         >
           {loading ? 'Unpublishing...' : 'Unpublish'}
@@ -79,7 +86,7 @@ export function FormActions({
       <Button
         size="lg"
         variant="default"
-        onClick={() => navigate('/')}
+        onClick={() => navigateHandler('/')}
         disabled={loading}
       >
         Cancel

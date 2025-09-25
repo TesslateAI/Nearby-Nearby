@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { notifications } from '@mantine/notifications';
+import { modals } from '@mantine/modals';
+import { Text } from '@mantine/core';
 import api from '../../../utils/api';
 import { emptyInitialValues } from '../constants/initialValues';
 
@@ -30,6 +32,7 @@ export const usePOIHandlers = (id, isEditing, form, setPoiId) => {
             longitude: poi.location?.coordinates?.[0] || emptyInitialValues.longitude,
             latitude: poi.location?.coordinates?.[1] || emptyInitialValues.latitude,
             category_ids: poi.categories ? poi.categories.map(c => c.id) : [],
+            main_category_id: poi.main_category?.id || null,
             business: poi.business || emptyInitialValues.business,
             park: poi.park || emptyInitialValues.park,
             trail: poi.trail || emptyInitialValues.trail,
@@ -272,8 +275,8 @@ export const usePOIHandlers = (id, isEditing, form, setPoiId) => {
           autoClose: 3000
         });
 
-        // Navigate to POI list
-        navigate('/');
+        // Navigate to POI list (direct navigation since form was saved)
+        window.location.href = '/';
       } else {
         response = await api.post('/pois/', payload);
 
@@ -292,12 +295,12 @@ export const usePOIHandlers = (id, isEditing, form, setPoiId) => {
           autoClose: 3000
         });
 
-        // For new POIs, navigate to the edit page so user can continue editing
+        // For new POIs, navigate to the edit page so user can continue editing (direct navigation since form was saved)
         const newPoiId = createdPoi.id;
         if (newPoiId) {
-          navigate(`/poi/${newPoiId}/edit`);
+          window.location.href = `/poi/${newPoiId}/edit`;
         } else {
-          navigate('/');
+          window.location.href = '/';
         }
       }
     } catch (error) {
@@ -402,36 +405,61 @@ export const usePOIHandlers = (id, isEditing, form, setPoiId) => {
   };
 
   const handleDelete = async () => {
-    if (!window.confirm('Are you sure you want to delete this POI? This action cannot be undone.')) return;
+    modals.openConfirmModal({
+      title: 'Delete POI',
+      centered: true,
+      children: (
+        <Text size="sm">
+          Are you sure you want to delete this POI? This action cannot be undone.
+        </Text>
+      ),
+      labels: { confirm: 'Delete POI', cancel: 'Cancel' },
+      confirmProps: { color: 'red' },
+      onConfirm: async () => {
+        setLoading(true);
+        const loadingNotification = notifications.show({
+          title: 'Deleting...',
+          message: 'Please wait while we delete your POI',
+          loading: true,
+          autoClose: false,
+        });
 
-    setLoading(true);
-    const loadingNotification = notifications.show({
-      title: 'Deleting...',
-      message: 'Please wait while we delete your POI',
-      loading: true,
-      autoClose: false,
+        try {
+          await api['delete'](`/pois/${id}`);
+          notifications.update({
+            id: loadingNotification,
+            title: 'Success!',
+            message: 'POI deleted successfully!',
+            color: 'green',
+            loading: false,
+            autoClose: 3000
+          });
+          window.location.href = '/';
+        } catch (error) {
+          notifications.update({
+            id: loadingNotification,
+            title: 'Error',
+            message: 'Failed to delete POI. Please try again.',
+            color: 'red',
+            loading: false,
+            autoClose: 5000
+          });
+        } finally {
+          setLoading(false);
+        }
+      }
     });
+  };
 
+  // Silent delete for draft cleanup (no confirmation dialog)
+  const handleSilentDelete = async () => {
+    setLoading(true);
     try {
-      await api.delete(`/pois/${id}`);
-      notifications.update({
-        id: loadingNotification,
-        title: 'Success!',
-        message: 'POI deleted successfully!',
-        color: 'green',
-        loading: false,
-        autoClose: 3000
-      });
-      navigate('/');
+      await api['delete'](`/pois/${id}`);
+      // No notification for silent delete during navigation
     } catch (error) {
-      notifications.update({
-        id: loadingNotification,
-        title: 'Error',
-        message: 'Failed to delete POI. Please try again.',
-        color: 'red',
-        loading: false,
-        autoClose: 5000
-      });
+      console.error('Error deleting draft:', error);
+      // Still proceed with navigation even if delete fails
     } finally {
       setLoading(false);
     }
@@ -441,6 +469,7 @@ export const usePOIHandlers = (id, isEditing, form, setPoiId) => {
     loading,
     handleSubmit,
     handleDelete,
+    handleSilentDelete,
     handleAutoCreate
   };
 };

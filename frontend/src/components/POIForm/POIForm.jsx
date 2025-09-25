@@ -1,15 +1,16 @@
 import { useState, lazy, Suspense, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import {
   Container, Stack, Box, Title, Text, Accordion, Group, Badge,
   Alert, Button, Affix, Transition, rem
 } from '@mantine/core';
 import { useWindowScroll } from '@mantine/hooks';
 import { IconChevronUp } from '@tabler/icons-react';
+import { modals } from '@mantine/modals';
 
 // Hooks
 import { usePOIForm } from './hooks/usePOIForm';
-import { usePOIHandlers } from './hooks/usePOIHandlers';
+import { usePOIHandlers } from './hooks/usePOIHandlers.jsx';
 
 // Components
 import { FormActions } from './components/FormActions';
@@ -61,16 +62,137 @@ import { LocationMapSkeleton } from '../LocationMap';
 export default function POIForm() {
   const { id: paramId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [poiId, setPoiId] = useState(paramId);
   const [isAutoCreating, setIsAutoCreating] = useState(false);
   const autoCreateInitiated = useRef(false);
   const isEditing = Boolean(poiId);
   const [scroll, scrollTo] = useWindowScroll();
   const [renderError, setRenderError] = useState(null);
+  const [navigationBlocked, setNavigationBlocked] = useState(false);
 
   // Custom hooks for form management
   const { form, isBusiness, isPark, isTrail, isEvent, isPaidListing, isFreeListing } = usePOIForm();
-  const { loading, handleSubmit, handleDelete, handleAutoCreate } = usePOIHandlers(poiId, isEditing, form, setPoiId);
+  const { loading, handleSubmit, handleDelete, handleSilentDelete, handleAutoCreate } = usePOIHandlers(poiId, isEditing, form, setPoiId);
+
+  // Check if this is a draft with potentially minimal content that needs confirmation before navigation
+  const isDraftThatMightNeedConfirmation = poiId && form.values.publication_status === 'draft';
+
+  // Check if required fields are empty (still contains only auto-generated content)
+  const hasMinimalContent = () => {
+    const name = form.values.name || '';
+    const teaser = form.values.teaser_paragraph || '';
+    const description_long = form.values.description_long || '';
+    const description_short = form.values.description_short || '';
+    const address = form.values.address || '';
+    const categories = form.values.categories || [];
+
+    // Consider content minimal if:
+    // - Name is empty, whitespace, or still "New POI"
+    // - AND teaser paragraph is empty or whitespace
+    // - AND description (long or short) is empty or whitespace
+    // - AND address is empty
+    // - AND no categories are selected
+    const nameIsMinimal = name.trim() === '' || name.trim() === 'New POI';
+    const teaserIsMinimal = teaser.trim() === '';
+    const descriptionIsMinimal = description_long.trim() === '' && description_short.trim() === '';
+    const addressIsMinimal = address.trim() === '';
+    const categoriesIsMinimal = categories.length === 0;
+
+    // Only consider it minimal if ALL key fields are empty/default
+    return nameIsMinimal && teaserIsMinimal && descriptionIsMinimal && addressIsMinimal && categoriesIsMinimal;
+  };
+
+  // Note: Removed browser beforeunload prompt as it's annoying with our modal
+  // Only using our custom modal for navigation interception
+
+  // Intercept navigation attempts by catching clicks on links
+  useEffect(() => {
+    if (!isDraftThatMightNeedConfirmation) return;
+
+    const handleClick = (e) => {
+      // Check if the clicked element or its parent is a navigation link
+      const target = e.target.closest('a[href], button[data-navigate], [role="button"]');
+
+      if (target && hasMinimalContent()) {
+        // Check if it's a navigation element (has href or data-navigate)
+        const href = target.getAttribute('href');
+        const navigate = target.getAttribute('data-navigate');
+
+        if (href || navigate || target.textContent?.includes('POI List') || target.textContent?.includes('Dashboard')) {
+
+          e.preventDefault();
+          e.stopPropagation();
+
+          const targetPath = href || navigate || '/';
+
+          modals.openConfirmModal({
+            title: 'Unsaved Draft POI',
+            children: (
+              <Text size="sm">
+                You have a draft POI that doesn't contain much content yet (missing name, description, location, or categories).
+                <br /><br />
+                Would you like to delete this draft or keep it for later editing?
+              </Text>
+            ),
+            labels: { confirm: 'Delete Draft', cancel: 'Keep Draft' },
+            confirmProps: { color: 'red' },
+            onConfirm: async () => {
+              try {
+                await handleSilentDelete();
+                window.location.href = targetPath;
+              } catch (error) {
+                console.error('Error deleting draft:', error);
+                window.location.href = targetPath; // Navigate anyway if delete fails
+              }
+            },
+            onCancel: () => {
+              window.location.href = targetPath;
+            }
+          });
+        }
+      }
+    };
+
+    // Add the click listener to the document
+    document.addEventListener('click', handleClick, true);
+
+    return () => {
+      document.removeEventListener('click', handleClick, true);
+    };
+  }, [isDraftThatMightNeedConfirmation, hasMinimalContent]);
+
+  // Custom navigation function that checks for draft cleanup
+  const handleNavigation = (path) => {
+    const shouldPrompt = isDraftThatMightNeedConfirmation && hasMinimalContent();
+
+    if (shouldPrompt) {
+      modals.openConfirmModal({
+        title: 'Unsaved Draft POI',
+        children: (
+          <Text size="sm">
+            You have a draft POI that doesn't contain much content yet (missing name, description, location, or categories).
+            <br /><br />
+            Would you like to delete this draft or keep it for later editing?
+          </Text>
+        ),
+        labels: { confirm: 'Delete Draft', cancel: 'Keep Draft' },
+        confirmProps: { color: 'red' },
+        onConfirm: async () => {
+          try {
+            await handleSilentDelete();
+            navigate(path);
+          } catch (error) {
+            console.error('Error deleting draft:', error);
+            navigate(path); // Navigate anyway if delete fails
+          }
+        },
+        onCancel: () => navigate(path)
+      });
+    } else {
+      navigate(path);
+    }
+  };
 
   // Auto-create draft POI when user selects a POI type for new POI
   useEffect(() => {
@@ -474,6 +596,7 @@ export default function POIForm() {
               isEditing={isEditing}
               handleSubmit={handleSubmit}
               handleDelete={handleDelete}
+              handleNavigation={handleNavigation}
             />
           </form>
         </Stack>

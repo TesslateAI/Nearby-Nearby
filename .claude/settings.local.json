@@ -51,7 +51,11 @@
       "Bash(timeout 10 docker-compose logs -f frontend)",
       "Bash(timeout 5 docker-compose logs -f frontend)",
       "WebFetch(domain:nbnb.tesslate.com)",
-      "Bash(npm run lint)"
+      "Bash(npm run lint)",
+      "Bash(move:*)",
+      "Bash(docker-compose exec backend python:*)",
+      "Bash(docker-compose up:*)",
+      "Bash(docker-compose logs:*)"
     ],
     "deny": [],
     "ask": []

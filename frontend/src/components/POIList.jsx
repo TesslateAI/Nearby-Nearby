@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Table, Button, Group, Title, Anchor, Text, Paper, ActionIcon, Tooltip, Badge, UnstyledButton, Center, TextInput, Select, Stack } from '@mantine/core';
 import { Link, useNavigate } from 'react-router-dom';
 import { notifications } from '@mantine/notifications';
+import { modals } from '@mantine/modals';
 import { IconPencil, IconTrash, IconPlus, IconLink, IconChevronUp, IconChevronDown, IconSelector, IconSearch, IconX } from '@tabler/icons-react';
 import api from '../utils/api';
 import { useAuth } from '../utils/AuthContext';
@@ -59,28 +60,39 @@ function POIList() {
   }, []);
 
   const handleDelete = async (poiId) => {
-    if (window.confirm('Are you sure you want to delete this POI?')) {
-      try {
-        const response = await api.delete(`/pois/${poiId}`);
-        if (response.ok) {
+    modals.openConfirmModal({
+      title: 'Delete POI',
+      centered: true,
+      children: (
+        <Text size="sm">
+          Are you sure you want to delete this POI? This action cannot be undone.
+        </Text>
+      ),
+      labels: { confirm: 'Delete POI', cancel: 'Cancel' },
+      confirmProps: { color: 'red' },
+      onConfirm: async () => {
+        try {
+          const response = await api['delete'](`/pois/${poiId}`);
+          if (response.ok) {
+            notifications.show({
+              title: 'Success!',
+              message: 'POI deleted successfully!',
+              color: 'green',
+            });
+            fetchPois();
+          } else {
+            throw new Error('Failed to delete POI');
+          }
+        } catch (error) {
           notifications.show({
-            title: 'Success!',
-            message: 'POI deleted successfully!',
-            color: 'green',
+            title: 'Error',
+            message: 'Failed to delete POI.',
+            color: 'red',
           });
-          fetchPois();
-        } else {
-          throw new Error('Failed to delete POI');
+          console.error("Error deleting POI:", error);
         }
-      } catch (error) {
-        notifications.show({
-          title: 'Error',
-          message: 'Failed to delete POI.',
-          color: 'red',
-        });
-        console.error("Error deleting POI:", error);
       }
-    }
+    });
   };
 
   const handleRelationshipsModalClose = () => {
