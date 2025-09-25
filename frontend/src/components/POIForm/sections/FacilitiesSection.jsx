@@ -352,7 +352,7 @@ export function PublicAmenitiesSection({
                           toilets[index] = { ...toilets[index], photos: e.target.value };
                           form.setFieldValue('toilet_locations', toilets);
                         }}
-                        description="Save the POI first to enable image upload"
+                        description="Image upload will be available shortly..."
                       />
                     )}
                     <Button
@@ -425,7 +425,7 @@ export function PublicAmenitiesSection({
                   label="Toilet Photos"
                   placeholder="URLs to toilet photos (comma-separated)"
                   {...form.getInputProps('toilet_photos')}
-                  description="Save the POI first to enable image upload"
+                  description="Image upload will be available shortly..."
                 />
               )}
             </>
@@ -508,7 +508,7 @@ export function RentalsSection({
               label="Photos of Rental"
               placeholder="URLs to rental photos (comma-separated)"
               {...form.getInputProps('rental_photos')}
-              description="Save the POI first to enable image upload"
+              description="Image upload will be available shortly..."
             />
           )}
         </>

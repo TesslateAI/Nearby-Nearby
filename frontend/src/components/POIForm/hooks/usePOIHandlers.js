@@ -4,7 +4,7 @@ import { notifications } from '@mantine/notifications';
 import api from '../../../utils/api';
 import { emptyInitialValues } from '../constants/initialValues';
 
-export const usePOIHandlers = (id, isEditing, form) => {
+export const usePOIHandlers = (id, isEditing, form, setPoiId) => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
 
@@ -199,9 +199,6 @@ export const usePOIHandlers = (id, isEditing, form) => {
   const handleSubmit = async (values, publicationStatus = 'published') => {
     setLoading(true);
 
-    console.log('📝 Form submission started:', { isEditing, publicationStatus, id });
-    console.log('📋 Form values:', values);
-    console.log('🔍 Form errors:', form.errors);
 
     // Show loading notification
     const actionText = publicationStatus === 'draft' ?
@@ -258,14 +255,11 @@ export const usePOIHandlers = (id, isEditing, form) => {
     if (payload.poi_type !== 'TRAIL') delete payload.trail;
     if (payload.poi_type !== 'EVENT') delete payload.event;
 
-    console.log('📦 Final payload:', payload);
 
     try {
       let response;
       if (isEditing) {
-        console.log(`🔄 Updating POI ${id}...`);
         response = await api.put(`/pois/${id}`, payload);
-        console.log('✅ Update response:', response);
 
         notifications.update({
           id: loadingNotification,
@@ -281,9 +275,13 @@ export const usePOIHandlers = (id, isEditing, form) => {
         // Navigate to POI list
         navigate('/');
       } else {
-        console.log('➕ Creating new POI...');
         response = await api.post('/pois/', payload);
-        console.log('✅ Create response:', response);
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const createdPoi = await response.json();
 
         notifications.update({
           id: loadingNotification,
@@ -295,7 +293,7 @@ export const usePOIHandlers = (id, isEditing, form) => {
         });
 
         // For new POIs, navigate to the edit page so user can continue editing
-        const newPoiId = response.id;
+        const newPoiId = createdPoi.id;
         if (newPoiId) {
           navigate(`/poi/${newPoiId}/edit`);
         } else {
@@ -303,13 +301,11 @@ export const usePOIHandlers = (id, isEditing, form) => {
         }
       }
     } catch (error) {
-      console.error('❌ API Error:', error);
-      console.error('❌ Error details:', error.response || error.message);
+      console.error('API Error:', error);
 
       let errorMessage = 'An unknown error occurred';
       if (error.response) {
         errorMessage = `HTTP ${error.response.status}: ${error.response.data?.detail || error.response.statusText}`;
-        console.error('❌ Response data:', error.response.data);
       } else if (error.message) {
         errorMessage = error.message;
       }
@@ -324,6 +320,84 @@ export const usePOIHandlers = (id, isEditing, form) => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleAutoCreate = async () => {
+    // Create a minimal draft POI with default values
+    const poiType = form.values.poi_type || 'BUSINESS';
+    const minimalPOI = {
+      name: 'New POI',
+      teaser_paragraph: '',
+      poi_type: poiType,
+      listing_type: form.values.listing_type || 'free',
+      publication_status: 'draft',
+      status: 'active',
+      latitude: form.values.latitude || 0,
+      longitude: form.values.longitude || 0,
+      location: {
+        type: 'Point',
+        coordinates: [form.values.longitude || 0, form.values.latitude || 0]
+      },
+      category_ids: [],
+      is_verified: false,
+      is_disaster_hub: false
+    };
+
+    // Add required subtype data based on POI type
+    if (poiType === 'BUSINESS') {
+      minimalPOI.business = { price_range: '$' };
+    } else if (poiType === 'PARK') {
+      minimalPOI.park = { drone_usage_policy: '' };
+    } else if (poiType === 'TRAIL') {
+      minimalPOI.trail = {
+        length_text: '',
+        difficulty: null,
+        difficulty_description: null,
+        route_type: null,
+        trailhead_latitude: null,
+        trailhead_longitude: null,
+        trail_exit_latitude: null,
+        trail_exit_longitude: null
+      };
+    } else if (poiType === 'EVENT') {
+      minimalPOI.event = {
+        start_datetime: '',
+        end_datetime: null,
+        organizer_name: ''
+      };
+    }
+
+    try {
+      const response = await api.post('/pois/', minimalPOI);
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const createdPoi = await response.json();
+
+      if (createdPoi.id) {
+        // Update the form with the created POI's data
+        form.setFieldValue('name', 'New POI');
+        form.setFieldValue('publication_status', 'draft');
+
+        // Update the POI ID in the parent component
+        if (setPoiId) {
+          setPoiId(createdPoi.id);
+        }
+
+        return createdPoi.id;
+      }
+      return null;
+    } catch (error) {
+      console.error('Auto-create error:', error);
+      notifications.show({
+        title: 'Notice',
+        message: 'Form initialized without auto-save. Please fill and save manually.',
+        color: 'blue'
+      });
+      return null;
     }
   };
 
@@ -366,6 +440,7 @@ export const usePOIHandlers = (id, isEditing, form) => {
   return {
     loading,
     handleSubmit,
-    handleDelete
+    handleDelete,
+    handleAutoCreate
   };
 };

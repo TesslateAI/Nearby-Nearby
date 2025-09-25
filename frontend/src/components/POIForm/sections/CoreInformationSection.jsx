@@ -197,18 +197,18 @@ export function CoreInformationSection({
 
       {shouldUseImageUpload(id) ? (
         <FeaturedImageUpload
+          key={`featured-image-${id}`}
           poiId={id}
           isBusiness={isBusiness}
           isFreeListing={isFreeListing}
           form={form}
         />
       ) : (
-        <TextInput
-          label={isBusiness && isFreeListing ? "Logo" : "Featured Image"}
-          placeholder={isBusiness && isFreeListing ? "URL to business logo" : "URL to featured image"}
-          {...form.getInputProps('featured_image')}
-          description="Save the POI first to enable image upload"
-        />
+        <Alert color="blue" variant="light" key={`featured-placeholder-${id || 'new'}`}>
+          <Text size="sm">
+            {isBusiness && isFreeListing ? "Logo" : "Featured Image"} upload will be available shortly...
+          </Text>
+        </Alert>
       )}
     </Stack>
   );

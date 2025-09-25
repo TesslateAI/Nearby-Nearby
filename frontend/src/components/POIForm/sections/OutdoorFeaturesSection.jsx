@@ -230,7 +230,7 @@ export function PlaygroundSection({ form, id }) {
               label="Playground Photos"
               placeholder="URLs to playground photos (comma-separated)"
               {...form.getInputProps('playground_photos')}
-              description="Save the POI first to enable image upload"
+              description="Image upload will be available shortly..."
             />
           )}
         </>

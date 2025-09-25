@@ -108,7 +108,7 @@ export function MenuBookingSection({
           label="Menu Photos"
           placeholder="URLs to menu photos (comma-separated)"
           {...form.getInputProps('menu_photos')}
-          description="Save the POI first to enable image upload"
+          description="Image upload will be available shortly..."
         />
       )}
 
@@ -216,7 +216,7 @@ export function BusinessGallerySection({
           label="Gallery Photos"
           placeholder="URLs to extra photos (comma-separated)"
           {...form.getInputProps('gallery_photos')}
-          description="Save the POI first to enable image upload"
+          description="Image upload will be available shortly..."
         />
       )}
     </Stack>
@@ -244,7 +244,7 @@ export function BusinessEntrySection({
           label="Entry Photo"
           placeholder="URL to photo of business entrance"
           {...form.getInputProps('business_entry_photo')}
-          description="Save the POI first to enable image upload"
+          description="Image upload will be available shortly..."
         />
       )}
     </Stack>

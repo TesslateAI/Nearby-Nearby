@@ -121,7 +121,7 @@ export function LocationSection({
               label="Park Entry Photo"
               placeholder="URL to photo of park entrance"
               {...form.getInputProps('park_entry_photo')}
-              description="Save the POI first to enable image upload"
+              description="Image upload will be available shortly..."
             />
           )}
         </>
@@ -159,7 +159,7 @@ export function LocationSection({
               label="Event Entry Photo"
               placeholder="URL to photo of event entrance"
               {...form.getInputProps('event.event_entry_photo')}
-              description="Save the POI first to enable image upload"
+              description="Image upload will be available shortly..."
             />
           )}
         </>
@@ -285,7 +285,7 @@ export function LocationSection({
               label="Parking Lot Photo"
               placeholder="URL to photo of parking area"
               {...form.getInputProps('parking_lot_photo')}
-              description="Save the POI first to enable image upload"
+              description="Image upload will be available shortly..."
             />
           )}
         </>

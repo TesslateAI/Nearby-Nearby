@@ -130,7 +130,7 @@ export function TrailDetailsSection({ form, id }) {
           label="Trailhead Photo"
           placeholder="URL to photo of trailhead entrance"
           {...form.getInputProps('trail.trailhead_photo')}
-          description="Save the POI first to enable image upload"
+          description="Image upload will be available shortly..."
         />
       )}
 
@@ -156,7 +156,7 @@ export function TrailDetailsSection({ form, id }) {
           label="Trail Exit Photo"
           placeholder="URL to photo of trail exit"
           {...form.getInputProps('trail.trail_exit_photo')}
-          description="Save the POI first to enable image upload"
+          description="Image upload will be available shortly..."
         />
       )}
     </Stack>

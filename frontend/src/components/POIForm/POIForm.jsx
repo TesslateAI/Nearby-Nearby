@@ -1,5 +1,5 @@
-import { useState, lazy, Suspense } from 'react';
-import { useParams } from 'react-router-dom';
+import { useState, lazy, Suspense, useEffect, useRef } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import {
   Container, Stack, Box, Title, Text, Accordion, Group, Badge,
   Alert, Button, Affix, Transition, rem
@@ -59,14 +59,48 @@ const LocationMap = lazy(() => import('../LocationMap'));
 import { LocationMapSkeleton } from '../LocationMap';
 
 export default function POIForm() {
-  const { id } = useParams();
-  const isEditing = Boolean(id);
+  const { id: paramId } = useParams();
+  const navigate = useNavigate();
+  const [poiId, setPoiId] = useState(paramId);
+  const [isAutoCreating, setIsAutoCreating] = useState(false);
+  const autoCreateInitiated = useRef(false);
+  const isEditing = Boolean(poiId);
   const [scroll, scrollTo] = useWindowScroll();
   const [renderError, setRenderError] = useState(null);
 
   // Custom hooks for form management
   const { form, isBusiness, isPark, isTrail, isEvent, isPaidListing, isFreeListing } = usePOIForm();
-  const { loading, handleSubmit, handleDelete } = usePOIHandlers(id, isEditing, form);
+  const { loading, handleSubmit, handleDelete, handleAutoCreate } = usePOIHandlers(poiId, isEditing, form, setPoiId);
+
+  // Auto-create draft POI when user selects a POI type for new POI
+  useEffect(() => {
+    if (!paramId && !poiId && !autoCreateInitiated.current && form.values.poi_type && form.values.poi_type !== '') {
+      autoCreateInitiated.current = true;
+      setIsAutoCreating(true);
+
+      // Immediately call handleAutoCreate instead of using setTimeout to avoid race conditions
+      const performAutoCreate = async () => {
+        try {
+          const draftId = await handleAutoCreate();
+          if (draftId) {
+            setPoiId(draftId);
+            // Update URL to reflect the new POI ID without triggering a full reload
+            window.history.replaceState({}, '', `/poi/${draftId}/edit`);
+          }
+        } catch (error) {
+          console.error('Failed to auto-create draft POI:', error);
+        } finally {
+          setIsAutoCreating(false);
+        }
+      };
+
+      performAutoCreate();
+    }
+    // If we have a poiId or paramId, make sure auto-creating is false
+    else if ((paramId || poiId) && isAutoCreating) {
+      setIsAutoCreating(false);
+    }
+  }, [paramId, poiId, form.values.poi_type, handleAutoCreate, isAutoCreating]);
 
   // Early return for render errors
   if (renderError) {
@@ -88,9 +122,14 @@ export default function POIForm() {
         <Stack spacing="xl" pb={100}>
           <Box>
             <Title order={2} c="deep-purple.7" mb="md">
-              {isEditing ? `Editing: ${form.values.name}` : 'Create New Point of Interest'}
+              {isEditing ? `Editing: ${form.values.name || 'New POI'}` : 'Create New Point of Interest'}
             </Title>
             <Text size="sm" c="dimmed">Fields marked with * are required</Text>
+            {isAutoCreating && (
+              <Alert color="blue" mt="sm">
+                <Text size="sm">Initializing form with image upload capabilities...</Text>
+              </Alert>
+            )}
           </Box>
 
           <form onSubmit={form.onSubmit(handleSubmit)}>
@@ -116,7 +155,7 @@ export default function POIForm() {
                     isEvent={isEvent}
                     isPaidListing={isPaidListing}
                     isFreeListing={isFreeListing}
-                    id={id}
+                    id={poiId}
                   />
                 </Accordion.Panel>
               </Accordion.Item>
@@ -152,7 +191,7 @@ export default function POIForm() {
                     isPark={isPark}
                     isEvent={isEvent}
                     isFreeListing={isFreeListing}
-                    id={id}
+                    id={poiId}
                   />
                 </Accordion.Panel>
               </Accordion.Item>
@@ -223,7 +262,7 @@ export default function POIForm() {
                     <BusinessDetailsSection
                       form={form}
                       isFreeListing={isFreeListing}
-                      id={id}
+                      id={poiId}
                     />
                   </Accordion.Panel>
                 </Accordion.Item>
@@ -236,7 +275,7 @@ export default function POIForm() {
                     <Text fw={600}>Menu & Online Booking</Text>
                   </Accordion.Control>
                   <Accordion.Panel>
-                    <MenuBookingSection form={form} id={id} />
+                    <MenuBookingSection form={form} id={poiId} />
                   </Accordion.Panel>
                 </Accordion.Item>
               )}
@@ -248,7 +287,7 @@ export default function POIForm() {
                     <Text fw={600}>Gallery</Text>
                   </Accordion.Control>
                   <Accordion.Panel>
-                    <BusinessGallerySection form={form} id={id} />
+                    <BusinessGallerySection form={form} id={poiId} />
                   </Accordion.Panel>
                 </Accordion.Item>
               )}
@@ -260,7 +299,7 @@ export default function POIForm() {
                     <Text fw={600}>Business Entry Details</Text>
                   </Accordion.Control>
                   <Accordion.Panel>
-                    <BusinessEntrySection form={form} id={id} />
+                    <BusinessEntrySection form={form} id={poiId} />
                   </Accordion.Panel>
                 </Accordion.Item>
               )}
@@ -279,7 +318,7 @@ export default function POIForm() {
                       isTrail={isTrail}
                       isEvent={isEvent}
                       isFreeListing={isFreeListing}
-                      id={id}
+                      id={poiId}
                     />
                   </Accordion.Panel>
                 </Accordion.Item>
@@ -292,7 +331,7 @@ export default function POIForm() {
                     <Text fw={600}>{isPark ? 'Public Restrooms' : 'Public Amenities'}</Text>
                   </Accordion.Control>
                   <Accordion.Panel>
-                    <PublicAmenitiesSection form={form} isPark={isPark} id={id} />
+                    <PublicAmenitiesSection form={form} isPark={isPark} id={poiId} />
                   </Accordion.Panel>
                 </Accordion.Item>
               )}
@@ -304,7 +343,7 @@ export default function POIForm() {
                     <Text fw={600}>Rentals</Text>
                   </Accordion.Control>
                   <Accordion.Panel>
-                    <RentalsSection form={form} id={id} />
+                    <RentalsSection form={form} id={poiId} />
                   </Accordion.Panel>
                 </Accordion.Item>
               )}
@@ -316,7 +355,7 @@ export default function POIForm() {
                     <Text fw={600}>Event Vendors</Text>
                   </Accordion.Control>
                   <Accordion.Panel>
-                    <EventVendorsSection form={form} id={id} />
+                    <EventVendorsSection form={form} id={poiId} />
                   </Accordion.Panel>
                 </Accordion.Item>
               )}
@@ -338,7 +377,7 @@ export default function POIForm() {
                     <Text fw={600}>Playground Information</Text>
                   </Accordion.Control>
                   <Accordion.Panel>
-                    <PlaygroundSection form={form} id={id} />
+                    <PlaygroundSection form={form} id={poiId} />
                   </Accordion.Panel>
                 </Accordion.Item>
               )}
@@ -374,7 +413,7 @@ export default function POIForm() {
                     <Text fw={600}>Trail Details</Text>
                   </Accordion.Control>
                   <Accordion.Panel>
-                    <TrailDetailsSection form={form} id={id} />
+                    <TrailDetailsSection form={form} id={poiId} />
                   </Accordion.Panel>
                 </Accordion.Item>
               )}

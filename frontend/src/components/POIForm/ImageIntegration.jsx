@@ -228,7 +228,7 @@ import {
     label={isBusiness && isFreeListing ? "Logo" : "Featured Image"}
     placeholder={isBusiness && isFreeListing ? "URL to business logo" : "URL to featured image"}
     {...form.getInputProps('featured_image')}
-    description="Save the POI first to enable image upload"
+    description="Image upload will be available shortly..."
   />
 )}
 
@@ -240,7 +240,7 @@ import {
     label="Gallery Photos"
     placeholder="URLs to extra photos (comma-separated)"
     {...form.getInputProps('gallery_photos')}
-    description="Save the POI first to enable image upload"
+    description="Image upload will be available shortly..."
   />
 )}
 */
