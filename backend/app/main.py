@@ -36,8 +36,8 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE"],  # Restrict methods
-    allow_headers=["Authorization", "Content-Type"],  # Restrict headers
+    allow_methods=["*"] ,
+    allow_headers=["*"],
 )
 
 app.include_router(pois.router, prefix="/api", tags=["Points of Interest"])
