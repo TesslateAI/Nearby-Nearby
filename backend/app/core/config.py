@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     
     # Security settings
     SECRET_KEY: str
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 360
     ENVIRONMENT: str = "development"
     
     # CORS and networking
