@@ -1,4 +1,52 @@
 /* src/animations.css */
+
+/* Performance optimizations for smooth scrolling */
+* {
+  scroll-behavior: smooth;
+}
+
+/* Optimize scrolling performance */
+body,
+html {
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* GPU acceleration for scrollable containers */
+.mantine-Container-root,
+.mantine-Accordion-root,
+.mantine-Accordion-panel {
+  will-change: transform;
+  transform: translateZ(0);
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Optimize form elements */
+.mantine-TextInput-root,
+.mantine-Textarea-root,
+.mantine-Select-root {
+  contain: layout style;
+}
+
+/* Optimize rich text editors */
+.ProseMirror {
+  contain: layout style;
+  will-change: contents;
+}
+
+/* Prevent map zoom buttons from triggering form submission */
+.leaflet-control-zoom a,
+.leaflet-control-zoom button {
+  pointer-events: auto !important;
+}
+
+/* Ensure map controls don't interfere with forms */
+.leaflet-container {
+  isolation: isolate;
+  contain: layout;
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;

@@ -271,7 +271,15 @@ export default function POIForm() {
             )}
           </Box>
 
-          <form onSubmit={form.onSubmit(handleSubmit)}>
+          <form onSubmit={(e) => {
+            // Prevent form submission from map interactions
+            const clickedElement = e.nativeEvent.submitter;
+            if (clickedElement && clickedElement.closest('.leaflet-control-zoom')) {
+              e.preventDefault();
+              return false;
+            }
+            form.onSubmit(handleSubmit)(e);
+          }}>
             <Accordion
               defaultValue={['core', 'categories', 'location', 'hours']}
               multiple

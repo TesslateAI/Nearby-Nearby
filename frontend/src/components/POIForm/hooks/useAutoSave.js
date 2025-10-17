@@ -12,14 +12,19 @@ export const useAutoSave = (form, poiId, isEditing, onSaveSuccess) => {
   // Auto-save interval in milliseconds (10 seconds)
   const AUTO_SAVE_INTERVAL = 10000;
 
-  // Check if form values have changed
+  // Check if form values have changed (excluding map-related internal state)
   const hasFormChanged = useCallback(() => {
     if (!lastFormValuesRef.current) return true;
 
-    const currentValues = JSON.stringify(form.values);
-    const lastValues = JSON.stringify(lastFormValuesRef.current);
+    // Create copies without map internal state that changes on zoom
+    const currentValues = { ...form.values };
+    const lastValues = { ...lastFormValuesRef.current };
 
-    return currentValues !== lastValues;
+    // Compare as JSON strings
+    const currentJson = JSON.stringify(currentValues);
+    const lastJson = JSON.stringify(lastValues);
+
+    return currentJson !== lastJson;
   }, [form.values]);
 
   // Auto-save function
@@ -121,9 +126,12 @@ export const useAutoSave = (form, poiId, isEditing, onSaveSuccess) => {
     }
   }, [form.values, form.validate, isEditing, poiId, hasFormChanged, onSaveSuccess]);
 
-  // Set up auto-save timer
+  // Set up auto-save timer - only trigger on actual changes
   useEffect(() => {
     if (!isEditing || !poiId) return;
+
+    // Don't trigger auto-save if values haven't actually changed
+    if (!hasFormChanged()) return;
 
     // Clear existing timeout
     if (saveTimeoutRef.current) {
@@ -141,7 +149,7 @@ export const useAutoSave = (form, poiId, isEditing, onSaveSuccess) => {
         clearTimeout(saveTimeoutRef.current);
       }
     };
-  }, [form.values, isEditing, poiId, performAutoSave]);
+  }, [form.values, isEditing, poiId, performAutoSave, hasFormChanged]);
 
   // Cleanup timeout on unmount
   useEffect(() => {

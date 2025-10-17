@@ -6,7 +6,8 @@ import LinkExtension from '@tiptap/extension-link';
 import CharacterCount from '@tiptap/extension-character-count';
 import DOMPurify from 'dompurify';
 import { forwardRef, useCallback, useEffect } from 'react';
-import { Text, Box, Button, Group, Tooltip } from '@mantine/core';
+import { Text, Box, Button, Group, Tooltip, Menu } from '@mantine/core';
+import { IconChevronDown } from '@tabler/icons-react';
 
 const CustomRichTextEditor = forwardRef(({
   value = '',
@@ -64,9 +65,15 @@ const CustomRichTextEditor = forwardRef(({
   });
 
   // Update editor content when value prop changes (using useEffect to avoid render warnings)
+  // Debounced to prevent excessive updates during typing
   useEffect(() => {
-    if (editor && editor.getHTML() !== (value || '')) {
-      editor.commands.setContent(value || '');
+    if (editor && value !== undefined && editor.getHTML() !== value) {
+      // Use queueMicrotask to defer the update and improve performance
+      queueMicrotask(() => {
+        if (editor && !editor.isDestroyed) {
+          editor.commands.setContent(value || '', false);
+        }
+      });
     }
   }, [editor, value]);
 
@@ -163,8 +170,46 @@ const CustomRichTextEditor = forwardRef(({
           backgroundColor: 'var(--mantine-color-gray-0)',
           display: 'flex',
           alignItems: 'center',
-          gap: '4px'
+          gap: '4px',
+          flexWrap: 'wrap'
         }}>
+          {/* Heading Dropdown */}
+          <Menu shadow="md" width={120}>
+            <Menu.Target>
+              <Button
+                size="compact-xs"
+                variant="subtle"
+                rightSection={<IconChevronDown size={12} />}
+                style={{
+                  height: '24px',
+                  fontSize: '11px',
+                  minWidth: '60px'
+                }}
+              >
+                {editor?.isActive('heading', { level: 1 }) ? 'H1' :
+                 editor?.isActive('heading', { level: 2 }) ? 'H2' :
+                 editor?.isActive('heading', { level: 3 }) ? 'H3' : 'Normal'}
+              </Button>
+            </Menu.Target>
+            <Menu.Dropdown>
+              <Menu.Item onClick={() => editor?.chain().focus().setParagraph().run()}>
+                Normal
+              </Menu.Item>
+              <Menu.Item onClick={() => editor?.chain().focus().toggleHeading({ level: 1 }).run()}>
+                Heading 1
+              </Menu.Item>
+              <Menu.Item onClick={() => editor?.chain().focus().toggleHeading({ level: 2 }).run()}>
+                Heading 2
+              </Menu.Item>
+              <Menu.Item onClick={() => editor?.chain().focus().toggleHeading({ level: 3 }).run()}>
+                Heading 3
+              </Menu.Item>
+            </Menu.Dropdown>
+          </Menu>
+
+          <div style={{ width: '1px', height: '16px', backgroundColor: 'var(--mantine-color-gray-4)', margin: '0 4px' }} />
+
+          {/* Text Formatting */}
           <Tooltip label="Bold (Ctrl+B)" withArrow>
             <Button
               size="compact-xs"
@@ -187,20 +232,11 @@ const CustomRichTextEditor = forwardRef(({
               variant={editor?.isActive('italic') ? 'light' : 'subtle'}
               onClick={() => editor?.chain().focus().toggleItalic().run()}
               style={{
-                minWidth: '28px !important',
-                width: '28px !important',
-                height: '24px !important',
-                fontStyle: 'italic !important',
-                fontSize: '14px !important',
-                fontWeight: 'normal !important',
-                color: 'var(--mantine-color-dark-7) !important',
-                display: 'flex !important',
-                alignItems: 'center !important',
-                justifyContent: 'center !important',
-                padding: '0 !important',
-                overflow: 'visible !important',
-                textOverflow: 'visible !important',
-                whiteSpace: 'nowrap !important'
+                minWidth: '24px',
+                height: '24px',
+                fontStyle: 'italic',
+                fontSize: '14px',
+                color: 'var(--mantine-color-dark-7)'
               }}
             >
               I
@@ -222,11 +258,46 @@ const CustomRichTextEditor = forwardRef(({
               U
             </Button>
           </Tooltip>
+
           <div style={{ width: '1px', height: '16px', backgroundColor: 'var(--mantine-color-gray-4)', margin: '0 4px' }} />
+
+          {/* Lists */}
+          <Tooltip label="Bullet List" withArrow>
+            <Button
+              size="compact-xs"
+              variant={editor?.isActive('bulletList') ? 'light' : 'subtle'}
+              onClick={() => editor?.chain().focus().toggleBulletList().run()}
+              style={{
+                height: '24px',
+                fontSize: '14px',
+                minWidth: '24px'
+              }}
+            >
+              •
+            </Button>
+          </Tooltip>
+          <Tooltip label="Numbered List" withArrow>
+            <Button
+              size="compact-xs"
+              variant={editor?.isActive('orderedList') ? 'light' : 'subtle'}
+              onClick={() => editor?.chain().focus().toggleOrderedList().run()}
+              style={{
+                height: '24px',
+                fontSize: '11px',
+                minWidth: '24px'
+              }}
+            >
+              1.
+            </Button>
+          </Tooltip>
+
+          <div style={{ width: '1px', height: '16px', backgroundColor: 'var(--mantine-color-gray-4)', margin: '0 4px' }} />
+
+          {/* Links */}
           <Tooltip label="Add Link (Ctrl+K)" withArrow>
             <Button
               size="compact-xs"
-              variant="subtle"
+              variant={editor?.isActive('link') ? 'light' : 'subtle'}
               onClick={() => {
                 const url = window.prompt('Enter URL:');
                 if (url) {
@@ -247,6 +318,7 @@ const CustomRichTextEditor = forwardRef(({
               size="compact-xs"
               variant="subtle"
               onClick={() => editor?.chain().focus().unsetLink().run()}
+              disabled={!editor?.isActive('link')}
               style={{
                 height: '24px',
                 fontSize: '11px',

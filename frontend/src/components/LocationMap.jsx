@@ -1,37 +1,29 @@
-import { useEffect, memo } from 'react';
+import { memo } from 'react';
 import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from 'react-leaflet';
-import { Box, Skeleton } from '@mantine/core';
+import { Box, Skeleton, Paper, Text, Group } from '@mantine/core';
 
 // Map helper components
-function ChangeView({ center, zoom }) {
-  const map = useMap();
-  useEffect(() => { 
-    map.setView(center, zoom); 
-  }, [center, zoom, map]);
-  return null;
-}
-
 function DraggableMarker({ position, onPositionChange }) {
   const map = useMap();
-  
-  useMapEvents({ 
-    click(e) { 
-      onPositionChange(e.latlng); 
-      map.flyTo(e.latlng, map.getZoom()); 
-    } 
+
+  useMapEvents({
+    click(e) {
+      onPositionChange(e.latlng);
+      // Don't recenter the map - let user keep their current view
+    }
   });
-  
-  const handleDragEnd = (event) => { 
-    if (event.target != null) { 
-      onPositionChange(event.target.getLatLng()); 
-    } 
+
+  const handleDragEnd = (event) => {
+    if (event.target != null) {
+      onPositionChange(event.target.getLatLng());
+    }
   };
-  
+
   return (
-    <Marker 
-      draggable={true} 
-      eventHandlers={{ dragend: handleDragEnd }} 
-      position={position} 
+    <Marker
+      draggable={true}
+      eventHandlers={{ dragend: handleDragEnd }}
+      position={position}
     />
   );
 }
@@ -40,31 +32,78 @@ function DraggableMarker({ position, onPositionChange }) {
 const LocationMap = memo(({ latitude, longitude, onLocationChange }) => {
   const currentPosition = [latitude || 35.72, longitude || -79.17];
 
+  const handleMapInteraction = (e) => {
+    // Stop all events from map from bubbling to parent form
+    // This prevents zoom/pan/click from triggering form changes
+    e.stopPropagation();
+    // Prevent default to stop form submission
+    if (e.target.closest('.leaflet-control-zoom') || e.target.tagName === 'A') {
+      e.preventDefault();
+    }
+  };
+
   return (
-    <Box h={400}>
-      <MapContainer 
-        center={currentPosition} 
-        zoom={13} 
-        style={{ height: '100%', width: '100%' }}
-        scrollWheelZoom={false}
+    <Box
+      onSubmit={(e) => {
+        // Absolutely prevent any form submission from map
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+      }}
+    >
+      <Box
+        h={400}
+        onMouseDown={handleMapInteraction}
+        onClick={handleMapInteraction}
+        onPointerDown={handleMapInteraction}
+        onTouchStart={handleMapInteraction}
+        onSubmit={handleMapInteraction}
+        style={{
+          willChange: 'transform',
+          transform: 'translateZ(0)',
+          isolation: 'isolate'
+        }}
       >
-        <TileLayer 
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        />
-        <DraggableMarker
-          position={currentPosition}
-          onPositionChange={(latlng) => {
-            onLocationChange(latlng.lat, latlng.lng);
-          }}
-        />
-        <ChangeView center={currentPosition} zoom={13} />
-      </MapContainer>
+        <MapContainer
+          center={currentPosition}
+          zoom={13}
+          style={{ height: '100%', width: '100%' }}
+          scrollWheelZoom={false}
+          zoomControl={true}
+          preferCanvas={true}
+        >
+          <TileLayer
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          />
+          <DraggableMarker
+            position={currentPosition}
+            onPositionChange={(latlng) => {
+              onLocationChange(latlng.lat, latlng.lng);
+            }}
+          />
+        </MapContainer>
+      </Box>
+
+      {/* Coordinate Display */}
+      <Paper withBorder p="xs" mt="xs" bg="gray.0">
+        <Group gap="md">
+          <Text size="sm" fw={500}>
+            Selected Coordinates:
+          </Text>
+          <Text size="sm" c="dimmed">
+            Latitude: <Text component="span" fw={600} c="dark">{latitude ? latitude.toFixed(6) : 'Not set'}</Text>
+          </Text>
+          <Text size="sm" c="dimmed">
+            Longitude: <Text component="span" fw={600} c="dark">{longitude ? longitude.toFixed(6) : 'Not set'}</Text>
+          </Text>
+        </Group>
+      </Paper>
     </Box>
   );
 }, (prevProps, nextProps) => {
   // Only re-render if coordinates actually changed
-  return prevProps.latitude === nextProps.latitude && 
+  return prevProps.latitude === nextProps.latitude &&
          prevProps.longitude === nextProps.longitude;
 });
 

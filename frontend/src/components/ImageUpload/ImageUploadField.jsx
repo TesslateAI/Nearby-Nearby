@@ -89,9 +89,22 @@ export function ImageUploadField({
         filteredImages = filteredImages.filter(img => img.image_context === context);
       }
 
-      setImages(filteredImages);
+      // Remove duplicate images - keep only unique original uploads
+      // Backend might return multiple variants (original, medium, thumbnail)
+      const uniqueImages = filteredImages.reduce((acc, img) => {
+        const existingImg = acc.find(i =>
+          i.original_filename === img.original_filename &&
+          i.upload_timestamp === img.upload_timestamp
+        );
+        if (!existingImg) {
+          acc.push(img);
+        }
+        return acc;
+      }, []);
+
+      setImages(uniqueImages);
       if (onImagesChange) {
-        onImagesChange(filteredImages);
+        onImagesChange(uniqueImages);
       }
     } catch (error) {
       console.error('Error loading images:', error);
@@ -270,17 +283,25 @@ export function ImageUploadField({
     <Stack>
       <Group justify="space-between" align="flex-start">
         <div>
-          <Text fw={500}>{displayLabel}</Text>
+          <Text fw={500} size="lg">{displayLabel}</Text>
           {description && (
-            <Text size="sm" c="dimmed">{description}</Text>
+            <Text size="sm" c="dimmed" mt={4}>{description}</Text>
           )}
-          <Group mt="xs" gap="xs">
-            <Badge size="sm" variant="light">
-              {images.length} / {maxCount}
+          <Text size="xs" c="dimmed" mt={4}>
+            Each uploaded image is automatically optimized into 3 sizes (original, medium, thumbnail) for best performance
+          </Text>
+          <Group mt="sm" gap="xs">
+            <Badge size="md" variant="light" color={images.length >= maxCount ? 'green' : 'blue'}>
+              {images.length} of {maxCount} image{maxCount > 1 ? 's' : ''} uploaded
             </Badge>
-            <Badge size="sm" variant="light" color="gray">
+            <Badge size="md" variant="light" color="gray">
               Max {maxSizeMB}MB per file
             </Badge>
+            {maxCount > 1 && (
+              <Badge size="md" variant="outline" color="grape">
+                {maxCount - images.length} remaining
+              </Badge>
+            )}
           </Group>
         </div>
       </Group>

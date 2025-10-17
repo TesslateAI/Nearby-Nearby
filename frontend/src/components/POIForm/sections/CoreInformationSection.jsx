@@ -59,8 +59,7 @@ export function CoreInformationSection({
 
       <RichTextEditor
         label="Teaser Paragraph"
-        placeholder="Brief 120 character description"
-        maxLength={120}
+        placeholder="Brief description"
         value={form.values.teaser_paragraph || ''}
         onChange={(html) => form.setFieldValue('teaser_paragraph', html)}
         error={form.errors.teaser_paragraph}
@@ -70,8 +69,7 @@ export function CoreInformationSection({
       {isBusiness && form.values.listing_type === 'free' ? (
         <RichTextEditor
           label="Short Description"
-          placeholder="Brief description (max 250 characters)"
-          maxLength={250}
+          placeholder="Brief description"
           value={form.values.description_short || ''}
           onChange={(html) => form.setFieldValue('description_short', html)}
           error={form.errors.description_short}
