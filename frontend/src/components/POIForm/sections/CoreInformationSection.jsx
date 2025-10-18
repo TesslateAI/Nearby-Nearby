@@ -62,6 +62,7 @@ export const CoreInformationSection = React.memo(function CoreInformationSection
         value={form.values.teaser_paragraph || ''}
         onChange={(html) => form.setFieldValue('teaser_paragraph', html)}
         error={form.errors.teaser_paragraph}
+        showCharCount={true}
         minRows={2}
       />
 

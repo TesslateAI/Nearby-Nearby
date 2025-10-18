@@ -1,19 +1,22 @@
 // Constants for POI system
 
 // Ideal For Key Box options (simplified list for free listings)
+// NOTE: These values MUST match the corresponding values in IDEAL_FOR_OPTIONS
+// so that Key Ideal For selections automatically select the corresponding Ideal For option
 export const IDEAL_FOR_KEY_OPTIONS = [
   'Casual + Welcoming',
   'Formal + Refined',
   'Loud + Lively',
   'Quiet + Reflective',
-  'Adult Only (18+)',
+  'Ages 18+',  // Changed from 'Adult Only (18+)' to match IDEAL_FOR_OPTIONS
+  'Ages 21+',  // Added to match IDEAL_FOR_OPTIONS
   'All Ages',
-  'Family Friendly',
-  'Golden Generation (55+)',
-  'PreK',
-  'School Age',
-  'Teens',
-  'Youth'
+  'Families',  // Changed from 'Family Friendly' to match IDEAL_FOR_OPTIONS
+  'Golden Years Ages 55+',  // Changed from 'Golden Generation (55+)' to match IDEAL_FOR_OPTIONS
+  'PreK',  // Note: Does NOT auto-select because users need to choose WITH or WITHOUT adult
+  'School Age',  // Note: Does NOT auto-select because users need to choose WITH or WITHOUT adult
+  'Teens',  // Note: Does NOT auto-select because users need to choose WITH or WITHOUT adult
+  'Youth'  // Note: Does NOT auto-select because users need to choose WITH or WITHOUT adult
 ];
 
 // Parking options

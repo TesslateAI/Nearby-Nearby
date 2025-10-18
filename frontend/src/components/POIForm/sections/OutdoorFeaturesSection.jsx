@@ -5,7 +5,7 @@ import {
 import RichTextEditor from '../../RichTextEditor';
 import { getCheckboxGroupProps } from '../constants/helpers';
 import {
-  NATURAL_FEATURES, OUTDOOR_TYPES, THINGS_TO_DO, HUNTING_FISHING_OPTIONS,
+  NATURAL_FEATURES, OUTDOOR_TYPES, HUNTING_FISHING_OPTIONS,
   FISHING_OPTIONS, HUNTING_TYPES, FISHING_TYPES, LICENSE_TYPES,
   PLAYGROUND_TYPES, PLAYGROUND_SURFACES
 } from '../../../utils/outdoorConstants';
@@ -32,15 +32,6 @@ export const OutdoorFeaturesSection = React.memo(function OutdoorFeaturesSection
         <SimpleGrid cols={{ base: 2, sm: 3 }}>
           {OUTDOOR_TYPES.map(type => (
             <Checkbox key={type} value={type} label={type} />
-          ))}
-        </SimpleGrid>
-      </Checkbox.Group>
-
-      <Divider my="md" label="Things to Do" />
-      <Checkbox.Group {...getCheckboxGroupProps(form, 'things_to_do')}>
-        <SimpleGrid cols={{ base: 2, sm: 3 }}>
-          {THINGS_TO_DO.map(activity => (
-            <Checkbox key={activity} value={activity} label={activity} />
           ))}
         </SimpleGrid>
       </Checkbox.Group>

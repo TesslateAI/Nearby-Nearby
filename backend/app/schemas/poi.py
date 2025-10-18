@@ -144,7 +144,7 @@ class PointOfInterestBase(BaseModel):
     name: str
     description_long: Optional[str] = None
     description_short: Optional[str] = None  # Business free listings only (200 char limit)
-    teaser_paragraph: Optional[str] = Field(None, max_length=120)  # All POI types (120 char limit)
+    teaser_paragraph: Optional[str] = None  # All POI types (shows character count but no limit)
     
     # Listing type for all POIs
     listing_type: LISTING_TYPES = 'free'
@@ -358,7 +358,7 @@ class PointOfInterestUpdate(BaseModel):
     name: Optional[str] = None
     description_long: Optional[str] = None
     description_short: Optional[str] = None
-    teaser_paragraph: Optional[str] = Field(None, max_length=120)
+    teaser_paragraph: Optional[str] = None
     listing_type: Optional[LISTING_TYPES] = None
     cost: Optional[str] = None
     pricing_details: Optional[str] = None

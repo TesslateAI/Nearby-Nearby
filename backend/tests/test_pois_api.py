@@ -148,6 +148,113 @@ def test_create_poi_with_amenities(client: TestClient, db_session: Session):
     assert data["amenities"]["payment_methods"] == ["Cash", "Credit Card"]
     assert data["amenities"]["ideal_for"] == ["Families", "Couples"]
 
+def test_ideal_for_field_persistence(client: TestClient, db_session: Session):
+    """
+    Tests that ideal_for field (Age Groups, Social Settings, Local & Special,
+    Special Needs, Youth w/ & w/o Adult) persists correctly.
+    """
+    # Test data with all ideal_for groups
+    ideal_for_data = [
+        # Atmosphere
+        "Casual + Welcoming",
+        "Formal + Refined",
+        "Loud + Lively",
+        "Quiet + Reflective",
+        # Age Groups
+        "All Ages",
+        "Families",
+        "For the Kids",
+        "Pet Friendly",
+        "Ages 18+",
+        "Ages 21+",
+        "Golden Years Ages 55+",
+        # Social Settings
+        "Date Night - Romance",
+        "Girls Night - Hanging out with Girlfriends",
+        "Guys Night - Hanging out with Guys",
+        "Large Groups 10+",
+        # Local & Special
+        "Local Artists",
+        "Locally Sourced Ingredients",
+        "Budget Friendly",
+        "Eco Friendly",
+        "Luxury",
+        "Night Owls Open Late (past 10pm)",
+        "Reservations",
+        # Special Needs Adult
+        "Special Needs Adult (18+)",
+        "ADD Attention-Deficit-Disorder",
+        "ADHD Attention-Deficit-Hyperactivity Disorder",
+        "Autism",
+        "Wheelchair Friendly",
+        # Youth WITH Adult
+        "Youth WITH Adult - All",
+        "Youth WITH Adult - Toddler",
+        "Youth WITH Adult - Pre K",
+        "Youth WITH Adult - Elementary School (Age 5yrs-10yrs)",
+        # Youth WITHOUT Adult
+        "Youth WITHOUT Adult - All",
+        "Youth WITHOUT Adult - Middle School (Age 10yrs-14yrs)",
+        "Youth WITHOUT Adult - High School (Age 14yrs-18yrs)"
+    ]
+
+    ideal_for_key_data = [
+        "Casual + Welcoming",
+        "All Ages",
+        "Family Friendly"
+    ]
+
+    # Create a Business POI with ideal_for data
+    poi_payload = {
+        "name": "Test Business with Ideal For",
+        "poi_type": "BUSINESS",
+        "listing_type": "paid",
+        "location": {"type": "Point", "coordinates": [-75.5, 35.8]},
+        "business": {
+            "price_range": "$$$"
+        },
+        "ideal_for": ideal_for_data,
+        "ideal_for_key": ideal_for_key_data
+    }
+
+    # Create the POI
+    create_response = client.post("/api/pois/", json=poi_payload)
+    assert create_response.status_code == 201, f"Failed to create POI: {create_response.text}"
+    data = create_response.json()
+    poi_id = data["id"]
+
+    # Verify ideal_for and ideal_for_key are saved
+    assert "ideal_for" in data
+    assert "ideal_for_key" in data
+    assert set(data["ideal_for"]) == set(ideal_for_data)
+    assert set(data["ideal_for_key"]) == set(ideal_for_key_data)
+
+    # Read the POI back to ensure persistence
+    get_response = client.get(f"/api/pois/{poi_id}")
+    assert get_response.status_code == 200
+    retrieved_data = get_response.json()
+
+    # Verify all ideal_for sections persisted
+    assert "ideal_for" in retrieved_data
+    assert "ideal_for_key" in retrieved_data
+    assert set(retrieved_data["ideal_for"]) == set(ideal_for_data), \
+        f"ideal_for mismatch: expected {ideal_for_data}, got {retrieved_data['ideal_for']}"
+    assert set(retrieved_data["ideal_for_key"]) == set(ideal_for_key_data), \
+        f"ideal_for_key mismatch: expected {ideal_for_key_data}, got {retrieved_data['ideal_for_key']}"
+
+    # Test update - modify ideal_for
+    updated_ideal_for = ["Casual + Welcoming", "All Ages", "Budget Friendly"]
+    update_response = client.put(f"/api/pois/{poi_id}", json={
+        "ideal_for": updated_ideal_for
+    })
+    assert update_response.status_code == 200, f"Failed to update POI: {update_response.text}"
+
+    # Verify the update persisted
+    final_get_response = client.get(f"/api/pois/{poi_id}")
+    assert final_get_response.status_code == 200
+    final_data = final_get_response.json()
+    assert set(final_data["ideal_for"]) == set(updated_ideal_for)
+
 def test_poi_relationships(client: TestClient, db_session: Session):
     """
     Tests creating and managing POI relationships.
@@ -161,7 +268,7 @@ def test_poi_relationships(client: TestClient, db_session: Session):
     })
     assert poi1_response.status_code == 201
     poi1_id = poi1_response.json()["id"]
-    
+
     poi2_response = client.post("/api/pois/", json={
         "name": "Summer Festival",
         "poi_type": "EVENT",
@@ -170,7 +277,7 @@ def test_poi_relationships(client: TestClient, db_session: Session):
     })
     assert poi2_response.status_code == 201
     poi2_id = poi2_response.json()["id"]
-    
+
     # Create a relationship
     relationship_response = client.post("/api/relationships/", params={
         "source_poi_id": poi2_id,
@@ -178,14 +285,14 @@ def test_poi_relationships(client: TestClient, db_session: Session):
         "relationship_type": "venue"
     })
     assert relationship_response.status_code == 201
-    
+
     # Get relationships for the event
     relationships_response = client.get(f"/api/relationships/{poi2_id}")
     assert relationships_response.status_code == 200
     relationships = relationships_response.json()
     assert len(relationships) == 1
     assert relationships[0]["relationship_type"] == "venue"
-    
+
     # Get related POIs
     related_response = client.get(f"/api/pois/{poi2_id}/related")
     assert related_response.status_code == 200

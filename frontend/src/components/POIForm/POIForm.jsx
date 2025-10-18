@@ -48,6 +48,7 @@ import {
   PetPolicySection,
   PlaygroundSection
 } from './sections/OutdoorFeaturesSection';
+import { ParkCategoriesSection } from './sections/ParkCategoriesSection';
 import {
   InternalContactSection,
   PricingMembershipsSection,
@@ -209,6 +210,18 @@ export default function POIForm() {
                   />
                 </Accordion.Panel>
               </Accordion.Item>
+
+              {/* Park Categories Section - Things to Do */}
+              {isPark && (
+                <Accordion.Item value="park-categories">
+                  <Accordion.Control>
+                    <Text fw={600}>Park Categories</Text>
+                  </Accordion.Control>
+                  <Accordion.Panel>
+                    <ParkCategoriesSection form={form} />
+                  </Accordion.Panel>
+                </Accordion.Item>
+              )}
 
               {/* Location & Parking Section */}
               <Accordion.Item value="location">

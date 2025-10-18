@@ -19,6 +19,7 @@ const CustomRichTextEditor = forwardRef(({
   error,
   minRows = 3,
   maxLength,
+  showCharCount = false,
   disabled = false,
   withAsterisk = false,
   ...props
@@ -41,7 +42,7 @@ const CustomRichTextEditor = forwardRef(({
       protocols: ['http', 'https', 'mailto'],
       validate: href => /^https?:\/\//.test(href) || /^mailto:/.test(href),
     }),
-    ...(maxLength ? [CharacterCount.configure({ limit: maxLength })] : []),
+    CharacterCount.configure({ limit: maxLength || null }),
   ], [maxLength]);
 
   // Debounced onChange - only updates form state after user stops typing
@@ -344,7 +345,7 @@ const CustomRichTextEditor = forwardRef(({
       </RichTextEditor>
 
       {/* Character count and validation */}
-      {(maxLength || description || error) && (
+      {(maxLength || showCharCount || description || error) && (
         <div style={{
           display: 'flex',
           justifyContent: 'space-between',
@@ -355,12 +356,12 @@ const CustomRichTextEditor = forwardRef(({
           <div style={{ color: error ? 'var(--mantine-color-error)' : 'var(--mantine-color-dimmed)' }}>
             {error || description}
           </div>
-          {maxLength && (
+          {(maxLength || showCharCount) && (
             <div style={{
               color: isOverLimit ? 'var(--mantine-color-error)' : 'var(--mantine-color-dimmed)',
               fontWeight: isOverLimit ? 'bold' : 'normal'
             }}>
-              {currentLength}/{maxLength}
+              {maxLength ? `${currentLength}/${maxLength}` : `${currentLength} characters`}
             </div>
           )}
         </div>

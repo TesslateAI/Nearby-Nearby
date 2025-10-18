@@ -213,6 +213,7 @@ The system manages four POI types with shared base attributes and extensive type
 - Use component-based organization following the POIForm modular pattern
 - Leverage TipTap for rich text editing needs
 - Follow image upload patterns established in ImageUpload component
+- **All utility scripts must be placed in the `scripts/` folder at the project root** (backend or frontend specific scripts stay in their respective folders)
 
 ## Current Key Technologies & Recent Changes
 
@@ -242,6 +243,14 @@ The system manages four POI types with shared base attributes and extensive type
 - **Backend**: Enhanced API endpoints with comprehensive image management
 - **Database**: Extended schema with all POI type requirements implemented
 - **Testing**: Maintained test coverage through architectural changes
+
+## Git Configuration
+
+**IMPORTANT**: When making commits, ALWAYS use the user's identity:
+- **Git User Name**: Manav M
+- **Git User Email**: manavmaj2001@gmail.com
+
+Claude is NEVER a contributor or co-author. All commits should be attributed to the user only.
 
 ## AI Coding Conventions
 
