@@ -19,7 +19,9 @@ import { LocationMapSkeleton } from '../../LocationMap';
 
 export const LocationSection = React.memo(function LocationSection({
   form,
+  isBusiness,
   isPark,
+  isTrail,
   isEvent,
   isFreeListing,
   id
@@ -153,6 +155,56 @@ export const LocationSection = React.memo(function LocationSection({
         </>
       )}
 
+      {/* Trail Entry Information */}
+      {isTrail && (
+        <>
+          <Divider my="md" label="Trail Entry Information" />
+          <RichTextEditor
+            label="Trail Entry Notes"
+            placeholder="Describe how to access the trail, trailhead location, special instructions, etc."
+            value={form.values.trail_entry_notes || ''}
+            onChange={(html) => form.setFieldValue('trail_entry_notes', html)}
+            error={form.errors.trail_entry_notes}
+            minRows={3}
+          />
+          {shouldUseImageUpload(id) ? (
+            <EntryPhotoUpload poiId={id} poiType="Trail" form={form} />
+          ) : (
+            <TextInput
+              label="Trail Entry Photo"
+              placeholder="URL to photo of trail entrance"
+              {...form.getInputProps('trail_entry_photo')}
+              description="Image upload will be available shortly..."
+            />
+          )}
+        </>
+      )}
+
+      {/* Business Entry Information - PAID Business only */}
+      {isBusiness && !isFreeListing && (
+        <>
+          <Divider my="md" label="Business Entry Information" />
+          <RichTextEditor
+            label="Business Entry Notes"
+            placeholder="Describe how to enter your business, special instructions, etc."
+            value={form.values.business_entry_notes || ''}
+            onChange={(html) => form.setFieldValue('business_entry_notes', html)}
+            error={form.errors.business_entry_notes}
+            minRows={3}
+          />
+          {shouldUseImageUpload(id) ? (
+            <EntryPhotoUpload poiId={id} poiType="Business" form={form} />
+          ) : (
+            <TextInput
+              label="Business Entry Photo"
+              placeholder="URL to photo of business entrance"
+              {...form.getInputProps('business_entry_photo')}
+              description="Image upload will be available shortly..."
+            />
+          )}
+        </>
+      )}
+
       {/* Event Venue Information */}
       {isEvent && (
         <>
@@ -236,8 +288,8 @@ export const LocationSection = React.memo(function LocationSection({
         </>
       )}
 
-      {/* Parking Locations for Parks and Events */}
-      {(isPark || isEvent) && (
+      {/* Parking Locations for Parks, Trails, and Events */}
+      {(isPark || isTrail || isEvent) && (
         <>
           <Divider my="md" label="Parking Locations" />
           {(form.values.parking_locations || []).map((parking, index) => (
@@ -269,7 +321,7 @@ export const LocationSection = React.memo(function LocationSection({
                 </SimpleGrid>
                 <TextInput
                   label="Parking Area Name"
-                  placeholder={isPark ? "e.g., Main Lot, Visitor Center Parking" : "e.g., Main Lot, Event Parking"}
+                  placeholder={isPark ? "e.g., Main Lot, Visitor Center Parking" : isTrail ? "e.g., Trailhead Parking, Main Lot" : "e.g., Main Lot, Event Parking"}
                   value={parking.name || ''}
                   onChange={(e) => {
                     const locations = [...(form.values.parking_locations || [])];

@@ -119,8 +119,8 @@ export const CoreInformationSection = React.memo(function CoreInformationSection
         )}
       </SimpleGrid>
 
-      {/* Key Facilities - for Parks */}
-      {isPark && (
+      {/* Key Facilities - for Parks, Trails, and Events */}
+      {(isPark || isTrail || isEvent) && (
         <CheckboxGroupSection
           label="Key Facilities"
           fieldName="key_facilities"
@@ -144,11 +144,13 @@ export const CoreInformationSection = React.memo(function CoreInformationSection
             <DateTimePicker
               label="Start Date & Time"
               placeholder="Select start date and time"
+              valueFormat="MM/DD/YYYY hh:mm A"
               {...form.getInputProps('event.start_datetime')}
             />
             <DateTimePicker
               label="End Date & Time"
               placeholder="Select end date and time"
+              valueFormat="MM/DD/YYYY hh:mm A"
               {...form.getInputProps('event.end_datetime')}
             />
           </SimpleGrid>

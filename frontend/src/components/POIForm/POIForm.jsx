@@ -49,6 +49,7 @@ import {
   PlaygroundSection
 } from './sections/OutdoorFeaturesSection';
 import { ParkCategoriesSection } from './sections/ParkCategoriesSection';
+import { TrailCategoriesSection } from './sections/TrailCategoriesSection';
 import {
   InternalContactSection,
   PricingMembershipsSection,
@@ -194,8 +195,8 @@ export default function POIForm() {
                 </Accordion.Panel>
               </Accordion.Item>
 
-              {/* Categories & Ideal For Section - NOT for Parks (Parks have their own section below) */}
-              {!isPark && (
+              {/* Categories & Ideal For Section - NOT for Parks or Trails (they have their own sections) */}
+              {!isPark && !isTrail && (
                 <Accordion.Item value="categories">
                   <Accordion.Control>
                     <Group>
@@ -228,6 +229,21 @@ export default function POIForm() {
                 </Accordion.Item>
               )}
 
+              {/* Trail Categories Section - Ideal For (Trails use this instead of standard categories) */}
+              {isTrail && (
+                <Accordion.Item value="trail-categories">
+                  <Accordion.Control>
+                    <Group>
+                      <Text fw={600}>Trail Categories & Target Audience</Text>
+                      <Badge size="sm" variant="light">Required</Badge>
+                    </Group>
+                  </Accordion.Control>
+                  <Accordion.Panel>
+                    <TrailCategoriesSection form={form} />
+                  </Accordion.Panel>
+                </Accordion.Item>
+              )}
+
               {/* Location & Parking Section */}
               <Accordion.Item value="location">
                 <Accordion.Control>
@@ -239,7 +255,9 @@ export default function POIForm() {
                 <Accordion.Panel>
                   <LocationSection
                     form={form}
+                    isBusiness={isBusiness}
                     isPark={isPark}
+                    isTrail={isTrail}
                     isEvent={isEvent}
                     isFreeListing={isFreeListing}
                     id={poiId}
@@ -331,26 +349,14 @@ export default function POIForm() {
                 </Accordion.Item>
               )}
 
-              {/* Gallery Section - PAID Business and Parks */}
-              {((isBusiness && !isFreeListing) || isPark) && (
+              {/* Gallery Section - PAID Business, Parks, and Trails */}
+              {((isBusiness && !isFreeListing) || isPark || isTrail) && (
                 <Accordion.Item value="gallery">
                   <Accordion.Control>
                     <Text fw={600}>Gallery</Text>
                   </Accordion.Control>
                   <Accordion.Panel>
                     <BusinessGallerySection form={form} id={poiId} />
-                  </Accordion.Panel>
-                </Accordion.Item>
-              )}
-
-              {/* Business Entry Details - PAID Business only */}
-              {isBusiness && !isFreeListing && (
-                <Accordion.Item value="business-entry">
-                  <Accordion.Control>
-                    <Text fw={600}>Business Entry Details</Text>
-                  </Accordion.Control>
-                  <Accordion.Panel>
-                    <BusinessEntrySection form={form} id={poiId} />
                   </Accordion.Panel>
                 </Accordion.Item>
               )}
@@ -379,7 +385,7 @@ export default function POIForm() {
               {(!isBusiness || !isFreeListing) && (
                 <Accordion.Item value="amenities">
                   <Accordion.Control>
-                    <Text fw={600}>{isPark ? 'Public Restrooms' : 'Public Amenities'}</Text>
+                    <Text fw={600}>{(isPark || isTrail) ? 'Public Restrooms' : 'Public Amenities'}</Text>
                   </Accordion.Control>
                   <Accordion.Panel>
                     <PublicAmenitiesSection form={form} isPark={isPark} id={poiId} />
@@ -387,8 +393,8 @@ export default function POIForm() {
                 </Accordion.Item>
               )}
 
-              {/* Rentals Section - for Parks only */}
-              {isPark && (
+              {/* Rentals Section - for Parks and Trails */}
+              {(isPark || isTrail) && (
                 <Accordion.Item value="rentals">
                   <Accordion.Control>
                     <Text fw={600}>Rentals</Text>
@@ -473,7 +479,7 @@ export default function POIForm() {
               {(isPark || isTrail) && (
                 <Accordion.Item value="memberships">
                   <Accordion.Control>
-                    <Text fw={600}>{isPark ? 'Connections' : 'Memberships & Connections'}</Text>
+                    <Text fw={600}>Connections</Text>
                   </Accordion.Control>
                   <Accordion.Panel>
                     <ConnectionsSection form={form} isBusiness={isBusiness} isPark={isPark} />

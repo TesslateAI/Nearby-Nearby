@@ -29,16 +29,7 @@ export const FacilitiesSection = React.memo(function FacilitiesSection({
 }) {
   return (
     <Stack>
-      {/* Key Facilities - for Trails only (Parks and Events moved to Core Information) */}
-      {isTrail && (
-        <CheckboxGroupSection
-          label="Key Facilities"
-          fieldName="key_facilities"
-          options={KEY_FACILITIES}
-          cols={{ base: 2, sm: 3 }}
-          form={form}
-        />
-      )}
+      {/* Key Facilities moved to Core Information for all POI types */}
 
       {/* Pay Phone Locations - Parks only */}
       {isPark && (
@@ -110,8 +101,8 @@ export const FacilitiesSection = React.memo(function FacilitiesSection({
         </>
       )}
 
-      {/* Entertainment and Facilities Options - Parks only */}
-      {isPark && (
+      {/* Entertainment and Facilities Options - Parks and Trails */}
+      {(isPark || isTrail) && (
         <>
           <CheckboxGroupSection
             label="Entertainment"
@@ -131,8 +122,8 @@ export const FacilitiesSection = React.memo(function FacilitiesSection({
         </>
       )}
 
-      {/* Payment Methods - only for Business and Events, Parks moved to Pricing & Memberships */}
-      {!isPark && (
+      {/* Payment Methods - only for Business and Events (Parks/Trails don't need this) */}
+      {(isBusiness || isEvent) && (
         <CheckboxGroupSection
           label="Payment Methods"
           fieldName="payment_methods"
