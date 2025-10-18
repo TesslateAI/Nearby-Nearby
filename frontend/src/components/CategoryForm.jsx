@@ -45,10 +45,32 @@ function CategoryForm() {
     };
     fetchCategories();
 
+    // Fetch category data for editing
     if (isEditing) {
-      // Fetch data for the specific category being edited
-      // Note: A GET /api/categories/{id} endpoint would be needed on the backend
-      // For now, we'll assume we can't edit.
+      const fetchCategory = async () => {
+        try {
+          const response = await api.get(`/categories/${id}`);
+          if (response.ok) {
+            const data = await response.json();
+            form.setValues({
+              name: data.name || '',
+              parent_id: data.parent_id || null,
+              poi_types: data.applicable_to || [],
+              is_main_category: data.is_main_category || false,
+            });
+          } else {
+            throw new Error('Failed to fetch category');
+          }
+        } catch (error) {
+          notifications.show({
+            title: 'Error',
+            message: 'Could not load category data.',
+            color: 'red'
+          });
+          navigate('/categories');
+        }
+      };
+      fetchCategory();
     }
   }, [id, isEditing]);
 
@@ -56,20 +78,35 @@ function CategoryForm() {
     const payload = {
         name: values.name,
         parent_id: values.parent_id || null, // Ensure null is sent if empty
-        poi_types: values.poi_types,
+        applicable_to: values.poi_types,  // Map poi_types to applicable_to
         is_main_category: values.is_main_category,
     };
 
     try {
-      const response = await api.post('/categories/', payload);
+      let response;
+      if (isEditing) {
+        response = await api.put(`/categories/${id}`, payload);
+      } else {
+        response = await api.post('/categories/', payload);
+      }
+
       if (response.ok) {
-        notifications.show({ title: 'Success!', message: `Category "${values.name}" created!`, color: 'green' });
+        notifications.show({
+          title: 'Success!',
+          message: `Category "${values.name}" ${isEditing ? 'updated' : 'created'}!`,
+          color: 'green'
+        });
         navigate('/categories'); // Go back to the category list
       } else {
-        throw new Error('Failed to create category');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || `Failed to ${isEditing ? 'update' : 'create'} category`);
       }
     } catch (error) {
-      notifications.show({ title: 'Error', message: 'Failed to create category.', color: 'red' });
+      notifications.show({
+        title: 'Error',
+        message: error.message || `Failed to ${isEditing ? 'update' : 'create'} category.`,
+        color: 'red'
+      });
     }
   };
 

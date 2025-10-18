@@ -80,6 +80,25 @@ def get_secondary_categories_by_poi_type(db: Session, poi_type: str, parent_id: 
 
     return query.order_by(models.Category.sort_order, models.Category.name).all()
 
+def update_category(db: Session, category_id: uuid.UUID, category_update: schemas.CategoryUpdate) -> models.Category:
+    """
+    Updates an existing category.
+    """
+    db_category = db.query(models.Category).filter(models.Category.id == category_id).first()
+
+    if not db_category:
+        raise HTTPException(status_code=404, detail="Category not found.")
+
+    # Update fields that are provided
+    update_data = category_update.model_dump(exclude_unset=True)
+
+    for field, value in update_data.items():
+        setattr(db_category, field, value)
+
+    db.commit()
+    db.refresh(db_category)
+    return db_category
+
 def delete_category(db: Session, category_id: uuid.UUID):
     """
     Deletes a category from the database.
@@ -94,10 +113,10 @@ def delete_category(db: Session, category_id: uuid.UUID):
     # Check if the category has any children (subcategories)
     if db_category.children:
         raise HTTPException(
-            status_code=400, 
+            status_code=400,
             detail="Cannot delete a category that has subcategories. Please delete or reassign its children first."
         )
-    
+
     # If no children, proceed with deletion
     db.delete(db_category)
     db.commit()

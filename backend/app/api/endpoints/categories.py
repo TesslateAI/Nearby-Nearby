@@ -57,6 +57,31 @@ def get_secondary_categories(
     """
     return crud.get_secondary_categories_by_poi_type(db=db, poi_type=poi_type, parent_id=parent_id)
 
+@router.get("/{category_id}", response_model=schemas.Category)
+def get_category(
+    category_id: uuid.UUID,
+    db: Session = Depends(get_db)
+):
+    """
+    Get a single category by ID.
+    """
+    category = crud.get_category(db=db, category_id=category_id)
+    if not category:
+        raise HTTPException(status_code=404, detail="Category not found")
+    return category
+
+@router.put("/{category_id}", response_model=schemas.Category)
+def update_category(
+    category_id: uuid.UUID,
+    category_update: schemas.CategoryUpdate,
+    db: Session = Depends(get_db),
+    current_user: str = Depends(get_current_user)
+):
+    """
+    Update an existing category.
+    """
+    return crud.update_category(db=db, category_id=category_id, category_update=category_update)
+
 @router.delete("/{category_id}", status_code=204)
 def delete_category_endpoint(
     category_id: uuid.UUID, 

@@ -46,6 +46,12 @@ export const preparePOIPayload = (formValues) => {
   delete payload.longitude;
   delete payload.latitude;
 
+  // Remove UI-only fields that don't exist in backend
+  // These are used to control whether sections are shown, but the actual data is in other fields
+  delete payload.alcohol_available;  // UI control only - alcohol_options array is what gets saved
+  delete payload.public_toilets_available;  // UI control only - public_toilets array is what gets saved
+  delete payload.pets_allowed;  // UI control only - pet_options array is what gets saved
+
   // Only include the subtype data relevant to the POI type
   if (payload.poi_type !== 'BUSINESS') delete payload.business;
   if (payload.poi_type !== 'PARK') delete payload.park;

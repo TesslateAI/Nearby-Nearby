@@ -75,10 +75,16 @@ export const useAutoSave = (form, poiId, isEditing, onSaveSuccess) => {
 
         console.log('Auto-save successful');
       } else {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        // Get detailed error from response
+        const errorData = await response.json().catch(() => ({}));
+        const errorDetail = errorData.detail || response.statusText;
+        console.error('Auto-save error details:', errorData);
+        throw new Error(`HTTP ${response.status}: ${errorDetail}`);
       }
     } catch (error) {
       console.error('Auto-save failed:', error);
+      console.error('Form values at time of error:', form.values);
+      console.error('Payload that failed:', preparePOIPayload(form.values));
 
       // Only show error notification for network/server errors, not validation errors
       if (error.message && !error.message.includes('validation')) {

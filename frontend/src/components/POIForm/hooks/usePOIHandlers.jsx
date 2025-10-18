@@ -104,6 +104,12 @@ export const usePOIHandlers = (id, isEditing, form, setPoiId) => {
             }
           });
 
+          // Derive UI control fields from actual data arrays
+          // These fields don't exist in backend - they're derived from the actual data
+          formData.alcohol_available = (formData.alcohol_options && formData.alcohol_options.length > 0) ? 'yes' : 'no';
+          formData.public_toilets_available = (formData.public_toilets && formData.public_toilets.length > 0) ? 'yes' : 'no';
+          formData.pets_allowed = (formData.pet_options && formData.pet_options.length > 0) ? 'yes' : 'no';
+
           // Handle numeric fields that should be null or numbers
           const numericFields = ['front_door_latitude', 'front_door_longitude'];
           numericFields.forEach(field => {
@@ -237,8 +243,13 @@ export const usePOIHandlers = (id, isEditing, form, setPoiId) => {
           autoClose: 3000
         });
 
-        // Navigate to POI list (direct navigation since form was saved)
-        window.location.href = '/';
+        // Only navigate away if publishing (not if saving draft)
+        if (publicationStatus === 'published') {
+          window.location.href = '/';
+        } else {
+          // Stay on the edit page for drafts - just reload to get fresh data
+          window.location.reload();
+        }
       } else {
         response = await api.post('/pois/', payload);
 

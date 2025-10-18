@@ -1,9 +1,9 @@
 import React, { lazy, Suspense } from 'react';
 import {
   Stack, SimpleGrid, TextInput, Select, NumberInput, Button, Divider,
-  Checkbox, Radio, Card, Group, ActionIcon
+  Checkbox, Radio, Card, Group, ActionIcon, Alert, Text
 } from '@mantine/core';
-import { IconPlus, IconTrash } from '@tabler/icons-react';
+import { IconPlus, IconTrash, IconMapPin, IconInfoCircle } from '@tabler/icons-react';
 import RichTextEditor from '../../RichTextEditor';
 import { getControlledInputProps, getNumericInputProps } from '../constants/helpers';
 import { PARKING_OPTIONS, VENUE_SETTINGS } from '../../../utils/constants';
@@ -26,6 +26,25 @@ export const LocationSection = React.memo(function LocationSection({
 }) {
   return (
     <Stack>
+      {/* Prominent Alert emphasizing Lat & Long is best */}
+      <Alert
+        icon={<IconMapPin size={20} />}
+        title="Best Practice: Use Latitude & Longitude"
+        color="blue"
+        variant="light"
+      >
+        <Stack gap="xs">
+          <Text size="sm">
+            <strong>For the most accurate location</strong>, we recommend using the map pin below to set your
+            Latitude & Longitude coordinates. This ensures precise placement on all maps and location services.
+          </Text>
+          <Text size="sm" c="dimmed">
+            Address fields are optional and can be used for additional context, but the map coordinates
+            are the primary location identifier.
+          </Text>
+        </Stack>
+      </Alert>
+
       <Suspense fallback={<LocationMapSkeleton />}>
         <LocationMap
           latitude={form.values.latitude}
@@ -36,6 +55,8 @@ export const LocationSection = React.memo(function LocationSection({
           }}
         />
       </Suspense>
+
+      <Divider my="sm" label="Address (Optional)" labelPosition="center" />
 
       <SimpleGrid cols={{ base: 1, sm: 2 }}>
         <TextInput

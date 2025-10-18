@@ -6,11 +6,12 @@ import { DateTimePicker } from '@mantine/dates';
 import { IconPlus } from '@tabler/icons-react';
 import RichTextEditor from '../../RichTextEditor';
 import { getControlledInputProps } from '../constants/helpers';
-import { getStatusOptions } from '../../../utils/constants';
+import { getStatusOptions, KEY_FACILITIES } from '../../../utils/constants';
 import {
   FeaturedImageUpload,
   shouldUseImageUpload
 } from '../ImageIntegration';
+import { CheckboxGroupSection } from '../components/CheckboxGroupSection';
 
 export const CoreInformationSection = React.memo(function CoreInformationSection({
   form,
@@ -117,6 +118,17 @@ export const CoreInformationSection = React.memo(function CoreInformationSection
           />
         )}
       </SimpleGrid>
+
+      {/* Key Facilities - for Parks */}
+      {isPark && (
+        <CheckboxGroupSection
+          label="Key Facilities"
+          fieldName="key_facilities"
+          options={KEY_FACILITIES}
+          cols={{ base: 2, sm: 3 }}
+          form={form}
+        />
+      )}
 
       {isEvent && (
         <>

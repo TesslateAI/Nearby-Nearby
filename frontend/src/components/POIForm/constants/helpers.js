@@ -16,6 +16,19 @@ export const getControlledInputProps = (form, fieldPath, defaultValue = '') => {
   };
 };
 
+// Helper function for debounced text inputs
+// Returns props that work with DebouncedTextInput component
+export const getDebouncedInputProps = (form, fieldPath, defaultValue = '') => {
+  const value = form.values[fieldPath];
+  const error = form.errors[fieldPath];
+
+  return {
+    value: value === null || value === undefined ? defaultValue : value,
+    onChange: (newValue) => form.setFieldValue(fieldPath, newValue),
+    error: error
+  };
+};
+
 // Helper function for numeric inputs
 export const getNumericInputProps = (form, fieldPath) => {
   const inputProps = form.getInputProps(fieldPath);

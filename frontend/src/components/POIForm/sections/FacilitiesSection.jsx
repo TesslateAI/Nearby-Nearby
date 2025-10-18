@@ -16,6 +16,7 @@ import {
   RentalPhotosUpload,
   shouldUseImageUpload
 } from '../ImageIntegration';
+import { CheckboxGroupSection } from '../components/CheckboxGroupSection';
 
 export const FacilitiesSection = React.memo(function FacilitiesSection({
   form,
@@ -30,16 +31,13 @@ export const FacilitiesSection = React.memo(function FacilitiesSection({
     <Stack>
       {/* Key Facilities - for Trails only (Parks and Events moved to Core Information) */}
       {isTrail && (
-        <>
-          <Divider my="md" label="Key Facilities" />
-          <Checkbox.Group {...getCheckboxGroupProps(form, 'key_facilities')}>
-            <SimpleGrid cols={{ base: 2, sm: 3 }}>
-              {KEY_FACILITIES.map(facility => (
-                <Checkbox key={facility} value={facility} label={facility} />
-              ))}
-            </SimpleGrid>
-          </Checkbox.Group>
-        </>
+        <CheckboxGroupSection
+          label="Key Facilities"
+          fieldName="key_facilities"
+          options={KEY_FACILITIES}
+          cols={{ base: 2, sm: 3 }}
+          form={form}
+        />
       )}
 
       {/* Pay Phone Locations - Parks only */}
@@ -115,38 +113,33 @@ export const FacilitiesSection = React.memo(function FacilitiesSection({
       {/* Entertainment and Facilities Options - Parks only */}
       {isPark && (
         <>
-          <Divider my="md" label="Entertainment" />
-          <Checkbox.Group {...getCheckboxGroupProps(form, 'entertainment_options')}>
-            <SimpleGrid cols={{ base: 2, sm: 3 }}>
-              {ENTERTAINMENT_OPTIONS.map(option => (
-                <Checkbox key={option} value={option} label={option} />
-              ))}
-            </SimpleGrid>
-          </Checkbox.Group>
+          <CheckboxGroupSection
+            label="Entertainment"
+            fieldName="entertainment_options"
+            options={ENTERTAINMENT_OPTIONS}
+            cols={{ base: 2, sm: 3 }}
+            form={form}
+          />
 
-          <Divider my="md" label="Facilities" />
-          <Checkbox.Group {...getCheckboxGroupProps(form, 'facilities_options')}>
-            <SimpleGrid cols={{ base: 2, sm: 3 }}>
-              {PARK_FACILITIES.map(facility => (
-                <Checkbox key={facility} value={facility} label={facility} />
-              ))}
-            </SimpleGrid>
-          </Checkbox.Group>
+          <CheckboxGroupSection
+            label="Facilities"
+            fieldName="facilities_options"
+            options={PARK_FACILITIES}
+            cols={{ base: 2, sm: 3 }}
+            form={form}
+          />
         </>
       )}
 
       {/* Payment Methods - only for Business and Events, Parks moved to Pricing & Memberships */}
       {!isPark && (
-        <>
-          <Divider my="md" label="Payment Methods" />
-          <Checkbox.Group {...getCheckboxGroupProps(form, 'payment_methods')}>
-            <SimpleGrid cols={{ base: 2, sm: 3 }}>
-              {PAYMENT_METHODS.map(method => (
-                <Checkbox key={method} value={method} label={method} />
-              ))}
-            </SimpleGrid>
-          </Checkbox.Group>
-        </>
+        <CheckboxGroupSection
+          label="Payment Methods"
+          fieldName="payment_methods"
+          options={PAYMENT_METHODS}
+          cols={{ base: 2, sm: 3 }}
+          form={form}
+        />
       )}
 
       <Divider my="md" label="Alcohol Availability" />
@@ -179,14 +172,13 @@ export const FacilitiesSection = React.memo(function FacilitiesSection({
         </Checkbox.Group>
       )}
 
-      <Divider my="md" label="Wheelchair Accessibility" />
-      <Checkbox.Group {...getCheckboxGroupProps(form, 'wheelchair_accessible')}>
-        <SimpleGrid cols={{ base: 2, sm: 3 }}>
-          {WHEELCHAIR_OPTIONS.map(option => (
-            <Checkbox key={option} value={option} label={option} />
-          ))}
-        </SimpleGrid>
-      </Checkbox.Group>
+      <CheckboxGroupSection
+        label="Wheelchair Accessibility"
+        fieldName="wheelchair_accessible"
+        options={WHEELCHAIR_OPTIONS}
+        cols={{ base: 2, sm: 3 }}
+        form={form}
+      />
       <RichTextEditor
         label="Additional Accessibility Details"
         placeholder="Describe accessibility features"
@@ -195,14 +187,13 @@ export const FacilitiesSection = React.memo(function FacilitiesSection({
         error={form.errors.wheelchair_details}
       />
 
-      <Divider my="md" label="Smoking Policy" />
-      <Checkbox.Group {...getCheckboxGroupProps(form, 'smoking_options')}>
-        <SimpleGrid cols={{ base: 2, sm: 3 }}>
-          {SMOKING_OPTIONS.map(option => (
-            <Checkbox key={option} value={option} label={option} />
-          ))}
-        </SimpleGrid>
-      </Checkbox.Group>
+      <CheckboxGroupSection
+        label="Smoking Policy"
+        fieldName="smoking_options"
+        options={SMOKING_OPTIONS}
+        cols={{ base: 2, sm: 3 }}
+        form={form}
+      />
       <RichTextEditor
         label="Smoking Policy Details"
         placeholder="Additional smoking policy information"
@@ -212,19 +203,13 @@ export const FacilitiesSection = React.memo(function FacilitiesSection({
       />
 
       {isEvent && (
-        <>
-          <Divider my="md" label="Event Amenities" />
-          <Checkbox.Group
-            label="WiFi Options"
-            {...getCheckboxGroupProps(form, 'wifi_options')}
-          >
-            <SimpleGrid cols={{ base: 2, sm: 3 }}>
-              {WIFI_OPTIONS.map(option => (
-                <Checkbox key={option} value={option} label={option} />
-              ))}
-            </SimpleGrid>
-          </Checkbox.Group>
-        </>
+        <CheckboxGroupSection
+          label="Event Amenities - WiFi Options"
+          fieldName="wifi_options"
+          options={WIFI_OPTIONS}
+          cols={{ base: 2, sm: 3 }}
+          form={form}
+        />
       )}
 
       {(isEvent || isPark || isTrail) && (

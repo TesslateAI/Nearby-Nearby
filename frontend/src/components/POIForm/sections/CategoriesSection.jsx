@@ -12,38 +12,40 @@ export const CategoriesSection = React.memo(function CategoriesSection({
   isPaidListing,
   isFreeListing
 }) {
+  const isBusiness = form.values.poi_type === 'BUSINESS';
+
   return (
     <Stack>
-      {form.values.poi_type === 'BUSINESS' && form.values.listing_type === 'free' && (
+      {isBusiness && isFreeListing && (
         <Alert color="blue" variant="light" mb="md">
-          Free business listings are limited to 1 category and 3 ideal-for options
+          Free business listings are limited to 1 category and up to 5 ideal-for options
         </Alert>
       )}
 
+      {/* Step 1: Select ALL categories first */}
+      <SecondaryCategoriesSelector
+        value={form.values.category_ids || []}
+        onChange={(value) => form.setFieldValue('category_ids', value)}
+        poiType={form.values.poi_type}
+        mainCategoryId={form.values.main_category_id}
+        maxValues={getFieldsForListingType(form.values.listing_type, form.values.poi_type)?.maxCategories}
+        error={form.errors.category_ids}
+      />
+
+      {/* Step 2: Choose which category is the MAIN one */}
       <MainCategorySelector
         value={form.values.main_category_id}
         onChange={(value) => form.setFieldValue('main_category_id', value)}
         poiType={form.values.poi_type}
+        selectedCategories={form.values.category_ids || []}
         error={form.errors.main_category_id}
       />
-
-      {/* Only show secondary categories for non-Business POIs */}
-      {form.values.poi_type !== 'BUSINESS' && (
-        <SecondaryCategoriesSelector
-          value={form.values.category_ids || []}
-          onChange={(value) => form.setFieldValue('category_ids', value)}
-          poiType={form.values.poi_type}
-          mainCategoryId={form.values.main_category_id}
-          maxValues={getFieldsForListingType(form.values.listing_type, form.values.poi_type)?.maxCategories}
-          error={form.errors.category_ids}
-        />
-      )}
 
       {/* Ideal For */}
       <Divider my="md" label="Target Audience" />
 
-      {/* Key Ideal For - Only for paid listings */}
-      {isPaidListing && (
+      {/* Key Ideal For - For Business listings (both free and paid) */}
+      {isBusiness && (
         <Stack mb="md">
           <Title order={5}>Key Ideal For</Title>
           <Text size="sm" c="dimmed">
@@ -81,19 +83,15 @@ export const CategoriesSection = React.memo(function CategoriesSection({
         <Title order={5}>Ideal For</Title>
         <Text size="sm" c="dimmed">
           Select all audiences that would enjoy this {form.values.poi_type?.toLowerCase() || 'POI'}
+          {isFreeListing && ' (up to 5 total)'}
         </Text>
         <IdealForSelector
           value={form.values.ideal_for || []}
           onChange={(value) => form.setFieldValue('ideal_for', value)}
           keyIdealFor={form.values.ideal_for_key || []}
           maxSelections={isFreeListing ? 5 : undefined}
-          showAll={!isFreeListing}
+          showAll={true}
         />
-        {isFreeListing && (
-          <Text size="xs" c="dimmed" mt="xs">
-            Free listings can select up to 5 ideal audiences
-          </Text>
-        )}
       </Stack>
     </Stack>
   );

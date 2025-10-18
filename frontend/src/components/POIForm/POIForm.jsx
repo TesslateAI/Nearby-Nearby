@@ -194,28 +194,33 @@ export default function POIForm() {
                 </Accordion.Panel>
               </Accordion.Item>
 
-              {/* Categories & Ideal For Section */}
-              <Accordion.Item value="categories">
-                <Accordion.Control>
-                  <Group>
-                    <Text fw={600}>Categories & Target Audience</Text>
-                    <Badge size="sm" variant="light">Required</Badge>
-                  </Group>
-                </Accordion.Control>
-                <Accordion.Panel>
-                  <CategoriesSection
-                    form={form}
-                    isPaidListing={isPaidListing}
-                    isFreeListing={isFreeListing}
-                  />
-                </Accordion.Panel>
-              </Accordion.Item>
+              {/* Categories & Ideal For Section - NOT for Parks (Parks have their own section below) */}
+              {!isPark && (
+                <Accordion.Item value="categories">
+                  <Accordion.Control>
+                    <Group>
+                      <Text fw={600}>Categories & Target Audience</Text>
+                      <Badge size="sm" variant="light">Required</Badge>
+                    </Group>
+                  </Accordion.Control>
+                  <Accordion.Panel>
+                    <CategoriesSection
+                      form={form}
+                      isPaidListing={isPaidListing}
+                      isFreeListing={isFreeListing}
+                    />
+                  </Accordion.Panel>
+                </Accordion.Item>
+              )}
 
-              {/* Park Categories Section - Things to Do */}
+              {/* Park Categories Section - Things to Do (Parks use this instead of standard categories) */}
               {isPark && (
                 <Accordion.Item value="park-categories">
                   <Accordion.Control>
-                    <Text fw={600}>Park Categories</Text>
+                    <Group>
+                      <Text fw={600}>Park Categories & Target Audience</Text>
+                      <Badge size="sm" variant="light">Required</Badge>
+                    </Group>
                   </Accordion.Control>
                   <Accordion.Panel>
                     <ParkCategoriesSection form={form} />
@@ -326,8 +331,8 @@ export default function POIForm() {
                 </Accordion.Item>
               )}
 
-              {/* Gallery Section - PAID Business only */}
-              {isBusiness && !isFreeListing && (
+              {/* Gallery Section - PAID Business and Parks */}
+              {((isBusiness && !isFreeListing) || isPark) && (
                 <Accordion.Item value="gallery">
                   <Accordion.Control>
                     <Text fw={600}>Gallery</Text>
