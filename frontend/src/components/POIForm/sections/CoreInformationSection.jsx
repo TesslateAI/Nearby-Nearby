@@ -52,10 +52,10 @@ export const CoreInformationSection = React.memo(function CoreInformationSection
         />
       </SimpleGrid>
 
-      <TextInput
+      <DebouncedTextInput
         label="Name"
         placeholder="Enter POI name"
-        {...getControlledInputProps(form, 'name')}
+        {...getDebouncedInputProps(form, 'name')}
       />
 
       <RichTextEditor
