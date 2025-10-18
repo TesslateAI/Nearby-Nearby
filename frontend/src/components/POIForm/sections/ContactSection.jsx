@@ -1,8 +1,9 @@
 import React from 'react';
 import {
-  Stack, SimpleGrid, TextInput, Divider, Text, Alert
+  Stack, SimpleGrid, Divider, Text, Alert
 } from '@mantine/core';
-import { getControlledInputProps } from '../constants/helpers';
+import { DebouncedTextInput } from '../../DebouncedTextInput';
+import { getDebouncedInputProps } from '../constants/helpers';
 
 export const ContactSection = React.memo(function ContactSection({
   form,
@@ -13,27 +14,27 @@ export const ContactSection = React.memo(function ContactSection({
     <Stack>
       {/* Organizer Name moved here from Core Info for Events */}
       {isEvent && (
-        <TextInput
+        <DebouncedTextInput
           label="Organizer Name"
           placeholder="Name of event organizer"
-          {...form.getInputProps('event.organizer_name')}
+          {...getDebouncedInputProps(form, 'event.organizer_name')}
         />
       )}
       <SimpleGrid cols={{ base: 1, sm: 3 }}>
-        <TextInput
+        <DebouncedTextInput
           label="Website"
           placeholder="https://example.com"
-          {...getControlledInputProps(form, 'website_url')}
+          {...getDebouncedInputProps(form, 'website_url')}
         />
-        <TextInput
+        <DebouncedTextInput
           label="Phone Number"
           placeholder="(555) 123-4567"
-          {...getControlledInputProps(form, 'phone_number')}
+          {...getDebouncedInputProps(form, 'phone_number')}
         />
-        <TextInput
+        <DebouncedTextInput
           label="Email"
           placeholder="contact@example.com"
-          {...getControlledInputProps(form, 'email')}
+          {...getDebouncedInputProps(form, 'email')}
         />
       </SimpleGrid>
 
@@ -46,30 +47,30 @@ export const ContactSection = React.memo(function ContactSection({
       )}
 
       <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }}>
-        <TextInput
+        <DebouncedTextInput
           label="Instagram"
           placeholder="@username"
-          {...getControlledInputProps(form, 'instagram_username')}
+          {...getDebouncedInputProps(form, 'instagram_username')}
         />
-        <TextInput
+        <DebouncedTextInput
           label="Facebook"
           placeholder="pagename"
-          {...getControlledInputProps(form, 'facebook_username')}
+          {...getDebouncedInputProps(form, 'facebook_username')}
         />
-        <TextInput
+        <DebouncedTextInput
           label="X (Twitter)"
           placeholder="@username"
-          {...getControlledInputProps(form, 'x_username')}
+          {...getDebouncedInputProps(form, 'x_username')}
         />
-        <TextInput
+        <DebouncedTextInput
           label="TikTok"
           placeholder="@username"
-          {...getControlledInputProps(form, 'tiktok_username')}
+          {...getDebouncedInputProps(form, 'tiktok_username')}
         />
-        <TextInput
+        <DebouncedTextInput
           label="LinkedIn"
           placeholder="company-name"
-          {...getControlledInputProps(form, 'linkedin_username')}
+          {...getDebouncedInputProps(form, 'linkedin_username')}
         />
       </SimpleGrid>
     </Stack>

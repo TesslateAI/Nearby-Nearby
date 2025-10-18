@@ -8,11 +8,17 @@ export const getCheckboxGroupProps = (form, fieldPath) => {
 };
 
 // Helper function to get input props with guaranteed controlled values
+// Note: For TextInput, use DebouncedTextInput component with getDebouncedInputProps instead
 export const getControlledInputProps = (form, fieldPath, defaultValue = '') => {
   const inputProps = form.getInputProps(fieldPath);
   return {
     ...inputProps,
-    value: inputProps.value === null || inputProps.value === undefined ? defaultValue : inputProps.value
+    value: inputProps.value === null || inputProps.value === undefined ? defaultValue : inputProps.value,
+    onChange: (event) => {
+      // Convert event to value for form.setFieldValue
+      const value = event.currentTarget ? event.currentTarget.value : event;
+      form.setFieldValue(fieldPath, value);
+    }
   };
 };
 

@@ -1,11 +1,12 @@
 import React, { lazy, Suspense } from 'react';
 import {
-  Stack, SimpleGrid, TextInput, Select, NumberInput, Button, Divider,
+  Stack, SimpleGrid, Select, NumberInput, Button, Divider,
   Checkbox, Radio, Card, Group, ActionIcon, Alert, Text
 } from '@mantine/core';
 import { IconPlus, IconTrash, IconMapPin, IconInfoCircle } from '@tabler/icons-react';
 import RichTextEditor from '../../RichTextEditor';
-import { getControlledInputProps, getNumericInputProps } from '../constants/helpers';
+import { DebouncedTextInput } from '../../DebouncedTextInput';
+import { getDebouncedInputProps, getNumericInputProps } from '../constants/helpers';
 import { PARKING_OPTIONS, VENUE_SETTINGS } from '../../../utils/constants';
 import {
   EntryPhotoUpload,
@@ -61,28 +62,28 @@ export const LocationSection = React.memo(function LocationSection({
       <Divider my="sm" label="Address (Optional)" labelPosition="center" />
 
       <SimpleGrid cols={{ base: 1, sm: 2 }}>
-        <TextInput
+        <DebouncedTextInput
           label="Street Address"
           placeholder="123 Main St"
-          {...getControlledInputProps(form, 'address_street')}
+          {...getDebouncedInputProps(form, 'address_street')}
         />
-        <TextInput
+        <DebouncedTextInput
           label="Address Line 2 (Suite, Unit, etc.)"
           placeholder="Suite 100, Unit B, etc."
-          {...getControlledInputProps(form, 'address_full')}
+          {...getDebouncedInputProps(form, 'address_full')}
         />
       </SimpleGrid>
 
       <SimpleGrid cols={{ base: 1, sm: 4 }}>
-        <TextInput
+        <DebouncedTextInput
           label="City"
           placeholder="City name"
-          {...getControlledInputProps(form, 'address_city')}
+          {...getDebouncedInputProps(form, 'address_city')}
         />
-        <TextInput
+        <DebouncedTextInput
           label="County"
           placeholder="County name"
-          {...getControlledInputProps(form, 'address_county')}
+          {...getDebouncedInputProps(form, 'address_county')}
         />
         <Select
           label="State"
@@ -97,10 +98,10 @@ export const LocationSection = React.memo(function LocationSection({
           {...form.getInputProps('address_state')}
           searchable
         />
-        <TextInput
+        <DebouncedTextInput
           label="ZIP Code"
           placeholder="12345"
-          {...getControlledInputProps(form, 'address_zip')}
+          {...getDebouncedInputProps(form, 'address_zip')}
         />
       </SimpleGrid>
 

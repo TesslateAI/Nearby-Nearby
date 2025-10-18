@@ -1,11 +1,12 @@
 import React from 'react';
 import {
-  Stack, SimpleGrid, Select, TextInput, Switch, Alert, Text, Button, Divider
+  Stack, SimpleGrid, Select, Switch, Alert, Text, Button, Divider
 } from '@mantine/core';
 import { DateTimePicker } from '@mantine/dates';
 import { IconPlus } from '@tabler/icons-react';
 import RichTextEditor from '../../RichTextEditor';
-import { getControlledInputProps } from '../constants/helpers';
+import { DebouncedTextInput } from '../../DebouncedTextInput';
+import { getDebouncedInputProps } from '../constants/helpers';
 import { getStatusOptions, KEY_FACILITIES } from '../../../utils/constants';
 import {
   FeaturedImageUpload,
@@ -94,11 +95,11 @@ export const CoreInformationSection = React.memo(function CoreInformationSection
           data={getStatusOptions(form.values.poi_type)}
           {...form.getInputProps('status')}
         />
-        <TextInput
+        <DebouncedTextInput
           label="Status Message"
           placeholder="Additional status info (max 100 chars)"
           maxLength={100}
-          {...getControlledInputProps(form, 'status_message')}
+          {...getDebouncedInputProps(form, 'status_message')}
         />
       </SimpleGrid>
 
@@ -170,15 +171,15 @@ export const CoreInformationSection = React.memo(function CoreInformationSection
         <>
           <Divider my="md" label="Cost Information" />
           <SimpleGrid cols={{ base: 1, sm: 2 }}>
-            <TextInput
+            <DebouncedTextInput
               label="Cost"
               placeholder="e.g., $10 or $0-$50 or 0 (for free)"
-              {...getControlledInputProps(form, 'cost')}
+              {...getDebouncedInputProps(form, 'cost')}
             />
-            <TextInput
+            <DebouncedTextInput
               label="Ticket Link"
               placeholder="URL to purchase tickets"
-              {...getControlledInputProps(form, 'ticket_link')}
+              {...getDebouncedInputProps(form, 'ticket_link')}
             />
           </SimpleGrid>
           <RichTextEditor
