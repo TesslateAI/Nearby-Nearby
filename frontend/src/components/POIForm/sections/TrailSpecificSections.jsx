@@ -1,3 +1,4 @@
+import React from 'react';
 import {
   Stack, SimpleGrid, TextInput, Select, NumberInput, Divider,
   Text, Checkbox, Alert
@@ -14,7 +15,7 @@ import {
   shouldUseImageUpload
 } from '../ImageIntegration';
 
-export function TrailDetailsSection({ form, id }) {
+export const TrailDetailsSection = React.memo(function TrailDetailsSection({ form, id }) {
   return (
     <Stack>
       <SimpleGrid cols={{ base: 1, sm: 2 }}>
@@ -161,4 +162,4 @@ export function TrailDetailsSection({ form, id }) {
       )}
     </Stack>
   );
-}
+});

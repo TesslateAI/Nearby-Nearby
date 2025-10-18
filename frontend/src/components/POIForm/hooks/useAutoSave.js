@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { notifications } from '@mantine/notifications';
 import api from '../../../utils/api';
+import { preparePOIPayload } from '../utils/formCleanup';
 
 export const useAutoSave = (form, poiId, isEditing, onSaveSuccess) => {
   const [isSaving, setIsSaving] = useState(false);
@@ -12,19 +13,38 @@ export const useAutoSave = (form, poiId, isEditing, onSaveSuccess) => {
   // Auto-save interval in milliseconds (10 seconds)
   const AUTO_SAVE_INTERVAL = 10000;
 
-  // Check if form values have changed (excluding map-related internal state)
+  // Check if form values have changed using a more efficient shallow comparison
   const hasFormChanged = useCallback(() => {
     if (!lastFormValuesRef.current) return true;
 
-    // Create copies without map internal state that changes on zoom
-    const currentValues = { ...form.values };
-    const lastValues = { ...lastFormValuesRef.current };
+    const currentValues = form.values;
+    const lastValues = lastFormValuesRef.current;
 
-    // Compare as JSON strings
-    const currentJson = JSON.stringify(currentValues);
-    const lastJson = JSON.stringify(lastValues);
+    // Quick shallow comparison for top-level fields
+    const currentKeys = Object.keys(currentValues);
+    const lastKeys = Object.keys(lastValues);
 
-    return currentJson !== lastJson;
+    if (currentKeys.length !== lastKeys.length) return true;
+
+    // Compare all top-level fields (except internal React fields)
+    const fieldsToCompare = currentKeys.filter(key =>
+      !key.startsWith('_') && key !== 'id' && key !== 'created_at' && key !== 'updated_at'
+    );
+
+    for (const key of fieldsToCompare) {
+      if (currentValues[key] !== lastValues[key]) {
+        // For objects/arrays, do a deeper check
+        if (typeof currentValues[key] === 'object' && currentValues[key] !== null) {
+          if (JSON.stringify(currentValues[key]) !== JSON.stringify(lastValues[key])) {
+            return true;
+          }
+        } else {
+          return true;
+        }
+      }
+    }
+
+    return false;
   }, [form.values]);
 
   // Auto-save function
@@ -35,64 +55,13 @@ export const useAutoSave = (form, poiId, isEditing, onSaveSuccess) => {
     // Don't save if form hasn't changed
     if (!hasFormChanged()) return;
 
-    // Don't save if form has validation errors for required fields
-    const errors = form.validate();
-    const hasRequiredErrors = errors.hasErrors && Object.keys(errors.errors).some(field => {
-      // Only block auto-save for critical required fields
-      const criticalFields = ['name', 'poi_type', 'latitude', 'longitude'];
-      return criticalFields.includes(field);
-    });
-
-    if (hasRequiredErrors) {
-      console.log('Auto-save skipped: form has critical validation errors');
-      return;
-    }
-
+    // NO VALIDATION - Save everything as-is
     saveInProgressRef.current = true;
     setIsSaving(true);
 
     try {
-      // Prepare payload similar to handleSubmit but for draft saving
-      const cleanValues = { ...form.values };
-
-      // Clean business fields
-      if (cleanValues.business && cleanValues.business.price_range === '') {
-        cleanValues.business.price_range = null;
-      }
-
-      // Clean optional string fields
-      const optionalStringFields = [
-        'description_long', 'description_short', 'status_message',
-        'address_full', 'address_street', 'address_city', 'address_zip',
-        'website_url', 'phone_number', 'email'
-      ];
-
-      optionalStringFields.forEach(field => {
-        if (cleanValues[field] === '') {
-          cleanValues[field] = null;
-        }
-      });
-
-      // Prepare the payload
-      const payload = {
-        ...cleanValues,
-        publication_status: cleanValues.publication_status || 'draft',
-        location: {
-          type: 'Point',
-          coordinates: [cleanValues.longitude, cleanValues.latitude]
-        }
-      };
-
-      // Remove fields not needed in payload
-      delete payload.longitude;
-      delete payload.latitude;
-
-      // Only include the subtype data relevant to the POI type
-      if (payload.poi_type !== 'BUSINESS') delete payload.business;
-      if (payload.poi_type !== 'PARK') delete payload.park;
-      if (payload.poi_type !== 'TRAIL') delete payload.trail;
-      if (payload.poi_type !== 'EVENT') delete payload.event;
-
+      // Prepare payload using shared utility
+      const payload = preparePOIPayload(form.values);
       const response = await api.put(`/pois/${poiId}`, payload);
 
       if (response.ok) {
@@ -124,21 +93,18 @@ export const useAutoSave = (form, poiId, isEditing, onSaveSuccess) => {
       setIsSaving(false);
       saveInProgressRef.current = false;
     }
-  }, [form.values, form.validate, isEditing, poiId, hasFormChanged, onSaveSuccess]);
+  }, [form.values, isEditing, poiId, hasFormChanged, onSaveSuccess]);
 
   // Set up auto-save timer - only trigger on actual changes
   useEffect(() => {
     if (!isEditing || !poiId) return;
-
-    // Don't trigger auto-save if values haven't actually changed
-    if (!hasFormChanged()) return;
 
     // Clear existing timeout
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
     }
 
-    // Set new timeout
+    // Set new timeout - hasFormChanged will be checked when timeout fires
     saveTimeoutRef.current = setTimeout(() => {
       performAutoSave();
     }, AUTO_SAVE_INTERVAL);
@@ -149,7 +115,8 @@ export const useAutoSave = (form, poiId, isEditing, onSaveSuccess) => {
         clearTimeout(saveTimeoutRef.current);
       }
     };
-  }, [form.values, isEditing, poiId, performAutoSave, hasFormChanged]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.values, isEditing, poiId]);
 
   // Cleanup timeout on unmount
   useEffect(() => {

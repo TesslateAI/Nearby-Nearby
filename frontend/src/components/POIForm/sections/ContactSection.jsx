@@ -1,9 +1,10 @@
+import React from 'react';
 import {
   Stack, SimpleGrid, TextInput, Divider, Text, Alert
 } from '@mantine/core';
 import { getControlledInputProps } from '../constants/helpers';
 
-export function ContactSection({
+export const ContactSection = React.memo(function ContactSection({
   form,
   isEvent,
   isFreeListing
@@ -73,4 +74,4 @@ export function ContactSection({
       </SimpleGrid>
     </Stack>
   );
-}
+});

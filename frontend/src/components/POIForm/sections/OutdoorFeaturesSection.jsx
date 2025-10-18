@@ -1,3 +1,4 @@
+import React from 'react';
 import {
   Stack, SimpleGrid, Checkbox, Divider, Radio, Switch, TextInput
 } from '@mantine/core';
@@ -14,7 +15,7 @@ import {
   shouldUseImageUpload
 } from '../ImageIntegration';
 
-export function OutdoorFeaturesSection({ form }) {
+export const OutdoorFeaturesSection = React.memo(function OutdoorFeaturesSection({ form }) {
   return (
     <Stack>
       <Divider my="md" label="Natural Features" />
@@ -63,9 +64,9 @@ export function OutdoorFeaturesSection({ form }) {
       />
     </Stack>
   );
-}
+});
 
-export function HuntingFishingSection({ form }) {
+export const HuntingFishingSection = React.memo(function HuntingFishingSection({ form }) {
   return (
     <Stack>
       <Radio.Group
@@ -139,9 +140,9 @@ export function HuntingFishingSection({ form }) {
       )}
     </Stack>
   );
-}
+});
 
-export function PetPolicySection({ form }) {
+export const PetPolicySection = React.memo(function PetPolicySection({ form }) {
   return (
     <Stack>
       <Radio.Group
@@ -185,9 +186,9 @@ export function PetPolicySection({ form }) {
       )}
     </Stack>
   );
-}
+});
 
-export function PlaygroundSection({ form, id }) {
+export const PlaygroundSection = React.memo(function PlaygroundSection({ form, id }) {
   return (
     <Stack>
       <Switch
@@ -237,4 +238,4 @@ export function PlaygroundSection({ form, id }) {
       )}
     </Stack>
   );
-}
+});

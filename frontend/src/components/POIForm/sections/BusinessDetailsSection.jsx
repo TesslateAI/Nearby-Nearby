@@ -1,3 +1,4 @@
+import React from 'react';
 import {
   Stack, SimpleGrid, Select, TextInput, Divider, Checkbox, Group, ActionIcon, Button
 } from '@mantine/core';
@@ -16,7 +17,7 @@ import {
 } from '../ImageIntegration';
 import RichTextEditor from '../../RichTextEditor';
 
-export function BusinessDetailsSection({
+export const BusinessDetailsSection = React.memo(function BusinessDetailsSection({
   form,
   isFreeListing,
   id
@@ -86,9 +87,9 @@ export function BusinessDetailsSection({
       )}
     </Stack>
   );
-}
+});
 
-export function MenuBookingSection({
+export const MenuBookingSection = React.memo(function MenuBookingSection({
   form,
   id
 }) {
@@ -201,9 +202,9 @@ export function MenuBookingSection({
       </Button>
     </Stack>
   );
-}
+});
 
-export function BusinessGallerySection({
+export const BusinessGallerySection = React.memo(function BusinessGallerySection({
   form,
   id
 }) {
@@ -221,9 +222,9 @@ export function BusinessGallerySection({
       )}
     </Stack>
   );
-}
+});
 
-export function BusinessEntrySection({
+export const BusinessEntrySection = React.memo(function BusinessEntrySection({
   form,
   id
 }) {
@@ -249,4 +250,4 @@ export function BusinessEntrySection({
       )}
     </Stack>
   );
-}
+});

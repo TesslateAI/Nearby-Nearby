@@ -1,3 +1,4 @@
+import React from 'react';
 import {
   Stack, SimpleGrid, TextInput, Textarea, Alert, Text, Select,
   Radio, Checkbox, Button, Group, ActionIcon, Divider
@@ -10,7 +11,7 @@ import {
 } from '../../../utils/constants';
 import { getCheckboxGroupProps } from '../constants/helpers';
 
-export function InternalContactSection({ form }) {
+export const InternalContactSection = React.memo(function InternalContactSection({ form }) {
   return (
     <Stack>
       <Alert color="blue" variant="light" mb="md">
@@ -57,9 +58,9 @@ export function InternalContactSection({ form }) {
       />
     </Stack>
   );
-}
+});
 
-export function PricingMembershipsSection({ form }) {
+export const PricingMembershipsSection = React.memo(function PricingMembershipsSection({ form }) {
   return (
     <Stack>
       <Divider my="md" label="Cost Information" />
@@ -116,9 +117,9 @@ export function PricingMembershipsSection({ form }) {
       />
     </Stack>
   );
-}
+});
 
-export function ConnectionsSection({ form, isBusiness, isPark }) {
+export const ConnectionsSection = React.memo(function ConnectionsSection({ form, isBusiness, isPark }) {
   return (
     <Stack>
       {isBusiness && (
@@ -165,9 +166,9 @@ export function ConnectionsSection({ form, isBusiness, isPark }) {
       />
     </Stack>
   );
-}
+});
 
-export function CommunityConnectionsSection({ form }) {
+export const CommunityConnectionsSection = React.memo(function CommunityConnectionsSection({ form }) {
   return (
     <Stack>
       <RichTextEditor
@@ -202,9 +203,9 @@ export function CommunityConnectionsSection({ form }) {
       </Button>
     </Stack>
   );
-}
+});
 
-export function CorporateComplianceSection({ form }) {
+export const CorporateComplianceSection = React.memo(function CorporateComplianceSection({ form }) {
   return (
     <Stack>
       <Alert color="blue" variant="light" mb="md">
@@ -328,4 +329,4 @@ export function CorporateComplianceSection({ form }) {
       )}
     </Stack>
   );
-}
+});

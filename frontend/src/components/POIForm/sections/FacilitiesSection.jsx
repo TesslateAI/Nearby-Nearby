@@ -1,3 +1,4 @@
+import React from 'react';
 import {
   Stack, SimpleGrid, Checkbox, Divider, Radio, Select, Card,
   NumberInput, TextInput, Button, Switch
@@ -16,7 +17,7 @@ import {
   shouldUseImageUpload
 } from '../ImageIntegration';
 
-export function FacilitiesSection({
+export const FacilitiesSection = React.memo(function FacilitiesSection({
   form,
   isBusiness,
   isPark,
@@ -246,9 +247,9 @@ export function FacilitiesSection({
       )}
     </Stack>
   );
-}
+});
 
-export function PublicAmenitiesSection({
+export const PublicAmenitiesSection = React.memo(function PublicAmenitiesSection({
   form,
   isPark,
   id
@@ -468,9 +469,9 @@ export function PublicAmenitiesSection({
       )}
     </Stack>
   );
-}
+});
 
-export function RentalsSection({
+export const RentalsSection = React.memo(function RentalsSection({
   form,
   id
 }) {
@@ -515,4 +516,4 @@ export function RentalsSection({
       )}
     </Stack>
   );
-}
+});

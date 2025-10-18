@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MultiSelect, Text } from '@mantine/core';
 import api from '../utils/api';
 
-export function SecondaryCategoriesSelector({ value, onChange, poiType, mainCategoryId, error, maxValues, label }) {
+export const SecondaryCategoriesSelector = React.memo(function SecondaryCategoriesSelector({ value, onChange, poiType, mainCategoryId, error, maxValues, label }) {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -75,6 +75,6 @@ export function SecondaryCategoriesSelector({ value, onChange, poiType, mainCate
       )}
     </>
   );
-}
+});
 
 export default SecondaryCategoriesSelector;

@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Checkbox, Stack, Text, Divider, Group, Badge, LoadingOverlay } from '@mantine/core';
 import api from '../utils/api';
 
-function DynamicAttributeForm({ poiType, value = {}, onChange }) {
+const DynamicAttributeForm = React.memo(function DynamicAttributeForm({ poiType, value = {}, onChange }) {
   const [attributes, setAttributes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [groupedAttributes, setGroupedAttributes] = useState({});
@@ -116,6 +116,6 @@ function DynamicAttributeForm({ poiType, value = {}, onChange }) {
       ))}
     </Stack>
   );
-}
+});
 
 export default DynamicAttributeForm; 

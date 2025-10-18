@@ -1,3 +1,4 @@
+import React from 'react';
 import {
   Stack, Alert, Divider, Text, Title, SimpleGrid, Checkbox
 } from '@mantine/core';
@@ -6,7 +7,7 @@ import { SecondaryCategoriesSelector } from '../../SecondaryCategoriesSelector';
 import { IdealForSelector } from '../../IdealForSelector';
 import { getFieldsForListingType, IDEAL_FOR_KEY_OPTIONS } from '../../../utils/constants';
 
-export function CategoriesSection({
+export const CategoriesSection = React.memo(function CategoriesSection({
   form,
   isPaidListing,
   isFreeListing
@@ -96,4 +97,4 @@ export function CategoriesSection({
       </Stack>
     </Stack>
   );
-}
+});

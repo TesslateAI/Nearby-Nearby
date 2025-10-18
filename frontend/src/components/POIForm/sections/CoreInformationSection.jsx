@@ -1,3 +1,4 @@
+import React from 'react';
 import {
   Stack, SimpleGrid, Select, TextInput, Switch, Alert, Text, Button, Divider
 } from '@mantine/core';
@@ -11,7 +12,7 @@ import {
   shouldUseImageUpload
 } from '../ImageIntegration';
 
-export function CoreInformationSection({
+export const CoreInformationSection = React.memo(function CoreInformationSection({
   form,
   isBusiness,
   isPark,
@@ -34,7 +35,6 @@ export function CoreInformationSection({
             { value: 'EVENT', label: 'Event' }
           ]}
           {...form.getInputProps('poi_type')}
-          withAsterisk
         />
         <Select
           label="Listing Type"
@@ -54,7 +54,6 @@ export function CoreInformationSection({
         label="Name"
         placeholder="Enter POI name"
         {...getControlledInputProps(form, 'name')}
-        withAsterisk
       />
 
       <RichTextEditor
@@ -133,7 +132,6 @@ export function CoreInformationSection({
               label="Start Date & Time"
               placeholder="Select start date and time"
               {...form.getInputProps('event.start_datetime')}
-              withAsterisk
             />
             <DateTimePicker
               label="End Date & Time"
@@ -210,4 +208,4 @@ export function CoreInformationSection({
       )}
     </Stack>
   );
-}
+});

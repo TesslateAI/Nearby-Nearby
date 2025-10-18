@@ -30,7 +30,7 @@ function DraggableMarker({ position, onPositionChange }) {
 
 // Main map component - memoized to prevent unnecessary re-renders
 const LocationMap = memo(({ latitude, longitude, onLocationChange }) => {
-  const currentPosition = [latitude || 35.72, longitude || -79.17];
+  const currentPosition = [latitude || 35.720303, longitude || -79.177397];
 
   const handleMapInteraction = (e) => {
     // Stop all events from map from bubbling to parent form
@@ -66,7 +66,7 @@ const LocationMap = memo(({ latitude, longitude, onLocationChange }) => {
       >
         <MapContainer
           center={currentPosition}
-          zoom={13}
+          zoom={14}
           style={{ height: '100%', width: '100%' }}
           scrollWheelZoom={false}
           zoomControl={true}

@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react';
+import React, { lazy, Suspense } from 'react';
 import {
   Stack, SimpleGrid, TextInput, Select, NumberInput, Button, Divider,
   Checkbox, Radio, Card, Group, ActionIcon
@@ -17,7 +17,7 @@ import {
 const LocationMap = lazy(() => import('../../LocationMap'));
 import { LocationMapSkeleton } from '../../LocationMap';
 
-export function LocationSection({
+export const LocationSection = React.memo(function LocationSection({
   form,
   isPark,
   isEvent,
@@ -55,7 +55,6 @@ export function LocationSection({
           label="City"
           placeholder="City name"
           {...getControlledInputProps(form, 'address_city')}
-          withAsterisk
         />
         <TextInput
           label="County"
@@ -65,9 +64,15 @@ export function LocationSection({
         <Select
           label="State"
           placeholder="Select state"
-          data={['NC', 'SC', 'VA', 'GA', 'TN']}
+          data={[
+            { value: 'NC', label: 'North Carolina' },
+            { value: 'SC', label: 'South Carolina' },
+            { value: 'VA', label: 'Virginia' },
+            { value: 'GA', label: 'Georgia' },
+            { value: 'TN', label: 'Tennessee' }
+          ]}
           {...form.getInputProps('address_state')}
-          withAsterisk
+          searchable
         />
         <TextInput
           label="ZIP Code"
@@ -292,4 +297,4 @@ export function LocationSection({
       )}
     </Stack>
   );
-}
+});

@@ -5,6 +5,7 @@ import { modals } from '@mantine/modals';
 import { Text } from '@mantine/core';
 import api from '../../../utils/api';
 import { emptyInitialValues } from '../constants/initialValues';
+import { preparePOIPayload } from '../utils/formCleanup';
 
 export const usePOIHandlers = (id, isEditing, form, setPoiId) => {
   const navigate = useNavigate();
@@ -215,48 +216,9 @@ export const usePOIHandlers = (id, isEditing, form, setPoiId) => {
       autoClose: false,
     });
 
-    // Clean up empty string values and convert them to null for optional fields
-    const cleanValues = { ...values };
-
-    // Clean business fields
-    if (cleanValues.business) {
-      if (cleanValues.business.price_range === '') {
-        cleanValues.business.price_range = null;
-      }
-    }
-
-    // Clean other optional string fields
-    const optionalStringFields = [
-      'description_long', 'description_short', 'status_message',
-      'address_full', 'address_street', 'address_city', 'address_zip',
-      'website_url', 'phone_number', 'email'
-    ];
-
-    optionalStringFields.forEach(field => {
-      if (cleanValues[field] === '') {
-        cleanValues[field] = null;
-      }
-    });
-
-    // Prepare the payload
-    const payload = {
-      ...cleanValues,
-      publication_status: publicationStatus,
-      location: {
-        type: 'Point',
-        coordinates: [cleanValues.longitude, cleanValues.latitude]
-      }
-    };
-
-    // Remove fields not needed in payload
-    delete payload.longitude;
-    delete payload.latitude;
-
-    // Only include the subtype data relevant to the POI type
-    if (payload.poi_type !== 'BUSINESS') delete payload.business;
-    if (payload.poi_type !== 'PARK') delete payload.park;
-    if (payload.poi_type !== 'TRAIL') delete payload.trail;
-    if (payload.poi_type !== 'EVENT') delete payload.event;
+    // Prepare payload using shared utility
+    const payload = preparePOIPayload(values);
+    payload.publication_status = publicationStatus; // Override with explicit status
 
 
     try {

@@ -1,9 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Select, Button, Group } from '@mantine/core';
 import { IconRefresh } from '@tabler/icons-react';
 import api from '../utils/api';
 
-export function MainCategorySelector({ value, onChange, poiType, error }) {
+export const MainCategorySelector = React.memo(function MainCategorySelector({ value, onChange, poiType, error }) {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -66,6 +66,6 @@ export function MainCategorySelector({ value, onChange, poiType, error }) {
       </Group>
     </div>
   );
-}
+});
 
 export default MainCategorySelector;

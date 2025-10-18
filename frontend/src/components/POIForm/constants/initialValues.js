@@ -18,7 +18,7 @@ export const emptyInitialValues = {
   address_city: '',
   address_state: 'NC',
   address_zip: '',
-  address_county: '',
+  address_county: 'Chatham',
   // Front door coordinates
   front_door_latitude: null,
   front_door_longitude: null,
@@ -34,8 +34,8 @@ export const emptyInitialValues = {
   linkedin_username: '',
   other_socials: {},
   // Location coordinates
-  longitude: -79.17,
-  latitude: 35.72,
+  longitude: -79.177397,
+  latitude: 35.720303,
   // Cost fields
   cost: '',
   pricing_details: '',

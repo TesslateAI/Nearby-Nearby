@@ -5,9 +5,10 @@ import Underline from '@tiptap/extension-underline';
 import LinkExtension from '@tiptap/extension-link';
 import CharacterCount from '@tiptap/extension-character-count';
 import DOMPurify from 'dompurify';
-import { forwardRef, useCallback, useEffect } from 'react';
+import { forwardRef, useEffect, useMemo, useRef } from 'react';
 import { Text, Box, Button, Group, Tooltip, Menu } from '@mantine/core';
 import { IconChevronDown } from '@tabler/icons-react';
+import { useDebouncedCallback } from '@mantine/hooks';
 
 const CustomRichTextEditor = forwardRef(({
   value = '',
@@ -22,39 +23,46 @@ const CustomRichTextEditor = forwardRef(({
   withAsterisk = false,
   ...props
 }, ref) => {
+  const isInitialMount = useRef(true);
+
+  // Memoize extensions to prevent recreation on every render
+  const extensions = useMemo(() => [
+    StarterKit.configure({
+      link: false,
+      underline: false,
+    }),
+    Underline,
+    LinkExtension.configure({
+      openOnClick: false,
+      HTMLAttributes: {
+        target: '_blank',
+        rel: 'noopener noreferrer',
+      },
+      protocols: ['http', 'https', 'mailto'],
+      validate: href => /^https?:\/\//.test(href) || /^mailto:/.test(href),
+    }),
+    ...(maxLength ? [CharacterCount.configure({ limit: maxLength })] : []),
+  ], [maxLength]);
+
+  // Debounced onChange - only updates form state after user stops typing
+  const debouncedOnChange = useDebouncedCallback((html) => {
+    const sanitizedHtml = DOMPurify.sanitize(html, {
+      ALLOWED_TAGS: [
+        'p', 'br', 'strong', 'b', 'em', 'i', 'u', 'a',
+        'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'
+      ],
+      ALLOWED_ATTR: ['href', 'target', 'rel'],
+      ALLOW_DATA_ATTR: false,
+    });
+    onChange?.(sanitizedHtml);
+  }, 300);
+
   const editor = useEditor({
-    extensions: [
-      StarterKit.configure({
-        // Disable built-in link from StarterKit to avoid conflicts
-        link: false,
-        // Disable built-in underline to avoid conflicts with our custom one
-        underline: false,
-      }),
-      Underline,
-      LinkExtension.configure({
-        openOnClick: false,
-        HTMLAttributes: {
-          target: '_blank',
-          rel: 'noopener noreferrer',
-        },
-        protocols: ['http', 'https', 'mailto'],
-        validate: href => /^https?:\/\//.test(href) || /^mailto:/.test(href),
-      }),
-      ...(maxLength ? [CharacterCount.configure({ limit: maxLength })] : []),
-    ],
+    extensions,
     content: value || '',
     onUpdate: ({ editor }) => {
-      const html = editor.getHTML();
-      // Sanitize HTML before saving
-      const sanitizedHtml = DOMPurify.sanitize(html, {
-        ALLOWED_TAGS: [
-          'p', 'br', 'strong', 'b', 'em', 'i', 'u', 'a',
-          'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'
-        ],
-        ALLOWED_ATTR: ['href', 'target', 'rel'],
-        ALLOW_DATA_ATTR: false,
-      });
-      onChange?.(sanitizedHtml);
+      // Editor updates freely, debounced callback syncs to form
+      debouncedOnChange(editor.getHTML());
     },
     editable: !disabled,
     editorProps: {
@@ -64,16 +72,16 @@ const CustomRichTextEditor = forwardRef(({
     }
   });
 
-  // Update editor content when value prop changes (using useEffect to avoid render warnings)
-  // Debounced to prevent excessive updates during typing
+  // Only sync external changes (like loading from server), not from typing
   useEffect(() => {
-    if (editor && value !== undefined && editor.getHTML() !== value) {
-      // Use queueMicrotask to defer the update and improve performance
-      queueMicrotask(() => {
-        if (editor && !editor.isDestroyed) {
-          editor.commands.setContent(value || '', false);
-        }
-      });
+    if (!editor || isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+
+    const currentContent = editor.getHTML();
+    if (value && value !== currentContent) {
+      editor.commands.setContent(value, false);
     }
   }, [editor, value]);
 

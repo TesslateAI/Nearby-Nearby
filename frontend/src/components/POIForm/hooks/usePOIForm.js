@@ -6,7 +6,9 @@ import { getValidationRules } from '../constants/validationRules';
 export const usePOIForm = () => {
   const form = useForm({
     initialValues: emptyInitialValues,
-    validate: getValidationRules()
+    // Remove automatic validation - validation only happens on submit
+    validateInputOnChange: false,
+    validateInputOnBlur: false
   });
 
   // Memoize computed values to prevent unnecessary recalculations

@@ -1,3 +1,4 @@
+import React from 'react';
 import {
   Stack, SimpleGrid, Switch, Divider, Text, Checkbox, Button,
   TextInput, NumberInput, Card
@@ -14,7 +15,7 @@ import {
   shouldUseImageUpload
 } from '../ImageIntegration';
 
-export function EventVendorsSection({ form, id }) {
+export const EventVendorsSection = React.memo(function EventVendorsSection({ form, id }) {
   return (
     <Stack>
       <Switch
@@ -85,9 +86,9 @@ export function EventVendorsSection({ form, id }) {
       )}
     </Stack>
   );
-}
+});
 
-export function EventAmenitiesSection({ form }) {
+export const EventAmenitiesSection = React.memo(function EventAmenitiesSection({ form }) {
   return (
     <Stack>
       <Checkbox.Group
@@ -111,9 +112,9 @@ export function EventAmenitiesSection({ form }) {
       />
     </Stack>
   );
-}
+});
 
-export function EventMapsSection({ form, id }) {
+export const EventMapsSection = React.memo(function EventMapsSection({ form, id }) {
   return (
     <Stack>
       <Divider my="md" label="Downloadable Maps" />
@@ -187,4 +188,4 @@ export function EventMapsSection({ form, id }) {
       />
     </Stack>
   );
-}
+});
