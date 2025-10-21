@@ -33,6 +33,7 @@ export const usePOIHandlers = (id, isEditing, form, setPoiId) => {
             latitude: poi.location?.coordinates?.[1] || emptyInitialValues.latitude,
             category_ids: poi.categories ? poi.categories.map(c => c.id) : [],
             main_category_id: poi.main_category?.id || null,
+            primary_type_id: poi.primary_type_id || null,
             business: poi.business || emptyInitialValues.business,
             park: poi.park || emptyInitialValues.park,
             trail: poi.trail || emptyInitialValues.trail,
@@ -336,6 +337,7 @@ export const usePOIHandlers = (id, isEditing, form, setPoiId) => {
       listing_type: form.values.listing_type || 'free',
       publication_status: 'draft',
       status: 'active',
+      primary_type_id: form.values.primary_type_id || null,
       latitude: form.values.latitude || 0,
       longitude: form.values.longitude || 0,
       location: {

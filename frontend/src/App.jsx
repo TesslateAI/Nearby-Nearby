@@ -8,6 +8,7 @@ import POIMap from './components/POIMap';
 import CategoryList from './components/CategoryList'; 
 import CategoryForm from './components/CategoryForm';
 import AttributeManager from './components/AttributeManager';
+import PrimaryTypeList from './components/PrimaryTypeList';
 import PublicHomePage from './pages/PublicHomePage';
 import PoiDetailPage from './pages/PoiDetailPage';
 import LoginPage from './pages/LoginPage';
@@ -74,6 +75,7 @@ function App() {
           <NavLink label="Points of Interest" component={Link} to="/" />
           <NavLink label="POI Map" component={Link} to="/map" />
           <NavLink label="Manage Categories" component={Link} to="/categories" />
+          <NavLink label="Manage Primary Types" component={Link} to="/primary-types" />
           <NavLink label="Manage Attributes" component={Link} to="/attributes" />
           <NavLink label="Create New POI" component={Link} to="/poi/new" />
           <NavLink
@@ -96,6 +98,7 @@ function App() {
             <Route path="/poi/new" element={<POIForm />} />
             <Route path="/poi/:id/edit" element={<POIForm />} />
             <Route path="/categories" element={<CategoryList />} />
+            <Route path="/primary-types" element={<PrimaryTypeList />} />
             <Route path="/category/new" element={<CategoryForm />} />
             <Route path="/category/:id/edit" element={<CategoryForm />} />
             <Route path="/attributes" element={<AttributeManager />} />

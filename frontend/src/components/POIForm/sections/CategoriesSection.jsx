@@ -4,6 +4,7 @@ import {
 import { MainCategorySelector } from '../../MainCategorySelector';
 import { SecondaryCategoriesSelector } from '../../SecondaryCategoriesSelector';
 import { IdealForSelector } from '../../IdealForSelector';
+import { PrimaryTypeSelector } from '../../PrimaryTypeSelector';
 import { getFieldsForListingType, IDEAL_FOR_KEY_OPTIONS } from '../../../utils/constants';
 
 export function CategoriesSection({
@@ -24,6 +25,13 @@ export function CategoriesSection({
         onChange={(value) => form.setFieldValue('main_category_id', value)}
         poiType={form.values.poi_type}
         error={form.errors.main_category_id}
+      />
+
+      {/* Primary Type */}
+      <PrimaryTypeSelector
+        value={form.values.primary_type_id || null}
+        onChange={(value) => form.setFieldValue('primary_type_id', value)}
+        error={form.errors.primary_type_id}
       />
 
       {/* Only show secondary categories for non-Business POIs */}

@@ -7,3 +7,4 @@ from .poi import PointOfInterest, PointOfInterestCreate, PointOfInterestUpdate, 
 from .category import Category, CategoryCreate, CategoryUpdate, CategoryWithChildren
 from .attribute import Attribute, AttributeCreate, AttributeUpdate
 from .user import User, UserCreate, UserUpdate, Token, TokenData
+from .primary_type import PrimaryType, PrimaryTypeCreate, PrimaryTypeUpdate

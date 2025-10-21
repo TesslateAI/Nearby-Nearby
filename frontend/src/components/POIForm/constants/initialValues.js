@@ -212,5 +212,7 @@ export const emptyInitialValues = {
   compliance: {},
   custom_fields: {},
   main_category_id: null,
+  // Primary Type linkage (unidirectional)
+  primary_type_id: null,
   category_ids: []
 };

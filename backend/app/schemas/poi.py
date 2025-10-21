@@ -8,6 +8,7 @@ from geoalchemy2.elements import WKBElement
 from geoalchemy2.shape import to_shape
 
 from .category import Category
+from .primary_type import PrimaryType
 
 # Helper for slug generation
 def generate_slug(value: str) -> str:
@@ -145,6 +146,7 @@ class PointOfInterestBase(BaseModel):
     description_long: Optional[str] = None
     description_short: Optional[str] = None  # Business free listings only (200 char limit)
     teaser_paragraph: Optional[str] = Field(None, max_length=120)  # All POI types (120 char limit)
+    primary_type_id: Optional[uuid.UUID] = None
     
     # Listing type for all POIs
     listing_type: LISTING_TYPES = 'free'
@@ -365,6 +367,7 @@ class PointOfInterestUpdate(BaseModel):
     ticket_link: Optional[str] = None
     history_paragraph: Optional[str] = None
     featured_image: Optional[str] = None
+    primary_type_id: Optional[uuid.UUID] = None
     main_contact_name: Optional[str] = None
     main_contact_email: Optional[str] = None
     main_contact_phone: Optional[str] = None
