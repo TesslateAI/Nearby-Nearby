@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.endpoints import pois, categories, attributes, auth, relationships, images
+from app.api.endpoints import pois, categories, attributes, auth, relationships, images, primary_types
 from app.database import engine, Base
 from app.core.middleware import add_security_middleware
 from app.core.config import settings
@@ -46,6 +46,7 @@ app.include_router(attributes.router, prefix="/api", tags=["Attributes"])
 app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
 app.include_router(relationships.router, prefix="/api", tags=["POI Relationships"])
 app.include_router(images.router, prefix="/api/images", tags=["Images"])
+app.include_router(primary_types.router, prefix="/api/primary-types", tags=["Primary Types"])
 
 @app.get("/")
 def read_root():

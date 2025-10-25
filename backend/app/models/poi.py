@@ -29,6 +29,9 @@ class PointOfInterest(Base):
     description_short = Column(String(250))  # Business free listings only (200 char limit)
     teaser_paragraph = Column(String(120))  # All POI types (120 char limit)
     
+    # Primary Type (e.g., Food Truck, Ghost Kitchen, Pop-up)
+    primary_type_id = Column(UUID(as_uuid=True), ForeignKey("primary_types.id"), nullable=True, index=True)
+    
     # Address fields
     dont_display_location = Column(Boolean, default=False)  # For businesses that don't want exact location shown
     address_full = Column(String)
@@ -225,6 +228,9 @@ class PointOfInterest(Base):
         secondary=poi_category_association,
         backref="pois"
     )
+    
+    # Primary type relationship
+    primary_type = relationship("PrimaryType")
     
     # POI-to-POI relationships
     source_relationships = relationship(

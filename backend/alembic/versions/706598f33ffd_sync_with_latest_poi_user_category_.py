@@ -1,3 +1,56 @@
+"""create primary_types table and link to POIs
+
+Revision ID: 706598f33ffe
+Revises: e6318f242755
+Create Date: 2025-10-20 00:00:00.000000
+
+"""
+from alembic import op
+import sqlalchemy as sa
+
+
+# revision identifiers, used by Alembic.
+revision = '706598f33ffe'
+down_revision = 'e6318f242755'
+branch_labels = None
+depends_on = None
+
+
+def upgrade() -> None:
+    op.create_table(
+        'primary_types',
+        sa.Column('id', sa.UUID(), nullable=False),
+        sa.Column('name', sa.String(length=120), nullable=False),
+        sa.Column('slug', sa.String(length=160), nullable=False),
+        sa.Column('description', sa.Text(), nullable=True),
+        sa.PrimaryKeyConstraint('id'),
+        sa.UniqueConstraint('name'),
+        sa.UniqueConstraint('slug')
+    )
+    op.create_index(op.f('ix_primary_types_name'), 'primary_types', ['name'], unique=False)
+    op.create_index(op.f('ix_primary_types_slug'), 'primary_types', ['slug'], unique=False)
+
+    # Add column to points_of_interest
+    op.add_column('points_of_interest', sa.Column('primary_type_id', sa.UUID(), nullable=True))
+    op.create_foreign_key(
+        'points_of_interest_primary_type_id_fkey',
+        'points_of_interest',
+        'primary_types',
+        ['primary_type_id'],
+        ['id'],
+        ondelete='SET NULL'
+    )
+    op.create_index(op.f('ix_points_of_interest_primary_type_id'), 'points_of_interest', ['primary_type_id'], unique=False)
+
+
+def downgrade() -> None:
+    op.drop_index(op.f('ix_points_of_interest_primary_type_id'), table_name='points_of_interest')
+    op.drop_constraint('points_of_interest_primary_type_id_fkey', 'points_of_interest', type_='foreignkey')
+    op.drop_column('points_of_interest', 'primary_type_id')
+
+    op.drop_index(op.f('ix_primary_types_slug'), table_name='primary_types')
+    op.drop_index(op.f('ix_primary_types_name'), table_name='primary_types')
+    op.drop_table('primary_types')
 """sync with latest POI, user, category, attribute, relationship models
 
 Revision ID: 706598f33ffd
