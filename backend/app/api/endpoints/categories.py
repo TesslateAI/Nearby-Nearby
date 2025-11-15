@@ -35,27 +35,16 @@ def get_categories_by_poi_type(
     """
     return crud.get_categories_by_poi_type(db=db, poi_type=poi_type)
 
-@router.get("/main/{poi_type}", response_model=List[schemas.Category])
-def get_main_categories(
+@router.get("/tree/{poi_type}", response_model=List[schemas.CategoryWithChildren])
+def get_category_tree_for_poi_type(
     poi_type: str,
     db: Session = Depends(get_db)
 ):
     """
-    Get only main (parent) categories for a specific POI type.
+    Get category tree structure for a specific POI type.
+    Returns hierarchical tree with all levels of categories.
     """
-    return crud.get_main_categories_by_poi_type(db=db, poi_type=poi_type)
-
-@router.get("/secondary/{poi_type}", response_model=List[schemas.Category])
-def get_secondary_categories(
-    poi_type: str,
-    parent_id: uuid.UUID = None,
-    db: Session = Depends(get_db)
-):
-    """
-    Get secondary (child) categories for a specific POI type.
-    Optionally filter by parent_id.
-    """
-    return crud.get_secondary_categories_by_poi_type(db=db, poi_type=poi_type, parent_id=parent_id)
+    return crud.get_category_tree_by_poi_type(db=db, poi_type=poi_type)
 
 @router.get("/{category_id}", response_model=schemas.Category)
 def get_category(

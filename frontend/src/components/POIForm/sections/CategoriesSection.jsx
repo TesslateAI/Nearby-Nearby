@@ -3,7 +3,7 @@ import {
   Stack, Alert, Divider, Text, Title, SimpleGrid, Checkbox
 } from '@mantine/core';
 import { MainCategorySelector } from '../../MainCategorySelector';
-import { SecondaryCategoriesSelector } from '../../SecondaryCategoriesSelector';
+import { TreeCategorySelector } from '../../TreeCategorySelector';
 import { IdealForSelector } from '../../IdealForSelector';
 import { PrimaryTypeSelector } from '../../PrimaryTypeSelector';
 import { getFieldsForListingType, IDEAL_FOR_KEY_OPTIONS } from '../../../utils/constants';
@@ -23,17 +23,21 @@ export const CategoriesSection = React.memo(function CategoriesSection({
         </Alert>
       )}
 
-      {/* Step 1: Select ALL categories first */}
-      <SecondaryCategoriesSelector
+      {/* Step 1: Select ALL categories first - Using Tree Selector */}
+      <TreeCategorySelector
         value={form.values.category_ids || []}
         onChange={(value) => form.setFieldValue('category_ids', value)}
         poiType={form.values.poi_type}
-        mainCategoryId={form.values.main_category_id}
-        maxValues={getFieldsForListingType(form.values.listing_type, form.values.poi_type)?.maxCategories}
         error={form.errors.category_ids}
       />
 
-      {/* Step 2: Choose which category is the MAIN one */}
+      {getFieldsForListingType(form.values.listing_type, form.values.poi_type)?.maxCategories && (
+        <Text size="xs" c="dimmed">
+          Maximum {getFieldsForListingType(form.values.listing_type, form.values.poi_type).maxCategories} categories allowed for this listing type
+        </Text>
+      )}
+
+      {/* Step 2: Choose which category is the PRIMARY DISPLAY CATEGORY */}
       <MainCategorySelector
         value={form.values.main_category_id}
         onChange={(value) => form.setFieldValue('main_category_id', value)}
@@ -42,12 +46,11 @@ export const CategoriesSection = React.memo(function CategoriesSection({
         error={form.errors.main_category_id}
       />
 
-      {/* Primary Type */}
-      <PrimaryTypeSelector
-        value={form.values.primary_type_id || null}
-        onChange={(value) => form.setFieldValue('primary_type_id', value)}
-        error={form.errors.primary_type_id}
-      />
+      {form.values.main_category_id && (
+        <Alert color="blue" variant="light">
+          This category will be displayed on POI cards for quick identification
+        </Alert>
+      )}
 
       {/* Ideal For */}
       <Divider my="md" label="Target Audience" />

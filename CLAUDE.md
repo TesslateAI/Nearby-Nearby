@@ -73,6 +73,25 @@ npm run build
 npm run lint
 ```
 
+### Production Deployment
+**NOTE**: There is no automated deployment script. Deployment is done manually using commands documented in `PRODUCTION_REBUILD.md`.
+
+```bash
+# Full production rebuild (after code changes)
+cd /home/ubuntu/Nearby-Nearby
+docker compose -f docker-compose.prod.yml down
+docker compose -f docker-compose.prod.yml up --build -d
+
+# Restart services (no code changes)
+docker compose -f docker-compose.prod.yml restart
+
+# View logs
+docker compose -f docker-compose.prod.yml logs -f
+
+# Frontend uses Dockerfile.prod (nginx with optimized build)
+# Backend uses Dockerfile (with --reload removed for production)
+```
+
 ## High-Level Architecture
 
 ### Domain Model

@@ -36,7 +36,7 @@ import { api } from '../../utils/api';
 const IMAGE_TYPE_CONFIG = {
   main: { maxCount: 1, maxSizeMB: 10, label: 'Main Image' },
   gallery: { maxCount: 20, maxSizeMB: 10, label: 'Gallery Images' },
-  entry: { maxCount: 1, maxSizeMB: 5, label: 'Entry Photo' },
+  entry: { maxCount: 3, maxSizeMB: 5, label: 'Entry Photos' },
   parking: { maxCount: 5, maxSizeMB: 5, label: 'Parking Photos' },
   restroom: { maxCount: 10, maxSizeMB: 5, label: 'Restroom Photos' },
   rental: { maxCount: 10, maxSizeMB: 5, label: 'Rental Photos' },

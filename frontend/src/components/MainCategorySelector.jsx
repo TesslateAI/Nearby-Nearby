@@ -18,6 +18,7 @@ export const MainCategorySelector = React.memo(function MainCategorySelector({
 
     setLoading(true);
     try {
+      // Fetch full category list to build paths
       const response = await api.get(`/categories/by-poi-type/${poiType}`);
 
       if (response.ok) {
@@ -33,11 +34,29 @@ export const MainCategorySelector = React.memo(function MainCategorySelector({
     }
   }, [poiType]);
 
+  // Helper to build category path (e.g., "Food & Drinks → Restaurants → Italian")
+  const buildCategoryPath = (categoryId, categories) => {
+    const categoryMap = new Map(categories.map(cat => [cat.id, cat]));
+    const category = categoryMap.get(categoryId);
+    if (!category) return '';
+
+    const path = [category.name];
+    let current = category;
+
+    // Walk up the parent chain
+    while (current.parent_id && categoryMap.has(current.parent_id)) {
+      current = categoryMap.get(current.parent_id);
+      path.unshift(current.name);
+    }
+
+    return path.join(' → ');
+  };
+
   useEffect(() => {
     fetchCategories();
   }, [fetchCategories]);
 
-  // Filter categories to only show those the user has selected
+  // Filter categories to only show those the user has selected, with full path
   const availableCategories = React.useMemo(() => {
     if (selectedCategories.length === 0) {
       return [];
@@ -47,7 +66,7 @@ export const MainCategorySelector = React.memo(function MainCategorySelector({
       .filter(cat => selectedCategories.includes(cat.id))
       .map(cat => ({
         value: cat.id,
-        label: cat.name
+        label: buildCategoryPath(cat.id, allCategories)
       }));
   }, [allCategories, selectedCategories]);
 
@@ -56,9 +75,9 @@ export const MainCategorySelector = React.memo(function MainCategorySelector({
       <Group justify="space-between" mb="xs" align="flex-end">
         <div style={{ flex: 1 }}>
           <Select
-            label="Main Category"
-            description="Choose which category should be the primary one (from your selections above). You can save as draft and choose this later."
-            placeholder={selectedCategories.length === 0 ? "First select categories above" : "Choose main category"}
+            label="Primary Display Category"
+            description="Choose which category to display on POI cards (from your selections above). This provides distinction - e.g., 'Cafe' instead of just 'Business'."
+            placeholder={selectedCategories.length === 0 ? "First select categories above" : "Choose primary display category"}
             data={availableCategories}
             value={value}
             onChange={onChange}

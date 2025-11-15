@@ -15,9 +15,14 @@ from app.models.category import poi_category_association # Import the associatio
 
 class POIType(enum.Enum):
     BUSINESS = "BUSINESS"
+    SERVICES = "SERVICES"
     PARK = "PARK"
     TRAIL = "TRAIL"
     EVENT = "EVENT"
+    YOUTH_ACTIVITIES = "YOUTH_ACTIVITIES"
+    JOBS = "JOBS"
+    VOLUNTEER_OPPORTUNITIES = "VOLUNTEER_OPPORTUNITIES"
+    DISASTER_HUBS = "DISASTER_HUBS"
 
 class PointOfInterest(Base):
     __tablename__ = "points_of_interest"

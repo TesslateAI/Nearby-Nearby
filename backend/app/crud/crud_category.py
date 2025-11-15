@@ -16,8 +16,7 @@ def create_category(db: Session, category: schemas.CategoryCreate) -> models.Cat
         name=category.name,
         slug=category.slug,
         parent_id=category.parent_id,
-        applicable_to=category.applicable_to,
-        is_main_category=category.is_main_category
+        applicable_to=category.applicable_to
     )
     db.add(db_category)
     db.commit()
@@ -54,31 +53,32 @@ def get_categories_by_poi_type(db: Session, poi_type: str) -> List[models.Catego
         models.Category.applicable_to.contains([poi_type])
     ).order_by(models.Category.sort_order, models.Category.name).all()
 
-def get_main_categories_by_poi_type(db: Session, poi_type: str) -> List[models.Category]:
+def get_category_tree_by_poi_type(db: Session, poi_type: str) -> List[schemas.CategoryWithChildren]:
     """
-    Get only top-level (parent) categories for a specific POI type.
+    Get category tree structure for a specific POI type.
+    Returns only root-level categories with their full child hierarchy.
     """
-    return db.query(models.Category).filter(
+    # Get all categories for this POI type
+    all_categories = db.query(models.Category).filter(
         models.Category.is_active == True,
-        models.Category.parent_id == None,
-        models.Category.is_main_category == True,
         models.Category.applicable_to.contains([poi_type])
-    ).order_by(models.Category.sort_order, models.Category.name).all()
+    ).options(joinedload(models.Category.children)).order_by(models.Category.sort_order, models.Category.name).all()
 
-def get_secondary_categories_by_poi_type(db: Session, poi_type: str, parent_id: uuid.UUID = None) -> List[models.Category]:
-    """
-    Get secondary categories for a specific POI type, optionally filtered by parent.
-    """
-    query = db.query(models.Category).filter(
-        models.Category.is_active == True,
-        models.Category.applicable_to.contains([poi_type]),
-        models.Category.is_main_category == False  # Filter for secondary categories
-    )
+    # Build category map
+    category_map = {str(c.id): schemas.CategoryWithChildren.model_validate(c) for c in all_categories}
 
-    if parent_id:
-        query = query.filter(models.Category.parent_id == parent_id)
+    # Find root nodes (no parent or parent not in this POI type)
+    root_nodes: List[schemas.CategoryWithChildren] = []
 
-    return query.order_by(models.Category.sort_order, models.Category.name).all()
+    for category in category_map.values():
+        if category.parent_id and str(category.parent_id) in category_map:
+            # This is a child - already in parent's children via relationship
+            pass
+        else:
+            # This is a root node
+            root_nodes.append(category)
+
+    return root_nodes
 
 def update_category(db: Session, category_id: uuid.UUID, category_update: schemas.CategoryUpdate) -> models.Category:
     """

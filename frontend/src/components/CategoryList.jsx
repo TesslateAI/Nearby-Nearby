@@ -157,14 +157,6 @@ function CategoryList() {
       );
     }
 
-    if (mainCategoryFilter) {
-      if (mainCategoryFilter === 'true') {
-        flatCategories = flatCategories.filter(category => category.is_main_category);
-      } else if (mainCategoryFilter === 'false') {
-        flatCategories = flatCategories.filter(category => !category.is_main_category);
-      }
-    }
-
     if (searchTerm) {
       flatCategories = flatCategories.filter(category =>
         category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -198,56 +190,64 @@ function CategoryList() {
 
   const displayCategories = filteredAndSortedCategories();
 
-  const rows = displayCategories.map((category) => (
-    <Table.Tr key={category.id} style={{ transition: 'background-color 0.2s' }}>
-      <Table.Td>
-        <Anchor onClick={() => handleEdit(category.id)} fw={500} style={{ cursor: 'pointer' }}>
-          {category.fullName || category.name}
-        </Anchor>
-      </Table.Td>
-      <Table.Td>
-        <Group gap="xs">
-          {category.is_main_category && (
-            <Badge size="sm" variant="light" color="grape">
-              Main
-            </Badge>
-          )}
-          {!category.is_main_category && (
-            <Badge size="sm" variant="outline" color="gray">
-              Sub
-            </Badge>
-          )}
-        </Group>
-      </Table.Td>
-      <Table.Td>
-        <Group gap="xs">
-          {category.poi_types && category.poi_types.length > 0 ? (
-            category.poi_types.map(type => (
-              <Badge key={type} size="xs" variant="dot" color="blue">
-                {type}
-              </Badge>
-            ))
-          ) : (
-            <Text size="sm" c="dimmed">None</Text>
-          )}
-        </Group>
-      </Table.Td>
-      <Table.Td>
-        <Group gap="xs" justify="flex-end">
-          <Tooltip label="Edit Category">
-            <ActionIcon variant="subtle" color="gray" onClick={() => handleEdit(category.id)}>
-              <IconPencil size={18} />
-            </ActionIcon>
-          </Tooltip>
-          <Tooltip label="Delete Category">
-            <ActionIcon variant="subtle" color="red" onClick={() => handleDelete(category.id, category.name)}>
-              <IconTrash size={18} />
-            </ActionIcon>
-          </Tooltip>
-        </Group>
-      </Table.Td>
-    </Table.Tr>
-  ));
+  // Calculate category depth from full name
+  const getCategoryDepth = (fullName) => {
+    if (!fullName) return 0;
+    return (fullName.match(/>/g) || []).length;
+  };
+
+  const rows = displayCategories.map((category) => {
+    const depth = getCategoryDepth(category.fullName);
+    const indentation = depth * 20; // 20px per level
+
+    return (
+      <Table.Tr key={category.id} style={{ transition: 'background-color 0.2s' }}>
+        <Table.Td>
+          <Group gap="xs" style={{ paddingLeft: `${indentation}px` }}>
+            {depth > 0 && <Text c="dimmed" size="sm">└─</Text>}
+            <Anchor onClick={() => handleEdit(category.id)} fw={500} style={{ cursor: 'pointer' }}>
+              {category.name}
+            </Anchor>
+          </Group>
+        </Table.Td>
+        <Table.Td>
+          <Badge size="sm" variant="light" color={depth === 0 ? "grape" : depth === 1 ? "blue" : depth === 2 ? "teal" : "gray"}>
+            Level {depth}
+          </Badge>
+        </Table.Td>
+        <Table.Td>
+          <Text size="sm" c="dimmed">{category.fullName || category.name}</Text>
+        </Table.Td>
+        <Table.Td>
+          <Group gap="xs">
+            {category.poi_types && category.poi_types.length > 0 ? (
+              category.poi_types.map(type => (
+                <Badge key={type} size="xs" variant="dot" color="blue">
+                  {type}
+                </Badge>
+              ))
+            ) : (
+              <Text size="sm" c="dimmed">None</Text>
+            )}
+          </Group>
+        </Table.Td>
+        <Table.Td>
+          <Group gap="xs" justify="flex-end">
+            <Tooltip label="Edit Category">
+              <ActionIcon variant="subtle" color="gray" onClick={() => handleEdit(category.id)}>
+                <IconPencil size={18} />
+              </ActionIcon>
+            </Tooltip>
+            <Tooltip label="Delete Category">
+              <ActionIcon variant="subtle" color="red" onClick={() => handleDelete(category.id, category.name)}>
+                <IconTrash size={18} />
+              </ActionIcon>
+            </Tooltip>
+          </Group>
+        </Table.Td>
+      </Table.Tr>
+    );
+  });
 
   return (
     <Paper>
@@ -279,18 +279,7 @@ function CategoryList() {
             clearable
             style={{ minWidth: 150 }}
           />
-          <Select
-            placeholder="Main Category"
-            value={mainCategoryFilter}
-            onChange={setMainCategoryFilter}
-            data={[
-              { value: 'true', label: 'Main Categories Only' },
-              { value: 'false', label: 'Sub Categories Only' }
-            ]}
-            clearable
-            style={{ minWidth: 180 }}
-          />
-          {(searchTerm || typeFilter || mainCategoryFilter) && (
+          {(searchTerm || typeFilter) && (
             <Button variant="light" color="gray" onClick={clearFilters} leftSection={<IconX size={16} />}>
               Clear Filters
             </Button>
@@ -298,7 +287,7 @@ function CategoryList() {
         </Group>
 
 
-        {(searchTerm || typeFilter || mainCategoryFilter || sortBy !== 'name') && (
+        {(searchTerm || typeFilter || sortBy !== 'name') && (
           <Text size="sm" c="dimmed">
             {(() => {
               const filteredCategories = filteredAndSortedCategories();
@@ -326,12 +315,10 @@ function CategoryList() {
                 </UnstyledButton>
               </Table.Th>
               <Table.Th>
-                <UnstyledButton onClick={() => handleSortClick('is_main_category')} style={{ width: '100%' }}>
-                  <Group justify="space-between">
-                    <Text fw={500}>Type</Text>
-                    <Center>{getSortIcon('is_main_category')}</Center>
-                  </Group>
-                </UnstyledButton>
+                <Text fw={500}>Level</Text>
+              </Table.Th>
+              <Table.Th>
+                <Text fw={500}>Full Path</Text>
               </Table.Th>
               <Table.Th>
                 <UnstyledButton onClick={() => handleSortClick('poi_types')} style={{ width: '100%' }}>

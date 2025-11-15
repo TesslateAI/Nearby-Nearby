@@ -63,11 +63,12 @@ export const EntryPhotoUpload = ({ poiId, poiType, form }) => {
     <ImageUploadField
       poiId={poiId}
       imageType="entry"
-      label={`${poiType} Entry Photo`}
-      description="Photo showing the main entrance"
+      label={`${poiType} Entry Photos`}
+      description="Upload 2-3 photos showing the main entrance and entry area"
       onImagesChange={(images) => {
         if (images && images.length > 0) {
-          form.setFieldValue('business_entry_photo', images[0].url);
+          const urls = images.map(img => img.url);
+          form.setFieldValue('business_entry_photo', urls.join(', '));
         }
       }}
     />

@@ -9,7 +9,7 @@ from .crud_poi import (
 )
 from .crud_category import (
     get_category, create_category, delete_category, get_all_categories_as_tree,
-    get_main_categories_by_poi_type, get_secondary_categories_by_poi_type,
+    get_category_tree_by_poi_type,
     get_categories_by_poi_type
 )
 from .crud_attribute import (

@@ -17,7 +17,6 @@ class CategoryBase(BaseModel):
     applicable_to: Optional[List[str]] = None  # Array of POI types this category applies to
     is_active: bool = True
     sort_order: int = 0
-    is_main_category: bool = False
 
 class CategoryCreate(CategoryBase):
     slug: Optional[str] = None
@@ -40,7 +39,6 @@ class CategoryUpdate(BaseModel):
     applicable_to: Optional[List[str]] = None
     is_active: Optional[bool] = None
     sort_order: Optional[int] = None
-    is_main_category: Optional[bool] = None
 
 class Category(CategoryBase):
     id: uuid.UUID

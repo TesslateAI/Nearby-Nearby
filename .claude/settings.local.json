@@ -2,7 +2,25 @@
   "permissions": {
     "allow": [
       "Bash(git commit -m \"$(cat <<''EOF''\nperf: Fix TextInput lag with debounced inputs for faster typing\n\n## Problem\n- All TextInput fields were updating form state on every keystroke\n- Caused severe lag when typing quickly in text fields\n- RichTextEditor (TipTap) had no lag because it already uses debouncing\n- User experience was poor with character skipping and delays\n\n## Solution: Debounced Text Inputs\n- Applied DebouncedTextInput component to all major text input fields\n- Uses local state + useDebouncedCallback (300ms delay)\n- Form updates only after user stops typing (300ms pause)\n- Prevents expensive re-renders on every keystroke\n\n## Files Updated\n\n### LocationSection.jsx\n- Street Address, Address Line 2, City, County, ZIP Code\n- All address fields now use DebouncedTextInput\n- Parking location name fields kept as regular TextInput (less frequent use)\n\n### ContactSection.jsx\n- All contact fields debounced (8 fields total):\n  - Organizer Name (Events)\n  - Website, Phone Number, Email\n  - Instagram, Facebook, X, TikTok, LinkedIn\n\n### CoreInformationSection.jsx\n- Status Message field (100 char limit)\n- Event Cost and Ticket Link fields\n\n### helpers.js\n- Updated getControlledInputProps with better onChange handling\n- getDebouncedInputProps already existed and ready to use\n- Note added about using DebouncedTextInput for text fields\n\n## Technical Details\n\n### DebouncedTextInput Component (already existed)\n- Maintains internal state for instant UI feedback\n- Debounces form updates with useDebouncedCallback\n- Syncs external value changes properly\n- 300ms debounce delay (optimal for typing speed)\n\n### Fields NOT Changed\n- Image upload placeholder TextInputs (rarely used)\n- NumberInput fields (different performance characteristics)\n- Select dropdowns (no typing lag)\n- RichTextEditor fields (already debounced)\n\n## Results\n\n### Performance Improvements\n- No more typing lag in text fields\n- Instant character display (local state)\n- Form updates efficiently after typing pause\n- Matches RichTextEditor smooth experience\n\n### User Experience\n- Can type at full speed without lag\n- No more character deletion or skipping\n- Smooth, responsive text inputs\n- Professional typing experience\n\n### Code Quality\n- Reused existing DebouncedTextInput component\n- Consistent pattern across all text inputs\n- Helper functions support both patterns\n- Easy to extend to remaining fields if needed\n\n## Fields Updated (17 total)\n- 5 address fields (LocationSection)\n- 8 contact/social fields (ContactSection)\n- 1 status field (CoreInformationSection)\n- 3 event fields (CoreInformationSection)\n\n## Testing\n- Frontend builds successfully\n- No console errors\n- All debounced fields render correctly\n- Form submission preserves all data\n- Typing is now smooth and responsive\n\n## Future Improvements\nIf lag persists in other sections, can extend to:\n- BusinessDetailsSection (pricing, hours fields)\n- FacilitiesSection (rental pricing, links)\n- TrailSpecificSections (route info fields)\n- EventSpecificSections (vendor fields)\nEOF\n)\")",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(git merge origin/primary-table -m \"Merge primary-table branch into bugfix/latest-changes\")",
+      "Read(//home/ubuntu/**)",
+      "Bash(git clone:*)",
+      "Bash(tree:*)",
+      "Bash(docker logs:*)",
+      "Bash(curl:*)",
+      "Bash(netstat:*)",
+      "Bash(ss:*)",
+      "Bash(sudo systemctl status:*)",
+      "Bash(sudo systemctl stop:*)",
+      "Bash(sudo systemctl disable:*)",
+      "Bash(git checkout:*)",
+      "Bash(docker-compose logs:*)",
+      "Bash(docker-compose ps:*)",
+      "Bash(docker compose:*)",
+      "Bash(git restore:*)",
+      "Bash(docker inspect:*)",
+      "Bash(docker exec:*)"
     ],
     "deny": [],
     "ask": []

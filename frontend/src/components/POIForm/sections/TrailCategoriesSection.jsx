@@ -1,15 +1,40 @@
 import React from 'react';
-import { Stack, Divider, Title, Text } from '@mantine/core';
+import { Stack, Divider, Title, Text, Alert } from '@mantine/core';
+import { MainCategorySelector } from '../../MainCategorySelector';
+import { TreeCategorySelector } from '../../TreeCategorySelector';
 import { IdealForSelector } from '../../IdealForSelector';
 
 /**
  * Trail Categories Section
- * Uses standard category selection
- * Includes Target Audience (Ideal For) for Trails
+ * Uses standard category selection from backend
+ * Includes Primary Display Category and Target Audience (Ideal For)
  */
 export const TrailCategoriesSection = React.memo(function TrailCategoriesSection({ form }) {
   return (
     <Stack>
+      {/* Step 1: Select ALL categories first - Using Tree Selector */}
+      <TreeCategorySelector
+        value={form.values.category_ids || []}
+        onChange={(value) => form.setFieldValue('category_ids', value)}
+        poiType={form.values.poi_type}
+        error={form.errors.category_ids}
+      />
+
+      {/* Step 2: Choose which category is the PRIMARY DISPLAY CATEGORY */}
+      <MainCategorySelector
+        value={form.values.main_category_id}
+        onChange={(value) => form.setFieldValue('main_category_id', value)}
+        poiType={form.values.poi_type}
+        selectedCategories={form.values.category_ids || []}
+        error={form.errors.main_category_id}
+      />
+
+      {form.values.main_category_id && (
+        <Alert color="blue" variant="light">
+          This category will be displayed on POI cards for quick identification
+        </Alert>
+      )}
+
       {/* Target Audience - Ideal For */}
       <Divider my="md" label="Target Audience" />
       <Stack>

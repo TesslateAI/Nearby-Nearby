@@ -203,7 +203,7 @@ function RelationshipSearch({
                 <Stack gap="xs">
                   <Text fw={500}>{poi.name}</Text>
                   <Group gap="xs">
-                    <Badge size="sm" variant="light">{poi.poi_type}</Badge>
+                    <Badge size="sm" variant="light">{poi.main_category?.name || poi.poi_type}</Badge>
                     {poi.address_city && (
                       <Text size="sm" c="dimmed">{poi.address_city}</Text>
                     )}

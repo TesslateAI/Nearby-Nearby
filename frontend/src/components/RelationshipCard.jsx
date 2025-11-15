@@ -47,6 +47,9 @@ function RelationshipCard({
   const DirectionIcon = isSource ? IconArrowRight : IconArrowLeft;
   const directionLabel = isSource ? 'outgoing' : 'incoming';
 
+  // Display main category for distinction, fallback to POI type if no main category
+  const displayCategory = relatedPoi.main_category?.name || relatedPoi.poi_type;
+
   return (
     <Paper p="sm" withBorder>
       <Group justify="space-between">
@@ -55,9 +58,9 @@ function RelationshipCard({
           <Stack gap="xs">
             <Group gap="xs">
               <Text size="sm" fw={500}>{relatedPoi.name}</Text>
-              <Badge size="xs" variant="light">{relatedPoi.poi_type}</Badge>
-              <Badge 
-                size="xs" 
+              <Badge size="xs" variant="light">{displayCategory}</Badge>
+              <Badge
+                size="xs"
                 color={getRelationshipColor(relationship.relationship_type)}
               >
                 {getRelationshipLabel(relationship.relationship_type)}

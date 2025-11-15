@@ -120,7 +120,7 @@ class Event(EventBase):
     model_config = ConfigDict(from_attributes=True)
 
 # Point of Interest Schemas
-POI_TYPES = Literal['BUSINESS', 'PARK', 'TRAIL', 'EVENT']
+POI_TYPES = Literal['BUSINESS', 'SERVICES', 'PARK', 'TRAIL', 'EVENT', 'YOUTH_ACTIVITIES', 'JOBS', 'VOLUNTEER_OPPORTUNITIES', 'DISASTER_HUBS']
 PUBLICATION_STATUS = Literal['draft', 'published', 'archived']
 
 # Different status types for different POI types

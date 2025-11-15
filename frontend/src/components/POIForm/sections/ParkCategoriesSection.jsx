@@ -1,25 +1,39 @@
 import React from 'react';
-import { Stack, Divider, Title, Text } from '@mantine/core';
-import { THINGS_TO_DO } from '../../../utils/outdoorConstants';
+import { Stack, Divider, Title, Text, Alert } from '@mantine/core';
+import { MainCategorySelector } from '../../MainCategorySelector';
+import { TreeCategorySelector } from '../../TreeCategorySelector';
 import { IdealForSelector } from '../../IdealForSelector';
-import { CheckboxGroupSection } from '../components/CheckboxGroupSection';
 
 /**
  * Park Categories Section
- * Displays "Things to Do" as the main Park Categories section
- * Also includes Target Audience (Ideal For) for Parks
+ * Uses standard category selection from backend
+ * Includes Primary Display Category and Target Audience (Ideal For)
  */
 export const ParkCategoriesSection = React.memo(function ParkCategoriesSection({ form }) {
   return (
     <Stack>
-      {/* Park Categories - Things to Do */}
-      <CheckboxGroupSection
-        label="Park Categories - Things to Do"
-        fieldName="things_to_do"
-        options={THINGS_TO_DO}
-        cols={{ base: 2, sm: 3 }}
-        form={form}
+      {/* Step 1: Select ALL categories first - Using Tree Selector */}
+      <TreeCategorySelector
+        value={form.values.category_ids || []}
+        onChange={(value) => form.setFieldValue('category_ids', value)}
+        poiType={form.values.poi_type}
+        error={form.errors.category_ids}
       />
+
+      {/* Step 2: Choose which category is the PRIMARY DISPLAY CATEGORY */}
+      <MainCategorySelector
+        value={form.values.main_category_id}
+        onChange={(value) => form.setFieldValue('main_category_id', value)}
+        poiType={form.values.poi_type}
+        selectedCategories={form.values.category_ids || []}
+        error={form.errors.main_category_id}
+      />
+
+      {form.values.main_category_id && (
+        <Alert color="blue" variant="light">
+          This category will be displayed on POI cards for quick identification
+        </Alert>
+      )}
 
       {/* Target Audience - Ideal For */}
       <Divider my="md" label="Target Audience" />

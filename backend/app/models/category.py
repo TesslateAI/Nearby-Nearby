@@ -18,10 +18,10 @@ class Category(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = Column(String, nullable=False, unique=True)
     slug = Column(String, nullable=False, unique=True, index=True)
-    
-    # For self-referencing hierarchy (subcategories)
-    parent_id = Column(UUID(as_uuid=True), ForeignKey("categories.id"), nullable=True)
-    
+
+    # For self-referencing hierarchy (subcategories) - enables infinite depth
+    parent_id = Column(UUID(as_uuid=True), ForeignKey("categories.id"), nullable=True, index=True)
+
     # Relationship to parent category
     parent = relationship("Category", remote_side=[id], backref="children")
 
@@ -31,4 +31,3 @@ class Category(Base):
     applicable_to = Column(ARRAY(String))  # Array of POI types this category applies to
     is_active = Column(Boolean, default=True)
     sort_order = Column(Integer, default=0)
-    is_main_category = Column(Boolean, default=False)  # Whether this can be selected as a main category

@@ -13,6 +13,7 @@ export default defineConfig({
     },
     allowedHosts: [
       '.tesslate.com',
+      '.nearbynearby.com',
     ],
     proxy: {
       '/api': {

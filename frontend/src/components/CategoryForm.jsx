@@ -16,7 +16,6 @@ function CategoryForm() {
       name: '',
       parent_id: null,
       poi_types: [],
-      is_main_category: false,
     },
     validate: {
       name: (value) => (value.trim().length < 2 ? 'Name must have at least 2 characters' : null),
@@ -56,7 +55,6 @@ function CategoryForm() {
               name: data.name || '',
               parent_id: data.parent_id || null,
               poi_types: data.applicable_to || [],
-              is_main_category: data.is_main_category || false,
             });
           } else {
             throw new Error('Failed to fetch category');
@@ -79,7 +77,6 @@ function CategoryForm() {
         name: values.name,
         parent_id: values.parent_id || null, // Ensure null is sent if empty
         applicable_to: values.poi_types,  // Map poi_types to applicable_to
-        is_main_category: values.is_main_category,
     };
 
     try {
@@ -128,36 +125,40 @@ function CategoryForm() {
             withAsterisk
             label="POI Types"
             placeholder="Select applicable POI types"
+            description="This category will be available for the selected POI types"
             data={[
               { value: 'BUSINESS', label: 'Business' },
+              { value: 'SERVICES', label: 'Services' },
               { value: 'PARK', label: 'Park' },
               { value: 'TRAIL', label: 'Trail' },
-              { value: 'EVENT', label: 'Event' }
+              { value: 'EVENT', label: 'Event' },
+              { value: 'YOUTH_ACTIVITIES', label: 'Youth Activities' },
+              { value: 'JOBS', label: 'Jobs' },
+              { value: 'VOLUNTEER_OPPORTUNITIES', label: 'Volunteer Opportunities' },
+              { value: 'DISASTER_HUBS', label: 'Disaster Hubs' }
             ]}
             {...form.getInputProps('poi_types')}
           />
-          
-          <Switch
-            label="Is Main Category"
-            description="Main categories can be selected as primary categories for POIs"
-            {...form.getInputProps('is_main_category', { type: 'checkbox' })}
+
+          <Select
+            label="Parent Category (Optional)"
+            placeholder="Leave blank for root-level category"
+            data={categories}
+            {...form.getInputProps('parent_id')}
+            clearable
+            searchable
+            description="Select a parent to nest this category. Leave blank to create a root-level category."
           />
-          
-          {!form.values.is_main_category && (
-            <Select
-              label="Parent Category (Optional)"
-              placeholder="Select a parent to make this a subcategory"
-              data={categories}
-              {...form.getInputProps('parent_id')}
-              clearable
-              searchable
-              description="Secondary categories can have a parent category"
-            />
+
+          {form.values.parent_id && (
+            <Text size="sm" c="blue">
+              This will be a subcategory. The hierarchy is infinitely scalable.
+            </Text>
           )}
-          
-          {form.values.is_main_category && (
+
+          {!form.values.parent_id && (
             <Text size="sm" c="dimmed">
-              Main categories cannot have parent categories. They appear as primary options for POIs.
+              This will be a root-level category. You can add subcategories later.
             </Text>
           )}
         </Stack>
