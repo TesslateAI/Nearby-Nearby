@@ -74,23 +74,43 @@ npm run lint
 ```
 
 ### Production Deployment
-**NOTE**: There is no automated deployment script. Deployment is done manually using commands documented in `PRODUCTION_REBUILD.md`.
+
+**⚠️ CRITICAL: Production builds are currently running on the server**
+
+**Database Safety Rules:**
+- The production PostgreSQL database (`nearby-admin-db.ce3mwk2ymjh4.us-east-1.rds.amazonaws.com`) is shared between admin panel and user app
+- **NEVER modify production data** - data loss is unacceptable
+- Only perform read operations on production database
+- All testing must use local development database
+
+**When to Rebuild Production:**
+- After making code changes to frontend or backend
+- When testing new features (rebuild required to see changes)
+- After updating dependencies
 
 ```bash
 # Full production rebuild (after code changes)
-cd /home/ubuntu/Nearby-Nearby
+cd /home/ubuntu/nearby-admin
 docker compose -f docker-compose.prod.yml down
 docker compose -f docker-compose.prod.yml up --build -d
 
-# Restart services (no code changes)
+# Restart services only (no code changes)
 docker compose -f docker-compose.prod.yml restart
 
 # View logs
 docker compose -f docker-compose.prod.yml logs -f
 
-# Frontend uses Dockerfile.prod (nginx with optimized build)
-# Backend uses Dockerfile (with --reload removed for production)
+# Stop production services
+docker compose -f docker-compose.prod.yml down
 ```
+
+**Production Architecture:**
+- Frontend: nginx-served static build (Dockerfile.prod) on port 5175
+  - Container name: `nearby-admin-frontend`
+- Backend: FastAPI without reload flag on port 8001
+  - Container name: `nearby-admin-backend`
+- Both services auto-restart unless manually stopped
+- Production database connection via environment variables
 
 ## High-Level Architecture
 

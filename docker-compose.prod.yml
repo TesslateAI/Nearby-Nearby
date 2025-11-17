@@ -1,6 +1,7 @@
 services:
   # --- PRODUCTION SERVICES ---
   backend:
+    container_name: nearby-admin-backend
     build: ./backend
     command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"
     volumes:
@@ -23,6 +24,7 @@ services:
     restart: unless-stopped
 
   frontend:
+    container_name: nearby-admin-frontend
     build:
       context: ./frontend
       dockerfile: Dockerfile.prod
@@ -36,3 +38,8 @@ services:
 
 volumes:
   image_storage:
+
+networks:
+  default:
+    external: true
+    name: nearby-admin_default
