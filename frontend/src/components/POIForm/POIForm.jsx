@@ -39,7 +39,8 @@ import {
 import {
   EventVendorsSection,
   EventAmenitiesSection,
-  EventMapsSection
+  EventMapsSection,
+  EventVenueSection
 } from './sections/EventSpecificSections';
 import { TrailDetailsSection } from './sections/TrailSpecificSections';
 import {
@@ -240,6 +241,21 @@ export default function POIForm() {
                   </Accordion.Control>
                   <Accordion.Panel>
                     <TrailCategoriesSection form={form} />
+                  </Accordion.Panel>
+                </Accordion.Item>
+              )}
+
+              {/* Event Venue Section - Link to a venue and copy data */}
+              {isEvent && (
+                <Accordion.Item value="venue">
+                  <Accordion.Control>
+                    <Group>
+                      <Text fw={600}>Event Venue</Text>
+                      <Badge size="sm" variant="light" color="blue">Optional</Badge>
+                    </Group>
+                  </Accordion.Control>
+                  <Accordion.Panel>
+                    <EventVenueSection form={form} id={poiId} />
                   </Accordion.Panel>
                 </Accordion.Item>
               )}

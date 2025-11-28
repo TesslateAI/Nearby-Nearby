@@ -396,3 +396,148 @@ async def serve_image(
             "Content-Length": str(len(image.image_data))
         }
     )
+
+
+@router.post("/copy/{source_poi_id}/to/{target_poi_id}")
+async def copy_images_from_venue(
+    source_poi_id: UUID,
+    target_poi_id: UUID,
+    image_types: List[ImageTypeEnum] = Query(
+        ...,
+        description="Image types to copy (entry, parking, restroom)"
+    ),
+    db: Session = Depends(get_db),
+    current_user: str = Depends(get_current_user)
+) -> ImageBulkUploadResponse:
+    """
+    Copy images from a venue POI to an event POI.
+    Creates new image records with copied binary data or S3 references.
+    """
+    from app.models.poi import PointOfInterest
+    import uuid as uuid_lib
+
+    # Verify both POIs exist
+    source_poi = db.query(PointOfInterest).filter(PointOfInterest.id == source_poi_id).first()
+    if not source_poi:
+        raise HTTPException(status_code=404, detail="Source POI not found")
+
+    target_poi = db.query(PointOfInterest).filter(PointOfInterest.id == target_poi_id).first()
+    if not target_poi:
+        raise HTTPException(status_code=404, detail="Target POI not found")
+
+    # Validate source is a venue type
+    source_type = source_poi.poi_type.value if hasattr(source_poi.poi_type, 'value') else str(source_poi.poi_type)
+    if source_type not in ['BUSINESS', 'PARK']:
+        raise HTTPException(status_code=400, detail="Source POI must be a BUSINESS or PARK")
+
+    # Validate target is an event
+    target_type = target_poi.poi_type.value if hasattr(target_poi.poi_type, 'value') else str(target_poi.poi_type)
+    if target_type != 'EVENT':
+        raise HTTPException(status_code=400, detail="Target POI must be an EVENT")
+
+    uploaded = []
+    failed = []
+
+    for image_type_str in image_types:
+        try:
+            image_type_enum = ImageType(image_type_str)
+        except ValueError:
+            failed.append({"image_type": str(image_type_str), "error": "Invalid image type"})
+            continue
+
+        # Get source images of this type (only originals, not variants)
+        source_images = db.query(Image).filter(
+            Image.poi_id == source_poi_id,
+            Image.image_type == image_type_enum,
+            Image.parent_image_id.is_(None)
+        ).order_by(Image.display_order).all()
+
+        for source_img in source_images:
+            try:
+                # Create new image record for target POI
+                new_image = Image(
+                    id=uuid_lib.uuid4(),
+                    poi_id=target_poi_id,
+                    image_type=source_img.image_type,
+                    image_context=source_img.image_context,
+                    filename=f"copy_{source_img.filename}",
+                    original_filename=source_img.original_filename,
+                    mime_type=source_img.mime_type,
+                    width=source_img.width,
+                    height=source_img.height,
+                    alt_text=source_img.alt_text,
+                    caption=f"Copied from venue: {source_poi.name}",
+                    display_order=source_img.display_order,
+                    image_size_variant="original",
+                    storage_provider=source_img.storage_provider,
+                    uploaded_by=None
+                )
+
+                if source_img.storage_provider == "s3":
+                    # For S3, reference the same URL
+                    new_image.storage_url = source_img.storage_url
+                    new_image.storage_key = source_img.storage_key
+                    new_image.size_bytes = source_img.size_bytes
+                else:
+                    # For database storage, copy the binary data
+                    new_image.image_data = source_img.image_data
+                    new_image.size_bytes = source_img.size_bytes
+
+                db.add(new_image)
+                db.flush()
+
+                # Copy size variants too
+                for variant in source_img.size_variants:
+                    new_variant = Image(
+                        id=uuid_lib.uuid4(),
+                        poi_id=target_poi_id,
+                        image_type=variant.image_type,
+                        image_context=variant.image_context,
+                        filename=f"copy_{variant.filename}",
+                        original_filename=variant.original_filename,
+                        mime_type=variant.mime_type,
+                        width=variant.width,
+                        height=variant.height,
+                        parent_image_id=new_image.id,
+                        image_size_variant=variant.image_size_variant,
+                        is_optimized=variant.is_optimized,
+                        storage_provider=variant.storage_provider
+                    )
+
+                    if variant.storage_provider == "s3":
+                        new_variant.storage_url = variant.storage_url
+                        new_variant.storage_key = variant.storage_key
+                        new_variant.size_bytes = variant.size_bytes
+                    else:
+                        new_variant.image_data = variant.image_data
+                        new_variant.size_bytes = variant.size_bytes
+
+                    db.add(new_variant)
+
+                urls = image_service.get_image_urls(new_image)
+                uploaded.append(ImageUploadResponse(
+                    id=new_image.id,
+                    filename=new_image.filename,
+                    url=urls.get("url"),
+                    thumbnail_url=urls.get("thumbnail_url"),
+                    message=f"Copied {image_type_str} image from venue"
+                ))
+
+            except Exception as e:
+                failed.append({
+                    "image_type": str(image_type_str),
+                    "source_image_id": str(source_img.id),
+                    "error": str(e)
+                })
+
+    db.commit()
+
+    message = f"Successfully copied {len(uploaded)} images"
+    if failed:
+        message += f", {len(failed)} failed"
+
+    return ImageBulkUploadResponse(
+        uploaded=uploaded,
+        failed=failed,
+        message=message
+    )

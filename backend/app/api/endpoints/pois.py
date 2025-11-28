@@ -122,3 +122,113 @@ def delete_poi(
     if db_poi is None:
         raise HTTPException(status_code=404, detail="Point of Interest not found")
     return db_poi
+
+
+@router.get("/pois/venues/list", response_model=List[schemas.PointOfInterest])
+def get_available_venues(
+    skip: int = 0,
+    limit: int = 500,
+    search: str = Query(None, description="Search query for venue names"),
+    db: Session = Depends(get_db),
+    current_user = Depends(require_admin_or_editor())
+):
+    """
+    Get all POIs that can be used as venues (BUSINESS and PARK types).
+    Used for venue selection when creating events.
+    """
+    from app.models.poi import PointOfInterest, POIType
+
+    query = db.query(PointOfInterest).filter(
+        PointOfInterest.poi_type.in_([POIType.BUSINESS, POIType.PARK])
+    )
+
+    if search:
+        search_term = f"%{search}%"
+        query = query.filter(PointOfInterest.name.ilike(search_term))
+
+    return query.order_by(PointOfInterest.name).offset(skip).limit(limit).all()
+
+
+@router.get("/pois/{poi_id}/venue-data", response_model=schemas.VenueDataForEvent)
+def get_venue_data_for_event(
+    poi_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user = Depends(require_admin_or_editor())
+):
+    """
+    Get venue data that can be copied to an event.
+    Only works for BUSINESS and PARK POI types.
+    Returns address, contact, parking, accessibility, restroom info, hours, amenities, and photos.
+    """
+    from app.models.image import Image, ImageType
+    from app.services.image_service import image_service
+    from geoalchemy2.shape import to_shape
+
+    db_poi = crud.get_poi(db, poi_id=poi_id)
+    if db_poi is None:
+        raise HTTPException(status_code=404, detail="POI not found")
+
+    # Validate POI type - only BUSINESS and PARK can be venues
+    poi_type = db_poi.poi_type.value if hasattr(db_poi.poi_type, 'value') else str(db_poi.poi_type)
+    if poi_type not in ['BUSINESS', 'PARK']:
+        raise HTTPException(
+            status_code=400,
+            detail=f"POI type '{poi_type}' cannot be used as a venue. Only BUSINESS and PARK are valid."
+        )
+
+    # Get copyable images (entry, parking, restroom)
+    copyable_image_types = [ImageType.entry, ImageType.parking, ImageType.restroom]
+    images = db.query(Image).filter(
+        Image.poi_id == poi_id,
+        Image.image_type.in_(copyable_image_types),
+        Image.parent_image_id.is_(None)  # Only original images, not variants
+    ).order_by(Image.image_type, Image.display_order).all()
+
+    copyable_images = []
+    for img in images:
+        urls = image_service.get_image_urls(img)
+        copyable_images.append({
+            "id": str(img.id),
+            "image_type": img.image_type.value,
+            "filename": img.filename,
+            "url": urls.get("url"),
+            "thumbnail_url": urls.get("thumbnail_url")
+        })
+
+    # Build location geometry
+    location = None
+    if db_poi.location:
+        point = to_shape(db_poi.location)
+        coords = list(point.coords)[0]
+        location = {"type": "Point", "coordinates": [coords[0], coords[1]]}
+
+    return schemas.VenueDataForEvent(
+        venue_id=db_poi.id,
+        venue_name=db_poi.name,
+        venue_type=poi_type,
+        address_full=db_poi.address_full,
+        address_street=db_poi.address_street,
+        address_city=db_poi.address_city,
+        address_state=db_poi.address_state,
+        address_zip=db_poi.address_zip,
+        address_county=db_poi.address_county,
+        location=location,
+        front_door_latitude=float(db_poi.front_door_latitude) if db_poi.front_door_latitude else None,
+        front_door_longitude=float(db_poi.front_door_longitude) if db_poi.front_door_longitude else None,
+        phone_number=db_poi.phone_number,
+        email=db_poi.email,
+        website_url=db_poi.website_url,
+        parking_types=db_poi.parking_types,
+        parking_notes=db_poi.parking_notes,
+        parking_locations=db_poi.parking_locations,
+        expect_to_pay_parking=db_poi.expect_to_pay_parking,
+        public_transit_info=db_poi.public_transit_info,
+        wheelchair_accessible=db_poi.wheelchair_accessible,
+        wheelchair_details=db_poi.wheelchair_details,
+        public_toilets=db_poi.public_toilets,
+        toilet_description=db_poi.toilet_description,
+        toilet_locations=db_poi.toilet_locations,
+        hours=db_poi.hours,
+        amenities=db_poi.amenities,
+        copyable_images=copyable_images
+    )

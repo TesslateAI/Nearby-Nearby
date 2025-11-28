@@ -14,6 +14,7 @@ import {
   DownloadableMapsUpload,
   shouldUseImageUpload
 } from '../ImageIntegration';
+import { VenueSelector } from '../components/VenueSelector';
 
 export const EventVendorsSection = React.memo(function EventVendorsSection({ form, id }) {
   return (
@@ -186,6 +187,18 @@ export const EventMapsSection = React.memo(function EventMapsSection({ form, id 
         error={form.errors['event.food_and_drink_info']}
         minRows={3}
       />
+    </Stack>
+  );
+});
+
+export const EventVenueSection = React.memo(function EventVenueSection({ form, id }) {
+  return (
+    <Stack>
+      <Text size="sm" c="dimmed" mb="md">
+        Link this event to a venue and optionally copy the venue's location, parking,
+        accessibility, and restroom information to pre-fill the event details.
+      </Text>
+      <VenueSelector form={form} poiId={id} />
     </Stack>
   );
 });

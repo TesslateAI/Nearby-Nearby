@@ -521,3 +521,56 @@ class POIRelationshipCreate(POIRelationshipBase):
 
 class POIRelationship(POIRelationshipBase):
     model_config = ConfigDict(from_attributes=True)
+
+
+# Venue Data for Event - used when pulling venue data into an event
+class VenueDataForEvent(BaseModel):
+    """Data from a venue (BUSINESS or PARK) that can be copied to an event"""
+    venue_id: uuid.UUID
+    venue_name: str
+    venue_type: str  # BUSINESS or PARK
+
+    # Address fields
+    address_full: Optional[str] = None
+    address_street: Optional[str] = None
+    address_city: Optional[str] = None
+    address_state: Optional[str] = None
+    address_zip: Optional[str] = None
+    address_county: Optional[str] = None
+
+    # Location
+    location: Optional[PointGeometry] = None
+    front_door_latitude: Optional[float] = None
+    front_door_longitude: Optional[float] = None
+
+    # Contact info
+    phone_number: Optional[str] = None
+    email: Optional[str] = None
+    website_url: Optional[str] = None
+
+    # Parking
+    parking_types: Optional[List[str]] = None
+    parking_notes: Optional[str] = None
+    parking_locations: Optional[List[Dict[str, Any]]] = None
+    expect_to_pay_parking: Optional[str] = None
+    public_transit_info: Optional[str] = None
+
+    # Accessibility
+    wheelchair_accessible: Optional[List[str]] = None
+    wheelchair_details: Optional[str] = None
+
+    # Restroom
+    public_toilets: Optional[List[str]] = None
+    toilet_description: Optional[str] = None
+    toilet_locations: Optional[List[Dict[str, Any]]] = None
+
+    # Hours
+    hours: Optional[Dict[str, Any]] = None
+
+    # Amenities
+    amenities: Optional[Dict[str, Any]] = None
+
+    # Photos that can be copied (metadata only, not binary)
+    copyable_images: List[Dict[str, Any]] = []
+
+    model_config = ConfigDict(from_attributes=True)
