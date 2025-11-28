@@ -53,7 +53,7 @@ IMAGE_TYPE_CONFIG: Dict[ImageType, Dict[str, Any]] = {
         }
     },
     ImageType.entry: {
-        "max_count": 1,
+        "max_count": 3,
         "max_size_mb": 5,
         "allowed_mimes": ["image/jpeg", "image/png", "image/webp"],
         "sizes": {

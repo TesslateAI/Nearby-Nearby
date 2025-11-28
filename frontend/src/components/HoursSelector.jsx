@@ -1,17 +1,41 @@
 import { useState, useEffect, memo, useCallback, useMemo } from 'react';
 import {
-  Stack, Group, Text, Button, Select, Switch, ActionIcon, 
+  Stack, Group, Text, Button, Select, Switch, ActionIcon,
   Checkbox, Divider, Card, Badge, Tabs, Alert, TextInput,
   SegmentedControl, Collapse, SimpleGrid, NumberInput,
   Tooltip, MultiSelect, Modal, CloseButton
 } from '@mantine/core';
-import { TimeInput } from '@mantine/dates';
-import { 
-  IconPlus, IconTrash, IconCopy, IconSun, IconMoon, 
+import { TimeInput, DatePickerInput } from '@mantine/dates';
+import {
+  IconPlus, IconTrash, IconCopy, IconSun, IconMoon,
   IconCalendar, IconClock, IconAlertCircle, IconSnowflake,
-  IconFlower, IconLeaf, IconSunHigh
+  IconFlower, IconLeaf, IconSunHigh, IconRepeat
 } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
+
+// Ordinal week options for recurring exceptions
+const ORDINAL_OPTIONS = [
+  { value: 'first', label: 'First' },
+  { value: 'second', label: 'Second' },
+  { value: 'third', label: 'Third' },
+  { value: 'fourth', label: 'Fourth' },
+  { value: 'last', label: 'Last' }
+];
+
+const MONTHS = [
+  { value: '1', label: 'January' },
+  { value: '2', label: 'February' },
+  { value: '3', label: 'March' },
+  { value: '4', label: 'April' },
+  { value: '5', label: 'May' },
+  { value: '6', label: 'June' },
+  { value: '7', label: 'July' },
+  { value: '8', label: 'August' },
+  { value: '9', label: 'September' },
+  { value: '10', label: 'October' },
+  { value: '11', label: 'November' },
+  { value: '12', label: 'December' }
+];
 
 // Common holiday definitions
 const COMMON_HOLIDAYS = [
@@ -408,12 +432,32 @@ const HoursSelector = memo(({ value = {}, onChange, poiType }) => {
     updateHours({ holidays: newHolidays });
   };
 
-  // Add exception date
+  // Add exception date (one-time)
   const addException = () => {
     const newExceptions = [
       ...hours.exceptions,
       {
+        type: 'one-time',
         date: new Date().toISOString().split('T')[0],
+        status: 'closed',
+        reason: '',
+        periods: []
+      }
+    ];
+    updateHours({ exceptions: newExceptions });
+  };
+
+  // Add recurring exception (e.g., "closed every 3rd Wednesday")
+  const addRecurringException = () => {
+    const newExceptions = [
+      ...hours.exceptions,
+      {
+        type: 'recurring',
+        pattern: {
+          ordinal: 'first',
+          dayOfWeek: 'wednesday',
+          months: [] // empty = all months
+        },
         status: 'closed',
         reason: '',
         periods: []
@@ -542,14 +586,15 @@ const HoursSelector = memo(({ value = {}, onChange, poiType }) => {
         <Tabs.Panel value="seasonal" pt="md">
           <Stack>
             <Alert color="blue" variant="light">
-              Override regular hours during specific seasons. Seasonal hours take precedence over regular hours.
+              Override regular hours during specific seasons or date ranges. Seasonal hours take precedence over regular hours.
+              You can use predefined seasons OR specify exact date ranges (e.g., "Summer hours: June 1 - Aug 15").
             </Alert>
-            
+
             <SimpleGrid cols={2}>
               {SEASON_DEFINITIONS.map(season => {
                 const SeasonIcon = season.icon;
                 const hasHours = hours.seasonal[season.value];
-                
+
                 return (
                   <Card key={season.value} withBorder p="sm">
                     <Group justify="space-between" mb="xs">
@@ -579,7 +624,7 @@ const HoursSelector = memo(({ value = {}, onChange, poiType }) => {
                         </ActionIcon>
                       )}
                     </Group>
-                    
+
                     {hasHours && (
                       <Text size="xs" c="dimmed">
                         Custom hours set for {season.label}
@@ -589,15 +634,80 @@ const HoursSelector = memo(({ value = {}, onChange, poiType }) => {
                 );
               })}
             </SimpleGrid>
-            
+
             {Object.entries(hours.seasonal).map(([season, seasonHours]) => {
               const seasonDef = SEASON_DEFINITIONS.find(s => s.value === season);
               if (!seasonDef) return null;
-              
+
               return (
                 <Collapse key={season} in={true}>
                   <Stack>
                     <Divider label={`${seasonDef.label} Hours`} />
+
+                    {/* Date range controls for seasonal hours */}
+                    <Card withBorder p="sm" bg="gray.0">
+                      <Group mb="xs">
+                        <Switch
+                          size="xs"
+                          label="Use specific date range instead of default season dates"
+                          checked={seasonHours.useDateRange || false}
+                          onChange={(e) => updateHours({
+                            seasonal: {
+                              ...hours.seasonal,
+                              [season]: {
+                                ...seasonHours,
+                                useDateRange: e.currentTarget.checked
+                              }
+                            }
+                          })}
+                        />
+                      </Group>
+
+                      {seasonHours.useDateRange ? (
+                        <Group>
+                          <DatePickerInput
+                            size="xs"
+                            label="Start date"
+                            placeholder="Pick start date"
+                            value={seasonHours.startDate ? new Date(seasonHours.startDate) : null}
+                            onChange={(date) => updateHours({
+                              seasonal: {
+                                ...hours.seasonal,
+                                [season]: {
+                                  ...seasonHours,
+                                  startDate: date ? date.toISOString().split('T')[0] : null
+                                }
+                              }
+                            })}
+                            w={150}
+                          />
+                          <DatePickerInput
+                            size="xs"
+                            label="End date"
+                            placeholder="Pick end date"
+                            value={seasonHours.endDate ? new Date(seasonHours.endDate) : null}
+                            onChange={(date) => updateHours({
+                              seasonal: {
+                                ...hours.seasonal,
+                                [season]: {
+                                  ...seasonHours,
+                                  endDate: date ? date.toISOString().split('T')[0] : null
+                                }
+                              }
+                            })}
+                            w={150}
+                          />
+                          <Text size="xs" c="dimmed" mt={20}>
+                            (Repeats annually)
+                          </Text>
+                        </Group>
+                      ) : (
+                        <Text size="xs" c="dimmed">
+                          Using default {seasonDef.label} months: {seasonDef.months.map(m => MONTHS.find(mo => mo.value === String(m))?.label).join(', ')}
+                        </Text>
+                      )}
+                    </Card>
+
                     {DAYS_OF_WEEK.map(day => (
                       <DayHours
                         key={`${season}-${day.value}`}
@@ -745,74 +855,198 @@ const HoursSelector = memo(({ value = {}, onChange, poiType }) => {
         <Tabs.Panel value="exceptions" pt="md">
           <Stack>
             <Alert color="blue" variant="light">
-              Add one-time exceptions for specific dates (e.g., special events, emergencies).
+              Add exceptions for specific dates or recurring patterns (e.g., "closed every 3rd Wednesday").
+              Exceptions take highest priority and override all other hours settings.
             </Alert>
-            
-            <Button
-              variant="light"
-              leftSection={<IconPlus size={16} />}
-              onClick={addException}
-            >
-              Add Exception Date
-            </Button>
-            
+
+            <Group>
+              <Button
+                variant="light"
+                leftSection={<IconPlus size={16} />}
+                onClick={addException}
+              >
+                Add One-Time Exception
+              </Button>
+              <Button
+                variant="light"
+                color="violet"
+                leftSection={<IconRepeat size={16} />}
+                onClick={addRecurringException}
+              >
+                Add Recurring Exception
+              </Button>
+            </Group>
+
             {hours.exceptions.map((exception, index) => (
               <Card key={index} withBorder p="sm">
-                <Group justify="space-between" mb="xs">
-                  <Group>
-                    <input
-                      type="date"
-                      value={exception.date}
+                {/* One-time exception */}
+                {(!exception.type || exception.type === 'one-time') && (
+                  <>
+                    <Group justify="space-between" mb="xs">
+                      <Group>
+                        <Badge size="sm" variant="light" color="blue">One-time</Badge>
+                        <input
+                          type="date"
+                          value={exception.date}
+                          onChange={(e) => {
+                            const newExceptions = [...hours.exceptions];
+                            newExceptions[index] = { ...exception, type: 'one-time', date: e.target.value };
+                            updateHours({ exceptions: newExceptions });
+                          }}
+                          style={{ padding: '4px 8px', borderRadius: '4px', border: '1px solid #ced4da' }}
+                        />
+                        <SegmentedControl
+                          size="xs"
+                          value={exception.status}
+                          onChange={(status) => {
+                            const newExceptions = [...hours.exceptions];
+                            newExceptions[index] = { ...exception, status };
+                            updateHours({ exceptions: newExceptions });
+                          }}
+                          data={[
+                            { label: 'Open', value: 'open' },
+                            { label: 'Closed', value: 'closed' },
+                            { label: 'Modified', value: 'modified' }
+                          ]}
+                        />
+                      </Group>
+                      <ActionIcon
+                        color="red"
+                        size="sm"
+                        onClick={() => {
+                          const newExceptions = hours.exceptions.filter((_, i) => i !== index);
+                          updateHours({ exceptions: newExceptions });
+                        }}
+                      >
+                        <IconTrash size={14} />
+                      </ActionIcon>
+                    </Group>
+
+                    <TextInput
+                      size="xs"
+                      placeholder="Reason for exception (e.g., 'Staff training day')"
+                      value={exception.reason || ''}
                       onChange={(e) => {
                         const newExceptions = [...hours.exceptions];
-                        newExceptions[index] = { ...exception, date: e.target.value };
+                        newExceptions[index] = { ...exception, reason: e.target.value };
                         updateHours({ exceptions: newExceptions });
                       }}
-                      style={{ padding: '4px 8px', borderRadius: '4px', border: '1px solid #ced4da' }}
                     />
-                    <SegmentedControl
+                  </>
+                )}
+
+                {/* Recurring exception */}
+                {exception.type === 'recurring' && (
+                  <>
+                    <Group justify="space-between" mb="xs">
+                      <Group>
+                        <Badge size="sm" variant="light" color="violet">
+                          <Group gap={4}>
+                            <IconRepeat size={12} />
+                            Recurring
+                          </Group>
+                        </Badge>
+                        <Select
+                          size="xs"
+                          w={100}
+                          value={exception.pattern?.ordinal || 'first'}
+                          onChange={(ordinal) => {
+                            const newExceptions = [...hours.exceptions];
+                            newExceptions[index] = {
+                              ...exception,
+                              pattern: { ...exception.pattern, ordinal }
+                            };
+                            updateHours({ exceptions: newExceptions });
+                          }}
+                          data={ORDINAL_OPTIONS}
+                        />
+                        <Select
+                          size="xs"
+                          w={130}
+                          value={exception.pattern?.dayOfWeek || 'wednesday'}
+                          onChange={(dayOfWeek) => {
+                            const newExceptions = [...hours.exceptions];
+                            newExceptions[index] = {
+                              ...exception,
+                              pattern: { ...exception.pattern, dayOfWeek }
+                            };
+                            updateHours({ exceptions: newExceptions });
+                          }}
+                          data={DAYS_OF_WEEK}
+                        />
+                        <Text size="xs" c="dimmed">of</Text>
+                        <MultiSelect
+                          size="xs"
+                          w={200}
+                          placeholder="All months"
+                          value={exception.pattern?.months || []}
+                          onChange={(months) => {
+                            const newExceptions = [...hours.exceptions];
+                            newExceptions[index] = {
+                              ...exception,
+                              pattern: { ...exception.pattern, months }
+                            };
+                            updateHours({ exceptions: newExceptions });
+                          }}
+                          data={MONTHS}
+                          clearable
+                        />
+                      </Group>
+                      <ActionIcon
+                        color="red"
+                        size="sm"
+                        onClick={() => {
+                          const newExceptions = hours.exceptions.filter((_, i) => i !== index);
+                          updateHours({ exceptions: newExceptions });
+                        }}
+                      >
+                        <IconTrash size={14} />
+                      </ActionIcon>
+                    </Group>
+
+                    <Group mb="xs">
+                      <SegmentedControl
+                        size="xs"
+                        value={exception.status}
+                        onChange={(status) => {
+                          const newExceptions = [...hours.exceptions];
+                          newExceptions[index] = { ...exception, status };
+                          updateHours({ exceptions: newExceptions });
+                        }}
+                        data={[
+                          { label: 'Open', value: 'open' },
+                          { label: 'Closed', value: 'closed' },
+                          { label: 'Modified Hours', value: 'modified' }
+                        ]}
+                      />
+                    </Group>
+
+                    <TextInput
                       size="xs"
-                      value={exception.status}
-                      onChange={(status) => {
+                      placeholder="Reason (e.g., 'Staff meeting day')"
+                      value={exception.reason || ''}
+                      onChange={(e) => {
                         const newExceptions = [...hours.exceptions];
-                        newExceptions[index] = { ...exception, status };
+                        newExceptions[index] = { ...exception, reason: e.target.value };
                         updateHours({ exceptions: newExceptions });
                       }}
-                      data={[
-                        { label: 'Open', value: 'open' },
-                        { label: 'Closed', value: 'closed' },
-                        { label: 'Modified', value: 'modified' }
-                      ]}
                     />
-                  </Group>
-                  <ActionIcon
-                    color="red"
-                    size="sm"
-                    onClick={() => {
-                      const newExceptions = hours.exceptions.filter((_, i) => i !== index);
-                      updateHours({ exceptions: newExceptions });
-                    }}
-                  >
-                    <IconTrash size={14} />
-                  </ActionIcon>
-                </Group>
-                
-                <TextInput
-                  size="xs"
-                  placeholder="Reason for exception (e.g., 'Staff training day')"
-                  value={exception.reason}
-                  onChange={(e) => {
-                    const newExceptions = [...hours.exceptions];
-                    newExceptions[index] = { ...exception, reason: e.target.value };
-                    updateHours({ exceptions: newExceptions });
-                  }}
-                />
-                
+
+                    <Text size="xs" c="dimmed" mt="xs">
+                      {exception.pattern?.months?.length > 0
+                        ? `Every ${exception.pattern?.ordinal} ${DAYS_OF_WEEK.find(d => d.value === exception.pattern?.dayOfWeek)?.label} of ${exception.pattern.months.map(m => MONTHS.find(mo => mo.value === m)?.label).join(', ')}`
+                        : `Every ${exception.pattern?.ordinal} ${DAYS_OF_WEEK.find(d => d.value === exception.pattern?.dayOfWeek)?.label} of every month`
+                      }
+                    </Text>
+                  </>
+                )}
+
+                {/* Modified hours periods (shared by both types) */}
                 {exception.status === 'modified' && (
                   <Stack gap="xs" mt="xs">
-                    {(exception.periods || [{ 
-                      open: { type: 'fixed', time: '10:00' }, 
-                      close: { type: 'fixed', time: '16:00' } 
+                    {(exception.periods || [{
+                      open: { type: 'fixed', time: '10:00' },
+                      close: { type: 'fixed', time: '16:00' }
                     }]).map((period, periodIndex) => (
                       <TimePeriod
                         key={periodIndex}
@@ -833,6 +1067,22 @@ const HoursSelector = memo(({ value = {}, onChange, poiType }) => {
                         showRemove={exception.periods?.length > 1}
                       />
                     ))}
+                    <Button
+                      size="xs"
+                      variant="light"
+                      leftSection={<IconPlus size={14} />}
+                      onClick={() => {
+                        const newExceptions = [...hours.exceptions];
+                        const newPeriods = [
+                          ...(exception.periods || []),
+                          { open: { type: 'fixed', time: '10:00' }, close: { type: 'fixed', time: '16:00' } }
+                        ];
+                        newExceptions[index] = { ...exception, periods: newPeriods };
+                        updateHours({ exceptions: newExceptions });
+                      }}
+                    >
+                      Add time period
+                    </Button>
                   </Stack>
                 )}
               </Card>
