@@ -66,7 +66,7 @@ const LocationMap = memo(({ latitude, longitude, onLocationChange }) => {
       >
         <MapContainer
           center={currentPosition}
-          zoom={14}
+          zoom={17}
           style={{ height: '100%', width: '100%' }}
           scrollWheelZoom={false}
           zoomControl={true}
