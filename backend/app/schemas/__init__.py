@@ -3,7 +3,7 @@
 # instead of the more verbose:
 # from app.schemas.poi import PointOfInterest
 
-from .poi import PointOfInterest, PointOfInterestCreate, PointOfInterestUpdate, Business, Park, Trail, Event, POIRelationship, POIRelationshipCreate
+from .poi import PointOfInterest, PointOfInterestCreate, PointOfInterestUpdate, Business, Park, Trail, Event, POIRelationship, POIRelationshipCreate, VenueDataForEvent
 from .category import Category, CategoryCreate, CategoryUpdate, CategoryWithChildren
 from .attribute import Attribute, AttributeCreate, AttributeUpdate
 from .user import User, UserCreate, UserUpdate, Token, TokenData
