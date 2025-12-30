@@ -3,12 +3,48 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy import or_, func
 from fastapi import HTTPException
 import uuid
+import re
 from typing import Dict, Any
 
 from app import models, schemas
 from app.crud.crud_category import get_category
 from app.utils.html_sanitizer import sanitize_poi_fields
 from geoalchemy2.types import Geography
+
+
+def generate_slug(name: str, city: str = None) -> str:
+    """Generate URL-friendly slug from name and city"""
+    slug = name.lower() if name else ''
+    if city:
+        slug = f"{slug} {city.lower()}"
+
+    # Remove special characters and replace spaces with hyphens
+    slug = re.sub(r'[^\w\s-]', '', slug)
+    slug = re.sub(r'[\s_]+', '-', slug)
+    slug = re.sub(r'^-+|-+$', '', slug)
+
+    return slug
+
+
+def ensure_unique_slug(db: Session, base_slug: str, exclude_id: uuid.UUID = None) -> str:
+    """Ensure slug is unique, appending a number if necessary"""
+    slug = base_slug
+    counter = 1
+
+    while True:
+        # Check if slug exists
+        query = db.query(models.PointOfInterest).filter(
+            models.PointOfInterest.slug == slug
+        )
+        if exclude_id:
+            query = query.filter(models.PointOfInterest.id != exclude_id)
+
+        if not query.first():
+            return slug
+
+        # Append counter and try again
+        slug = f"{base_slug}-{counter}"
+        counter += 1
 
 
 def get_poi(db: Session, poi_id: uuid.UUID):
@@ -133,6 +169,12 @@ def create_poi(db: Session, poi: schemas.PointOfInterestCreate):
 
     # Sanitize HTML content in the POI data
     poi_data = sanitize_poi_fields(poi_data)
+
+    # Auto-generate slug if not provided
+    if not poi_data.get('slug'):
+        base_slug = generate_slug(poi_data.get('name', ''), poi_data.get('address_city'))
+        poi_data['slug'] = ensure_unique_slug(db, base_slug)
+
     db_poi = models.PointOfInterest(**poi_data)
 
     # Set the location geometry
@@ -206,6 +248,16 @@ def update_poi(db: Session, *, db_obj: models.PointOfInterest, obj_in: schemas.P
 
     # Sanitize HTML content in the update data
     update_data = sanitize_poi_fields(update_data)
+
+    # Regenerate slug if name or city changed
+    name_changed = 'name' in update_data and update_data['name'] != db_obj.name
+    city_changed = 'address_city' in update_data and update_data['address_city'] != db_obj.address_city
+
+    if name_changed or city_changed:
+        new_name = update_data.get('name', db_obj.name)
+        new_city = update_data.get('address_city', db_obj.address_city)
+        base_slug = generate_slug(new_name, new_city)
+        update_data['slug'] = ensure_unique_slug(db, base_slug, exclude_id=db_obj.id)
 
     # Handle location update
     if 'location' in update_data:

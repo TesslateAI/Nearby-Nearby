@@ -1,7 +1,7 @@
 import uuid
 import re
 from datetime import datetime
-from typing import Optional, List, Any, Literal, Dict
+from typing import Optional, List, Any, Literal, Dict, Union
 
 from pydantic import BaseModel, field_validator, model_validator, field_serializer, Field, ConfigDict
 from geoalchemy2.elements import WKBElement
@@ -9,6 +9,23 @@ from geoalchemy2.shape import to_shape
 
 from .category import Category
 from .primary_type import PrimaryType
+
+# Type for titled links - supports both old string format and new dict format
+TitledLink = Union[str, Dict[str, str]]
+
+def normalize_titled_links(links: Optional[List[TitledLink]]) -> Optional[List[Dict[str, str]]]:
+    """Convert old string format to new dict format for titled links."""
+    if links is None:
+        return None
+    result = []
+    for link in links:
+        if isinstance(link, str):
+            # Old format: just a URL string - convert to dict with empty title
+            result.append({"title": "", "url": link})
+        elif isinstance(link, dict):
+            # New format: already a dict
+            result.append(link)
+    return result
 
 # Helper for slug generation
 def generate_slug(value: str) -> str:
@@ -143,6 +160,7 @@ OTHER_STATUS_TYPES = Literal[
 class PointOfInterestBase(BaseModel):
     poi_type: POI_TYPES
     name: str
+    slug: Optional[str] = None  # SEO-friendly URL slug (auto-generated from name + city)
     description_long: Optional[str] = None
     description_short: Optional[str] = None  # Business free listings only (200 char limit)
     teaser_paragraph: Optional[str] = None  # All POI types (shows character count but no limit)
@@ -186,10 +204,16 @@ class PointOfInterestBase(BaseModel):
     # Menu & Online Booking (Business only)
     menu_photos: Optional[List[str]] = None
     menu_link: Optional[str] = None
-    delivery_links: Optional[List[str]] = None
-    reservation_links: Optional[List[str]] = None
-    appointment_links: Optional[List[str]] = None
-    online_ordering_links: Optional[List[str]] = None
+    delivery_links: Optional[List[TitledLink]] = None  # [{"title": "DoorDash", "url": "https://..."}]
+    reservation_links: Optional[List[TitledLink]] = None  # [{"title": "OpenTable", "url": "https://..."}]
+    appointment_links: Optional[List[TitledLink]] = None  # [{"title": "Calendly", "url": "https://..."}]
+    online_ordering_links: Optional[List[TitledLink]] = None  # [{"title": "Order Direct", "url": "https://..."}]
+
+    # Validators to normalize link formats (convert strings to dicts)
+    @field_validator('delivery_links', 'reservation_links', 'appointment_links', 'online_ordering_links', mode='before')
+    @classmethod
+    def normalize_links(cls, v):
+        return normalize_titled_links(v)
 
     # Gallery
     gallery_photos: Optional[List[str]] = None
@@ -358,6 +382,7 @@ class PointOfInterestCreate(PointOfInterestBase):
 class PointOfInterestUpdate(BaseModel):
     poi_type: Optional[POI_TYPES] = None
     name: Optional[str] = None
+    slug: Optional[str] = None  # SEO-friendly URL slug
     description_long: Optional[str] = None
     description_short: Optional[str] = None
     teaser_paragraph: Optional[str] = None
@@ -383,12 +408,18 @@ class PointOfInterestUpdate(BaseModel):
     entertainment_options: Optional[List[str]] = None
     menu_photos: Optional[List[str]] = None
     menu_link: Optional[str] = None
-    delivery_links: Optional[List[str]] = None
-    reservation_links: Optional[List[str]] = None
-    appointment_links: Optional[List[str]] = None
-    online_ordering_links: Optional[List[str]] = None
+    delivery_links: Optional[List[TitledLink]] = None
+    reservation_links: Optional[List[TitledLink]] = None
+    appointment_links: Optional[List[TitledLink]] = None
+    online_ordering_links: Optional[List[TitledLink]] = None
     gallery_photos: Optional[List[str]] = None
     business_entry_notes: Optional[str] = None
+
+    # Validators to normalize link formats (convert strings to dicts)
+    @field_validator('delivery_links', 'reservation_links', 'appointment_links', 'online_ordering_links', mode='before')
+    @classmethod
+    def normalize_links(cls, v):
+        return normalize_titled_links(v)
     business_entry_photo: Optional[str] = None
     appointment_booking_url: Optional[str] = None
     hours_but_appointment_required: Optional[bool] = None

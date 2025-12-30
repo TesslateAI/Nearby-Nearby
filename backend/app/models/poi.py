@@ -30,6 +30,7 @@ class PointOfInterest(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     poi_type = Column(Enum(POIType), nullable=False)
     name = Column(String(255), nullable=False)
+    slug = Column(String(300), unique=True, index=True)  # SEO-friendly URL slug (name-city)
     description_long = Column(Text)
     description_short = Column(String(250))  # Business free listings only (200 char limit)
     teaser_paragraph = Column(String(120))  # All POI types (120 char limit)

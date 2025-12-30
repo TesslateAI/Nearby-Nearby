@@ -207,9 +207,32 @@ export const usePOIHandlers = (id, isEditing, form, setPoiId) => {
     }
   }, [id, isEditing]);
 
+  // Helper to extract validation error details from 422 response
+  const extractValidationError = async (response) => {
+    try {
+      const errorData = await response.json();
+      console.error('Validation error details:', errorData);
+
+      if (errorData.detail) {
+        // Pydantic validation errors come as an array
+        if (Array.isArray(errorData.detail)) {
+          const errors = errorData.detail.map(err => {
+            const field = err.loc ? err.loc.join('.') : 'unknown';
+            return `${field}: ${err.msg}`;
+          });
+          return errors.join('\n');
+        }
+        // Simple string error
+        return errorData.detail;
+      }
+      return JSON.stringify(errorData);
+    } catch (e) {
+      return `HTTP ${response.status}`;
+    }
+  };
+
   const handleSubmit = async (values, publicationStatus = 'published') => {
     setLoading(true);
-
 
     // Show loading notification
     const actionText = publicationStatus === 'draft' ?
@@ -225,13 +248,20 @@ export const usePOIHandlers = (id, isEditing, form, setPoiId) => {
 
     // Prepare payload using shared utility
     const payload = preparePOIPayload(values);
-    payload.publication_status = publicationStatus; // Override with explicit status
-
+    payload.publication_status = publicationStatus;
 
     try {
       let response;
+      let poiId = id;
+
       if (isEditing) {
+        // Update existing POI
         response = await api.put(`/pois/${id}`, payload);
+
+        if (!response.ok) {
+          const errorDetails = await extractValidationError(response);
+          throw new Error(errorDetails);
+        }
 
         notifications.update({
           id: loadingNotification,
@@ -252,13 +282,16 @@ export const usePOIHandlers = (id, isEditing, form, setPoiId) => {
           window.location.reload();
         }
       } else {
+        // Create new POI
         response = await api.post('/pois/', payload);
 
         if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          const errorDetails = await extractValidationError(response);
+          throw new Error(errorDetails);
         }
 
         const createdPoi = await response.json();
+        poiId = createdPoi.id;
 
         notifications.update({
           id: loadingNotification,
@@ -269,10 +302,11 @@ export const usePOIHandlers = (id, isEditing, form, setPoiId) => {
           autoClose: 3000
         });
 
-        // For new POIs, navigate to the edit page so user can continue editing (direct navigation since form was saved)
-        const newPoiId = createdPoi.id;
-        if (newPoiId) {
-          window.location.href = `/poi/${newPoiId}/edit`;
+        // For new POIs
+        if (publicationStatus === 'published') {
+          window.location.href = '/';
+        } else if (poiId) {
+          window.location.href = `/poi/${poiId}/edit`;
         } else {
           window.location.href = '/';
         }
@@ -281,9 +315,7 @@ export const usePOIHandlers = (id, isEditing, form, setPoiId) => {
       console.error('API Error:', error);
 
       let errorMessage = 'An unknown error occurred';
-      if (error.response) {
-        errorMessage = `HTTP ${error.response.status}: ${error.response.data?.detail || error.response.statusText}`;
-      } else if (error.message) {
+      if (error.message) {
         errorMessage = error.message;
       }
 
@@ -293,7 +325,7 @@ export const usePOIHandlers = (id, isEditing, form, setPoiId) => {
         message: errorMessage,
         color: 'red',
         loading: false,
-        autoClose: 5000
+        autoClose: 10000
       });
     } finally {
       setLoading(false);

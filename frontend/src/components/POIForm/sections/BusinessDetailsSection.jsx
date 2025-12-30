@@ -8,7 +8,7 @@ import {
   YOUTH_AMENITIES, BUSINESS_AMENITIES, ENTERTAINMENT_OPTIONS
 } from '../../../utils/constants';
 import { getCheckboxGroupProps } from '../constants/helpers';
-import { addLink, removeLink, updateLink } from '../../../utils/fieldHelpers';
+import { addTitledLink, removeTitledLink, updateTitledLink } from '../../../utils/fieldHelpers';
 import {
   MenuPhotosUpload,
   GalleryPhotosUpload,
@@ -115,14 +115,22 @@ export const MenuBookingSection = React.memo(function MenuBookingSection({
 
       <Divider my="md" label="Delivery Services" />
       {(form.values.delivery_links || []).map((link, index) => (
-        <Group key={index}>
+        <Group key={index} align="flex-end">
           <TextInput
             style={{ flex: 1 }}
-            placeholder="Delivery service URL"
-            value={link}
-            onChange={(e) => updateLink(form, 'delivery_links', index, e.target.value)}
+            label={index === 0 ? "Link Title" : undefined}
+            placeholder="e.g., Order on DoorDash"
+            value={link?.title || ''}
+            onChange={(e) => updateTitledLink(form, 'delivery_links', index, 'title', e.target.value)}
           />
-          <ActionIcon color="red" onClick={() => removeLink(form, 'delivery_links', index)}>
+          <TextInput
+            style={{ flex: 2 }}
+            label={index === 0 ? "URL" : undefined}
+            placeholder="https://..."
+            value={link?.url || ''}
+            onChange={(e) => updateTitledLink(form, 'delivery_links', index, 'url', e.target.value)}
+          />
+          <ActionIcon color="red" onClick={() => removeTitledLink(form, 'delivery_links', index)}>
             <IconTrash size={16} />
           </ActionIcon>
         </Group>
@@ -130,21 +138,29 @@ export const MenuBookingSection = React.memo(function MenuBookingSection({
       <Button
         variant="light"
         leftSection={<IconPlus size={16} />}
-        onClick={() => addLink(form, 'delivery_links', '')}
+        onClick={() => addTitledLink(form, 'delivery_links')}
       >
         Add Delivery Link
       </Button>
 
-      <Divider my="md" label="Reservation Systems" />
+      <Divider my="md" label="Reservations" />
       {(form.values.reservation_links || []).map((link, index) => (
-        <Group key={index}>
+        <Group key={index} align="flex-end">
           <TextInput
             style={{ flex: 1 }}
-            placeholder="Reservation system URL"
-            value={link}
-            onChange={(e) => updateLink(form, 'reservation_links', index, e.target.value)}
+            label={index === 0 ? "Link Title" : undefined}
+            placeholder="e.g., Book a Table"
+            value={link?.title || ''}
+            onChange={(e) => updateTitledLink(form, 'reservation_links', index, 'title', e.target.value)}
           />
-          <ActionIcon color="red" onClick={() => removeLink(form, 'reservation_links', index)}>
+          <TextInput
+            style={{ flex: 2 }}
+            label={index === 0 ? "URL" : undefined}
+            placeholder="https://..."
+            value={link?.url || ''}
+            onChange={(e) => updateTitledLink(form, 'reservation_links', index, 'url', e.target.value)}
+          />
+          <ActionIcon color="red" onClick={() => removeTitledLink(form, 'reservation_links', index)}>
             <IconTrash size={16} />
           </ActionIcon>
         </Group>
@@ -152,21 +168,29 @@ export const MenuBookingSection = React.memo(function MenuBookingSection({
       <Button
         variant="light"
         leftSection={<IconPlus size={16} />}
-        onClick={() => addLink(form, 'reservation_links', '')}
+        onClick={() => addTitledLink(form, 'reservation_links')}
       >
         Add Reservation Link
       </Button>
 
       <Divider my="md" label="Online Ordering" />
       {(form.values.online_ordering_links || []).map((link, index) => (
-        <Group key={index}>
+        <Group key={index} align="flex-end">
           <TextInput
             style={{ flex: 1 }}
-            placeholder="Online ordering URL"
-            value={link}
-            onChange={(e) => updateLink(form, 'online_ordering_links', index, e.target.value)}
+            label={index === 0 ? "Link Title" : undefined}
+            placeholder="e.g., Order Pickup"
+            value={link?.title || ''}
+            onChange={(e) => updateTitledLink(form, 'online_ordering_links', index, 'title', e.target.value)}
           />
-          <ActionIcon color="red" onClick={() => removeLink(form, 'online_ordering_links', index)}>
+          <TextInput
+            style={{ flex: 2 }}
+            label={index === 0 ? "URL" : undefined}
+            placeholder="https://..."
+            value={link?.url || ''}
+            onChange={(e) => updateTitledLink(form, 'online_ordering_links', index, 'url', e.target.value)}
+          />
+          <ActionIcon color="red" onClick={() => removeTitledLink(form, 'online_ordering_links', index)}>
             <IconTrash size={16} />
           </ActionIcon>
         </Group>
@@ -174,21 +198,29 @@ export const MenuBookingSection = React.memo(function MenuBookingSection({
       <Button
         variant="light"
         leftSection={<IconPlus size={16} />}
-        onClick={() => addLink(form, 'online_ordering_links', '')}
+        onClick={() => addTitledLink(form, 'online_ordering_links')}
       >
         Add Ordering Link
       </Button>
 
-      <Divider my="md" label="Appointment Scheduling" />
+      <Divider my="md" label="Appointments" />
       {(form.values.appointment_links || []).map((link, index) => (
-        <Group key={index}>
+        <Group key={index} align="flex-end">
           <TextInput
             style={{ flex: 1 }}
-            placeholder="Appointment scheduling URL"
-            value={link}
-            onChange={(e) => updateLink(form, 'appointment_links', index, e.target.value)}
+            label={index === 0 ? "Link Title" : undefined}
+            placeholder="e.g., Schedule a Consult"
+            value={link?.title || ''}
+            onChange={(e) => updateTitledLink(form, 'appointment_links', index, 'title', e.target.value)}
           />
-          <ActionIcon color="red" onClick={() => removeLink(form, 'appointment_links', index)}>
+          <TextInput
+            style={{ flex: 2 }}
+            label={index === 0 ? "URL" : undefined}
+            placeholder="https://..."
+            value={link?.url || ''}
+            onChange={(e) => updateTitledLink(form, 'appointment_links', index, 'url', e.target.value)}
+          />
+          <ActionIcon color="red" onClick={() => removeTitledLink(form, 'appointment_links', index)}>
             <IconTrash size={16} />
           </ActionIcon>
         </Group>
@@ -196,7 +228,7 @@ export const MenuBookingSection = React.memo(function MenuBookingSection({
       <Button
         variant="light"
         leftSection={<IconPlus size={16} />}
-        onClick={() => addLink(form, 'appointment_links', '')}
+        onClick={() => addTitledLink(form, 'appointment_links')}
       >
         Add Appointment Link
       </Button>

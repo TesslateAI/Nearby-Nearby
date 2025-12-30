@@ -20,6 +20,26 @@ export const updateLink = (form, fieldName, index, value) => {
   form.setFieldValue(fieldName, newLinks);
 };
 
+// Add a new titled link (with title and url)
+export const addTitledLink = (form, fieldName) => {
+  const currentLinks = form.values[fieldName] || [];
+  form.setFieldValue(fieldName, [...currentLinks, { title: '', url: '' }]);
+};
+
+// Remove a titled link
+export const removeTitledLink = (form, fieldName, index) => {
+  const currentLinks = form.values[fieldName] || [];
+  form.setFieldValue(fieldName, currentLinks.filter((_, i) => i !== index));
+};
+
+// Update a titled link field (title or url)
+export const updateTitledLink = (form, fieldName, index, field, value) => {
+  const currentLinks = form.values[fieldName] || [];
+  const newLinks = [...currentLinks];
+  newLinks[index] = { ...newLinks[index], [field]: value };
+  form.setFieldValue(fieldName, newLinks);
+};
+
 // Add a parking location
 export const addParkingLocation = (form) => {
   const currentLocations = form.values.parking_locations || [];
