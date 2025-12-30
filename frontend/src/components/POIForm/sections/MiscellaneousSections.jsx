@@ -5,7 +5,7 @@ import {
 } from '@mantine/core';
 import { IconTrash, IconPlus } from '@tabler/icons-react';
 import RichTextEditor from '../../RichTextEditor';
-import { addLink, removeLink, updateLink } from '../../../utils/fieldHelpers';
+import { addLink, removeLink, updateLink, addTitledLink, removeTitledLink, updateTitledLink } from '../../../utils/fieldHelpers';
 import {
   GIFT_CARD_OPTIONS, PAYMENT_METHODS, DISCOUNT_TYPES
 } from '../../../utils/constants';
@@ -182,14 +182,22 @@ export const CommunityConnectionsSection = React.memo(function CommunityConnecti
 
       <Divider my="md" label="Article Links" />
       {(form.values.article_links || []).map((link, index) => (
-        <Group key={index}>
+        <Group key={index} align="flex-end">
           <TextInput
             style={{ flex: 1 }}
-            placeholder="Article or blog post URL"
-            value={link}
-            onChange={(e) => updateLink(form, 'article_links', index, e.target.value)}
+            label={index === 0 ? "Link Title" : undefined}
+            placeholder="e.g., Featured in Local News"
+            value={link?.title || ''}
+            onChange={(e) => updateTitledLink(form, 'article_links', index, 'title', e.target.value)}
           />
-          <ActionIcon color="red" onClick={() => removeLink(form, 'article_links', index)}>
+          <TextInput
+            style={{ flex: 2 }}
+            label={index === 0 ? "URL" : undefined}
+            placeholder="https://..."
+            value={link?.url || ''}
+            onChange={(e) => updateTitledLink(form, 'article_links', index, 'url', e.target.value)}
+          />
+          <ActionIcon color="red" onClick={() => removeTitledLink(form, 'article_links', index)}>
             <IconTrash size={16} />
           </ActionIcon>
         </Group>
@@ -197,7 +205,7 @@ export const CommunityConnectionsSection = React.memo(function CommunityConnecti
       <Button
         variant="light"
         leftSection={<IconPlus size={16} />}
-        onClick={() => addLink(form, 'article_links', '')}
+        onClick={() => addTitledLink(form, 'article_links')}
       >
         Add Article Link
       </Button>
@@ -231,10 +239,10 @@ export const CorporateComplianceSection = React.memo(function CorporateComplianc
           }
         }}
       >
-        <Stack mt="xs">
-          <Radio value="yes" label="Yes" />
-          <Radio value="no" label="No" />
-        </Stack>
+        <Group mt="xs" gap="lg">
+          <Radio value="yes" label="Yes" styles={{ radio: { cursor: 'pointer' }, label: { cursor: 'pointer' } }} />
+          <Radio value="no" label="No" styles={{ radio: { cursor: 'pointer' }, label: { cursor: 'pointer' } }} />
+        </Group>
       </Radio.Group>
 
       {form.values.compliance?.comments_restricted === 'yes' && (
@@ -284,10 +292,10 @@ export const CorporateComplianceSection = React.memo(function CorporateComplianc
           }
         }}
       >
-        <Stack mt="xs">
-          <Radio value="yes" label="Yes" />
-          <Radio value="no" label="No" />
-        </Stack>
+        <Group mt="xs" gap="lg">
+          <Radio value="yes" label="Yes" styles={{ radio: { cursor: 'pointer' }, label: { cursor: 'pointer' } }} />
+          <Radio value="no" label="No" styles={{ radio: { cursor: 'pointer' }, label: { cursor: 'pointer' } }} />
+        </Group>
       </Radio.Group>
 
       {form.values.compliance?.pre_approval_required === 'yes' && (
@@ -311,10 +319,10 @@ export const CorporateComplianceSection = React.memo(function CorporateComplianc
           }
         }}
       >
-        <Stack mt="xs">
-          <Radio value="yes" label="Yes" />
-          <Radio value="no" label="No" />
-        </Stack>
+        <Group mt="xs" gap="lg">
+          <Radio value="yes" label="Yes" styles={{ radio: { cursor: 'pointer' }, label: { cursor: 'pointer' } }} />
+          <Radio value="no" label="No" styles={{ radio: { cursor: 'pointer' }, label: { cursor: 'pointer' } }} />
+        </Group>
       </Radio.Group>
 
       {form.values.compliance?.branding_requirements === 'yes' && (

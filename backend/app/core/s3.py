@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 class S3Config:
-    """S3 configuration class"""
+    """S3 configuration class - supports AWS S3 and MinIO"""
 
     def __init__(self):
         self.bucket_name = os.getenv("AWS_S3_BUCKET")
@@ -18,10 +18,16 @@ class S3Config:
         self.access_key_id = os.getenv("AWS_ACCESS_KEY_ID")
         self.secret_access_key = os.getenv("AWS_SECRET_ACCESS_KEY")
         self.cloudfront_domain = os.getenv("AWS_CLOUDFRONT_DOMAIN")  # Optional CDN
+        self.endpoint_url = os.getenv("AWS_S3_ENDPOINT_URL")  # MinIO or custom S3 endpoint
 
         # S3 configuration
         self.use_ssl = os.getenv("AWS_USE_SSL", "true").lower() == "true"
         self.signature_version = os.getenv("AWS_SIGNATURE_VERSION", "s3v4")
+
+    @property
+    def is_minio(self) -> bool:
+        """Check if using MinIO (custom endpoint)"""
+        return self.endpoint_url is not None
 
     @property
     def is_configured(self) -> bool:
@@ -44,6 +50,11 @@ class S3Config:
         """Get public S3 URL for a key"""
         if self.cloudfront_domain:
             return f"https://{self.cloudfront_domain}/{key}"
+        elif self.endpoint_url:
+            # MinIO or custom endpoint - use endpoint URL
+            # For external access, use localhost instead of internal Docker hostname
+            external_url = self.endpoint_url.replace("minio:", "localhost:")
+            return f"{external_url}/{self.bucket_name}/{key}"
         else:
             return f"https://{self.bucket_name}.s3.{self.region}.amazonaws.com/{key}"
 
@@ -73,16 +84,35 @@ class S3Client:
 
                 session = boto3.Session(**session_kwargs)
 
-                self._client = session.client(
-                    "s3",
-                    config=boto3.session.Config(
+                # Client config
+                client_kwargs = {
+                    "config": boto3.session.Config(
                         signature_version=self.config.signature_version,
-                        use_ssl=self.config.use_ssl,
+                        s3={"addressing_style": "path"},  # Required for MinIO
                     )
-                )
+                }
 
-                # Test connection
-                self._client.head_bucket(Bucket=self.config.bucket_name)
+                # Add endpoint URL for MinIO or custom S3
+                if self.config.endpoint_url:
+                    client_kwargs["endpoint_url"] = self.config.endpoint_url
+                    client_kwargs["use_ssl"] = self.config.use_ssl
+
+                self._client = session.client("s3", **client_kwargs)
+
+                # Test connection - try to access bucket, create if doesn't exist (for MinIO)
+                try:
+                    self._client.head_bucket(Bucket=self.config.bucket_name)
+                except ClientError as e:
+                    error_code = e.response.get('Error', {}).get('Code', '')
+                    if error_code in ['404', 'NoSuchBucket'] and self.config.is_minio:
+                        # Create bucket for MinIO
+                        logger.info(f"Creating MinIO bucket: {self.config.bucket_name}")
+                        self._client.create_bucket(Bucket=self.config.bucket_name)
+                        # Set bucket policy to public for MinIO
+                        self._set_bucket_public_policy()
+                    else:
+                        raise
+
                 logger.info(f"S3 client initialized for bucket: {self.config.bucket_name}")
 
             except NoCredentialsError:
@@ -93,6 +123,29 @@ class S3Client:
                 raise ValueError(f"S3 configuration error: {e}")
 
         return self._client
+
+    def _set_bucket_public_policy(self):
+        """Set bucket policy to allow public read access (for MinIO)"""
+        import json
+        policy = {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Effect": "Allow",
+                    "Principal": {"AWS": "*"},
+                    "Action": ["s3:GetObject"],
+                    "Resource": [f"arn:aws:s3:::{self.config.bucket_name}/*"]
+                }
+            ]
+        }
+        try:
+            self._client.put_bucket_policy(
+                Bucket=self.config.bucket_name,
+                Policy=json.dumps(policy)
+            )
+            logger.info(f"Set public read policy on bucket: {self.config.bucket_name}")
+        except ClientError as e:
+            logger.warning(f"Could not set bucket policy: {e}")
 
     async def upload_file(
         self,

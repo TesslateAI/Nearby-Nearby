@@ -16,11 +16,10 @@ logger = logging.getLogger(__name__)
 
 
 class ImageService:
-    """Modern image service with support for database and S3 storage"""
+    """Image service with S3/MinIO storage (database storage removed)"""
 
     def __init__(self):
-        # Storage configuration
-        self.storage_provider = os.getenv("STORAGE_PROVIDER", "database").lower()
+        # S3 is the only storage option
         self.max_file_size = 50 * 1024 * 1024  # 50MB default
         self.supported_formats = {"JPEG", "PNG", "WEBP"}
         self.default_quality = 85  # Default compression quality
@@ -33,12 +32,11 @@ class ImageService:
             "xlarge": (1200, 1200)
         }
 
-        # Initialize S3 if configured
-        self.use_s3 = self.storage_provider == "s3" and s3_config.is_configured
-        if self.use_s3:
-            logger.info("ImageService initialized with S3 storage")
+        # S3 is required
+        if not s3_config.is_configured:
+            logger.warning("S3 not configured - image uploads will fail until S3/MinIO is set up")
         else:
-            logger.info("ImageService initialized with database storage")
+            logger.info("ImageService initialized with S3/MinIO storage")
 
     async def validate_and_process_upload(
         self,
@@ -218,18 +216,11 @@ class ImageService:
         # Create size variants
         variants = self.create_size_variants(file_data["content"], file_data["mime_type"])
 
-        if self.use_s3:
-            # S3 STORAGE PATH
-            return await self._upload_to_s3(
-                db, poi_id, image_type, filename, file_data, variants,
-                user_id, context, alt_text, caption, display_order, file.filename
-            )
-        else:
-            # DATABASE STORAGE PATH
-            return await self._upload_to_database(
-                db, poi_id, image_type, filename, file_data, variants,
-                user_id, context, alt_text, caption, display_order, file.filename
-            )
+        # S3 is the only storage option
+        return await self._upload_to_s3(
+            db, poi_id, image_type, filename, file_data, variants,
+            user_id, context, alt_text, caption, display_order, file.filename
+        )
 
     async def _upload_to_s3(
         self,
@@ -341,110 +332,36 @@ class ImageService:
             logger.error(f"S3 upload failed: {e}")
             raise HTTPException(status_code=500, detail=f"Failed to upload to S3: {str(e)}")
 
-    async def _upload_to_database(
-        self,
-        db: Session,
-        poi_id: uuid.UUID,
-        image_type: ImageType,
-        filename: str,
-        file_data: Dict[str, Any],
-        variants: Dict[str, Dict[str, Any]],
-        user_id: Optional[uuid.UUID],
-        context: Optional[str],
-        alt_text: Optional[str],
-        caption: Optional[str],
-        display_order: int,
-        original_filename: Optional[str]
-    ) -> Image:
-        """Upload image and variants to database (original implementation)"""
-
-        # Create original image record
-        original_image = Image(
-            poi_id=poi_id,
-            image_type=image_type,
-            image_context=context,
-            filename=filename,
-            original_filename=original_filename,
-            mime_type=file_data["mime_type"],
-            width=file_data["width"],
-            height=file_data["height"],
-            alt_text=alt_text,
-            caption=caption,
-            display_order=display_order,
-            uploaded_by=user_id,
-            image_size_variant="original",
-            storage_provider="database"
-        )
-
-        # Set binary data for original
-        original_image.set_binary_data(file_data["content"], "original")
-
-        # Save original to database
-        db.add(original_image)
-        db.flush()  # Get the ID
-
-        # Create and save size variants
-        for size_name, variant_data in variants.items():
-            if size_name == "original":
-                continue  # Already saved
-
-            variant_image = Image.create_variant(
-                parent_image=original_image,
-                size_variant=size_name,
-                data=variant_data["data"],
-                width=variant_data["width"],
-                height=variant_data["height"],
-                mime_type=variant_data["mime_type"]
-            )
-            db.add(variant_image)
-
-        db.commit()
-        db.refresh(original_image)
-
-        return original_image
-
     def get_image_urls(self, image: Image) -> Dict[str, str]:
-        """Get URLs for image serving (supports both database and S3)"""
+        """Get URLs for image serving (S3 only)"""
         urls = {}
 
-        # For original image
-        if image.storage_provider == "s3" and image.storage_url:
-            # S3 storage - use direct URLs
+        # For original image - S3 storage
+        if image.storage_url:
             urls["url"] = image.storage_url
             if s3_config.cloudfront_domain:
-                # Use CloudFront URL if configured
                 urls["cdn_url"] = image.storage_url
-        elif image.image_data:
-            # Database storage - use serve endpoint
-            urls["url"] = f"/api/images/serve/{image.id}"
-            urls["data_url"] = image.data_url
         else:
-            # Fallback for test images without binary data
-            urls["url"] = f"/api/images/serve/{image.id}"
+            # Fallback for images without URL (shouldn't happen with S3-only)
+            urls["url"] = None
 
         # Initialize variant URLs with None if they don't exist
         for size_name in ["thumbnail", "medium", "large"]:
             urls[f"{size_name}_url"] = None
 
-        # For size variants
+        # For size variants - S3 storage
         if image.size_variants:
             for variant in image.size_variants:
                 size_name = variant.image_size_variant
-
-                if variant.storage_provider == "s3" and variant.storage_url:
-                    # S3 storage
+                if variant.storage_url:
                     urls[f"{size_name}_url"] = variant.storage_url
                     if s3_config.cloudfront_domain:
                         urls[f"{size_name}_cdn_url"] = variant.storage_url
-                elif variant.image_data:
-                    # Database storage
-                    urls[f"{size_name}_url"] = f"/api/images/serve/{variant.id}"
-                    urls[f"{size_name}_data_url"] = variant.data_url
 
         return urls
 
     async def delete_image(self, db: Session, image_id: uuid.UUID, user_id: Optional[uuid.UUID] = None) -> bool:
-        """Delete image and all its variants from both storage and database"""
+        """Delete image and all its variants from S3 and database"""
         image = db.query(Image).filter(Image.id == image_id).first()
         if not image:
             raise HTTPException(status_code=404, detail="Image not found")
@@ -453,22 +370,21 @@ class ImageService:
             # Delete all size variants first
             if image.size_variants:
                 for variant in image.size_variants:
-                    # Delete from S3 if stored there
-                    if variant.storage_provider == "s3" and variant.storage_key and s3_client:
+                    # Delete from S3
+                    if variant.storage_key and s3_client:
                         await s3_client.delete_file(variant.storage_key)
-
-                    # Delete from database
+                    # Delete record from database
                     db.delete(variant)
 
-            # Delete the original image from S3 if stored there
-            if image.storage_provider == "s3" and image.storage_key and s3_client:
+            # Delete the original image from S3
+            if image.storage_key and s3_client:
                 await s3_client.delete_file(image.storage_key)
 
-            # Delete the original image from database
+            # Delete the image record from database
             db.delete(image)
             db.commit()
 
-            logger.info(f"Successfully deleted image {image_id} from {image.storage_provider}")
+            logger.info(f"Successfully deleted image {image_id} from S3")
             return True
 
         except Exception as e:

@@ -60,11 +60,12 @@ export const CoreInformationSection = React.memo(function CoreInformationSection
 
       <RichTextEditor
         label="Teaser Paragraph"
-        placeholder="Brief description"
+        placeholder="Brief description (120 characters max)"
         value={form.values.teaser_paragraph || ''}
         onChange={(html) => form.setFieldValue('teaser_paragraph', html)}
         error={form.errors.teaser_paragraph}
         showCharCount={true}
+        maxLength={120}
         minRows={2}
       />
 
@@ -120,16 +121,14 @@ export const CoreInformationSection = React.memo(function CoreInformationSection
         )}
       </SimpleGrid>
 
-      {/* Key Facilities - for Parks, Trails, and Events */}
-      {(isPark || isTrail || isEvent) && (
-        <CheckboxGroupSection
-          label="Key Facilities"
-          fieldName="key_facilities"
-          options={KEY_FACILITIES}
-          cols={{ base: 2, sm: 3 }}
-          form={form}
-        />
-      )}
+      {/* Key Facilities - available for all POI types */}
+      <CheckboxGroupSection
+        label="Key Facilities"
+        fieldName="key_facilities"
+        options={KEY_FACILITIES}
+        cols={{ base: 2, sm: 3 }}
+        form={form}
+      />
 
       {isEvent && (
         <>

@@ -1,22 +1,21 @@
-import { AppShell, Burger, Group, Title, NavLink, Button, Text } from '@mantine/core';
+import { AppShell, Group, Title, NavLink, Button, Text, ActionIcon } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
-import { IconRocket, IconSettings, IconLogout } from '@tabler/icons-react';
+import { IconLogout, IconX, IconMenu2 } from '@tabler/icons-react';
 import POIList from './components/POIList';
 import POIForm from './components/POIForm/POIForm';
 import POIMap from './components/POIMap';
-import CategoryList from './components/CategoryList'; 
+import CategoryList from './components/CategoryList';
 import CategoryForm from './components/CategoryForm';
 import AttributeManager from './components/AttributeManager';
 import PrimaryTypeList from './components/PrimaryTypeList';
-import PublicHomePage from './pages/PublicHomePage';
 import PoiDetailPage from './pages/PoiDetailPage';
 import LoginPage from './pages/LoginPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import { useAuth } from './utils/AuthContext';
 
 function App() {
-  const [opened, { toggle }] = useDisclosure();
+  const [opened, { toggle }] = useDisclosure(true);
   const location = useLocation();
   const { logout, user } = useAuth();
 
@@ -42,13 +41,17 @@ function App() {
     <ProtectedRoute>
       <AppShell
         header={{ height: 60 }}
-        navbar={{ width: 300, breakpoint: 'sm', collapsed: { mobile: !opened } }}
+        navbar={{ width: 300, breakpoint: 'sm', collapsed: { mobile: !opened, desktop: !opened } }}
         padding="md"
       >
         <AppShell.Header>
           <Group h="100%" px="md" justify="space-between">
             <Group>
-              <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
+              {!opened && (
+                <ActionIcon variant="subtle" onClick={toggle} size="lg">
+                  <IconMenu2 size={20} />
+                </ActionIcon>
+              )}
               <Title order={3} component={Link} to="/" style={{ textDecoration: 'none', color: 'inherit' }}>
                 Nearby Nearby Admin
               </Title>
@@ -72,22 +75,18 @@ function App() {
         </AppShell.Header>
 
         <AppShell.Navbar p="md">
+          <Group justify="space-between" mb="md">
+            <Text fw={600} size="sm" c="dimmed">Menu</Text>
+            <ActionIcon variant="subtle" onClick={toggle} size="sm">
+              <IconX size={16} />
+            </ActionIcon>
+          </Group>
           <NavLink label="Points of Interest" component={Link} to="/" />
           <NavLink label="POI Map" component={Link} to="/map" />
           <NavLink label="Manage Categories" component={Link} to="/categories" />
           <NavLink label="Manage Primary Types" component={Link} to="/primary-types" />
           <NavLink label="Manage Attributes" component={Link} to="/attributes" />
           <NavLink label="Create New POI" component={Link} to="/poi/new" />
-          <NavLink
-            label="Launch Nearby Nearby"
-            component={Link}
-            to="/launch"
-            leftSection={<IconRocket size="1rem" />}
-            color="teal"
-            variant="filled"
-            active
-            mt="xl"
-          />
         </AppShell.Navbar>
 
         <AppShell.Main>
@@ -102,7 +101,6 @@ function App() {
             <Route path="/category/new" element={<CategoryForm />} />
             <Route path="/category/:id/edit" element={<CategoryForm />} />
             <Route path="/attributes" element={<AttributeManager />} />
-            <Route path="/launch" element={<PublicHomePage />} />
           </Routes>
         </AppShell.Main>
       </AppShell>

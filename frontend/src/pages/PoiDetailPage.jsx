@@ -383,7 +383,7 @@ const PoiDetailPage = () => {
             <Paper shadow="xs" p="xs">
                  <Container>
                     <Group justify="space-between">
-                         <Group component={Link} to="/launch" style={{textDecoration: 'none', color: 'inherit'}}>
+                         <Group component={Link} to="/" style={{textDecoration: 'none', color: 'inherit'}}>
                             <Image src="/vite.svg" h={30} />
                             <Title order={4}>Nearby Nearby</Title>
                          </Group>

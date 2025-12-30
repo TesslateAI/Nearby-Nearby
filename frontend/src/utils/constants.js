@@ -54,16 +54,13 @@ export const PAYMENT_METHODS = [
   'Once Entered there is no place to spend money'
 ];
 
-// Key facilities for Events, Parks, Trails
+// Key facilities for all POI types
 export const KEY_FACILITIES = [
-  'Public Toilet',
-  'NO Public Toilet',
-  'Drinking Fountain',
-  'NO Drinking Fountain',
-  'Picnic Area',
-  'NO Picnic Area',
+  'Public Restroom',
   'Wheelchair Friendly',
-  'NOT Wheelchair Friendly'
+  'Wifi',
+  'Pet Friendly',
+  'None of the above'
 ];
 
 // Alcohol options
