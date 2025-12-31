@@ -5,11 +5,11 @@ import enum
 from datetime import datetime
 from typing import Dict, Any
 
-from sqlalchemy import Column, String, Integer, Text, TIMESTAMP, Enum, ForeignKey, LargeBinary, Boolean
+from sqlalchemy import Column, String, Integer, Text, TIMESTAMP, Enum, ForeignKey, Boolean
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
-import base64
+# Note: base64 import removed - database binary storage no longer used
 
 from app.database import Base
 
@@ -161,14 +161,14 @@ class Image(Base):
     width = Column(Integer, nullable=True)
     height = Column(Integer, nullable=True)
 
-    # Binary storage fields (modern database-centric approach)
-    image_data = Column(LargeBinary, nullable=True)  # Original image binary data
+    # Binary storage fields (DEPRECATED - kept for backward compatibility, S3 is now the only storage)
+    # image_data = Column(LargeBinary, nullable=True)  # DEPRECATED: No longer used
     image_size_variant = Column(String(20), nullable=True)  # 'original', 'thumbnail', 'medium', 'large'
     parent_image_id = Column(UUID(as_uuid=True), ForeignKey("images.id"), nullable=True)  # For size variants
     is_optimized = Column(Boolean, default=False)  # Whether this is an optimized version
 
-    # Cloud storage fields (for future scaling)
-    storage_provider = Column(String(50), default='database')  # 'database', 's3', 'cloudflare', etc.
+    # Cloud storage fields (S3/MinIO is the primary storage)
+    storage_provider = Column(String(50), default='s3')  # 's3' is the only supported provider
     storage_url = Column(String(500), nullable=True)  # External URL if using cloud storage
     storage_key = Column(String(255), nullable=True)  # Storage key/path for cloud providers
 
@@ -209,12 +209,9 @@ class Image(Base):
 
     @property
     def data_url(self) -> str:
-        """Get data URL for direct embedding (modern approach)"""
-        if not self.image_data:
-            return None
-
-        b64_data = base64.b64encode(self.image_data).decode('utf-8')
-        return f"data:{self.mime_type};base64,{b64_data}"
+        """DEPRECATED: Database storage no longer used. Use storage_url instead."""
+        # Return storage_url for S3-stored images
+        return self.storage_url
 
     @property
     def is_size_variant(self) -> bool:
@@ -235,16 +232,12 @@ class Image(Base):
             # If this is original, look at children
             return next((v for v in self.size_variants if v.image_size_variant == size), None)
 
-    def set_binary_data(self, data: bytes, size_variant: str = 'original'):
-        """Set binary image data with metadata"""
-        self.image_data = data
-        self.size_bytes = len(data)
-        self.image_size_variant = size_variant
-        self.storage_provider = 'database'
+    # set_binary_data method REMOVED - S3 is the only storage provider
 
     @classmethod
-    def create_variant(cls, parent_image: 'Image', size_variant: str, data: bytes, width: int, height: int, mime_type: str = None) -> 'Image':
-        """Create a size variant of an existing image"""
+    def create_variant(cls, parent_image: 'Image', size_variant: str, width: int, height: int,
+                       storage_url: str, storage_key: str, size_bytes: int, mime_type: str = None) -> 'Image':
+        """Create a size variant of an existing image (S3 storage only)"""
         variant = cls(
             poi_id=parent_image.poi_id,
             image_type=parent_image.image_type,
@@ -257,8 +250,10 @@ class Image(Base):
             parent_image_id=parent_image.id,
             image_size_variant=size_variant,
             is_optimized=True,
-            storage_provider='database',
+            storage_provider='s3',
+            storage_url=storage_url,
+            storage_key=storage_key,
+            size_bytes=size_bytes,
             uploaded_by=parent_image.uploaded_by
         )
-        variant.set_binary_data(data, size_variant)
         return variant

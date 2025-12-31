@@ -91,7 +91,7 @@ class PointOfInterest(Base):
     parking_types = Column(JSONB)  # List of parking types selected
     parking_locations = Column(JSONB)  # [{"lat": 0, "lng": 0, "name": "Main lot"}]
     parking_notes = Column(Text)
-    parking_photos = Column(JSONB)  # ["url1", "url2"] max 2
+    # parking_photos moved to Images table (image_type='parking')
     public_transit_info = Column(Text)
     expect_to_pay_parking = Column(String)  # 'yes', 'no', 'sometimes'
     
@@ -120,7 +120,7 @@ class PointOfInterest(Base):
     rental_info = Column(Text)
     rental_pricing = Column(Text)
     rental_link = Column(String)
-    rental_photos = Column(JSONB)  # List of rental photo URLs (max 10)
+    # rental_photos moved to Images table (image_type='rental')
     
     # History (for paid listings, parks, trails)
     history_paragraph = Column(Text)
@@ -162,7 +162,7 @@ class PointOfInterest(Base):
 
     # Business Entry
     business_entry_notes = Column(Text)
-    business_entry_photo = Column(String)
+    # business_entry_photo moved to Images table (image_type='entry')
 
     # Hours enhancements
     appointment_booking_url = Column(String)
@@ -182,15 +182,15 @@ class PointOfInterest(Base):
     playground_types = Column(JSONB)  # List of playground types
     playground_surface_types = Column(JSONB)  # List of surface types
     playground_notes = Column(Text)
-    playground_photos = Column(JSONB)  # List of photo URLs (max 15)
+    # playground_photos moved to Images table (image_type='playground')
     playground_location = Column(JSONB)  # {"lat": 0, "lng": 0}
     
     # Parks & Trails Additional Info
     payphone_location = Column(JSONB)  # {"lat": 0, "lng": 0}
     payphone_locations = Column(JSONB)  # [{"lat": 0, "lng": 0, "description": "Near entrance"}] - multiple payphones
     park_entry_notes = Column(Text)  # Park entry description/notes
-    park_entry_photo = Column(String)  # URL to park entry photo
-    parking_lot_photo = Column(String)  # URL to parking lot photo
+    # park_entry_photo moved to Images table (image_type='entry')
+    # parking_lot_photo moved to Images table (image_type='parking')
     facilities_options = Column(JSONB)  # List of park facilities (separate from key_facilities)
     night_sky_viewing = Column(Text)
     natural_features = Column(JSONB)  # List of natural features
@@ -339,12 +339,12 @@ class Trail(Base):
     trailhead_latitude = Column(Numeric(precision=10, scale=7))  # Separate lat field for trailhead
     trailhead_longitude = Column(Numeric(precision=10, scale=7))  # Separate lng field for trailhead
     trailhead_entrance_photo = Column(String)
-    trailhead_photo = Column(String)  # Main trailhead photo
+    # trailhead_photo moved to Images table (image_type='trail_head')
     trailhead_exit_location = Column(JSONB)  # {"lat": 0, "lng": 0}
     trail_exit_latitude = Column(Numeric(precision=10, scale=7))  # Separate lat field for trail exit
     trail_exit_longitude = Column(Numeric(precision=10, scale=7))  # Separate lng field for trail exit
     trailhead_exit_photo = Column(String)
-    trail_exit_photo = Column(String)  # Main trail exit photo
+    # trail_exit_photo moved to Images table (image_type='trail_exit')
     trail_markings = Column(Text)
     trailhead_access_details = Column(Text)
     downloadable_trail_map = Column(String)  # URL to map file
@@ -373,7 +373,7 @@ class Event(Base):
     organizer_name = Column(String)
     venue_settings = Column(JSONB)  # List of venue settings: Indoor, Outdoor, Hybrid, Online Only
     event_entry_notes = Column(Text)  # Event entry description/notes
-    event_entry_photo = Column(String)  # URL to event entry photo
+    # event_entry_photo moved to Images table (image_type='entry')
     food_and_drink_info = Column(Text)
     coat_check_options = Column(JSONB)  # List of coat check options
     

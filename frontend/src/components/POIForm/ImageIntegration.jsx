@@ -1,11 +1,12 @@
 // Image Integration Module for POIForm
-// This file shows how to integrate ImageUploadField into POIForm sections
+// Images are stored in the Images table with S3 storage
+// No longer syncing URLs to POI direct fields - frontend reads from poi.images array
 
 import React from 'react';
 import { Stack, Divider, Text } from '@mantine/core';
 import { ImageUploadField } from '../ImageUpload/ImageUploadField';
 
-// Replace the featured_image TextInput with this component
+// Featured/Main Image Upload
 export const FeaturedImageUpload = ({ poiId, isBusiness, isFreeListing, form }) => {
   return (
     <ImageUploadField
@@ -14,17 +15,12 @@ export const FeaturedImageUpload = ({ poiId, isBusiness, isFreeListing, form }) 
       label={isBusiness && isFreeListing ? "Business Logo" : "Featured Image"}
       description="Upload your main image that will be displayed in listings"
       required={true}
-      onImagesChange={(images) => {
-        // Update form with the first image URL
-        if (images && images.length > 0) {
-          form.setFieldValue('featured_image', images[0].url);
-        }
-      }}
+      // Images stored in Images table - no sync to POI fields needed
     />
   );
 };
 
-// Replace the gallery_photos TextInput with this component
+// Gallery Photos Upload
 export const GalleryPhotosUpload = ({ poiId, form }) => {
   return (
     <ImageUploadField
@@ -32,16 +28,12 @@ export const GalleryPhotosUpload = ({ poiId, form }) => {
       imageType="gallery"
       label="Gallery Photos"
       description="Upload multiple photos to showcase your business (up to 20)"
-      onImagesChange={(images) => {
-        // Update form with gallery image URLs
-        const urls = images.map(img => img.url);
-        form.setFieldValue('gallery_photos', urls);
-      }}
+      // Images stored in Images table - no sync to POI fields needed
     />
   );
 };
 
-// Replace menu_photos TextInput with this component
+// Menu Photos Upload
 export const MenuPhotosUpload = ({ poiId, form }) => {
   return (
     <ImageUploadField
@@ -49,10 +41,7 @@ export const MenuPhotosUpload = ({ poiId, form }) => {
       imageType="menu"
       label="Menu Photos"
       description="Upload photos of your menu (up to 10)"
-      onImagesChange={(images) => {
-        const urls = images.map(img => img.url);
-        form.setFieldValue('menu_photos', urls);
-      }}
+      // Images stored in Images table - no sync to POI fields needed
     />
   );
 };
@@ -65,12 +54,7 @@ export const EntryPhotoUpload = ({ poiId, poiType, form }) => {
       imageType="entry"
       label={`${poiType} Entry Photos`}
       description="Upload 2-3 photos showing the main entrance and entry area"
-      onImagesChange={(images) => {
-        if (images && images.length > 0) {
-          const urls = images.map(img => img.url);
-          form.setFieldValue('business_entry_photo', urls.join(', '));
-        }
-      }}
+      // Images stored in Images table - no sync to POI fields needed
     />
   );
 };
@@ -83,10 +67,7 @@ export const ParkingPhotosUpload = ({ poiId, form }) => {
       imageType="parking"
       label="Parking Lot Photos"
       description="Photos of parking areas (up to 5)"
-      onImagesChange={(images) => {
-        const urls = images.map(img => img.url);
-        form.setFieldValue('parking_photos', urls);
-      }}
+      // Images stored in Images table - no sync to POI fields needed
     />
   );
 };
@@ -100,15 +81,7 @@ export const RestroomPhotosUpload = ({ poiId, restroomIndex, form }) => {
       context={`restroom_${restroomIndex + 1}`}
       label={`Restroom ${restroomIndex + 1} Photos`}
       description="Photos of this restroom location"
-      onImagesChange={(images) => {
-        // Update the specific restroom's photos
-        const toilets = form.values.toilets || [];
-        if (toilets[restroomIndex]) {
-          const urls = images.map(img => img.url).join(', ');
-          toilets[restroomIndex].photos = urls;
-          form.setFieldValue('toilets', [...toilets]);
-        }
-      }}
+      // Images stored in Images table with context - no sync to POI fields needed
     />
   );
 };
@@ -121,10 +94,7 @@ export const RentalPhotosUpload = ({ poiId, form }) => {
       imageType="rental"
       label="Rental Space Photos"
       description="Photos of rentable spaces or equipment"
-      onImagesChange={(images) => {
-        const urls = images.map(img => img.url);
-        form.setFieldValue('rental_photos', urls);
-      }}
+      // Images stored in Images table - no sync to POI fields needed
     />
   );
 };
@@ -137,10 +107,7 @@ export const PlaygroundPhotosUpload = ({ poiId, form }) => {
       imageType="playground"
       label="Playground Photos"
       description="Photos of playground areas"
-      onImagesChange={(images) => {
-        const urls = images.map(img => img.url);
-        form.setFieldValue('playground_photos', urls);
-      }}
+      // Images stored in Images table - no sync to POI fields needed
     />
   );
 };
@@ -153,11 +120,7 @@ export const TrailHeadPhotoUpload = ({ poiId, form }) => {
       imageType="trail_head"
       label="Trail Head Photo"
       description="Photo of the trail starting point"
-      onImagesChange={(images) => {
-        if (images && images.length > 0) {
-          form.setFieldValue('trail_head_photo', images[0].url);
-        }
-      }}
+      // Images stored in Images table - no sync to POI fields needed
     />
   );
 };
@@ -170,11 +133,7 @@ export const TrailExitPhotoUpload = ({ poiId, form }) => {
       imageType="trail_exit"
       label="Trail Exit Photo"
       description="Photo of the trail ending point"
-      onImagesChange={(images) => {
-        if (images && images.length > 0) {
-          form.setFieldValue('trail_exit_photo', images[0].url);
-        }
-      }}
+      // Images stored in Images table - no sync to POI fields needed
     />
   );
 };
@@ -187,14 +146,7 @@ export const DownloadableMapsUpload = ({ poiId, form }) => {
       imageType="downloadable_map"
       label="Downloadable Maps"
       description="Upload maps as PDF or image files (up to 5, max 50MB each)"
-      onImagesChange={(images) => {
-        // Create structured map data
-        const maps = images.map((img, index) => ({
-          name: img.caption || `Map ${index + 1}`,
-          url: img.url
-        }));
-        form.setFieldValue('downloadable_maps', maps);
-      }}
+      // Images stored in Images table - no sync to POI fields needed
     />
   );
 };
@@ -205,43 +157,3 @@ export const shouldUseImageUpload = (poiId) => {
   // Otherwise use URL inputs for initial creation
   return !!poiId;
 };
-
-// Example integration into POIForm:
-/*
-// At the top of POIForm.jsx:
-import {
-  FeaturedImageUpload,
-  GalleryPhotosUpload,
-  MenuPhotosUpload,
-  shouldUseImageUpload
-} from './POIForm/ImageIntegration';
-
-// In the Core Information section, replace the featured_image TextInput:
-{shouldUseImageUpload(id) ? (
-  <FeaturedImageUpload
-    poiId={id}
-    isBusiness={isBusiness}
-    isFreeListing={isFreeListing}
-    form={form}
-  />
-) : (
-  <TextInput
-    label={isBusiness && isFreeListing ? "Logo" : "Featured Image"}
-    placeholder={isBusiness && isFreeListing ? "URL to business logo" : "URL to featured image"}
-    {...form.getInputProps('featured_image')}
-    description="Image upload will be available shortly..."
-  />
-)}
-
-// In the Gallery section:
-{shouldUseImageUpload(id) ? (
-  <GalleryPhotosUpload poiId={id} form={form} />
-) : (
-  <TextInput
-    label="Gallery Photos"
-    placeholder="URLs to extra photos (comma-separated)"
-    {...form.getInputProps('gallery_photos')}
-    description="Image upload will be available shortly..."
-  />
-)}
-*/

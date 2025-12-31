@@ -2,8 +2,8 @@ from typing import List, Optional
 from uuid import UUID
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Response, Query
-from fastapi.responses import FileResponse, RedirectResponse
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Query
+from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -365,36 +365,22 @@ async def serve_image(
     db: Session = Depends(get_db)
 ):
     """
-    Serve an image with support for both database and S3 storage.
+    Serve an image via redirect to S3 URL.
 
-    For S3 storage: redirects to the S3 URL
-    For database storage: serves binary data directly
+    All images are stored in S3/MinIO - this endpoint redirects to the storage URL.
     """
     # Get image from database
     image = image_service.get_image_by_id(db, image_id)
     if not image:
         raise HTTPException(status_code=404, detail="Image not found")
 
-    # Handle S3 storage - redirect to S3 URL
-    if image.storage_provider == "s3" and image.storage_url:
-        return RedirectResponse(
-            url=image.storage_url,
-            status_code=302  # Temporary redirect for better caching
-        )
+    # Redirect to S3 URL
+    if not image.storage_url:
+        raise HTTPException(status_code=404, detail="Image storage URL not found")
 
-    # Handle database storage - serve binary data
-    if not image.image_data:
-        raise HTTPException(status_code=404, detail="Image data not found")
-
-    # Return binary response with appropriate headers
-    return Response(
-        content=image.image_data,
-        media_type=image.mime_type or "application/octet-stream",
-        headers={
-            "Content-Disposition": f"inline; filename={image.filename}",
-            "Cache-Control": "public, max-age=3600",  # Cache for 1 hour
-            "Content-Length": str(len(image.image_data))
-        }
+    return RedirectResponse(
+        url=image.storage_url,
+        status_code=302  # Temporary redirect for better caching
     )
 
 
@@ -473,15 +459,10 @@ async def copy_images_from_venue(
                     uploaded_by=None
                 )
 
-                if source_img.storage_provider == "s3":
-                    # For S3, reference the same URL
-                    new_image.storage_url = source_img.storage_url
-                    new_image.storage_key = source_img.storage_key
-                    new_image.size_bytes = source_img.size_bytes
-                else:
-                    # For database storage, copy the binary data
-                    new_image.image_data = source_img.image_data
-                    new_image.size_bytes = source_img.size_bytes
+                # Copy S3 storage references
+                new_image.storage_url = source_img.storage_url
+                new_image.storage_key = source_img.storage_key
+                new_image.size_bytes = source_img.size_bytes
 
                 db.add(new_image)
                 db.flush()
@@ -504,13 +485,10 @@ async def copy_images_from_venue(
                         storage_provider=variant.storage_provider
                     )
 
-                    if variant.storage_provider == "s3":
-                        new_variant.storage_url = variant.storage_url
-                        new_variant.storage_key = variant.storage_key
-                        new_variant.size_bytes = variant.size_bytes
-                    else:
-                        new_variant.image_data = variant.image_data
-                        new_variant.size_bytes = variant.size_bytes
+                    # Copy S3 storage references for variants
+                    new_variant.storage_url = variant.storage_url
+                    new_variant.storage_key = variant.storage_key
+                    new_variant.size_bytes = variant.size_bytes
 
                     db.add(new_variant)
 
