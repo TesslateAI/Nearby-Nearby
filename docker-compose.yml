@@ -36,6 +36,7 @@ services:
       retries: 5
 
   backend:
+    container_name: nearby-admin-backend
     build: ./backend
     command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
     volumes:
@@ -62,6 +63,7 @@ services:
         condition: service_healthy
 
   frontend:
+    container_name: nearby-admin-frontend
     build:
       context: ./frontend
       dockerfile: Dockerfile
