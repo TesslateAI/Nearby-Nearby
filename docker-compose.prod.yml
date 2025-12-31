@@ -5,7 +5,7 @@ services:
   backend:
     container_name: nearby-admin-backend
     build: ./backend
-    command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"
+    command: sh -c "alembic upgrade heads && uvicorn app.main:app --host 0.0.0.0 --port 8000"
     volumes:
       - ./backend:/app
       - image_storage:/app/storage/images
