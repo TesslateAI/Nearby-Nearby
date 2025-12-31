@@ -191,7 +191,7 @@ def create_poi(db: Session, poi: schemas.PointOfInterestCreate):
     # Handle main category via poi_categories table with is_main=True
     if hasattr(poi, 'main_category_id') and poi.main_category_id:
         main_category = get_category(db, poi.main_category_id)
-        if main_category and main_category.is_main_category:
+        if main_category and main_category.parent_id is None:
             # Insert into poi_categories with is_main=True
             from app.models.category import poi_category_association
             db.execute(poi_category_association.insert().values(
@@ -307,21 +307,35 @@ def update_poi(db: Session, *, db_obj: models.PointOfInterest, obj_in: schemas.P
         main_category_id = update_data.pop('main_category_id')
         from app.models.category import poi_category_association
 
-        # Remove existing main category
-        db.execute(poi_category_association.delete().where(
+        # Clear is_main flag from current main category (don't delete, just demote to secondary)
+        db.execute(poi_category_association.update().where(
             poi_category_association.c.poi_id == db_obj.id,
             poi_category_association.c.is_main == True
-        ))
+        ).values(is_main=False))
 
-        # Add new main category if provided
+        # Add/update new main category if provided
         if main_category_id:
             main_category = get_category(db, main_category_id)
-            if main_category and main_category.is_main_category:
-                db.execute(poi_category_association.insert().values(
-                    poi_id=db_obj.id,
-                    category_id=main_category_id,
-                    is_main=True
-                ))
+            if main_category and main_category.parent_id is None:
+                # Check if this category already exists for this POI
+                existing = db.execute(poi_category_association.select().where(
+                    poi_category_association.c.poi_id == db_obj.id,
+                    poi_category_association.c.category_id == main_category_id
+                )).fetchone()
+
+                if existing:
+                    # Update existing to be main
+                    db.execute(poi_category_association.update().where(
+                        poi_category_association.c.poi_id == db_obj.id,
+                        poi_category_association.c.category_id == main_category_id
+                    ).values(is_main=True))
+                else:
+                    # Insert new main category
+                    db.execute(poi_category_association.insert().values(
+                        poi_id=db_obj.id,
+                        category_id=main_category_id,
+                        is_main=True
+                    ))
             else:
                 raise HTTPException(status_code=400, detail="Invalid main category")
 
@@ -330,14 +344,23 @@ def update_poi(db: Session, *, db_obj: models.PointOfInterest, obj_in: schemas.P
         category_ids = update_data.pop('category_ids')
         from app.models.category import poi_category_association
 
+        # Get current main category to preserve it
+        main_cat_row = db.execute(poi_category_association.select().where(
+            poi_category_association.c.poi_id == db_obj.id,
+            poi_category_association.c.is_main == True
+        )).fetchone()
+        main_cat_id = main_cat_row.category_id if main_cat_row else None
+
         # Remove existing secondary categories
         db.execute(poi_category_association.delete().where(
             poi_category_association.c.poi_id == db_obj.id,
             poi_category_association.c.is_main == False
         ))
 
-        # Add new secondary categories
+        # Add new secondary categories (skip if it's the main category)
         for cat_id in category_ids:
+            if cat_id == main_cat_id:
+                continue  # Skip - this is already the main category
             category = get_category(db, cat_id)
             if category:
                 db.execute(poi_category_association.insert().values(
