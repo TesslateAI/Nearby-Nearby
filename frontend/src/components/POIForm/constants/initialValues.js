@@ -56,7 +56,7 @@ export const emptyInitialValues = {
   parking_types: [],
   parking_locations: [],
   parking_notes: '',
-  parking_photos: [],
+  // parking_photos removed - use Images table with image_type='parking'
   public_transit_info: '',
   expect_to_pay_parking: 'no',
   // Additional Info
@@ -88,7 +88,7 @@ export const emptyInitialValues = {
   rental_info: '',
   rental_pricing: '',
   rental_link: '',
-  rental_photos: [],
+  // rental_photos removed - use Images table with image_type='rental'
   // Additional Business Details
   price_range_per_person: '',
   pricing: '',
@@ -98,17 +98,16 @@ export const emptyInitialValues = {
   business_amenities: [],
   entertainment_options: [],
   // Menu & Online Booking (Business only)
-  menu_photos: [],
+  // menu_photos removed - use Images table with image_type='menu'
   menu_link: '',
   delivery_links: [],
   reservation_links: [],
   appointment_links: [],
   online_ordering_links: [],
-  // Gallery photos
-  gallery_photos: [],
+  // gallery_photos removed - use Images table with image_type='gallery'
   // Business Entry
   business_entry_notes: '',
-  business_entry_photo: '',
+  // business_entry_photo removed - use Images table with image_type='entry'
   // Hours enhancements
   appointment_booking_url: '',
   hours_but_appointment_required: false,
@@ -138,12 +137,12 @@ export const emptyInitialValues = {
     trailhead_latitude: null,
     trailhead_longitude: null,
     trailhead_entrance_photo: '',
-    trailhead_photo: '',
+    // trailhead_photo removed - use Images table with image_type='trail_head'
     trailhead_exit_location: null,
     trail_exit_latitude: null,
     trail_exit_longitude: null,
     trailhead_exit_photo: '',
-    trail_exit_photo: '',
+    // trail_exit_photo removed - use Images table with image_type='trail_exit'
     trail_markings: '',
     trailhead_access_details: '',
     downloadable_trail_map: '',
@@ -156,14 +155,14 @@ export const emptyInitialValues = {
   playground_types: [],
   playground_surface_types: [],
   playground_notes: '',
-  playground_photos: [],
+  // playground_photos removed - use Images table with image_type='playground'
   playground_location: null,
   // Parks & Trails Additional
   payphone_location: null,
   payphone_locations: [],
   park_entry_notes: '',
-  park_entry_photo: '',
-  parking_lot_photo: '',
+  // park_entry_photo removed - use Images table with image_type='entry'
+  // parking_lot_photo removed - use Images table with image_type='parking'
   facilities_options: [],
   night_sky_viewing: '',
   natural_features: [],
@@ -191,7 +190,7 @@ export const emptyInitialValues = {
     organizer_name: '',
     venue_settings: [],
     event_entry_notes: '',
-    event_entry_photo: '',
+    // event_entry_photo removed - use Images table with image_type='entry'
     food_and_drink_info: '',
     coat_check_options: [],
     has_vendors: false,

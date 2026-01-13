@@ -49,11 +49,12 @@ export const usePOIHandlers = (id, isEditing, form, setPoiId) => {
             'entertainment_options', 'natural_features', 'outdoor_types', 'things_to_do',
             'hunting_types', 'fishing_types', 'licenses_required', 'playground_types',
             'playground_surface_types', 'downloadable_maps', 'parking_locations',
-            'toilet_locations', 'rental_photos', 'menu_photos', 'delivery_links',
+            'toilet_locations', 'delivery_links',
             'reservation_links', 'appointment_links', 'online_ordering_links',
             'service_locations', 'locally_found_at', 'article_links',
-            'organization_memberships', 'parking_photos', 'payphone_locations',
+            'organization_memberships', 'payphone_locations',
             'facilities_options'
+            // Removed deprecated photo fields: rental_photos, menu_photos, parking_photos
           ];
 
           arrayFields.forEach(field => {
@@ -95,8 +96,8 @@ export const usePOIHandlers = (id, isEditing, form, setPoiId) => {
             'menu_link', 'community_impact', 'night_sky_viewing', 'birding_wildlife',
             'hunting_fishing_info', 'membership_details', 'camping_lodging', 'playground_notes',
             'pets_allowed', 'alcohol_available', 'public_toilets_available', 'toilet_photos',
-            'park_entry_notes', 'park_entry_photo', 'parking_lot_photo', 'business_entry_notes',
-            'business_entry_photo', 'appointment_booking_url'
+            'park_entry_notes', 'business_entry_notes', 'appointment_booking_url'
+            // Removed deprecated photo fields: park_entry_photo, parking_lot_photo, business_entry_photo
           ];
 
           stringFields.forEach(field => {
@@ -124,7 +125,8 @@ export const usePOIHandlers = (id, isEditing, form, setPoiId) => {
             const trailStringFields = [
               'length_text', 'difficulty', 'difficulty_description', 'route_type',
               'trail_markings', 'trailhead_access_details', 'downloadable_trail_map',
-              'trailhead_entrance_photo', 'trailhead_photo', 'trailhead_exit_photo', 'trail_exit_photo'
+              'trailhead_entrance_photo', 'trailhead_exit_photo'
+              // Removed deprecated photo fields: trailhead_photo, trail_exit_photo
             ];
             trailStringFields.forEach(field => {
               if (formData.trail[field] === null || formData.trail[field] === undefined) {
@@ -147,7 +149,8 @@ export const usePOIHandlers = (id, isEditing, form, setPoiId) => {
             const eventStringFields = [
               'organizer_name', 'food_and_drink_info', 'vendor_fee',
               'vendor_application_info', 'vendor_requirements',
-              'event_entry_notes', 'event_entry_photo'
+              'event_entry_notes'
+              // Removed deprecated photo field: event_entry_photo
             ];
             eventStringFields.forEach(field => {
               if (formData.event[field] === null || formData.event[field] === undefined) {

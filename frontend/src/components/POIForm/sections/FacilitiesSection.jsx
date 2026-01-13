@@ -481,12 +481,7 @@ export const RentalsSection = React.memo(function RentalsSection({
           {shouldUseImageUpload(id) ? (
             <RentalPhotosUpload poiId={id} form={form} />
           ) : (
-            <TextInput
-              label="Photos of Rental"
-              placeholder="URLs to rental photos (comma-separated)"
-              {...form.getInputProps('rental_photos')}
-              description="Image upload will be available shortly..."
-            />
+            <Text size="sm" c="dimmed">Save POI first to enable rental photo upload</Text>
           )}
         </>
       )}

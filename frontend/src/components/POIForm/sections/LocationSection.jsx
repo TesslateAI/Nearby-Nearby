@@ -146,12 +146,7 @@ export const LocationSection = React.memo(function LocationSection({
           {shouldUseImageUpload(id) ? (
             <EntryPhotoUpload poiId={id} poiType="Park" form={form} />
           ) : (
-            <TextInput
-              label="Park Entry Photo"
-              placeholder="URL to photo of park entrance"
-              {...form.getInputProps('park_entry_photo')}
-              description="Image upload will be available shortly..."
-            />
+            <Text size="sm" c="dimmed">Save POI first to enable park entry photo upload</Text>
           )}
         </>
       )}
@@ -171,12 +166,7 @@ export const LocationSection = React.memo(function LocationSection({
           {shouldUseImageUpload(id) ? (
             <EntryPhotoUpload poiId={id} poiType="Trail" form={form} />
           ) : (
-            <TextInput
-              label="Trail Entry Photo"
-              placeholder="URL to photo of trail entrance"
-              {...form.getInputProps('trail_entry_photo')}
-              description="Image upload will be available shortly..."
-            />
+            <Text size="sm" c="dimmed">Save POI first to enable trail entry photo upload</Text>
           )}
         </>
       )}
@@ -196,12 +186,7 @@ export const LocationSection = React.memo(function LocationSection({
           {shouldUseImageUpload(id) ? (
             <EntryPhotoUpload poiId={id} poiType="Business" form={form} />
           ) : (
-            <TextInput
-              label="Business Entry Photo"
-              placeholder="URL to photo of business entrance"
-              {...form.getInputProps('business_entry_photo')}
-              description="Image upload will be available shortly..."
-            />
+            <Text size="sm" c="dimmed">Save POI first to enable business entry photo upload</Text>
           )}
         </>
       )}
@@ -234,12 +219,7 @@ export const LocationSection = React.memo(function LocationSection({
           {shouldUseImageUpload(id) ? (
             <EntryPhotoUpload poiId={id} poiType="Event" form={form} />
           ) : (
-            <TextInput
-              label="Event Entry Photo"
-              placeholder="URL to photo of event entrance"
-              {...form.getInputProps('event.event_entry_photo')}
-              description="Image upload will be available shortly..."
-            />
+            <Text size="sm" c="dimmed">Save POI first to enable event entry photo upload</Text>
           )}
         </>
       )}
@@ -360,12 +340,7 @@ export const LocationSection = React.memo(function LocationSection({
           {shouldUseImageUpload(id) ? (
             <ParkingPhotosUpload poiId={id} form={form} />
           ) : (
-            <TextInput
-              label="Parking Lot Photo"
-              placeholder="URL to photo of parking area"
-              {...form.getInputProps('parking_lot_photo')}
-              description="Image upload will be available shortly..."
-            />
+            <Text size="sm" c="dimmed">Save POI first to enable parking photo upload</Text>
           )}
         </>
       )}

@@ -105,12 +105,7 @@ export const MenuBookingSection = React.memo(function MenuBookingSection({
       {shouldUseImageUpload(id) ? (
         <MenuPhotosUpload poiId={id} form={form} />
       ) : (
-        <TextInput
-          label="Menu Photos"
-          placeholder="URLs to menu photos (comma-separated)"
-          {...form.getInputProps('menu_photos')}
-          description="Image upload will be available shortly..."
-        />
+        <Text size="sm" c="dimmed">Save POI first to enable menu photo upload</Text>
       )}
 
       <Divider my="md" label="Delivery Services" />
@@ -245,12 +240,7 @@ export const BusinessGallerySection = React.memo(function BusinessGallerySection
       {shouldUseImageUpload(id) ? (
         <GalleryPhotosUpload poiId={id} form={form} />
       ) : (
-        <TextInput
-          label="Gallery Photos"
-          placeholder="URLs to extra photos (comma-separated)"
-          {...form.getInputProps('gallery_photos')}
-          description="Image upload will be available shortly..."
-        />
+        <Text size="sm" c="dimmed">Save POI first to enable gallery photo upload</Text>
       )}
     </Stack>
   );
@@ -273,12 +263,7 @@ export const BusinessEntrySection = React.memo(function BusinessEntrySection({
       {shouldUseImageUpload(id) ? (
         <EntryPhotoUpload poiId={id} poiType="Business" form={form} />
       ) : (
-        <TextInput
-          label="Entry Photo"
-          placeholder="URL to photo of business entrance"
-          {...form.getInputProps('business_entry_photo')}
-          description="Image upload will be available shortly..."
-        />
+        <Text size="sm" c="dimmed">Save POI first to enable entry photo upload</Text>
       )}
     </Stack>
   );

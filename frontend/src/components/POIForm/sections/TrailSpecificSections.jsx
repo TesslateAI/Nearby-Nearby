@@ -127,12 +127,7 @@ export const TrailDetailsSection = React.memo(function TrailDetailsSection({ for
       {shouldUseImageUpload(id) ? (
         <TrailHeadPhotoUpload poiId={id} form={form} />
       ) : (
-        <TextInput
-          label="Trailhead Photo"
-          placeholder="URL to photo of trailhead entrance"
-          {...form.getInputProps('trail.trailhead_photo')}
-          description="Image upload will be available shortly..."
-        />
+        <Text size="sm" c="dimmed">Save POI first to enable trailhead photo upload</Text>
       )}
 
       <Divider my="md" label="Trail Exit Location" />
@@ -153,12 +148,7 @@ export const TrailDetailsSection = React.memo(function TrailDetailsSection({ for
       {shouldUseImageUpload(id) ? (
         <TrailExitPhotoUpload poiId={id} form={form} />
       ) : (
-        <TextInput
-          label="Trail Exit Photo"
-          placeholder="URL to photo of trail exit"
-          {...form.getInputProps('trail.trail_exit_photo')}
-          description="Image upload will be available shortly..."
-        />
+        <Text size="sm" c="dimmed">Save POI first to enable trail exit photo upload</Text>
       )}
     </Stack>
   );

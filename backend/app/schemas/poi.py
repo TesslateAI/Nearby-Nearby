@@ -91,12 +91,12 @@ class TrailBase(BaseModel):
     trailhead_latitude: Optional[float] = None
     trailhead_longitude: Optional[float] = None
     trailhead_entrance_photo: Optional[str] = None
-    trailhead_photo: Optional[str] = None
+    # trailhead_photo - DEPRECATED: moved to Images table (image_type='trail_head')
     trailhead_exit_location: Optional[Dict[str, Any]] = None
     trail_exit_latitude: Optional[float] = None
     trail_exit_longitude: Optional[float] = None
     trailhead_exit_photo: Optional[str] = None
-    trail_exit_photo: Optional[str] = None
+    # trail_exit_photo - DEPRECATED: moved to Images table (image_type='trail_exit')
     trail_markings: Optional[str] = None
     trailhead_access_details: Optional[str] = None
     downloadable_trail_map: Optional[str] = None
@@ -120,7 +120,7 @@ class EventBase(BaseModel):
     organizer_name: Optional[str] = None
     venue_settings: Optional[List[str]] = None
     event_entry_notes: Optional[str] = None
-    event_entry_photo: Optional[str] = None
+    # event_entry_photo - DEPRECATED: moved to Images table (image_type='entry')
     food_and_drink_info: Optional[str] = None
     coat_check_options: Optional[List[str]] = None
     has_vendors: bool = False
@@ -202,7 +202,7 @@ class PointOfInterestBase(BaseModel):
     entertainment_options: Optional[List[str]] = None
     
     # Menu & Online Booking (Business only)
-    menu_photos: Optional[List[str]] = None
+    # menu_photos - DEPRECATED: moved to Images table (image_type='menu')
     menu_link: Optional[str] = None
     delivery_links: Optional[List[TitledLink]] = None  # [{"title": "DoorDash", "url": "https://..."}]
     reservation_links: Optional[List[TitledLink]] = None  # [{"title": "OpenTable", "url": "https://..."}]
@@ -216,11 +216,11 @@ class PointOfInterestBase(BaseModel):
         return normalize_titled_links(v)
 
     # Gallery
-    gallery_photos: Optional[List[str]] = None
+    # gallery_photos - DEPRECATED: moved to Images table (image_type='gallery')
 
     # Business Entry
     business_entry_notes: Optional[str] = None
-    business_entry_photo: Optional[str] = None
+    # business_entry_photo - DEPRECATED: moved to Images table (image_type='entry')
 
     # Hours enhancements
     appointment_booking_url: Optional[str] = None
@@ -236,8 +236,8 @@ class PointOfInterestBase(BaseModel):
     organization_memberships: Optional[List[Dict[str, Any]]] = None
     
     # Rental photos
-    rental_photos: Optional[List[str]] = None
-    
+    # rental_photos - DEPRECATED: moved to Images table (image_type='rental')
+
     # Address fields
     dont_display_location: bool = False  # For businesses that don't want exact location shown
     address_full: Optional[str] = None
@@ -277,10 +277,10 @@ class PointOfInterestBase(BaseModel):
     parking_types: Optional[List[str]] = None
     parking_locations: Optional[List[Dict[str, Any]]] = None
     parking_notes: Optional[str] = None
-    parking_photos: Optional[List[str]] = None
+    # parking_photos - DEPRECATED: moved to Images table (image_type='parking')
     public_transit_info: Optional[str] = None
     expect_to_pay_parking: Optional[Literal['yes', 'no', 'sometimes']] = None
-    
+
     # Additional Info
     downloadable_maps: Optional[List[Dict[str, str]]] = None
     payment_methods: Optional[List[str]] = None
@@ -306,22 +306,22 @@ class PointOfInterestBase(BaseModel):
     rental_info: Optional[str] = None
     rental_pricing: Optional[str] = None
     rental_link: Optional[str] = None
-    rental_photos: Optional[List[str]] = None
-    
+    # rental_photos - DEPRECATED (duplicate): moved to Images table (image_type='rental')
+
     # Playground Information (All POIs)
     playground_available: bool = False
     playground_types: Optional[List[str]] = None
     playground_surface_types: Optional[List[str]] = None
     playground_notes: Optional[str] = None
-    playground_photos: Optional[List[str]] = None
+    # playground_photos - DEPRECATED: moved to Images table (image_type='playground')
     playground_location: Optional[Dict[str, Any]] = None
     
     # Parks & Trails Additional Info
     payphone_location: Optional[Dict[str, Any]] = None
     payphone_locations: Optional[List[Dict[str, Any]]] = None
     park_entry_notes: Optional[str] = None
-    park_entry_photo: Optional[str] = None
-    parking_lot_photo: Optional[str] = None
+    # park_entry_photo - DEPRECATED: moved to Images table (image_type='entry')
+    # parking_lot_photo - DEPRECATED: moved to Images table (image_type='parking')
     facilities_options: Optional[List[str]] = None
     night_sky_viewing: Optional[str] = None
     natural_features: Optional[List[str]] = None
@@ -406,13 +406,13 @@ class PointOfInterestUpdate(BaseModel):
     youth_amenities: Optional[List[str]] = None
     business_amenities: Optional[List[str]] = None
     entertainment_options: Optional[List[str]] = None
-    menu_photos: Optional[List[str]] = None
+    # menu_photos - DEPRECATED: moved to Images table (image_type='menu')
     menu_link: Optional[str] = None
     delivery_links: Optional[List[TitledLink]] = None
     reservation_links: Optional[List[TitledLink]] = None
     appointment_links: Optional[List[TitledLink]] = None
     online_ordering_links: Optional[List[TitledLink]] = None
-    gallery_photos: Optional[List[str]] = None
+    # gallery_photos - DEPRECATED: moved to Images table (image_type='gallery')
     business_entry_notes: Optional[str] = None
 
     # Validators to normalize link formats (convert strings to dicts)
@@ -420,7 +420,7 @@ class PointOfInterestUpdate(BaseModel):
     @classmethod
     def normalize_links(cls, v):
         return normalize_titled_links(v)
-    business_entry_photo: Optional[str] = None
+    # business_entry_photo - DEPRECATED: moved to Images table (image_type='entry')
     appointment_booking_url: Optional[str] = None
     hours_but_appointment_required: Optional[bool] = None
     service_locations: Optional[List[uuid.UUID]] = None
@@ -428,7 +428,7 @@ class PointOfInterestUpdate(BaseModel):
     article_links: Optional[List[Dict[str, str]]] = None
     community_impact: Optional[str] = None
     organization_memberships: Optional[List[Dict[str, Any]]] = None
-    rental_photos: Optional[List[str]] = None
+    # rental_photos - DEPRECATED: moved to Images table (image_type='rental')
     dont_display_location: Optional[bool] = None
     address_full: Optional[str] = None
     address_street: Optional[str] = None
@@ -455,7 +455,7 @@ class PointOfInterestUpdate(BaseModel):
     parking_types: Optional[List[str]] = None
     parking_locations: Optional[List[Dict[str, Any]]] = None
     parking_notes: Optional[str] = None
-    parking_photos: Optional[List[str]] = None
+    # parking_photos - DEPRECATED: moved to Images table (image_type='parking')
     public_transit_info: Optional[str] = None
     expect_to_pay_parking: Optional[Literal['yes', 'no', 'sometimes']] = None
     downloadable_maps: Optional[List[Dict[str, str]]] = None
@@ -478,18 +478,18 @@ class PointOfInterestUpdate(BaseModel):
     rental_info: Optional[str] = None
     rental_pricing: Optional[str] = None
     rental_link: Optional[str] = None
-    rental_photos: Optional[List[str]] = None
+    # rental_photos - DEPRECATED (duplicate): moved to Images table (image_type='rental')
     playground_available: Optional[bool] = None
     playground_types: Optional[List[str]] = None
     playground_surface_types: Optional[List[str]] = None
     playground_notes: Optional[str] = None
-    playground_photos: Optional[List[str]] = None
+    # playground_photos - DEPRECATED: moved to Images table (image_type='playground')
     playground_location: Optional[Dict[str, Any]] = None
     payphone_location: Optional[Dict[str, Any]] = None
     payphone_locations: Optional[List[Dict[str, Any]]] = None
     park_entry_notes: Optional[str] = None
-    park_entry_photo: Optional[str] = None
-    parking_lot_photo: Optional[str] = None
+    # park_entry_photo - DEPRECATED: moved to Images table (image_type='entry')
+    # parking_lot_photo - DEPRECATED: moved to Images table (image_type='parking')
     facilities_options: Optional[List[str]] = None
     night_sky_viewing: Optional[str] = None
     natural_features: Optional[List[str]] = None

@@ -218,12 +218,7 @@ export const PlaygroundSection = React.memo(function PlaygroundSection({ form, i
           {shouldUseImageUpload(id) ? (
             <PlaygroundPhotosUpload poiId={id} form={form} />
           ) : (
-            <TextInput
-              label="Playground Photos"
-              placeholder="URLs to playground photos (comma-separated)"
-              {...form.getInputProps('playground_photos')}
-              description="Image upload will be available shortly..."
-            />
+            <Text size="sm" c="dimmed">Save POI first to enable playground photo upload</Text>
           )}
         </>
       )}
