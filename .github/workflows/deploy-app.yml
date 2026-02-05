@@ -1,8 +1,10 @@
-name: Build and Deploy to AWS ECR/ECS
+name: Deploy nearby-app to AWS ECR/ECS
 
 on:
   push:
     branches: [ "main" ]
+    paths:
+      - 'nearby-app/**'
   workflow_dispatch:
 
 permissions:
@@ -10,7 +12,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: deploy-main
+  group: deploy-app-main
   cancel-in-progress: false
 
 jobs:
@@ -43,7 +45,7 @@ jobs:
       - name: Build and push image to ECR
         uses: docker/build-push-action@v6
         with:
-          context: .
+          context: ./nearby-app
           push: true
           tags: |
             ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest

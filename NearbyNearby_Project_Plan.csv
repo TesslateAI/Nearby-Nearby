@@ -1,0 +1,113 @@
+Task #,Ticket,Category,Task Title,Description,Assigned To,Priority,Status,Start Date,Due Date,Week,Dependencies,Notes
+1,NN-55 / NN-4,CRITICAL BLOCKER,Fix POI Save/Update (HTTP 500/422),Can't save or update POIs - HTTP 500 on new POI and HTTP 422 on update. Only name and images save. All content entry is blocked until this is fixed.,Manav,P0 - Critical,Not Started,2/5/2026,2/7/2026,Week 1 (Feb 5-7),,Blocks ALL content entry - must fix first
+2,NN-46,CRITICAL BLOCKER,Fix Events Page Blank White Screen,Events admin form renders blank white page - can't enter any event data,Manav,P0 - Critical,Not Started,2/5/2026,2/7/2026,Week 1 (Feb 5-7),,Blocks all event work
+3,NN-57,CRITICAL BLOCKER,Fix Corporate Compliance Checkboxes,Radio.Group styling issue - can't toggle yes/no for comments restrictions / social media restrictions / pre-approval / branding requirements,Manav,P0 - Critical,Not Started,2/5/2026,2/7/2026,Week 1 (Feb 5-7),,
+4,NN-57,CRITICAL BLOCKER,Fix Add Additional Parking Location Crash,Clicking Add Additional Parking Location goes to white screen on Trails and Parks,Manav,P0 - Critical,Not Started,2/5/2026,2/7/2026,Week 1 (Feb 5-7),,
+5,NN-31,CRITICAL BLOCKER,Fix Copy Address - Only Copies City,Copy Address only copies Pittsboro instead of full street address,Robert,P0 - Critical,Not Started,2/5/2026,2/7/2026,Week 1 (Feb 5-7),,Frontend fix
+6,NN-38,CRITICAL BLOCKER,Fix Share Dropdown - Only Shows Link Copied,Share button only shows Link Copied - missing Facebook / Twitter / Email / Native Share options,Robert,P0 - Critical,Not Started,2/5/2026,2/7/2026,Week 1 (Feb 5-7),,Frontend fix
+7,NN-36,CRITICAL BLOCKER,Fix Hours Toggle on Detail Pages,Show Hours button doesn't expand to show weekly hours on any detail page,Robert,P0 - Critical,Not Started,2/5/2026,2/7/2026,Week 1 (Feb 5-7),,Frontend fix
+8,NN-48,CRITICAL BLOCKER,Fix Verified Badge Hover Popup,Verified badge shows but hover popup with confirmation message doesn't appear,Robert,P0 - Critical,Not Started,2/5/2026,2/7/2026,Week 1 (Feb 5-7),,Frontend fix
+9,NN-57,Admin Backend,Add Teaser Paragraph 120 Character Limit,Add live character counter and enforce 120 char limit on teaser paragraph,Manav,P0,Not Started,2/8/2026,2/10/2026,Week 2 (Feb 8-14),1,
+10,NN-57,Admin Backend,Add Lat/Long Most Accurate Flag Button,Add toggle button like Disaster Hub / Verified for marking lat/long as most accurate,Manav,P0,Not Started,2/8/2026,2/10/2026,Week 2 (Feb 8-14),1,
+11,NN-57,Admin Backend,Add Parking Lot Lat/Long Field,Add latitude/longitude fields for parking locations,Manav,P0,Not Started,2/8/2026,2/10/2026,Week 2 (Feb 8-14),1 4,
+12,NN-57,Admin Backend,Add Playground Lat/Long Field,Add latitude/longitude fields for playgrounds,Manav,P0,Not Started,2/8/2026,2/10/2026,Week 2 (Feb 8-14),1,
+13,NN-57,Admin Backend,Add Restroom Lat/Long Field (Parks),Add latitude/longitude for restroom locations in Parks,Manav,P0,Not Started,2/8/2026,2/10/2026,Week 2 (Feb 8-14),1,
+14,NN-57,Admin Backend,Add Restroom Description Box (Parks),Add missing description paragraph box for restrooms in Parks,Manav,P0,Not Started,2/8/2026,2/10/2026,Week 2 (Feb 8-14),1,
+15,NN-57,Admin Backend,Add Restroom Photos Upload (Parks),Add photo upload section for restrooms in Parks,Manav,P0,Not Started,2/8/2026,2/10/2026,Week 2 (Feb 8-14),1,
+16,NN-57,Admin Backend,Add Alcohol Policy Details Paragraph,Add description paragraph under Is Alcohol Available for paid businesses / trails / parks,Manav,P0,Not Started,2/8/2026,2/11/2026,Week 2 (Feb 8-14),1,
+17,NN-57,Admin Backend,Parking Photos Per Lot,Make parking photos associate with individual parking lots instead of shared,Manav,P1,Not Started,2/8/2026,2/11/2026,Week 2 (Feb 8-14),1 4 11,
+18,NN-57,Admin Backend,Add Restroom Duplicate Button for Trails/Events,Add button to duplicate restroom section (options / description / lat-long / photos) for Trails and Events,Manav,P1,Not Started,2/8/2026,2/11/2026,Week 2 (Feb 8-14),1 2,
+19,NN-57,Admin Backend,Add Playground Duplicate Button,Add button to add another playground with lat/long / type / surface / notes / photos,Manav,P1,Not Started,2/8/2026,2/11/2026,Week 2 (Feb 8-14),1 12,
+20,NN-57,Admin Backend,Add Missing Fields to Free Listings,Add Parking Notes / Public Transit Info / Expect to Pay for Parking to free listing types,Manav,P1,Not Started,2/11/2026,2/12/2026,Week 2 (Feb 8-14),1 4,
+21,NN-57,Admin Backend,Article Links Custom Title Field,Add custom title input for article links (like delivery/reservation links have),Manav,P1,Not Started,2/11/2026,2/12/2026,Week 2 (Feb 8-14),1,
+22,NN-57,Business Free,Fix Logo Upload for Free Business,Can't upload logo on free business listing,Manav,P0,Not Started,2/12/2026,2/13/2026,Week 2 (Feb 8-14),1,
+23,NN-57,Business Free,Remove Teaser Paragraph from Free Listing,Remove teaser paragraph field from free business listings,Manav,P1,Not Started,2/12/2026,2/13/2026,Week 2 (Feb 8-14),1,
+24,NN-57,Business Free,Short Description 250 Character Limit,Add 250 character limit with counter on short description for free business,Manav,P1,Not Started,2/12/2026,2/13/2026,Week 2 (Feb 8-14),1,
+25,NN-57,Business Free,Limit Business Category to 1 Selection,Free business should only allow selecting 1 category - currently allows unlimited,Manav,P0,Not Started,2/12/2026,2/13/2026,Week 2 (Feb 8-14),1,
+26,NN-57,Business Free,Remove Community Connections from Free,Remove entire Community Connections section from free business listing,Manav,P1,Not Started,2/12/2026,2/13/2026,Week 2 (Feb 8-14),1,
+27,NN-57,Business Free,Remove Community Impact from Free,Remove Community Impact section from free business listing,Manav,P1,Not Started,2/12/2026,2/13/2026,Week 2 (Feb 8-14),1,
+28,NN-57,Business Free,Remove Add Article Link from Free,Remove Add Article Link from free business listing,Manav,P1,Not Started,2/12/2026,2/13/2026,Week 2 (Feb 8-14),1,
+29,NN-57,Business Free,Add Public Restroom Section to Free Business,Add section with: Are public toilets available (Yes/No) / Public Toilet Options (checkbox) / Description paragraph,Manav,P1,Not Started,2/13/2026,2/14/2026,Week 2 (Feb 8-14),1,
+30,NN-57,Business Free,Add Wheelchair Accessible Section to Free Business,Add section with: Wheelchair Accessibility (Yes/No/Unknown) / Additional Accessibility Detail paragraph,Manav,P1,Not Started,2/13/2026,2/14/2026,Week 2 (Feb 8-14),1,
+31,NN-57,Trails,Add Pay Phone Lat/Long and Paragraph,Add Lat/Long for pay phone plus paragraph box with ability to add multiple (like parks setup),Manav,P1,Not Started,2/14/2026,2/15/2026,Week 2 (Feb 8-14),1,
+32,NN-57,Trails,Separate Public Transit from Parking,Move public transit info to be either before or after the parking section instead of mixed in,Manav,P1,Not Started,2/14/2026,2/15/2026,Week 2 (Feb 8-14),1 4,
+33,NN-57,Trails,Trail Head Photo - Increase to 10 Images,Change trail head photo upload limit from 1 to 10 images,Manav,P1,Not Started,2/14/2026,2/15/2026,Week 2 (Feb 8-14),1,
+34,NN-57,Trails,Trail Exit Photo - Increase to 10 Images,Change trail exit photo upload limit from 1 to 10 images,Manav,P1,Not Started,2/14/2026,2/15/2026,Week 2 (Feb 8-14),1,
+35,NN-57,Trails,Remove Trail Experience Section (Duplicate),Delete Trail Experience section - it duplicates Categories,Manav,P1,Not Started,2/14/2026,2/15/2026,Week 2 (Feb 8-14),1,
+36,NN-57,Trails,Remove Membership Pass from Connections (Duplicate),Remove Membership Pass and details from Connections section - duplicate,Manav,P1,Not Started,2/14/2026,2/15/2026,Week 2 (Feb 8-14),1,
+37,NN-57,Trails,Remove Available to Rent from Restrooms (Duplicate),Remove Available to rent toggle from Public Restrooms accordion - duplicate,Manav,P1,Not Started,2/14/2026,2/15/2026,Week 2 (Feb 8-14),1,
+38,NN-57,Parks,Add Playground Duplicate Button (Parks),Add button to duplicate playground section: lat/long / type / surface / notes / photos,Manav,P1,Not Started,2/15/2026,2/16/2026,Week 2 (Feb 8-14),1 12 19,
+39,NN-57,Parks,Fix Restroom Section (Parks),Add Lat/Long / Description / Photos / Duplicate button to park restrooms,Manav,P1,Not Started,2/15/2026,2/16/2026,Week 2 (Feb 8-14),1 13 14 15,
+40,NN-57,Rentals,Remove Rental Pricing Box (All POI Types),Remove rental pricing box from all POI types - no longer used,Manav,P1,Not Started,2/15/2026,2/16/2026,Week 2 (Feb 8-14),1,
+41,NN-57,Rentals,Add Rental Photos Upload,Add missing photo upload section for rental information,Manav,P1,Not Started,2/15/2026,2/16/2026,Week 2 (Feb 8-14),1,
+42,NN-38,Admin Backend,Set Default City/County/State,Default city to Pittsboro / county to Chatham / state to NC with city dropdown,Manav,P1,Not Started,2/16/2026,2/17/2026,Week 3 (Feb 15-21),1,
+43,NN-38,Admin Backend,Improve Map Default Zoom Level,Set default zoom closer so users don't spend time zooming in,Manav,P1,Not Started,2/16/2026,2/17/2026,Week 3 (Feb 15-21),1,
+44,NN-38,Admin Backend,Address Entry Moves Map Pin,When address is typed the map pin should auto-move to that location,Manav,P2,Not Started,2/16/2026,2/17/2026,Week 3 (Feb 15-21),1 42,Post-MVP nice-to-have
+45,NN-46,Events Backend,Venue Data Inheritance,Events should pull address / parking / accessibility / restrooms from selected venue POI,Manav,P1,Not Started,2/17/2026,2/19/2026,Week 3 (Feb 15-21),1 2,
+46,NN-46,Events Backend,Remove Military Time from Events,Ensure all time displays use 12-hour format,Manav,P1,Not Started,2/17/2026,2/18/2026,Week 3 (Feb 15-21),2,
+47,NN-46,Events Backend,Add Food and Drink Description Field,Add description: Will there be food/drinks to purchase? What kind? Can attendees bring their own?,Manav,P1,Not Started,2/17/2026,2/18/2026,Week 3 (Feb 15-21),2,
+48,NN-46,Events Backend,Add Map Download PDF Option to Events,Add PDF map upload/download option for events,Manav,P2,Not Started,2/18/2026,2/19/2026,Week 3 (Feb 15-21),2,
+49,NN-46,Events Backend,Add Pay Phone Lat/Long to Events,Add pay phone location coordinates for events,Manav,P2,Not Started,2/18/2026,2/19/2026,Week 3 (Feb 15-21),2,
+50,NN-46,Events Backend,Recurring Events Support,Ensure recurring event patterns (weekly/monthly) work end-to-end,Manav,P1,Not Started,2/18/2026,2/19/2026,Week 3 (Feb 15-21),2,Backend 80% done
+51,NN-45,Photos/Gallery,Photo Tagging by Function,Images should be typed/tagged by function (storefront / entrance / restrooms / parking / interior etc.) for categorized display and reuse,Manav,P1,Not Started,2/19/2026,2/21/2026,Week 3 (Feb 15-21),1,Architectural change
+52,-,SEO,Add SEO Component to All Detail Pages,BusinessDetail / EventDetail / ParkDetail / TrailDetail not using the SEO component - missing dynamic titles and Open Graph tags,Robert,P0,Not Started,2/15/2026,2/17/2026,Week 3 (Feb 15-21),,Frontend fix
+53,-,SEO,Add Open Graph Tags to Detail Pages,Add og:title / og:description / og:image / og:type to all detail page types,Robert,P0,Not Started,2/15/2026,2/17/2026,Week 3 (Feb 15-21),52,Frontend fix
+54,NN-24,Nearby Feature,Fix Mobile White Bar - Add Search by Date Text,Mobile nearby section shows white bar that needs Search by Date label,Robert,P1,Not Started,2/15/2026,2/16/2026,Week 3 (Feb 15-21),,Frontend fix
+55,NN-24,Nearby Feature,Fine Tune Search Filters Nearby Listings,The search within nearby should filter results (e.g. pet friendly shows only pet-friendly places),Robert,P1,Not Started,2/15/2026,2/17/2026,Week 3 (Feb 15-21),,Frontend fix - hybrid search filtered to nearby
+56,NN-28,Nearby Feature,Improve Map Marker to Card Connection,Clicking map marker should scroll to and highlight corresponding card below (Google Maps style),Robert,P1,Not Started,2/17/2026,2/18/2026,Week 3 (Feb 15-21),,Frontend fix - 80% done
+57,NN-30,Nearby Feature,Past Events Stop Showing + Date Filter Logic,"Past events should not show in Nearby. Date selector should show only events/businesses/parks/trails open or happening on that date.",Robert,P1,Not Started,2/17/2026,2/19/2026,Week 3 (Feb 15-21),,Frontend fix
+58,NN-31,Nearby Feature,Make Directions Popup Smaller on Desktop,Directions modal is too large on desktop - reduce size,Robert,P1,Not Started,2/19/2026,2/19/2026,Week 3 (Feb 15-21),,Frontend fix
+59,NN-31,Nearby Feature,Direction Buttons Purple Not Grey,Change grey direction buttons to purple - grey looks inactive,Robert,P1,Not Started,2/19/2026,2/19/2026,Week 3 (Feb 15-21),,Frontend fix
+60,NN-31,Nearby Feature,Apple/Google/Waze Buttons Same Color (Purple),Make all three navigation app buttons consistent purple color. Waze light blue/white is not accessible.,Robert,P1,Not Started,2/19/2026,2/19/2026,Week 3 (Feb 15-21),,Frontend fix
+61,NN-33,Nearby Feature,Nearby Card Redesign Per Figma,Yellow border (#FEC764) / centered purple numbers / miles above business name in purple semi-bold / primary display category / facility icons per Figma,Robert,P1,Not Started,2/19/2026,2/21/2026,Week 3 (Feb 15-21),,Frontend fix - follow Figma design
+62,NN-34,Frontend Detail,Fix Event Detail Page Accordions,Empty accordion hiding / side-by-side layout / p tag fix / single-open behavior - all done for other types but Events page is broken,Robert,P0,Not Started,2/15/2026,2/17/2026,Week 3 (Feb 15-21),2,Frontend fix - depends on events page fix
+63,NN-39,Frontend Detail,Business Page - Link Titles for Reservations/Delivery,Display custom titles instead of raw URLs for reservation / delivery / online ordering links,Robert,P1,Not Started,2/21/2026,2/22/2026,Week 3 (Feb 15-21),21,Frontend fix - depends on backend title field
+64,NN-41,Frontend Detail,Park Page - Add Hunting/Fishing Display,Park detail page missing hunting and fishing information display,Robert,P1,Not Started,2/21/2026,2/22/2026,Week 4 (Feb 22-28),,Frontend fix
+65,NN-44,Frontend Detail,Event Page - Add Vendor Info / Venue Settings / Repeat Pattern,Event detail page missing vendor information / venue settings / repeat pattern display,Robert,P1,Not Started,2/22/2026,2/24/2026,Week 4 (Feb 22-28),2 45 50,Frontend fix - depends on backend event fixes
+66,NN-40,Frontend Detail,Display Relationships on Public Detail Pages,Show related POIs (associated events / parks / trails) on public-facing detail pages,Robert,P1,Not Started,2/22/2026,2/24/2026,Week 4 (Feb 22-28),,Frontend fix
+67,NN-36,Frontend Detail,Hours Override Labels (Modified) (Holiday),Show Modified or Holiday indicators when hours are overridden by exceptions/holidays/seasonal,Robert,P1,Not Started,2/22/2026,2/23/2026,Week 4 (Feb 22-28),7,Frontend fix
+68,NN-36,Frontend Detail,Date-Specific Hours on Nearby Cards,When date filter is used in Nearby show that specific days hours on cards,Robert,P1,Not Started,2/22/2026,2/23/2026,Week 4 (Feb 22-28),7 57,Frontend fix
+69,NN-45,Frontend Detail,Gallery Organized by Section (Yelp Style),Photo gallery should group by section: main gallery then restrooms / parking / interior etc.,Robert,P1,Not Started,2/24/2026,2/26/2026,Week 4 (Feb 22-28),51,Frontend fix - depends on photo tagging backend
+70,NN-50,Frontend Maps,Fix Random Boxes When Zooming Out,Random rectangles/squares appear on map when zooming out - likely vector tile artifacts,Robert,P1,Not Started,2/24/2026,2/25/2026,Week 4 (Feb 22-28),,Frontend fix - may be tile provider issue
+71,NN-50,Frontend Maps,Parks Green / Water Blue on Map,Parks should show green and water should show blue on map tiles,Robert,P2,Not Started,2/24/2026,2/25/2026,Week 4 (Feb 22-28),,Frontend fix - may require custom tile styling or overlay
+72,NN-50,Frontend Maps,Add County/Town Borders on Map,Show borders/lines for Chatham County / Pittsboro / Siler City on map,Robert,P2,Not Started,2/25/2026,2/26/2026,Week 4 (Feb 22-28),,Frontend fix - GeoJSON overlay
+73,-,Infrastructure,Verify Subscribe Email Access,Ensure collected emails from subscribe button are accessible to manav@tesslate.com,Manav,P1,Not Started,2/22/2026,2/22/2026,Week 4 (Feb 22-28),,Check waitlist table / add admin view
+74,-,Infrastructure,Fix Autosave Popup,Still getting an autosave popup that shouldn't appear,Manav,P1,Not Started,2/22/2026,2/23/2026,Week 4 (Feb 22-28),1,
+75,-,Infrastructure,Fix Blue Highlight on Click,Blue highlight appears when clicking anything - needs CSS fix,Robert,P1,Not Started,2/22/2026,2/22/2026,Week 4 (Feb 22-28),,Frontend fix - CSS user-select / outline
+76,-,Infrastructure,Categories Circular Reference Prevention,Prevent category from being set as its own ancestor - no is_descendant() check exists,Manav,P1,Not Started,2/23/2026,2/24/2026,Week 4 (Feb 22-28),,Data integrity issue
+77,NN-51,SEO,Verify Event Schema.org Structured Data,Confirm Schema.org Event JSON-LD is correctly implemented and complete,Robert,P1,Not Started,2/26/2026,2/27/2026,Week 4 (Feb 22-28),,Frontend verification
+78,-,Frontend,Blog Integration with Main Site,Blog at blog.nearbynearby.com needs cohesive design integration with main site,Robert,P2,Not Started,2/26/2026,2/28/2026,Week 4 (Feb 22-28),,Frontend - coordinate with Barry on design
+79,-,TESTING,Week 1-2 Backend Fixes Testing,Test all critical blockers and admin backend fixes from weeks 1-2,Rhonda,P0,Not Started,2/16/2026,2/20/2026,Week 2-3,,Rhonda validates POI save / parking / restrooms / events
+80,-,TESTING,Week 3 Frontend Fixes Testing,Test nearby feature fixes / detail page fixes / SEO / mobile,Rhonda,P0,Not Started,2/22/2026,2/25/2026,Week 4 (Feb 22-28),79,Rhonda validates frontend changes
+81,-,TESTING,Week 4 Feature Testing,Test gallery / maps / relationships / hours overrides / event inheritance,Rhonda,P0,Not Started,2/26/2026,2/28/2026,Week 4 (Feb 22-28),80,Rhonda validates remaining features
+82,-,TESTING,Full Regression Test,Complete end-to-end regression test of all POI types: create / edit / publish / view on frontend,Rhonda,P0,Not Started,3/1/2026,3/3/2026,Week 5 (Mar 1-5),81,All POI types tested end-to-end
+83,-,TESTING,Mobile Testing,Test all features on mobile devices - touch targets / responsive layouts / horizontal scroll,Rhonda,P0,Not Started,3/1/2026,3/3/2026,Week 5 (Mar 1-5),82,
+84,-,TESTING,Bug Fix Buffer,Reserved time for fixing bugs found during testing,Manav / Robert,P0,Not Started,3/1/2026,3/4/2026,Week 5 (Mar 1-5),82 83,Buffer for test-discovered issues
+85,-,LAUNCH PREP,Final Production Deploy,Deploy all changes to production and verify,Manav,P0,Not Started,3/4/2026,3/5/2026,Week 5 (Mar 1-5),84,Final deploy and smoke test
+86,-,POST-MVP,Address Autocomplete,Suggest addresses as user types in admin form,Manav,P2,Not Started,After Launch,,Post-MVP,,
+87,-,POST-MVP,Analytics/KPI Tracking,Search tracking / page views / bounce rate / click-through / time on page,Manav,P2,Not Started,After Launch,,Post-MVP,,
+88,-,POST-MVP,Matomo or Custom Analytics,Deeper analytics beyond Google Analytics,Manav,P2,Not Started,After Launch,,Post-MVP,,
+89,-,POST-MVP,Search Term Logging,Track and review what users search for,Manav,P2,Not Started,After Launch,,Post-MVP,,
+90,-,POST-MVP,Outbound Link Tracking,Track when users click links leaving the site,Manav,P2,Not Started,After Launch,,Post-MVP,,
+91,-,POST-MVP,Business Page Visit Analytics,Analytics for businesses to see visits to their listing,Manav,P2,Not Started,After Launch,,Post-MVP,,
+92,-,POST-MVP,Anti-Scraping Protections,robots.txt / rate limiting / backend throttling / API key lockdown,Manav,P2,Not Started,After Launch,,Post-MVP,,
+93,-,POST-MVP,Email Obfuscation,Hide emails from scrapers,Manav,P2,Not Started,After Launch,,Post-MVP,,
+94,-,POST-MVP,Data Segregation for Sensitive Data,Identify and segregate sensitive data into separate databases,Manav,P2,Not Started,After Launch,,Post-MVP,,
+95,-,POST-MVP,Government Compliance Readiness,Ensure compliance so government can use data,Manav,P3,Not Started,After Launch,,Post-MVP,,
+96,-,POST-MVP,Cell Service Tracking for POIs,Way to track or comment on cell service at locations,Manav,P3,Not Started,After Launch,,Post-MVP,,
+97,-,POST-MVP,Trail Point-by-Point Mapping,Add points along trail with community comments (like New Forest UK),Manav,P3,Not Started,After Launch,,Post-MVP,,
+98,-,POST-MVP,Trail Length as Fractions / Multi-Segment,Support figure-8 trails with separate loop lengths (1/2 mile + 1/4 mile = 3/4 mile),Manav,P3,Not Started,After Launch,,Post-MVP,,
+99,-,POST-MVP,Auto-Calculate Trail Difficulty,Calculate difficulty from length + elevation gain automatically,Manav,P3,Not Started,After Launch,,Post-MVP,,
+100,-,POST-MVP,Host/Download Trail Maps from Organizations,Allow trail organizations to upload maps for user download,Manav,P3,Not Started,After Launch,,Post-MVP,,
+101,-,POST-MVP,User Profiles,User profile system design and implementation,Manav,P3,Not Started,After Launch,,Post-MVP,,
+102,-,POST-MVP,RV Route Option,RV-safe route planning like Roadtrippers with road safety data,Manav,P3,Not Started,After Launch,,Post-MVP,,
+103,-,POST-MVP,Save/Favorites Feature,Allow users to save POIs to a favorites list (currently placeholder),Robert,P2,Not Started,After Launch,,Post-MVP,,
+104,-,POST-MVP,Password Reset Flow,Password reset via email (requires email service setup),Manav,P2,Not Started,After Launch,,Post-MVP,,
+105,-,POST-MVP,User Management Admin UI,Admin page to manage users (currently CLI only),Robert,P2,Not Started,After Launch,,Post-MVP,,
+106,-,POST-MVP,Community Calendar (Self-Updating),Self-updating community calendar like Locable,Manav,P3,Not Started,After Launch,,Post-MVP,,
+107,-,POST-MVP,Contact Us Form Page,Contact form with name / email / message,Robert,P2,Not Started,After Launch,,Post-MVP,,
+108,-,POST-MVP,Feedback Form Page,Feedback form with email / text / screenshot upload,Robert,P2,Not Started,After Launch,,Post-MVP,,
+109,-,POST-MVP,Community Interest Form Page,Want Nearby Nearby in Your Community form with name / email / location / role,Robert,P2,Not Started,After Launch,,Post-MVP,,
+110,-,POST-MVP,Register Your Business Form Page,Business registration form for Chatham County with admin approval flow,Robert,P2,Not Started,After Launch,,Post-MVP,,
+111,-,POST-MVP,CloudFront CDN Setup,Configure CloudFront for image delivery optimization,Manav,P2,Not Started,After Launch,,Post-MVP,,
+112,-,POST-MVP,Referral Link / UTM Tracking,Track how people come to the site via referral links or UTM parameters,Manav,P2,Not Started,After Launch,,Post-MVP,,

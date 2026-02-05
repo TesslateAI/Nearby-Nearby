@@ -1,8 +1,12 @@
-# Claude Code Guidelines
+# Claude Code Guidelines - nearby-app
+
+This file provides guidance to Claude Code (claude.ai/code) when working with the **nearby-app** (user-facing application).
+
+> **Monorepo**: This is part of the NearbyNearby monorepo. See the root [CLAUDE.md](../CLAUDE.md) for overall project guidance and [docs/](../docs/) for full platform documentation.
 
 ## Database Safety Rules
 
-**⚠️ CRITICAL: Production Database Protection**
+**CRITICAL: Production Database Protection**
 
 - The production PostgreSQL database (`nearby-admin-db.ce3mwk2ymjh4.us-east-1.rds.amazonaws.com`) is shared with the nearby-admin panel
 - **NEVER modify production data** - data loss is unacceptable
@@ -14,7 +18,7 @@ This rule ensures data integrity and prevents accidental modifications to live p
 
 ## Production Deployment
 
-**⚠️ CRITICAL: Production build is currently running on the server**
+**CRITICAL: Production build is currently running on the server**
 
 ### Rebuilding the Container
 
@@ -46,7 +50,7 @@ cd /home/ubuntu/nearby-app
 
 **Production Build Architecture:**
 - **Multi-stage build**: Frontend built first, then copied to backend container
-- **Stage 1**: Node.js builds React app → outputs to `../backend/static`
+- **Stage 1**: Node.js builds React app -> outputs to `../backend/static`
 - **Stage 2**: Python container serves both API and static frontend
 - **ML Model**: `michaelfeil/embeddinggemma-300m` loaded on startup (~1GB RAM)
 - **Database Extensions**: `pg_trgm` (fuzzy search), `pgvector` (semantic search)
@@ -54,13 +58,14 @@ cd /home/ubuntu/nearby-app
 
 ### CI/CD (Automated Deployment)
 
-Changes to `main` branch trigger automated deployment to AWS ECS:
+Changes to `main` branch (in the `nearby-app/` directory) trigger automated deployment to AWS ECS:
 
-**Workflow:** `.github/workflows/deploy.yml`
-- Builds Docker image
+**Workflow:** `.github/workflows/deploy-app.yml` (at monorepo root)
+- Builds Docker image with context `./nearby-app`
 - Pushes to Amazon ECR
 - Forces new ECS deployment
 - Uses GitHub OIDC for AWS authentication
+- Path-filtered: only triggers on `nearby-app/**` changes
 
 **AWS Resources:**
 - ECR Repository: Stores Docker images

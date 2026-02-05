@@ -4,7 +4,7 @@ Technical documentation for the Nearby Nearby platform - a location discovery sy
 
 ## Platform Overview
 
-The platform consists of two applications sharing a PostgreSQL database:
+The platform is a monorepo containing two applications that share a PostgreSQL database:
 
 | Application | Purpose | Port | Tech Stack |
 |-------------|---------|------|------------|
@@ -42,6 +42,9 @@ The platform consists of two applications sharing a PostgreSQL database:
 ### Frontend
 - [Admin Frontend](frontend/admin-frontend.md) - React/Mantine components
 - [App Frontend](frontend/app-frontend.md) - User-facing React app
+
+### Testing
+- [Testing Strategy](testing/strategy.md) - Test priorities, folder structure, frameworks, CI/CD integration
 
 ---
 
