@@ -1,25 +1,14 @@
 # app/models/poi.py
 import uuid
-import enum
 from sqlalchemy import (Column, String, Text, ForeignKey, Numeric, TIMESTAMP,
                         Boolean, Enum as SQLAlchemyEnum, Table, Integer)
-from sqlalchemy.dialects.postgresql import UUID as PG_UUID, JSONB
+from sqlalchemy.dialects.postgresql import UUID as PG_UUID, JSONB, ARRAY
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from geoalchemy2 import Geometry
 from ..database import Base
 
-# --- POI Type Enum ---
-class POIType(enum.Enum):
-    BUSINESS = "BUSINESS"
-    SERVICES = "SERVICES"
-    PARK = "PARK"
-    TRAIL = "TRAIL"
-    EVENT = "EVENT"
-    YOUTH_ACTIVITIES = "YOUTH_ACTIVITIES"
-    JOBS = "JOBS"
-    VOLUNTEER_OPPORTUNITIES = "VOLUNTEER_OPPORTUNITIES"
-    DISASTER_HUBS = "DISASTER_HUBS"
+from shared.models.enums import POIType
 
 # --- Association Table for Categories ---
 poi_category_association = Table('poi_categories', Base.metadata,
@@ -39,6 +28,7 @@ class PointOfInterest(Base):
     description_long = Column(Text)
     description_short = Column(String(250))
     teaser_paragraph = Column(String(120))
+    primary_type_id = Column(PG_UUID(as_uuid=True), ForeignKey("primary_types.id"), nullable=True, index=True)
     listing_type = Column(String(50), default='free')
     status = Column(String(50), default='Fully Open')
     status_message = Column(String(100))
@@ -74,6 +64,7 @@ class PointOfInterest(Base):
     pricing_details = Column(Text)
     ticket_link = Column(String)
     price_range_per_person = Column(String)
+    pricing = Column(String)
     discounts = Column(JSONB)
     gift_cards = Column(String)
     hours = Column(JSONB)
@@ -138,6 +129,21 @@ class PointOfInterest(Base):
     membership_passes = Column(JSONB)
     membership_details = Column(Text)
     associated_trails = Column(JSONB)
+    photos = Column(JSONB)
+    contact_info = Column(JSONB)
+    compliance = Column(JSONB)
+    custom_fields = Column(JSONB)
+    menu_photos = Column(JSONB)
+    menu_link = Column(String)
+    delivery_links = Column(JSONB)
+    reservation_links = Column(JSONB)
+    appointment_links = Column(JSONB)
+    online_ordering_links = Column(JSONB)
+    gallery_photos = Column(JSONB)
+    downloadable_maps = Column(JSONB)
+    payphone_location = Column(JSONB)
+    payphone_locations = Column(JSONB)
+    facilities_options = Column(JSONB)
     main_contact_name = Column(String)
     main_contact_email = Column(String)
     main_contact_phone = Column(String)
@@ -180,14 +186,14 @@ class Trail(Base):
     difficulty = Column(String)
     difficulty_description = Column(Text)
     route_type = Column(String)
+    trailhead_location = Column(JSONB)
     trailhead_latitude = Column(Numeric(10, 7))
     trailhead_longitude = Column(Numeric(10, 7))
-    # trailhead_photo moved to Images table (image_type='trail_head')
-    # trailhead_photo = Column(String)
+    trailhead_entrance_photo = Column(String)
+    trailhead_exit_location = Column(JSONB)
     trail_exit_latitude = Column(Numeric(10, 7))
     trail_exit_longitude = Column(Numeric(10, 7))
-    # trail_exit_photo moved to Images table (image_type='trail_exit')
-    # trail_exit_photo = Column(String)
+    trailhead_exit_photo = Column(String)
     trail_markings = Column(Text)
     trailhead_access_details = Column(Text)
     downloadable_trail_map = Column(String)
@@ -228,7 +234,7 @@ class Category(Base):
     slug = Column(String, unique=True, nullable=False, index=True)
     parent_id = Column(PG_UUID(as_uuid=True), ForeignKey("categories.id"), index=True)
     parent = relationship("Category", remote_side=[id], backref="children")
-    applicable_to = Column(JSONB)
+    applicable_to = Column(ARRAY(String))
     is_active = Column(Boolean, default=True)
     sort_order = Column(Integer, default=0)
     # Removed is_main_category - use is_main in poi_categories association table instead

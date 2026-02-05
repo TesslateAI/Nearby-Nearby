@@ -36,6 +36,9 @@ The `docs/` folder contains the authoritative documentation for each system:
 - `docs/frontend/admin-frontend.md` - React/Mantine admin panel components
 - `docs/frontend/app-frontend.md` - User-facing React app with Leaflet maps
 
+### Testing
+- `docs/testing/strategy.md` - Test priorities, folder structure, frameworks, CI/CD integration
+
 ---
 
 ## The "Nearby Nearby" Feature
@@ -138,12 +141,12 @@ Returns POIs within radius sorted by distance. Uses PostGIS `ST_DWithin` for eff
 
 ## Project Structure
 
-This workspace contains two related repositories:
+This is a **monorepo** containing two applications:
 
 - **[nearby-admin](nearby-admin/)**: Admin panel for managing POI database (frontend + backend)
 - **[nearby-app](nearby-app/)**: User-facing application with ML-powered search (frontend + backend)
 
-Both repositories share the same production PostgreSQL database.
+Both applications share the same production PostgreSQL database. Documentation lives in the root `docs/` folder (single source of truth).
 
 ---
 
@@ -240,7 +243,6 @@ For local development, both applications can share a local PostGIS database inst
 
 ### Prerequisites
 - Docker and Docker Compose installed
-- Both repositories cloned to the same parent directory
 
 ### Step 1: Configure Environment Files
 
@@ -374,7 +376,7 @@ docker rm nearby-app
 
 Changes to `main` branch trigger automated deployment to AWS ECS:
 
-**Workflow**: `.github/workflows/deploy.yml`
+**Workflow**: `.github/workflows/deploy-app.yml`
 - Builds Docker image
 - Pushes to Amazon ECR
 - Forces new ECS deployment
@@ -515,11 +517,11 @@ Claude is NEVER a contributor or co-author. All commits should be attributed to 
 
 ---
 
-## Repository-Specific Documentation
+## App-Specific Documentation
 
-For detailed documentation about each repository:
+For detailed documentation about each application:
 - [nearby-admin/CLAUDE.md](nearby-admin/CLAUDE.md) - Comprehensive admin panel documentation
-- [nearby-app/claude.md](nearby-app/claude.md) - User-facing app documentation
+- [nearby-app/CLAUDE.md](nearby-app/CLAUDE.md) - User-facing app documentation
 
 ---
 
@@ -568,7 +570,7 @@ For detailed documentation about each repository:
 
 1. **Verify database is accessible**:
    ```bash
-   # From either repo's backend
+   # From either app's backend container
    docker exec -it <container_name> python -c "from app.database import engine; from sqlalchemy import text; connection = engine.connect(); print(connection.execute(text('SELECT 1')).scalar())"
    ```
 
@@ -583,7 +585,7 @@ For detailed documentation about each repository:
 
 ---
 
-For release, push to a release-XXXX (latest) branch for both repos.
+For release, push to a release-XXXX (latest) branch.
 
 For EDITS to the database structure, make migrations not manual edits. 
 

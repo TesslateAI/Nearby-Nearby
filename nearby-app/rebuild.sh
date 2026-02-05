@@ -8,7 +8,8 @@ docker stop nearby-app 2>/dev/null
 docker rm nearby-app 2>/dev/null
 
 echo "🔨 Building Docker image..."
-docker build -t nearby-app:latest .
+# Build from monorepo root so shared/ package is in context
+docker build -t nearby-app:latest -f Dockerfile ..
 
 if [ $? -ne 0 ]; then
     echo "❌ Build failed!"

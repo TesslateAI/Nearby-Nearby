@@ -1,7 +1,6 @@
 """Image model for POI image uploads"""
 
 import uuid
-import enum
 from datetime import datetime
 from typing import Dict, Any
 
@@ -9,25 +8,10 @@ from sqlalchemy import Column, String, Integer, Text, TIMESTAMP, Enum, ForeignKe
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
-# Note: base64 import removed - database binary storage no longer used
 
 from app.database import Base
 
-
-class ImageType(enum.Enum):
-    """Enum for different image types"""
-    main = "main"
-    gallery = "gallery"
-    entry = "entry"
-    parking = "parking"
-    restroom = "restroom"
-    rental = "rental"
-    playground = "playground"
-    menu = "menu"
-    trail_head = "trail_head"
-    trail_exit = "trail_exit"
-    map = "map"
-    downloadable_map = "downloadable_map"
+from shared.models.enums import ImageType
 
 
 # Configuration for each image type

@@ -1,10 +1,12 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Claude Code (claude.ai/code) when working with the **nearby-admin** application.
+
+> **Monorepo**: This is part of the NearbyNearby monorepo. See the root [CLAUDE.md](../CLAUDE.md) for overall project guidance and [docs/](../docs/) for full platform documentation.
 
 ## Project Overview
 
-Nearby Nearby is a comprehensive full-stack geospatial Points of Interest (POI) platform built with:
+The nearby-admin application is the admin panel for the Nearby Nearby platform, built with:
 - **Backend**: FastAPI (Python 3.10) with PostgreSQL 15 + PostGIS
 - **Frontend**: React 18 + Vite with Mantine UI v8.3.1
 - **Rich Text**: TipTap editor with @mantine/tiptap integration
