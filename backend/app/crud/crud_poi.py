@@ -165,7 +165,13 @@ def get_pois_nearby(db: Session, *, poi_id: uuid.UUID, distance_km: float = 5.0,
 
 def create_poi(db: Session, poi: schemas.PointOfInterestCreate):
     # Create the POI with location
-    poi_data = poi.model_dump(exclude={'location', 'business', 'park', 'trail', 'event', 'category_ids', 'main_category_id'})
+    # Exclude deprecated photo columns that have been moved to the Images table
+    deprecated_photo_fields = {
+        'business_entry_photo', 'park_entry_photo', 'event_entry_photo',
+        'parking_lot_photo', 'parking_photos', 'rental_photos',
+        'playground_photos', 'trailhead_photo', 'trail_exit_photo'
+    }
+    poi_data = poi.model_dump(exclude={'location', 'business', 'park', 'trail', 'event', 'category_ids', 'main_category_id'} | deprecated_photo_fields)
 
     # Sanitize HTML content in the POI data
     poi_data = sanitize_poi_fields(poi_data)
@@ -245,6 +251,15 @@ def create_poi(db: Session, poi: schemas.PointOfInterestCreate):
 
 def update_poi(db: Session, *, db_obj: models.PointOfInterest, obj_in: schemas.PointOfInterestUpdate) -> models.PointOfInterest:
     update_data = obj_in.model_dump(exclude_unset=True)
+
+    # Remove deprecated photo columns that have been moved to the Images table
+    deprecated_photo_fields = [
+        'business_entry_photo', 'park_entry_photo', 'event_entry_photo',
+        'parking_lot_photo', 'parking_photos', 'rental_photos',
+        'playground_photos', 'trailhead_photo', 'trail_exit_photo'
+    ]
+    for field in deprecated_photo_fields:
+        update_data.pop(field, None)
 
     # Sanitize HTML content in the update data
     update_data = sanitize_poi_fields(update_data)
