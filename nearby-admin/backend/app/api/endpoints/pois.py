@@ -17,13 +17,13 @@ def create_poi(
     db: Session = Depends(get_db),
     current_user = Depends(require_admin_or_editor())
 ):
-    if poi.poi_type == 'BUSINESS' and not poi.business:
+    if poi.poi_type == 'BUSINESS' and poi.business is None:
         raise HTTPException(status_code=400, detail="Business data required for poi_type 'BUSINESS'")
-    if poi.poi_type == 'PARK' and not poi.park:
+    if poi.poi_type == 'PARK' and poi.park is None:
         raise HTTPException(status_code=400, detail="Park data required for poi_type 'PARK'")
-    if poi.poi_type == 'TRAIL' and not poi.trail:
+    if poi.poi_type == 'TRAIL' and poi.trail is None:
         raise HTTPException(status_code=400, detail="Trail data required for poi_type 'TRAIL'")
-    if poi.poi_type == 'EVENT' and not poi.event:
+    if poi.poi_type == 'EVENT' and poi.event is None:
         raise HTTPException(status_code=400, detail="Event data required for poi_type 'EVENT'")
 
     return crud.create_poi(db=db, poi=poi)

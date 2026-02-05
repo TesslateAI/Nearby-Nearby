@@ -68,6 +68,12 @@ nearby-app/backend/data/
 tmp/
 temp/
 
+# Google API credentials
+credentials.json
+token.json
+client_secret*.json
+*.credentials.json
+
 # Claude Code
 .claude/
 

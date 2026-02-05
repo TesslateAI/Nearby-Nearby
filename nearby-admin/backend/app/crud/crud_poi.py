@@ -285,7 +285,10 @@ def update_poi(db: Session, *, db_obj: models.PointOfInterest, obj_in: schemas.P
         db_obj.location = f'POINT({coords[0]} {coords[1]})'
     
     # Handle subtype updates
-    if 'business' in update_data and db_obj.poi_type == 'BUSINESS':
+    # Note: db_obj.poi_type may be a POIType enum or a string depending on context
+    poi_type_str = db_obj.poi_type.value if hasattr(db_obj.poi_type, 'value') else str(db_obj.poi_type)
+
+    if 'business' in update_data and poi_type_str == 'BUSINESS':
         business_data = update_data.pop('business')
         if db_obj.business:
             for key, value in business_data.items():
@@ -293,7 +296,7 @@ def update_poi(db: Session, *, db_obj: models.PointOfInterest, obj_in: schemas.P
         else:
             db_obj.business = models.Business(**business_data)
 
-    if 'park' in update_data and db_obj.poi_type == 'PARK':
+    if 'park' in update_data and poi_type_str == 'PARK':
         park_data = update_data.pop('park')
         if db_obj.park:
             for key, value in park_data.items():
@@ -301,7 +304,7 @@ def update_poi(db: Session, *, db_obj: models.PointOfInterest, obj_in: schemas.P
         else:
             db_obj.park = models.Park(**park_data)
 
-    if 'trail' in update_data and db_obj.poi_type == 'TRAIL':
+    if 'trail' in update_data and poi_type_str == 'TRAIL':
         trail_data = update_data.pop('trail')
         if db_obj.trail:
             for key, value in trail_data.items():
@@ -309,7 +312,7 @@ def update_poi(db: Session, *, db_obj: models.PointOfInterest, obj_in: schemas.P
         else:
             db_obj.trail = models.Trail(**trail_data)
 
-    if 'event' in update_data and db_obj.poi_type == 'EVENT':
+    if 'event' in update_data and poi_type_str == 'EVENT':
         event_data = update_data.pop('event')
         if db_obj.event:
             for key, value in event_data.items():
@@ -388,7 +391,7 @@ def update_poi(db: Session, *, db_obj: models.PointOfInterest, obj_in: schemas.P
     # Update remaining fields
     for field, value in update_data.items():
         # For relationship fields, ensure we assign model instances, not dicts
-        if field == "event" and db_obj.poi_type == "EVENT":
+        if field == "event" and poi_type_str == "EVENT":
             if isinstance(value, dict):
                 if db_obj.event:
                     for k, v in value.items():
@@ -397,7 +400,7 @@ def update_poi(db: Session, *, db_obj: models.PointOfInterest, obj_in: schemas.P
                     db_obj.event = models.Event(**value)
             else:
                 db_obj.event = value
-        elif field == "business" and db_obj.poi_type == "BUSINESS":
+        elif field == "business" and poi_type_str == "BUSINESS":
             if isinstance(value, dict):
                 if db_obj.business:
                     for k, v in value.items():
@@ -406,7 +409,7 @@ def update_poi(db: Session, *, db_obj: models.PointOfInterest, obj_in: schemas.P
                     db_obj.business = models.Business(**value)
             else:
                 db_obj.business = value
-        elif field == "park" and db_obj.poi_type == "PARK":
+        elif field == "park" and poi_type_str == "PARK":
             if isinstance(value, dict):
                 if db_obj.park:
                     for k, v in value.items():
@@ -415,7 +418,7 @@ def update_poi(db: Session, *, db_obj: models.PointOfInterest, obj_in: schemas.P
                     db_obj.park = models.Park(**value)
             else:
                 db_obj.park = value
-        elif field == "trail" and db_obj.poi_type == "TRAIL":
+        elif field == "trail" and poi_type_str == "TRAIL":
             if isinstance(value, dict):
                 if db_obj.trail:
                     for k, v in value.items():

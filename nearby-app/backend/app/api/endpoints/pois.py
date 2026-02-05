@@ -196,8 +196,19 @@ def api_get_nearby_pois(
     # Format results with distance
     results = []
     for poi, distance in nearby_pois_with_distance:
-        poi.distance_meters = distance
-        results.append(poi)
+        poi_dict = {
+            'id': poi.id,
+            'name': poi.name,
+            'address_city': poi.address_city,
+            'distance_meters': distance,
+            'location': PointGeometry.from_wkb(poi.location) if poi.location else None,
+            'poi_type': poi.poi_type.value if hasattr(poi.poi_type, 'value') else poi.poi_type,
+            'hours': poi.hours,
+            'wheelchair_accessible': poi.wheelchair_accessible,
+            'wifi_options': poi.wifi_options,
+            'pet_options': poi.pet_options,
+        }
+        results.append(schemas.poi.POINearbyResult.model_validate(poi_dict))
 
     return results
 

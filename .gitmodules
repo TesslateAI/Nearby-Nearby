@@ -1,0 +1,3 @@
+[submodule "nn-templates"]
+	path = nn-templates
+	url = https://github.com/barrycosta/nn-templates

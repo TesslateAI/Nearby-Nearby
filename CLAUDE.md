@@ -41,6 +41,70 @@ The `docs/` folder contains the authoritative documentation for each system:
 
 ---
 
+## Google Sheets Project Tracker
+
+The project task list, test coverage matrix, and bug log live in a shared Google Sheet. A CLI/Python client at `scripts/google_sheets/` provides full read/write access.
+
+**Spreadsheet**: [NearbyNearby Project Tracker](https://docs.google.com/spreadsheets/d/1TXnwzQaY1RH7qWUCcFZzzlWMnrlAzBmwt7PekR8JrZg/edit)
+**Full docs**: `scripts/google_sheets/README.md`
+
+### Sheets
+
+| Sheet | Alias | Contents |
+|---|---|---|
+| `PLAN` | `plan` | 112 tasks — priority, status, assignments, dependencies |
+| `Feature Implementation List` | `features` / `impl` | 500+ test cases by feature area |
+| `Edge Cases Causing Failures` | `bugs` / `edge` | Bug log with reproduction steps |
+
+### CLI Quick Reference
+
+```bash
+# All commands: python -m scripts.google_sheets.sheets_client <command>
+
+# Read
+sheets head plan                              # First 10 rows (formatted table)
+sheets cat plan --json                        # Entire sheet as JSON
+sheets row plan 5                             # Single row as key:value
+sheets headers plan                           # Column letters + names
+sheets count plan                             # Row count
+sheets info                                   # All sheets with dimensions
+
+# Search
+sheets grep plan "HTTP 500"                   # Regex search all columns
+sheets grep plan "Manav" -c "Assigned To"     # Search specific column
+sheets find plan Status "Not Started"         # Exact match
+sheets filter plan Status="Not Started" "Assigned To"=Manav  # AND filter
+sheets summary plan Status                    # Value counts with percentages
+
+# Task shortcuts
+sheets task 1                                 # Get task #1 as JSON
+sheets status 1 "In Progress"                 # Update status
+sheets status 1 "Complete" -n "Fixed in abc"  # Status + notes
+sheets blocked-by 1                           # Tasks depending on task 1
+sheets next-task                              # Next available task number
+
+# Write
+sheets set plan 5 Status="In Progress"        # Update columns by name
+sheets append plan "113,,NEW,Title,..."        # Append row
+sheets add-bug "Desc" "Location" "Repro"      # Log edge case
+```
+
+### Coding Agent Workflow
+
+When picking up a task:
+
+```python
+from scripts.google_sheets.sheets_client import SheetsClient
+client = SheetsClient()
+
+task = client.get_task_by_number(5)           # Read task
+client.update_task_status(5, "In Progress")   # Mark started
+# ... do the work ...
+client.update_task_status(5, "Complete", notes="Fixed in commit abc123")
+```
+
+---
+
 ## The "Nearby Nearby" Feature
 
 The platform's namesake and flagship feature. Nearby Nearby is "The World's First Local Discovery Platform, Built for Rural America" - designed to help users discover local businesses, parks, trails, and events in areas underserved by traditional discovery platforms like Yelp or Google Maps.
@@ -389,16 +453,50 @@ Changes to `main` branch trigger automated deployment to AWS ECS:
 
 ---
 
-## Testing Workflow
+## Testing
 
-### For nearby-admin:
+### Automated Tests (98 integration tests)
+
+Tests live in the root `tests/` directory and cover admin CRUD, cross-app data flow, and real S3 image uploads. They run against disposable PostGIS + MinIO containers — never production.
+
+```bash
+# Start test containers
+docker compose -f tests/docker-compose.test.yml up -d
+
+# Run all tests
+pytest tests/ -v
+
+# Run a specific file
+pytest tests/test_admin_business.py -v
+
+# Stop on first failure
+pytest tests/ -v -x
+
+# Stop test containers when done
+docker compose -f tests/docker-compose.test.yml down
+```
+
+No manual environment variable setup needed — `tests/conftest.py` handles everything.
+
+**When to run tests:**
+- Before pushing code (catch bugs locally)
+- CI runs them automatically on every push and PR to `main`
+- After any backend code change (models, schemas, CRUD, endpoints)
+
+**Full docs:** `docs/testing/strategy.md`
+
+### Manual Testing (Production Rebuild)
+
+For frontend/visual changes that automated tests don't cover:
+
+**nearby-admin:**
 1. Make your code changes
 2. Run production rebuild: `cd /home/ubuntu/nearby-admin && docker compose -f docker-compose.prod.yml up --build -d`
 3. Test at appropriate port (Frontend: 5175, Backend: 8001)
 4. Check logs: `docker compose -f docker-compose.prod.yml logs -f`
 5. **Remember**: Database is shared - do not modify production data
 
-### For nearby-app:
+**nearby-app:**
 1. Make your code changes
 2. Run rebuild script: `cd /home/ubuntu/nearby-app && ./rebuild.sh`
 3. Test at http://localhost:8002

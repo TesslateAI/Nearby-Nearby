@@ -132,6 +132,23 @@ class EventBase(BaseModel):
     vendor_poi_links: Optional[List[uuid.UUID]] = None
 
 class EventCreate(EventBase): pass
+class EventUpdate(BaseModel):
+    start_datetime: Optional[datetime] = None
+    end_datetime: Optional[datetime] = None
+    is_repeating: Optional[bool] = None
+    repeat_pattern: Optional[Dict[str, Any]] = None
+    organizer_name: Optional[str] = None
+    venue_settings: Optional[List[str]] = None
+    event_entry_notes: Optional[str] = None
+    food_and_drink_info: Optional[str] = None
+    coat_check_options: Optional[List[str]] = None
+    has_vendors: Optional[bool] = None
+    vendor_types: Optional[List[str]] = None
+    vendor_application_deadline: Optional[datetime] = None
+    vendor_application_info: Optional[str] = None
+    vendor_fee: Optional[str] = None
+    vendor_requirements: Optional[str] = None
+    vendor_poi_links: Optional[List[uuid.UUID]] = None
 class Event(EventBase):
     poi_id: uuid.UUID
     model_config = ConfigDict(from_attributes=True)
@@ -369,13 +386,13 @@ class PointOfInterestCreate(PointOfInterestBase):
     def validate_poi_type_and_subtype(cls, values):
         if isinstance(values, dict):
             poi_type = values.get('poi_type')
-            if poi_type == 'BUSINESS' and not values.get('business'):
+            if poi_type == 'BUSINESS' and values.get('business') is None:
                 raise ValueError("Business data required for poi_type 'BUSINESS'")
-            elif poi_type == 'PARK' and not values.get('park'):
+            elif poi_type == 'PARK' and values.get('park') is None:
                 raise ValueError("Park data required for poi_type 'PARK'")
-            elif poi_type == 'TRAIL' and not values.get('trail'):
+            elif poi_type == 'TRAIL' and values.get('trail') is None:
                 raise ValueError("Trail data required for poi_type 'TRAIL'")
-            elif poi_type == 'EVENT' and not values.get('event'):
+            elif poi_type == 'EVENT' and values.get('event') is None:
                 raise ValueError("Event data required for poi_type 'EVENT'")
         return values
 
@@ -519,7 +536,7 @@ class PointOfInterestUpdate(BaseModel):
     business: Optional[BusinessCreate] = None
     park: Optional[ParkCreate] = None
     trail: Optional[TrailCreate] = None
-    event: Optional[EventCreate] = None
+    event: Optional[EventUpdate] = None
     main_category_id: Optional[uuid.UUID] = None  # Single main category
     category_ids: Optional[List[uuid.UUID]] = None  # Secondary categories
 
@@ -538,6 +555,13 @@ class PointOfInterest(PointOfInterestBase):
     categories: List[Category] = []  # All categories (for backward compatibility)
     created_at: datetime
     last_updated: datetime
+
+    @field_validator('poi_type', mode='before')
+    @classmethod
+    def coerce_poi_type(cls, v):
+        if hasattr(v, 'value'):
+            return v.value
+        return str(v)
 
     model_config = {'from_attributes': True, 'populate_by_name': True}
 

@@ -15,94 +15,156 @@ Skip low-ROI tests: visual regression, snapshot tests, exhaustive unit tests for
 
 ---
 
+## Current Test Suite
+
+The monorepo has **98 integration tests** in the root `tests/` directory covering admin CRUD, cross-app data flow, and real S3 (MinIO) image uploads.
+
+### Running Tests
+
+```bash
+# 1. Start test containers (PostGIS + MinIO)
+docker compose -f tests/docker-compose.test.yml up -d
+
+# 2. Wait for healthy (usually ~5 seconds)
+docker compose -f tests/docker-compose.test.yml ps
+
+# 3. Run all tests
+pytest tests/ -v
+
+# Run a specific file
+pytest tests/test_admin_business.py -v
+
+# Stop on first failure
+pytest tests/ -v -x
+
+# 4. Stop test containers when done
+docker compose -f tests/docker-compose.test.yml down
+```
+
+Environment variables are handled automatically by `tests/conftest.py` — no manual exports needed on any OS.
+
+### Test Containers
+
+Defined in `tests/docker-compose.test.yml`:
+
+| Service | Image | Port | Purpose |
+|---------|-------|------|---------|
+| test-db | `postgis/postgis:15-3.3` | 5434 | PostGIS database (pg_trgm enabled, no pgvector) |
+| test-minio | `minio/minio:latest` | 9100 (S3), 9101 (console) | Real S3-compatible storage for image tests |
+
+Ports are offset from production to avoid collisions (5434 instead of 5432, 9100 instead of 9000).
+
+### Test Files
+
+| File | Tests | What it covers |
+|------|-------|----------------|
+| `test_admin_business.py` | 6 | Business POI creation — minimal, all fields, links, JSONB |
+| `test_admin_park.py` | 6 | Park POI creation — minimal, outdoor, hunting/fishing, facilities |
+| `test_admin_trail.py` | 5 | Trail POI creation — minimal, all fields, coordinates, surfaces |
+| `test_admin_event.py` | 5 | Event POI creation — minimal, all fields, repeating, vendors, cost |
+| `test_admin_categories.py` | 10 | Category CRUD, tree, assignment, deletion |
+| `test_admin_publish.py` | 7 | Draft/published/archived lifecycle, visibility filtering |
+| `test_admin_update.py` | 13 | Update every field type, subtypes, slugs, partial updates |
+| `test_admin_delete.py` | 4 | Delete POI, cascade, preserve categories |
+| `test_admin_search.py` | 6 | Public search, admin search, location search, validation |
+| `test_admin_images.py` | 10 | Real MinIO uploads, metadata, reorder, delete, all 12 image types |
+| `test_admin_relationships.py` | 7 | POI-to-POI links, cascade delete, validation |
+| `test_admin_venues.py` | 5 | Venue list, venue data for events |
+| `test_crossapp_read.py` | 13 | Admin writes data, app reads it — the core cross-app contract |
+
+### How Tests Work
+
+**Database isolation**: Each test gets a fresh database (DROP SCHEMA → CREATE SCHEMA → CREATE TABLES). No test data leaks between tests.
+
+**Auth**: Admin authentication is mocked — all admin API requests run as an admin user.
+
+**Cross-app tests**: Data is created directly via SQLAlchemy ORM (admin models imported at module level) and read via the nearby-app TestClient. This avoids the `sys.modules` collision that occurs when both apps share the `app.*` namespace.
+
+**Image tests**: Use a real MinIO container — images are actually uploaded to and deleted from S3-compatible storage.
+
+**ML model**: Not loaded in tests (test PostGIS image doesn't have pgvector). Semantic search falls back to keyword search automatically.
+
+### Bugs Found by Tests
+
+The test suite exposed and fixed these real bugs:
+
+| Bug | Impact | Root Cause |
+|-----|--------|------------|
+| Empty subtype `{}` rejected on create | 422 on park/trail creation with no optional fields | `not values.get('park')` treats `{}` as falsy |
+| Enum vs string comparison in updates | 500 on subtype updates | `POIType.BUSINESS == 'BUSINESS'` is always `False` |
+| `EventCreate` used for partial updates | 422 when updating any event field | Required `start_datetime` even for partial update |
+| `/api/nearby` returns raw WKB geometry | 500 on coordinate-based nearby search | Missing `PointGeometry.from_wkb()` conversion |
+
+---
+
 ## Test Folder Structure
 
 ```
 NearbyNearby/
+├── tests/                               # Integration & cross-app tests (98 tests)
+│   ├── conftest.py                      # Shared fixtures, auth mocking, ORM helpers
+│   ├── docker-compose.test.yml          # PostGIS + MinIO test containers
+│   ├── test_admin_business.py
+│   ├── test_admin_park.py
+│   ├── test_admin_trail.py
+│   ├── test_admin_event.py
+│   ├── test_admin_categories.py
+│   ├── test_admin_publish.py
+│   ├── test_admin_update.py
+│   ├── test_admin_delete.py
+│   ├── test_admin_search.py
+│   ├── test_admin_images.py
+│   ├── test_admin_relationships.py
+│   ├── test_admin_venues.py
+│   └── test_crossapp_read.py
+│
 ├── nearby-admin/
-│   ├── backend/
-│   │   └── tests/                    # EXISTS - keep and expand
-│   │       ├── conftest.py           # EXISTS - shared fixtures
-│   │       ├── unit/                 # Pure logic tests (no DB needed)
-│   │       │   ├── test_security.py  # Password hashing, JWT creation/validation
-│   │       │   └── test_schemas.py   # Pydantic schema validation
-│   │       ├── integration/          # API + DB tests
-│   │       │   ├── test_auth.py      # Login, token, RBAC
-│   │       │   ├── test_pois_api.py  # POI CRUD endpoints
-│   │       │   ├── test_crud_poi.py  # Direct CRUD operations
-│   │       │   ├── test_images.py    # Image upload/retrieval
-│   │       │   ├── test_categories.py
-│   │       │   └── test_attributes.py
-│   │       └── pytest.ini
-│   └── frontend/
-│       └── tests/                    # NEW - add when ready
-│           ├── setup.js              # Vitest setup
-│           └── components/           # Component smoke tests
+│   └── backend/
+│       └── tests/                       # Original admin-only tests (pytest + httpx)
+│           ├── conftest.py
+│           ├── test_auth.py
+│           ├── test_pois_api.py
+│           ├── test_crud_poi.py
+│           ├── test_image_upload.py
+│           └── test_attributes.py
 │
 ├── nearby-app/
-│   ├── backend/
-│   │   └── tests/                    # NEW - high priority
-│   │       ├── conftest.py           # Fixtures with ML model mocking
-│   │       ├── unit/
-│   │       │   └── test_search_logic.py  # Search scoring, ranking
-│   │       └── integration/
-│   │           ├── test_nearby_api.py           # Flagship feature
-│   │           ├── test_search_api.py           # Keyword/semantic/hybrid
-│   │           └── test_publication_filter.py   # Draft vs published
-│   └── app/
-│       └── tests/                    # NEW - lower priority
-│           ├── setup.js
-│           └── components/
-│               └── NearbySection.test.jsx
-│
-└── tests/                            # FUTURE - cross-app E2E
-    └── e2e/
-        └── test_admin_to_app_flow.py  # Publish in admin -> visible in app
+│   ├── backend/tests/                   # Not yet created
+│   └── app/tests/                       # Not yet created
 ```
-
-### Migrating Existing Tests
-
-The existing tests in `nearby-admin/backend/tests/` are flat (all in one directory). When adding new tests, organize into `unit/` and `integration/` subdirectories. Existing tests can stay flat initially and be moved when convenient.
 
 ---
 
 ## Priority Tiers
 
-### Tier 1 - "If these break, production is down"
+### Tier 1 - "If these break, production is down" (DONE)
 
-Write these tests first. They cover the core value proposition.
+| # | What to Test | Status | Where |
+|---|-------------|--------|-------|
+| 1 | POI CRUD (all 4 types, all fields) | Done | `test_admin_business/park/trail/event.py` |
+| 2 | Update every field type | Done | `test_admin_update.py` |
+| 3 | Publication status filtering | Done | `test_admin_publish.py` |
+| 4 | Cross-app data flow (admin writes, app reads) | Done | `test_crossapp_read.py` |
+| 5 | Search (public + admin, name + location) | Done | `test_admin_search.py` |
+| 6 | Image upload to S3 | Done | `test_admin_images.py` |
 
-| # | What to Test | App | Type | Why |
-|---|-------------|-----|------|-----|
-| 1 | Nearby API (`/api/pois/{id}/nearby`) | nearby-app | Integration | Flagship feature |
-| 2 | Search endpoints (keyword, semantic, hybrid) | nearby-app | Integration | Core user flow |
-| 3 | Authentication (login, token validation) | nearby-admin | Integration | Gate to all admin ops |
-| 4 | RBAC (admin/editor/viewer permissions) | nearby-admin | Integration | Security |
-| 5 | POI CRUD (create, update, delete) | nearby-admin | Integration | Core data management |
-| 6 | Publication status filtering | nearby-app | Integration | Draft POIs must NOT leak to users |
+### Tier 2 - "Users will notice" (DONE)
 
-### Tier 2 - "Users will notice"
+| # | What to Test | Status | Where |
+|---|-------------|--------|-------|
+| 7 | Categories CRUD and tree | Done | `test_admin_categories.py` |
+| 8 | POI relationships | Done | `test_admin_relationships.py` |
+| 9 | Venue list + venue data | Done | `test_admin_venues.py` |
+| 10 | Delete + cascade | Done | `test_admin_delete.py` |
 
-Write these after Tier 1 is solid.
-
-| # | What to Test | App | Type |
-|---|-------------|-----|------|
-| 7 | Image upload and retrieval | nearby-admin | Integration |
-| 8 | Categories CRUD and tree structure | nearby-admin | Integration |
-| 9 | SEO meta tag injection | nearby-app | Integration |
-| 10 | Map data endpoints | nearby-app | Integration |
-| 11 | POI relationships | nearby-admin | Integration |
-
-### Tier 3 - "Nice to have"
-
-Write these when the team grows or before a major launch.
+### Tier 3 - "Nice to have" (TODO)
 
 | # | What to Test | App | Type |
 |---|-------------|-----|------|
+| 11 | Auth & RBAC (login, roles, permissions) | nearby-admin | Integration |
 | 12 | Frontend smoke tests (NearbySection, NearbyCard) | nearby-app | Component |
 | 13 | POI form validation | nearby-admin | Component |
-| 14 | Cross-app E2E (admin publish -> user visibility) | Both | E2E |
-| 15 | Search result ranking quality | nearby-app | Unit |
+| 14 | Search result ranking quality | nearby-app | Unit |
 
 ---
 
@@ -147,34 +209,16 @@ Add to `devDependencies` in both `nearby-admin/frontend/package.json` and `nearb
 
 ### Handling the ML Model in Tests
 
-The nearby-app loads a ~1GB embedding model (`embeddinggemma-300m`) on startup. Loading this for every test is too slow.
+The nearby-app loads a ~1GB embedding model (`embeddinggemma-300m`) on startup. The test PostGIS container does not have pgvector, so semantic search automatically falls back to keyword search. No mocking needed.
 
-**Strategy: Mock by default, test real model separately.**
-
+For future tests that need the real model:
 ```python
-# nearby-app/backend/tests/conftest.py
-import pytest
-from unittest.mock import patch, MagicMock
-import numpy as np
-
-@pytest.fixture(autouse=True)
-def mock_embedding_model():
-    """Mock the ML model for all tests by default."""
-    fake_embedding = np.random.rand(256).tolist()
-    mock_model = MagicMock()
-    mock_model.encode.return_value = [fake_embedding]
-
-    with patch("app.main.embedding_model", mock_model):
-        yield mock_model
-
-# For tests that need the real model:
 @pytest.mark.slow
 def test_real_semantic_search(db_session, client):
     """Only runs with: pytest -m slow"""
     pass
 ```
 
-Run fast tests in CI, slow tests on a schedule:
 ```bash
 # CI (every push) - fast, no ML model
 pytest -m "not slow"
@@ -185,41 +229,20 @@ pytest -m slow
 
 ### Database Test Isolation
 
-Use the existing pattern from `nearby-admin/backend/tests/conftest.py`:
+The `tests/conftest.py` handles isolation automatically:
 
-1. Each test gets a clean database (drop schema -> recreate -> run test)
-2. Use a dedicated test database container, never production
-3. The test DB needs PostGIS extension (use `postgis/postgis:15-3.4` image)
+1. Each test drops and recreates the `public` schema
+2. Creates PostGIS and pg_trgm extensions
+3. Creates the `imagetype` enum
+4. Runs `Base.metadata.create_all()` to create all tables
+5. Yields a fresh `db_session`
+6. Closes the session after the test
 
-**Add a test compose file at the monorepo root:**
+### Cross-App Module Collision
 
-```yaml
-# docker-compose.test.yml
-version: '3.8'
+Both `nearby-admin` and `nearby-app` define `app.*` modules. Python can only have one set loaded at a time. The `conftest.py` handles this with `sys.path` and `sys.modules` swapping for the `app_client` fixture.
 
-services:
-  test-db:
-    image: postgis/postgis:15-3.4
-    environment:
-      POSTGRES_USER: test
-      POSTGRES_PASSWORD: test
-      POSTGRES_DB: test_nearbynearby
-    ports:
-      - "5433:5432"
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U test -d test_nearbynearby"]
-      interval: 5s
-      timeout: 3s
-      retries: 5
-```
-
-```bash
-# Run tests
-docker compose -f docker-compose.test.yml up -d
-DATABASE_URL=postgresql://test:test@localhost:5433/test_nearbynearby pytest nearby-admin/backend/tests/
-DATABASE_URL=postgresql://test:test@localhost:5433/test_nearbynearby pytest nearby-app/backend/tests/
-docker compose -f docker-compose.test.yml down
-```
+Cross-app tests use **ORM helpers** (not `admin_client`) to create test data. This avoids the collision because only the app-side modules need to be loaded during the test.
 
 ### Frontend Testing Approach
 
@@ -234,22 +257,6 @@ Keep it minimal. For a small team, frontend tests have the worst ROI unless you 
 - Every component in isolation
 - Visual regression / snapshots (high maintenance)
 - Simple presentational components
-
-**Example Vitest config:**
-
-```js
-// vitest.config.js (in each frontend directory)
-import { defineConfig } from 'vitest/config'
-import react from '@vitejs/plugin-react'
-
-export default defineConfig({
-  plugins: [react()],
-  test: {
-    environment: 'jsdom',
-    setupFiles: ['./tests/setup.js'],
-  },
-})
-```
 
 ---
 
@@ -268,46 +275,32 @@ on:
     branches: [main]
 
 jobs:
-  test-admin-backend:
+  integration-tests:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: postgis/postgis:15-3.4
+        image: postgis/postgis:15-3.3
         env:
           POSTGRES_USER: test
           POSTGRES_PASSWORD: test
-          POSTGRES_DB: test_nearbynearby
+          POSTGRES_DB: test_nearby
         ports:
-          - 5432:5432
+          - 5434:5432
         options: >-
           --health-cmd "pg_isready -U test"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
-      - run: pip install -r nearby-admin/backend/requirements.txt
-      - run: pytest nearby-admin/backend/tests/
+      minio:
+        image: minio/minio:latest
         env:
-          DATABASE_URL: postgresql://test:test@localhost:5432/test_nearbynearby
-
-  test-app-backend:
-    runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgis/postgis:15-3.4
-        env:
-          POSTGRES_USER: test
-          POSTGRES_PASSWORD: test
-          POSTGRES_DB: test_nearbynearby
+          MINIO_ROOT_USER: testminio
+          MINIO_ROOT_PASSWORD: testminio123
         ports:
-          - 5432:5432
+          - 9100:9000
         options: >-
-          --health-cmd "pg_isready -U test"
-          --health-interval 10s
+          --health-cmd "mc ready local || exit 0"
+          --health-interval 5s
           --health-timeout 5s
           --health-retries 5
     steps:
@@ -315,62 +308,11 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - run: pip install -r nearby-app/backend/requirements.txt
-      - run: pytest nearby-app/backend/tests/ -m "not slow"
+      - run: pip install -r nearby-admin/backend/requirements.txt
+      - run: pytest tests/ -v --tb=short
         env:
-          DATABASE_URL: postgresql://test:test@localhost:5432/test_nearbynearby
+          DATABASE_URL: postgresql://test:test@localhost:5434/test_nearby
 ```
-
-### Running Tests Locally
-
-```bash
-# Start test database
-docker compose -f docker-compose.test.yml up -d
-
-# Run all backend tests
-DATABASE_URL=postgresql://test:test@localhost:5433/test_nearbynearby pytest nearby-admin/backend/tests/ -v
-DATABASE_URL=postgresql://test:test@localhost:5433/test_nearbynearby pytest nearby-app/backend/tests/ -v -m "not slow"
-
-# Run frontend tests (when set up)
-cd nearby-admin/frontend && npx vitest run
-cd nearby-app/app && npx vitest run
-
-# Cleanup
-docker compose -f docker-compose.test.yml down
-```
-
----
-
-## What to Test for Each Feature
-
-### Nearby API (Flagship)
-- Returns POIs within specified radius
-- Respects radius parameter (1, 3, 5, 10, 15 miles)
-- Only returns published POIs
-- Excludes the current POI from results
-- Results are sorted by distance
-- Handles POIs with no location gracefully
-- Returns correct distance calculations
-
-### Search
-- Keyword search returns relevant results
-- Empty query returns empty results (not all POIs)
-- Publication status filtering works
-- Search handles special characters gracefully
-
-### Auth & RBAC
-- Login with valid credentials returns JWT token
-- Login with invalid credentials returns 401
-- Expired token returns 401
-- Admin can create/edit/delete POIs
-- Editor can create/edit but not delete
-- Viewer can only read
-
-### Publication Status
-- Draft POIs do NOT appear in nearby-app endpoints
-- Published POIs appear in all nearby-app endpoints
-- Changing status from published to draft removes from nearby-app
-- All nearby-app list endpoints filter correctly
 
 ---
 

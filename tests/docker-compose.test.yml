@@ -1,0 +1,31 @@
+version: "3.8"
+
+services:
+  test-db:
+    image: postgis/postgis:15-3.3
+    environment:
+      POSTGRES_USER: test
+      POSTGRES_PASSWORD: test
+      POSTGRES_DB: test_nearby
+    ports:
+      - "5434:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U test -d test_nearby"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  test-minio:
+    image: minio/minio:latest
+    environment:
+      MINIO_ROOT_USER: testminio
+      MINIO_ROOT_PASSWORD: testminio123
+    ports:
+      - "9100:9000"    # S3 API (use 9100 to avoid collision with production MinIO)
+      - "9101:9001"    # Web console
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
