@@ -1,0 +1,35 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    volumes:
+      - ./backend:/app
+    ports:
+      - "8002:8000"
+    env_file:
+      - ./backend/.env
+    networks:
+      - nearby-network
+    depends_on:
+      - frontend
+
+  frontend:
+    build:
+      context: ./app
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ./app:/app
+      - /app/node_modules
+    ports:
+      - "8003:5173"
+    environment:
+      - VITE_API_BASE_URL=http://localhost:8002
+    networks:
+      - nearby-network
+
+networks:
+  nearby-network:
+    name: nearby-admin_default
+    external: true

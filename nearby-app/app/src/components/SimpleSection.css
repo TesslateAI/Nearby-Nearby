@@ -1,0 +1,44 @@
+.nn-simple {
+  background: #F4EFF7; /* same bg as hero */
+  padding: 40px 20px 80px;
+}
+
+.nn-simple__inner {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.nn-simple__title {
+  text-align: center;
+  font-size: 46px;
+  line-height: 1.1;
+  margin: 0 0 8px;
+  font-weight: 800;
+}
+
+.nn-simple__step {
+  text-align: center;
+  font-size: 22px;
+  color: #222;
+  margin: 0 0 22px;
+}
+.nn-simple__step strong { font-weight: 800; }
+.nn-simple__dash { color: #7e7e7e; }
+
+.nn-simple__block { margin: 18px auto 44px; }
+
+.nn-simple__imageWrap {
+  display: flex;
+  justify-content: center;
+}
+
+.nn-simple__image {
+  width: min(640px, 100%);
+  height: auto;
+  display: block;
+}
+
+@media (max-width: 768px) {
+  .nn-simple__title { font-size: 34px; }
+  .nn-simple__step { font-size: 18px; }
+}

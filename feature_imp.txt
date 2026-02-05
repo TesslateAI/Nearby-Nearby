@@ -1,0 +1,2391 @@
+NN-55
+New Error when Trying to Update a new POI and hit the Update Button
+
+
+
+Description
+
+Getting this Error when I hit the Update Button 
+
+IMG_0299.heic
+
+Attachments
+2
+
+
+IMG_0461.jpg
+IMG_0461.jpg
+07 Dec 2025, 12:54 PM
+
+
+IMG_0299.heic
+IMG_0299.heic
+01 Dec 2025, 06:01 PM
+
+
+
+
+
+MANOSH MAJUMDAR
+
+December 1, 2025 at 8:42 PM
+@Rhonda Jean Not able to reproduce. Working as Desired. Can you reload the Error image (In JPEG or PNG). The attached image format (in HEIC) is not readable.
+
+
+
+
+
+Rhonda Jean
+
+December 7, 2025 at 12:54 PM
+@MANOSH MAJUMDAR @Manav M  This is the Error I get Failed to Save Draft: HTTP 422 when I hit Publish. 
+
+IMG_0461.jpg
+
+And when I hit save draft - it does then let me hit publish but nothing actually saves in the various fields I enter information in besides the title. I’m also now getting the loading circle of doom and photos don’t upload.  
+
+It should be: 
+- publish makes the post go live
+- save draft should just have the info saved on the backend - I noticed our draft posts are also showing on the front end. 
+
+
+
+
+
+
+
+Rhonda Jean
+
+December 1, 2025 at 6:01 PM
+@MANOSH MAJUMDAR ADDED THIS
+
+
+Add epic
+
+NN-4
+
+
+
+2
+
+
+
+
+
+Can't Save New POI's
+
+
+
+Description
+
+Just providing a quick status update: As of October 30th, I'm  unable to save any new POI details. The issue persists regardless of the information entered.  Right now, it looks like it auto saves, almost as soon as I create the new POI, but even when adding the POI name, it won’t save.
+
+
+Attachments
+3
+
+
+Video 2.mov
+Video 2.mov
+13 Dec 2025, 08:01 PM
+
+
+VIdeo of Error.mov
+VIdeo of Error.mov
+13 Dec 2025, 08:01 PM
+
+
+image-20251202-014530.png
+image-20251202-014530.png
+01 Dec 2025, 08:46 PM
+
+
+Subtasks
+
+Add subtask
+Linked work items
+
+Add linked work item
+
+Activity
+
+All
+
+Comments
+
+History
+
+Work log
+
+
+Comments summary
+Only visible to you
+
+
+This work item involved investigating an issue where new POI details could not be saved, with errors occurring during save attempts.
+
+Multiple attempts to save POIs resulted in HTTP 500 errors, with only the POI name and image saving successfully, while other fields did not save.
+
+It was identified that the error might be a temporary server glitch, as saving via "Publish" sometimes succeeded, but "Save Draft" consistently failed to save entered data.
+
+The next step involves further validation and troubleshooting to determine if the server error is persistent and to implement a fix, potentially assigned to the development team.
+
+
+Add a comment…
+
+Suggest a reply...
+
+Status update...
+
+Thanks...
+Pro tip: press 
+M
+ to comment
+
+Rhonda Jean
+
+December 13, 2025 at 8:01 PM
+@MANOSH MAJUMDAR So I tried again and I am still getting an error.. HTTP 500
+
+I made a recording to show what I am experiencing. SO I made a sample listing of just the free version this time.. where I clicked and filled out everything I could to make sure it's all saving correctly.  I get the HTTP 500 Error when I click both the Publish OR the Save Draft. – There is sound but you can mute it – it recorded my tv talking and I didn’t talk in video. 
+
+THEN I went to the dashboard and noticed that something did save.. and it looks like it oddly ONLY saved the image I uploaded and the POI name but none of the fields I filled out saved. - Also you can mute this one, I didn’t record me saying anything - it recorded my TV.
+
+
+
+
+
+
+
+
+
+MANOSH MAJUMDAR
+
+December 1, 2025 at 8:46 PM
+@Rhonda Jean HTTP error might be a temporary glitch with the server. Please try again. I just created a test POI and clicked Publish (without Save Draft) - It saved. 
+
+image-20251202-014530.png
+
+
+
+
+Rhonda Jean
+
+December 1, 2025 at 6:36 PM
+@MANOSH MAJUMDAR  I just tried making a new poi and Publish didn’t work gave me a Http Error, so then I did the Save draft and reviewed the new poi I just entered,  nothing I entered or checked saved, except the photos I uploaded. 
+
+
+
+
+
+MANOSH MAJUMDAR
+
+November 30, 2025 at 4:51 PM
+@Rhonda Jean Please validate
+
+
+
+
+
+MANOSH MAJUMDAR
+
+November 30, 2025 at 3:39 PM
+Is you “Save Draft” and then “Publish” - it Saves.
+
+
+
+
+
+MANOSH MAJUMDAR
+
+November 30, 2025 at 3:08 PM
+Test Failed. 
+
+Autosave Error. 
+
+Manual save does not show up on the POI list. 
+
+Add epic
+
+NN-38
+
+
+
+2
+
+
+
+
+
+Backend Map/Address
+
+
+
+Description
+
+Don’t want to spend too much time here, especially if we are to move over to GIS for disaster aspect. But these are issues that we need to consider for when we have user side of entering information. 
+
+1. On the backend is there a way to zoom in more. I spend a stupid amount of time zooming in. Currently it looks like:
+
+Screenshot 2025-11-05 at 4.23.00 PM.png
+And can we get the standard zoom closer to something like this:
+
+Screenshot 2025-11-05 at 4.23.38 PM.png
+Address Auto Complete - Is this something we tackle now? I personally keep spelling things wrong and it’s getting frustrating. I also spend a lot of time re-entering the same info over and over… If autocomplete isn’t smart now especially with wanting to tackle GIS sooner than later..  the very least can we do this for now:
+
+Can we have a drop down for the City/Towns: Have it currently set on just Pittsboro as thats where we are focused on but also make it easy to add or have it easy for you to add the other city/towns as NN expands into in rest of chatham County. So like our incorporated and unincorporated towns. 
+
+Same with Chatham County - can just have that there and I don’t need to type it in every time for now. Especially since we will probably be focused on Chatham for next 4-5 months.
+
+Same with State, have it just set on NC for now.
+
+The other big thing, but that isn’t a big thing for MVP is that if I type in a address it automatically moves the map pin point to that location then if needed I can move the map pin point to fine tune and get Lat & Long location?  
+
+
+Attachments
+2
+
+
+Screenshot 2025-11-05 at 4.23.00 PM.png
+Screenshot 2025-11-05 at 4.23.00 PM.png
+05 Nov 2025, 04:40 PM
+
+
+Screenshot 2025-11-05 at 4.23.38 PM.png
+Screenshot 2025-11-05 at 4.23.38 PM.png
+05 Nov 2025, 04:40 PM
+
+
+Subtasks
+
+Add subtask
+Linked work items
+
+Add linked work item
+
+Activity
+
+All
+
+Comments
+
+History
+
+Work log
+
+
+
+Add a comment…
+
+Suggest a reply...
+
+Who is working on this...?
+
+Status update...
+Pro tip: press 
+M
+ to comment
+
+Manav M
+
+
+November 28, 2025 at 4:07 PM
+Completed Tasks
+
+Fixed Directions button - Now opens Google Maps with proper coordinates (prefers front_door_latitude/longitude,
+falls back to location.coordinates)
+
+Fixed Lat & Long copy - Now correctly copies coordinates using the proper field names
+
+Improved Share functionality - Added share dropdown with options for:
+- Native share (on supported devices)
+- Facebook
+- Twitter/X
+- Email
+- Copy Link
+
+Added Hours toggle - Quick info section now has a "Show Hours" button that expands to show all weekly hours
+
+Added Verified badge hover popup with different messages:
+- Business/Park/Trail: "This place has been checked and confirmed as accurate by a Nearby Nearby Team member"
+- Event: "This event has been confirmed with the organizer or venue by a Nearby Nearby Team member"
+
+Applied fixes to all 4 detail pages: BusinessDetail, ParkDetail, TrailDetail, EventDetail
+
+Added Key Facilities to Businesses - Shows visual indicators for:
+- Public Restroom (available/not available)
+- Wheelchair Friendly (available/not available)
+- WiFi (available/not available)
+- Pet Friendly (available/not available)
+
+Removed rental pricing box from ParkDetail
+
+Rebuilt nearby-app - Production container is now running on port 8002
+
+
+
+
+
+Rhonda Jean
+
+December 7, 2025 at 10:53 AM
+@Manav M 
+
+Improved Share functionality - Added share dropdown with options for:
+- Native share (on supported devices)
+- Facebook
+- Twitter/X
+- Email
+- Copy Link
+All I get on a desktop and mobile is link Copied. I don’t get the other options.. but probably something that will be re-tackled when @Lekhana Vankayala rebuilds the POI pages.
+
+Added Hours toggle - Quick info section now has a "Show Hours" button that expands to show all weekly hours
+This also doesn’t work/show but again probably something that will be re-tackled when @Lekhana Vankayala rebuilds the POI pages.
+
+Added Verified badge hover popup with different messages:
+- Business/Park/Trail: "This place has been checked and confirmed as accurate by a Nearby Nearby Team member"
+- Event: "This event has been confirmed with the organizer or venue by a Nearby Nearby Team member"
+This also doesn’t work/show but again probably something that will be re-tackled when @Lekhana Vankayala rebuilds the POI Pages.
+
+
+
+NN-36
+
+
+
+2
+
+
+
+
+
+Hours Front End & Back End
+
+
+
+Description
+
+So I put my thoughts into ChatGPT to try to translate what I mean - 
+
+Here’s a clearer, developer-ready explanation you can give your team.
+
+I’ve broken it into current problems, requested backend changes, and requested frontend behavior, plus examples and notes.
+
+ 
+
+ 
+
+ 
+
+✅ Hours Functionality — Requirements Clarification
+ 
+
+ 
+
+ 
+
+1) Current Issues
+ 
+
+ 
+
+ 
+
+A) Regular Hours — Limited Exception Logic
+ 
+
+ 
+
+Many businesses do not follow simple weekly patterns.
+
+Examples we are seeing:
+
+ 
+
+Closed only the 3rd Wednesday of each month
+
+Closed every Sunday except the 1st Sunday of the month
+
+ 
+
+ 
+
+Right now, the backend UI does not support inputting these types of recurring exceptions.
+
+ 
+
+ 
+
+ 
+
+B) Seasonal Hours — Missing Date Range
+ 
+
+ 
+
+We currently allow seasonal hours, but we cannot specify the season date range (e.g., “Summer hours valid June 1 – Aug 15”).
+
+ 
+
+We need the ability to define:
+
+ 
+
+Start date
+
+End date
+
+ 
+
+ 
+
+…so the platform can apply that schedule automatically.
+
+ 
+
+ 
+
+ 
+
+C) Frontend Display — Exceptions & Holidays Not Overriding
+ 
+
+ 
+
+On the listing page, the user should see the hours that apply for the date range being viewed — including holidays and exceptions.
+
+ 
+
+Currently, the frontend continues to display default weekly hours even if:
+
+ 
+
+Holiday hours exist
+
+Exception hours exist
+
+Seasonal hours apply
+
+ 
+
+ 
+
+This leads to inaccurate or misleading information.
+
+ 
+
+ 
+
+ 
+
+2) Required Backend Enhancements
+ 
+
+ 
+
+ 
+
+✅ A) Add Support for Recurring Monthly Exceptions
+ 
+
+ 
+
+We need a way to store recurring exception rules such as:
+
+ 
+
+Closed every 3rd Wednesday
+
+Open only the 1st Sunday
+
+Closes early every 2nd Friday
+
+ 
+
+ 
+
+Suggested capability:
+
+ 
+
+Frequency logic (e.g., nth weekday of month)
+
+Override open/closed
+
+Override time (e.g., open 11a instead of 8a)
+
+ 
+
+ 
+
+This could be structured similar to iCal recurrence rules.
+
+ 
+
+ 
+
+ 
+
+✅ B) Seasonal Hours Must Include Date Range
+ 
+
+ 
+
+Seasonal hours must allow:
+
+ 
+
+Season name (optional)
+
+Start date
+
+End date
+
+Daily hours pattern within that range
+
+ 
+
+ 
+
+The system should automatically activate seasonal hours during that date window.
+
+ 
+
+ 
+
+ 
+
+3) Required Frontend Behavior
+ 
+
+ 
+
+ 
+
+✅ Display Most Relevant Hours for the Date Range
+ 
+
+ 
+
+When viewing a business detail page OR browsing a specific date window (e.g., Thanksgiving week), the hours shown should:
+
+ 
+
+Check exception hours first
+
+Then check holiday hours
+
+Then check seasonal hours (in range)
+
+Then fall back to regular hours
+
+ 
+
+ 
+
+ 
+
+ 
+
+✅ Override Example — Thanksgiving Week
+ 
+
+ 
+
+Standard Weekly Hours
+
+
+
+Mon 8–5
+Tue 8–5
+Wed 8–5
+Thu 8–5
+Fri 8–5
+Sat 8–5
+Sun 8–5
+Thanksgiving Week Overrides
+
+ 
+
+Wed → closes early at 12pm
+
+Thu → closed
+
+Fri → closed
+
+Sat → opens late at 11am
+
+ 
+
+ 
+
+Displayed to user
+
+
+
+Mon 8–5
+Tue 8–5
+Wed 8–12   (special hours)
+Thu Closed for Thanksgiving   (holiday closure)
+Fri Closed   (holiday)
+Sat 11–5   (special hours)
+Sun 8–5
+We need:
+
+✅ overridden hours to replace regular hours
+
+✅ visual indicator that these are special hours
+
+✅ label OR tooltip showing:
+
+ 
+
+“Closing early”
+
+“Modified hours”
+
+“Holiday hours”
+
+ 
+
+ 
+
+Something simple like:
+
+
+
+Wed 8–12 (Modified)
+Thu Closed (Thanksgiving)
+Sat 11–5 (Modified)
+ 
+
+ 
+
+ 
+
+4) Optional Nice-to-Have
+ 
+
+ 
+
+Tooltip or hover note explaining why the hours changed
+
+(ex: “Holiday hours for Thanksgiving” or “Exception: 3rd Wed closed”)
+
+Frontend messaging like:
+
+“Hours for the week of Nov 25–Dec 1 reflect holiday adjustments.”
+
+ 
+
+ 
+
+ 
+
+ 
+
+Summary for Development
+ 
+
+ 
+
+ 
+
+Must-Have Data Features
+ 
+
+ 
+
+✅ Recurring monthly exceptions
+
+✅ Seasonal hours date ranges
+
+✅ Holiday/exception hours override logic
+
+✅ Ability to store modified open/close times
+
+ 
+
+ 
+
+Must-Have Display Features
+ 
+
+ 
+
+✅ Show correct hours based on date range
+
+✅ Indicate modified/holiday hours
+
+✅ Clearly override default schedule
+
+ 
+
+ 
+
+If you want, I can also translate this into:
+
+✅ Jira ticket format
+
+✅ Data structure proposal
+
+✅ UI wireframe suggestion
+
+ 
+
+Just tell me what format you prefer.
+
+Subtasks
+
+Add subtask
+Linked work items
+
+Add linked work item
+
+Activity
+
+All
+
+Comments
+
+History
+
+Work log
+
+
+
+Add a comment…
+
+Suggest a reply...
+
+Status update...
+
+Thanks...
+Pro tip: press 
+M
+ to comment
+
+Rhonda Jean
+
+December 1, 2025 at 5:55 PM
+@MANOSH MAJUMDAR backend looks fantastic!! 
+The front end hours isn’t available for me to view yet as the design isn’t done for me to verify that it works on front end.  So leaving this open just to see how this works on front end. 
+
+
+
+
+
+MANOSH MAJUMDAR
+
+November 30, 2025 at 4:13 PM
+@Rhonda Jean Please Validate
+
+Add epic
+
+NN-46
+
+
+
+2
+
+
+
+
+
+Entity-Level Data Inheritance & Asset Association For Events
+
+
+
+Description
+
+For media handling, we need to structure photos so they are logically associated with the parent entity rather than dumped into a single global bucket.
+
+Each business, venue, park, trail, etc. should function as a primary object with its own media records. Within that, images should be typed or tagged by function (e.g., storefront, entrance, restrooms, parking, interior, etc.) so the system can automatically reference or reuse them later.
+
+This enables other objects, like events, to inherit contextual data from their venue source.
+
+When an event organizer selects Havoc Brewing as the location, the system should be able to pre-populate details already stored at the venue level—address, parking instructions, accessibility details, restroom availability, etc.—instead of forcing duplicate entry. The goal is to ensure data is reusable, normalized, and non-duplicative.
+
+So the architectural expectation is something like:
+
+Venue/Business = canonical source of truth
+
+ 
+
+Metadata fields (address, parking notes, accessibility, etc.)
+
+Associated, categorized photos
+
+ 
+
+Events reference a venue rather than duplicate venue data
+
+ 
+
+On event creation, users can “pull from venue” to pre-fill optional fields
+
+If a venue record updates, future events can optionally inherit the changes
+
+ 
+
+We are not looking to store media in one giant bucket with no organization.
+
+We are looking for entity-scoped assets with typed categorization so the system can:
+
+Keep data clean
+
+Prevent duplication
+
+Enable downstream objects (events) to reuse venue-level context
+
+This keeps venue information authoritative and ensures consistency across the platform.
+
+
+Attachments
+1
+
+
+Screenshot 2025-12-07 at 1.06.46 PM.png
+Screenshot 2025-12-07 at 1.06.46 PM.png
+07 Dec 2025, 01:07 PM
+
+
+
+Subtasks
+
+
+
+0% Done
+Work
+
+Subtask
+NN-51
+Schema.org for Events - https://schema.org/Event
+
+
+
+Medium
+
+Unassigned
+
+After MVP
+Linked work items
+
+Add linked work item
+
+Activity
+
+All
+
+Comments
+
+History
+
+Work log
+
+
+
+Add a comment…
+
+Suggest a reply...
+
+Status update...
+
+Thanks...
+Pro tip: press 
+M
+ to comment
+
+MANOSH MAJUMDAR
+
+November 30, 2025 at 4:31 PM
+@Rhonda Jean Please Validate
+
+
+
+
+
+Rhonda Jean
+
+December 7, 2025 at 1:07 PM
+(edited)
+@MANOSH MAJUMDAR All I get is a blank page.
+
+Screenshot 2025-12-07 at 1.06.46 PM.png
+
+Add epic
+
+NN-50
+
+
+
+3
+
+
+
+
+
+Map Colors
+
+
+Description
+
+Add a description...
+
+Attachments
+1
+
+
+Screenshot 2025-12-01 at 3.35.57 PM.png
+Screenshot 2025-12-01 at 3.35.57 PM.png
+01 Dec 2025, 03:55 PM
+
+
+Subtasks
+
+Add subtask
+Linked work items
+
+Add linked work item
+
+Activity
+
+All
+
+Comments
+
+History
+
+Work log
+
+
+
+Add a comment…
+
+Suggest a reply...
+
+Can I get more info...?
+
+Status update...
+Pro tip: press 
+M
+ to comment
+
+Rhonda Jean
+
+December 7, 2025 at 11:46 AM
+Note moved from task NN-25: Map Look
+Resolved
+ 
+
+Map’s look a little more like google/mapquest/Apple Maps.. with coloring. Like Parks are green, water is blue, highways are yellow or whatnot.. ?? Official MapQuest - Maps, Driving Directions, Live Traffic 
+
+Then can we add the boarders/lines for the county of Chatham, town of Pittsboro, Siler City, etc?  Or what is the process?@Manav M 
+
+
+
+
+
+Rhonda Jean
+
+December 1, 2025 at 3:55 PM
+@Manav M and @MANOSH MAJUMDAR The main background color we have makes it look like mush under color blind simulators. Looking more to fit the look of other maps systems - like Mapquest that I mentioned earlier. 
+
+Official MapQuest - Maps, Driving Directions, Live Traffic 
+
+
+Also in this image what are those random boxes when you zoom out a bit?
+
+Screenshot 2025-12-01 at 3.35.57 PM.png
+
+
+
+
+MANOSH MAJUMDAR
+
+November 30, 2025 at 3:47 PM
+@Rhonda Jean Please validate the Map Colors
+
+Add epic
+
+NN-34
+
+
+
+1
+
+
+
+
+
+POI Details Page
+
+
+
+Description
+
+While each page is close to looking the same they are different for each POI.
+
+
+Subtasks
+
+
+
+12% Done
+Work
+
+Linked work items
+
+Add linked work item
+
+NN-34
+
+NN-35
+
+
+2
+
+
+
+
+
+Overall Design
+
+
+
+Description
+
+I’ll be uploading this to Figma as I didn’t realize it wasn’t on there!! Waiting for SVG file to do so!
+
+I’ll make the changes on figma that I have marked on here along with a few others. 
+
+The Hours - Open Now - the way we have it which isn’t designed out in Figma is a button that can be clicked and the rest of the hours show if possible. Otherwise if we can’t do that nicely just have current hours there. 
+
+Right now the directions button dosen’t work, it gives me nothing 
+
+Lat & Long doesn’t copy the lat and long it gives me a null 
+
+Share - is there a way to format our shares so they look better on social?  I will be sharing a lot from here on Facebook our biggest marketing and it would be nice if things looked better. 
+
+Then the formatting within the accordions need to be done! I’ll break those up individually into new tasks. 
+
+Preview unavailable
+
+Attachments
+1
+
+
+Failed to load
+
+
+Linked work items
+
+Add linked work item
+
+Activity
+
+All
+
+Comments
+
+History
+
+Work log
+
+
+
+Add a comment…
+
+Suggest a reply...
+
+Status update...
+
+Thanks...
+Pro tip: press 
+M
+ to comment
+
+MANOSH MAJUMDAR
+
+November 30, 2025 at 4:16 PM
+@Rhonda Jean Please Validate
+
+NN-34
+
+NN-39
+
+
+1
+
+
+
+
+
+(Do First!!) Business Page Frontend/Backend
+
+
+
+Description
+
+FRONTEND:
+
+Here is the design for the content within the Accordions in figma - https://www.figma.com/design/4Ps9wwBmJOwXizWDAkSaKM/Oct-2025-Launch?node-id=2150-19429&t=7WHjULGBXgqHlPd9-1Connect your Figma account 
+
+Waiting on current SVG file to update that top section in figma- this layout is more what we are going for vs whats in FIGMA but figma is close. 
+
+Preview unavailable
+
+BACKEND:
+
+Two things:
+
+for the Links with Reservations, Delivery Service, Online Ordering - is there a way to title the link? So for example if a business puts in a DoorDash link - instead of showing a bunch of long links - they can title it DoorDash?  Or if they put in a Calendrly link or what not for an appointment they can title it Schedule a 30 min consult. 
+
+Same goes for the Community Connections articles - can we allow them to put a custom title in that shows for the link?
+
+Missing Photos upload for the Rental Information section. 
+
+Also in the Rental Information Section you can completely remove the rental pricing box, I’ll have people put pricing if they want into the paragraph section thats already there.. but I will not be using that anymore. 
+
+ 
+
+To make frontend/back end easier?
+For that amenities section - should we combine these sections in one place so its easier to grab the code from all of these for front end: It would make it easier for everyone I think if they were all together.
+
+In Idea FOR the LOCAL & SPECIAL section only (moving night owls open late to social settings)
+
+Youth Amenities
+
+Business Amenities 
+
+Entertainment options
+
+
+Attachments
+1
+
+
+Failed to load
+
+
+Linked work items
+
+Add linked work item
+
+NN-34
+
+NN-41
+
+
+1
+
+
+
+
+
+Park Page Frontend/Backend
+
+
+
+Description
+
+FRONTEND:
+
+Here is the design for the content within the Accordions in figma -https://www.figma.com/design/4Ps9wwBmJOwXizWDAkSaKM/Oct-2025-Launch?node-id=2152-21743Connect your Figma account PARK DETAIL PAGE
+
+Waiting on current SVG file to update that top section in figma- this layout is more what we are going for vs whats in FIGMA but figma is close. 
+
+Preview unavailable
+ 
+
+BACKEND:
+
+Leaving the same notes for just this one- but this only is relevant for the articles in the community connections for parks - for the Links with Reservations, Delivery Service, Online Ordering - is there a way to title the link? So for example if a business puts in a DoorDash link - instead of showing a bunch of long links - they can title it DoorDash?  Or if they put in a Calendrly link or what not for an appointment they can title it Schedule a 30 min consult. 
+
+In the Rental Information Section you can completely remove the rental pricing box, I’ll have people put pricing if they want into the paragraph section thats already there.. but I will not be using that anymore. 
+
+In the Public Restrooms were missing for both the original entry and the duplicate entry
+
+Description
+
+Toilet Lat & Long
+
+Photos
+
+ 
+
+To make frontend/back end easier?
+For that amenities section - should we combine these sections in one place so its easier to grab the code from all of these for front end: It would make it easier for everyone I think if they were all together.
+
+In Idea FOR the LOCAL & SPECIAL section only (moving night owls open late to social settings)
+
+Youth Amenities
+
+Facilties 
+
+Entertainment options
+
+
+Attachments
+1
+
+
+Failed to load
+
+
+Linked work items
+
+Add linked work item
+
+NN-34
+
+NN-42
+
+
+1
+
+
+
+
+
+Trail Page Frontend/Backend
+
+
+
+Description
+
+FRONTEND:
+
+Here is the design for the content within the Accordions in figma -https://www.figma.com/design/4Ps9wwBmJOwXizWDAkSaKM/Oct-2025-Launch?node-id=2156-25341Connect your Figma account  TRAIL DETAIL PAGE
+
+Waiting on current SVG file to update that top section in figma- this layout is more what we are going for - vs whats in FIGMA but figma is close. 
+
+Preview unavailable
+ 
+
+BACKEND:
+
+Leaving the same notes for just this one- but this only is relevant for the articles in the community connections for trails - for the Links with Reservations, Delivery Service, Online Ordering - is there a way to title the link? So for example if a business puts in a DoorDash link - instead of showing a bunch of long links - they can title it DoorDash?  Or if they put in a Calendrly link or what not for an appointment they can title it Schedule a 30 min consult. 
+
+In the Rental Information Section you can completely remove the rental pricing box, I’ll have people put pricing if they want into the paragraph section thats already there.. but I will not be using that anymore. 
+
+In the Public Restrooms were missing like in parks add another restroom. So I can entire a whole new restroom in a diff area on the trail.
+
+Public Restrooms on Backend remove Rentals - duplicate
+
+Alcohol - Missing the Description paragraph section
+
+For Trail Details for the Trail Head and Trail Exit, we need to be able to upload 2-3 photos
+
+Connections section - remove Membership & Pass details its a duplicate
+
+To make frontend/back end easier?
+For that amenities section - should we combine these sections in one place so its easier to grab the code from all of these for front end: It would make it easier for everyone I think if they were all together.
+
+Facilties 
+
+Entertainment options
+
+
+Attachments
+1
+
+
+Failed to load
+
+
+Linked work items
+
+Add linked work item
+
+NN-34
+
+NN-44
+
+
+1
+
+
+
+
+
+Event Page Frontend/Backend
+
+
+
+Description
+
+FRONTEND:
+
+Here is the design for the content within the Accordions in figma -https://www.figma.com/design/4Ps9wwBmJOwXizWDAkSaKM/Oct-2025-Launch?node-id=2156-25341Connect your Figma account  EVENT DETAIL PAGE
+
+Waiting on current SVG file to update that top section in figma- this layout is more what we are going for vs whats in FIGMA but figma is close. 
+
+Preview unavailable
+ 
+
+BACKEND:
+
+Leaving the same notes for just this one- but this only is relevant for the articles in the community connections for trails - for the Links with Reservations, Delivery Service, Online Ordering - is there a way to title the link? So for example if a business puts in a DoorDash link - instead of showing a bunch of long links - they can title it DoorDash?  Or if they put in a Calendrly link or what not for an appointment they can title it Schedule a 30 min consult. 
+
+In the Rental Information Section you can completely remove the rental pricing box, I’ll have people put pricing if they want into the paragraph section thats already there.. but I will not be using that anymore. 
+
+In the Public Restrooms were missing like in parks add another restroom. So I can entire a whole new restroom in a diff area of the event!
+
+Alcohol - Missing the Description paragraph section
+
+Missing Gallery Upload section
+
+
+Attachments
+1
+
+
+Failed to load
+
+
+Linked work items
+
+Add linked work item
+
+NN-34
+
+NN-45
+
+
+1
+
+
+
+
+
+Photos!!! From Sections into Gallery! & Source Info
+
+
+
+Description
+
+So I like the way yelp has the gallery broken into photo sections everything in main gallery then broken up on depending on what it is being photographed- Havoc Brewing Company - Pittsboro, NC 
+
+Can we do the same?  That way all the photos of an entry are in the same place, restrooms, etc?
+
+For media handling, we need to structure photos so they are logically associated with the parent entity rather than dumped into a single global bucket.
+
+Each business, venue, park, trail, etc. should function as a primary object with its own media records. Within that, images should be typed or tagged by function (e.g., storefront, entrance, restrooms, parking, interior, etc.) so the system can automatically reference or reuse them later.
+
+This enables other objects, like events, to inherit contextual data from their venue source.
+
+When an event organizer selects Havoc Brewing as the location, the system should be able to pre-populate details already stored at the venue level—address, parking instructions, accessibility details, restroom availability, etc.—instead of forcing duplicate entry. The goal is to ensure data is reusable, normalized, and non-duplicative.
+
+So the architectural expectation is something like:
+
+Venue/Business = canonical source of truth
+
+ 
+
+Metadata fields (address, parking notes, accessibility, etc.)
+
+Associated, categorized photos
+
+ 
+
+Events reference a venue rather than duplicate venue data
+
+ 
+
+On event creation, users can “pull from venue” to pre-fill optional fields
+
+If a venue record updates, future events can optionally inherit the changes
+
+ 
+
+We are not looking to store media in one giant bucket with no organization.
+
+We are looking for entity-scoped assets with typed categorization so the system can:
+
+Keep data clean
+
+Prevent duplication
+
+Enable downstream objects (events) to reuse venue-level context
+
+This keeps venue information authoritative and ensures consistency across the platform.
+
+Linked work items
+
+Add linked work item
+
+NN-34
+
+NN-48
+
+
+1
+
+
+
+
+
+Verified Button
+
+
+
+Description
+
+For the Hover Pop up for 
+
+Businesses, Parks, Trails it would say:
+
+This place has been checked and confirmed as accurate by a Nearby Nearby Team member
+
+ 
+
+For Events: 
+
+This event has been confirmed with the organizer or venue by a Nearby Nearby Team member.
+
+Linked work items
+
+Add linked work item
+Activity
+
+
+
+NN-34
+
+NN-49
+
+
+1
+
+
+
+
+
+KEY Facilities (ALL)
+
+
+
+Description
+
+Currently we have Key Facilities in Parks, Trails, Events:
+
+We Need to Add it to Businesses
+
+Need to Change the Options to:
+
+Public Restroom 
+
+Wheelchair Friendly
+
+Wifi 
+
+Pet Friendly
+
+None
+
+ 
+
+It's this part on the cards in the nearby section circled in red and they only show if checked - this is a required area! 
+
+Preview unavailable
+
+Attachments
+1
+
+
+Failed to load
+
+
+Linked work items
+
+Add linked work item
+
+Add epic
+
+NN-23
+
+
+
+1
+
+
+
+
+
+Nearby "One Search Area"
+
+
+
+Description
+
+I’ll break up the edits into tasks. 
+
+NN-23
+
+NN-28
+
+
+1
+
+
+
+
+
+Points on Map Info
+
+
+
+Description
+
+Is there a way to have it instead of having these pop ups within the map. 
+
+Preview unavailable
+That instead its somehow connected to the POI list bellow the map? That if they clicked #1 for instance it would bring that card up below front and center. A bit like how Google Maps works? 
+
+I’m not sure what we should/could do here. But it would be nice if we had something cleaner/more connected?
+
+
+Attachments
+1
+
+
+Failed to load
+
+
+Linked work items
+
+Add linked work item
+Activity
+
+NN-23
+
+NN-30
+
+
+1
+
+
+
+
+
+Events
+
+
+
+Description
+
+With Events on the Nearby feature, I think were going to really have to pay attention to this. However, we need to make sure that once as an event passes it no longer shows on the nearby feature. As I add more events, we will have to see what it does to the nearby features. 
+
+Linked work items
+
+Add linked work item
+
+Activity
+
+All
+
+Comments
+
+History
+
+Work log
+
+
+
+Add a comment…
+
+Suggest a reply...
+
+Who is working on this...?
+
+Status update...
+Pro tip: press 
+M
+ to comment
+
+Rhonda Jean
+
+December 7, 2025 at 11:55 AM
+leaving open till I get events on the platform so we can make sure they are falling off appropriately after the date of the event happens.
+
+
+
+NN-23
+
+NN-31
+
+
+2
+
+
+
+
+
+Directions (button) on Nearby Cards/Listings
+
+
+
+Description
+
+When you hit the direction button on the cards. Can we possibly add copy for lat and long here and copy for address??
+
+I’ve also added icons to use, I'm not a fan of the emoji type icons. 
+
+Also, can you make the size of that pop up way smaller on desktop.. looks weird being so large. 
+
+Logos for Map - Google Drive 
+
+
+Attachments
+1
+
+
+Screenshot 2025-12-01 at 6.41.47 PM.png
+Screenshot 2025-12-01 at 6.41.47 PM.png
+01 Dec 2025, 06:46 PM
+
+
+Linked work items
+
+Add linked work item
+
+Activity
+
+All
+
+Comments
+
+History
+
+Work log
+
+
+
+Add a comment…
+
+Suggest a reply...
+
+Who is working on this...?
+
+Status update...
+Pro tip: press 
+M
+ to comment
+
+Rhonda Jean
+
+December 1, 2025 at 6:46 PM
+(edited)
+Copy Address only copies the city Pittsboro.
+
+Can we make this pop up smaller?
+
+As noted previously - here are the icon images for the listings - Logos for Map - Google Drive
+ 
+
+The Grey buttons need to at least be the Purple buttons, they don’t look active as grey buttons. 
+
+And the Colors for the Apple, Google, and Waze we need to make them all the same color.. and the Wyze button isn’t accessible with the light blue and white icon.. so my vote is sticking with our purple button setup.
+
+@Manav M 
+
+Screenshot 2025-12-01 at 6.41.47 PM.png
+
+
+
+
+Manav M
+
+
+December 8, 2025 at 4:09 PM
+@Rhonda Jean Its not smart to load a png for each file icon, it will cause performance delays. You have to pic an icon library
+
+NN-23
+
+NN-33
+
+
+1
+
+
+
+
+
+Nearby Cards/Listing Look
+
+
+
+Description
+
+Preview unavailable
+Figma Design - https://www.figma.com/design/4Ps9wwBmJOwXizWDAkSaKM/Oct-2025-Launch?node-id=2007-55883&t=7WHjULGBXgqHlPd9-1Connect your Figma account 
+
+The Outline of the Card is Yellow #FEC764
+
+Number purple numbers is centered
+
+The miles from is above the business name - and the miles part is purple I believe Simi bold so it stands out
+
+For Hours it’s current hours like it is
+
+If the date search is done its that days hours  so like if I did a search for Wednesday Nov 19th, it would show me Wednesday hours. 
+
+Where it says plumbing that is the Primary Display Category
+
+Under that is the icon shows if
+
+They have public restrooms
+
+Wheelchair friendly
+
+Has free public wifi
+
+Pet friendly
+
+Please use icons from figma
+
+FOR EVENTS the design changes a bit to this -
+
+Preview unavailable
+FOR PARKS the design changes a bit to this - 
+
+Preview unavailable
+FOR TRAILS the design changes a bit to this - 
+
+Preview unavailable
+
+Attachments
+4
+
+
+Failed to load
+
+
+Failed to load
+
+
+Failed to load
+
+
+Failed to load
+
+
+Linked work items
+
+Add linked work item
+
+Activity
+
+All
+
+Comments
+
+History
+
+Work log
+
+
+
+Add a comment…
+
+Suggest a reply...
+
+Who is working on this...?
+
+Status update...
+Pro tip: press 
+M
+ to comment
+
+Rhonda Jean
+
+December 7, 2025 at 11:53 AM
+@Lekhana Vankayala we will fine tune the front end design. 
+
+@Manav M question - on the frontend if someone uses the date search - For Businesses and parks in particular are they only shown those POI’s that are opened?
+
+Add epic
+
+NN-57
+
+
+
+1
+
+
+
+
+
+POI BACKEND
+
+
+
+Description
+
+ALL POIS
+
+Teaser Paragraph - need to limit the characters  to 120
+
+Need a button that Lets me click like the Disaster Hub and Verified -  that Lat + Long is most accurate (this is for those places where Address takes you miles away and not to the location)
+
+Under Corporate Compliance: 
+
+Are there any restrictions on public comments or community tips being shown on your listing? Can’t click to change yes to no
+
+Are there any social media platforms where your business cannot be mentioned or tagged? Can’g click any of the options
+
+Do you require pre-approval before we feature or promote your business in any posts, newsletters, or other materials?  Can’t click to change from no to yes
+
+Is there any language or branding you are required to use (or avoid) when referring to your business?  Can’t click to change no to yes 
+
+Article Link - Add a place for them to put a custom title for the article - just like you did for delivery and reservation links (located in community connections)
+
+ADD - POI Detail Key in ALL Business (free+paid), Parks, Trails, Events (Multiple Checkbox and required) - Maybe add in Core Info Accordion 
+
+Public Restroom
+
+Wheelchair Friendly
+
+Wifi
+
+Pet Friendly
+
+None of the above
+
+Rentals 
+
+Remove the Rental Pricing Box, will no longer use
+
+Missing Place to Upload Photos for Rentals
+
+ 
+
+Business Free:
+
+Remove Teaser Paragraph
+
+Short Description Paragraph Character Count/Limit of 250 (double check amount)
+
+Business Category needs to be limited to only being able to select 1 - currently you can select as many as you want
+
+Remove Community Connections Completely
+
+Remove Community Impact
+
+Remove Add Article Link
+
+Add Public Restroom Section with ONLY
+
+Are public toilets available: Yes/NO
+
+Public Toilet Options: Checkbox
+
+Public Toilet Description Paragraph Box
+
+Add Wheelchair Accessible Section
+
+Wheelchair Accessibility: Yes/No/Unkowen
+
+Additional Accessibility Detail Paragraph Box
+
+ 
+
+Business Paid, Paid Founding, Sponsor, Community Comp
+
+Facilities & Accessibility accordion
+
+Under Is Alcohol Available add Alcohol Policy Details Paragraph
+
+ 
+
+ 
+
+Trails:
+
+Missing on all Listing Types
+
+Facilities & Accessibility accordion
+
+Add Lat & Long for Pay Phone and a paragraph box (and ability to add more than one - just like parks is set up) 
+
+Under Is Alcohol Available add Alcohol Policy Details Paragraph
+
+Parking in the Location & Parking Accordion 
+
+When I click Add an Additional Parking Location it goes to a white screen
+
+When I click Add an additional Parking location it should give me a second or third.. Etc set of Parking Lat & Long, Parking Type Available, Parking Notes, Expect to pay for Parking and then Parking Lot Photos. Currently you have public transit mixed in the parking info and that should be either before or after the parking section.
+
+The Free Listing Type is missing completely these fields: Parking Notes, Public Transit Info, Expect to Pay for Parking
+
+Missing Parking Lot Lat & Long 
+
+Parking Photos need to be with each parking lot set - So parking lot 1 gets its own photos and parking lot 2 gets it own
+
+Public Restrooms Accordion:
+
+Add a button at end to duplicate and add another restroom which would duplicate - Public Toilet Options, Toilet Description, Lat & Long, Photos
+
+Remove - Available to rent - this is a duplicate
+
+Playground Accordion:
+
+Add Lat & Long
+
+Add a button to duplicate another playground: Playground Lat & Long, Playground type, Playground surface type, playground notes, playground photos
+
+Trail Details:
+
+Trail Head Photo - Need to upload 10 images (currently set at 1)
+
+Trail Exit Photo - Need to upload 10 images (currently set at 1)
+
+Remove/Delete Trail Experience section - thats our Categories so its a duplicate
+
+Connections
+
+Remove Membership Pass and details (this is a duplicate)
+
+Community Connections
+
+ 
+
+ 
+
+Parks:
+
+Missing on all Listing Types
+
+Facilities & Accessibility accordion
+
+Under Is Alcohol Available add Alcohol Policy Details Paragraph
+
+Parking:
+
+When I click Add an Additional Parking Location it goes to a white screen
+
+When I click Add an additional Parking location it should give me a second or third.. Etc set of Parking Lat & Long, Parking Type Available, Parking Notes, Expect to pay for Parking and then Parking Lot Photos. Currently you have public transit mixed in the parking info and that should be either before or after the parking section.
+
+The Free Listing Type is missing completely these fields: Parking Notes, Public Transit Info, Expect to Pay for Parking
+
+Missing Parking Lot Lat & Long 
+
+Parking Photos need to be with each parking lot set
+
+Public Restrooms Accordion:
+
+Missing Lat & Long
+
+Missing Description box
+
+Missing Restroom Photos
+
+The Add a button end to duplicate - Public Toilet Options, Toilet Description, Lat & Long, Photos
+
+Playground Accordion:
+
+Add Lat & Long
+
+Add a button to duplicate another playground: Playground Lat & Long, Playground type, Playground surface type, playground notes, playground photo
+
+ 
+
+ 
+
+Events:
+
+I get just a white screen so I can’t see anything right now - however, I will make a comprehensive list of what we want for NN-46 Entity-Level Data Inheritance & Asset Association For Events
+
+Subtasks
+
+Add subtask
+Linked work items
+
+Add linked work item
+
+Activity
+
+All
+
+Comments
+
+History
+
+Work log
+
+
+
+Add a comment…
+
+Suggest a reply...
+
+Status update...
+
+Thanks...
+Pro tip: press 
+M
+ to comment
+
+Rhonda Jean
+
+December 9, 2025 at 11:38 PM
+(edited)
+Put in Description. Needs to be completed so Lekhana can do the front end fully. 
+
+
+
+
+Add epic
+
+NN-40
+
+
+
+1
+
+
+
+
+
+Relationships Showing within POI
+
+
+
+Description
+
+After Current MVP is finished adding Events, Associated Parks and Trails within the POI’s
+
+Screenshot 2025-11-05 at 6.51.21 PM.png
+Screenshot 2025-11-05 at 6.50.40 PM.png
+Screenshot 2025-11-05 at 7.38.22 PM.png
+Screenshot 2025-11-05 at 11.42.09 PM.png
+
+Attachments
+4
+
+
+Screenshot 2025-11-05 at 6.50.40 PM.png
+Screenshot 2025-11-05 at 6.50.40 PM.png
+06 Nov 2025, 11:59 AM
+
+
+Screenshot 2025-11-05 at 11.42.09 PM.png
+Screenshot 2025-11-05 at 11.42.09 PM.png
+06 Nov 2025, 11:59 AM
+
+
+Screenshot 2025-11-05 at 6.51.21 PM.png
+Screenshot 2025-11-05 at 6.51.21 PM.png
+06 Nov 2025, 11:59 AM
+
+
+Screenshot 2025-11-05 at 7.38.22 PM.png
+Screenshot 2025-11-05 at 7.38.22 PM.png
+06 Nov 2025, 11:59 AM
+
+
+Subtasks
+
+Add subtask
+Linked work items
+
+Add linked work item
+Activity
+
+All
+
+Comments
+
+History
+
+Work log
+
+
+Add a comment…
+
+Who is working on this...?
+
+Status update...
+
+Thanks...
+
+
+Roberts Schedule for 2026 March Launch
+
+January 26 - February 1
+Create all pages that will be in new site see pages doc
+
+
+Some pages may be views such as a category or explore map like this:  https://nearbynearby.com/explore?type=BUSINESS
+
+
+Create form submission code and make sure the entries are recorded in database
+
+
+We need  a way to view all entries in the back end (is there an admin panel? Ask Manav)
+
+
+Add the following forms on these pages:
+Feedback page
+Contact page
+Community Interest page
+Register Your Business (check with Manav to see if this can automatically get integrated into database) - these also may need an admin approval before they go live
+Email Subscribe
+Add This Location (from #2 in search flow)
+
+
+For list of form fields see forms doc
+Link up to confirmation pages
+
+
+February 2 - 8
+Take Barry’s CSS and HTML files and integrate them into the system
+
+
+Complete functionality of search overlay
+
+
+For fonts avoid FOUT 
+https://docs.wp-rocket.me/article/1390-fout-flash-of-unstyled-text
+
+
+
+
+
+
+February 9 - 15
+Integrate Barry’s new code and designs for HTML and CSS for:
+Explore
+Map view pages
+Single POI pages (businesses, trails, parks)
+
+
+Work with Manav to get search working on home page and in search overlay
+
+
+February 16 – 22
+Keep working on any functionality with Manav
+Integrate Barrys’ HTML an CSS for:
+Events main page
+Events single page
+
+
+February 23 - March 2
+???
+
+
+
+March 2 - 9
+???
+
+
+Want Nearby Nearby in Your Community?
+We’re just getting started! Tell us where you are and why you’d love to see Nearby Nearby in your community.
+If you’re outside North Carolina, that’s okay, we will be expanding nationwide!
+
+Your Name (optional)
+
+Email (optional)
+Include your email if you’d like us to follow up or keep you updated on when we expand to your county.
+
+Where would you like Nearby Nearby to launch next?  Town, County and State
+
+Are You a… (checkbox)
+Resident
+Business Owner
+Event Organizer
+Nonprofit or Community Group
+Local Government or Tourism Representative 
+Visitor or Traveler
+Other: 
+
+Why do you want Nearby Nearby in your community?
+
+How did you hear about Nearby Nearby? 
+
+
+Anything else you’d like us to know?
+We’d love to hear any ideas, feedback, or questions you have.
+
+
+
+Contact Us!
+
+Name:
+
+Email:(required)
+
+Message for the team at Nearby Nearby: (required)
+
+
+
+
+
+
+
+We’re Listening, Your feedback shapes Nearby Nearby
+
+Nearby Nearby is built for small towns and rural communities and that means we need real feedback from people who use it. If something’s confusing, missing, broken, or just doesn’t work how you thought it would, let us know.
+Share your thoughts, upload screenshots, and don’t hold back. This is how we make the platform stronger for everyone.
+If you would like a follow up, you can include your email below.
+
+Email Address (only if you would like to hear back)
+
+Please share your feedback!
+
+Have a screenshot of something that isn't loading right? Or ideas please share! Files can't be larger than 10MB and only can upload 10 per submission. If you have more than 10, please feel free to do another submission.
+
+
+
+
+Chatham County, NC Businesses & Locations Only!
+
+Right now, we're only accepting businesses located in Chatham County, North Carolina.
+
+If you'd like to see Nearby Nearby in your community, please fill out our community interest form.
+If you’d like your business to be added, please fill out this quick form. A team member from Nearby Nearby will reach out as soon as possible to confirm your details and schedule a visit so we can get your business listed on the platform.
+
+Is your business, service or location in Chatham County, North Carolina?
+Yes
+No
+
+Business/Location Name (required)
+
+Contact Name (required) 
+
+Contact Phone Number (required)
+
+Best Email (required)
+
+Business Address (required) 
+
+How did you hear about Nearby Nearby?
+
+Anything you would like to know from us?
+
+Thank you for sharing your information. Our team will be in touch soon to get your business added to Nearby Nearby and plan a visit. We’re proud to highlight the people and places that make our communities strong.
+
+
+
+Based on the transcript, here is the detailed actionable list for the Nearby Nearby system development. The project is currently in a "pre-MVP" phase with a 5-week deadline to have a functional site ready for a conference.
+
+1. Immediate Setup & Workflow
+
+Development Environment:
+
+Robert: Install Docker (if not already used) to run the local environment.
+
+Robert: Connect to the GitHub repository (Work on the dev branch, submit Pull Requests to Manive).
+
+Manive/Robert: Ensure the local environment connects to the backend stack (Next.js, FastAPI, PostgreSQL, PostGIS, ElasticSearch).
+
+Task Management:
+
+Barry: Populate "Jarvis" (Jira) with detailed tickets/tasks by end of day Friday.
+
+Robert: Review tickets and organize work based on a ~8–10 hour/week schedule.
+
+Assets Handover:
+
+Barry: Provide SVGs for all icons and logos.
+
+Barry: Provide the SCSS (Sass) file with variables and breakpoints.
+
+2. Front-End Architecture & Standards
+
+Accessibility (Critical):
+
+Standard: Must be AAA Compliant (due to legal risks).
+
+Colors: Use only the specific accessible colors defined in the Figma file.
+
+Navigation: Ensure full keyboard accessibility (Tab/Enter keys must navigate the menu and read out via screen readers).
+
+Code Structure: Use <button> tags for interactive elements (like the search overlay toggle) to ensure JavaScript targeting and accessibility compliance.
+
+SEO Structure:
+
+Maintain strict header hierarchy (H1 -> H2 -> H3) on all pages.
+
+Responsive Design:
+
+Approach: Mobile-first design, but optimized for Desktop (primary demographic usage).
+
+Breakpoints: Use the specific breakpoints provided in Barry’s SCSS file.
+
+Mobile UI: Ensure the bottom navigation bar is fixed/sticky on mobile devices.
+
+3. Component Development (The "Punch List")
+
+Header:
+
+Implement responsive design (Hamburger menu for mobile, full nav for desktop).
+
+Banner: Add a "Beta/Location" banner at the very top stating: "We are currently only in Pittsboro" (to manage user expectations regarding geolocation).
+
+Footer:
+
+Implement the multi-layer design (Newsletter section, Feedback section, Links, Socials, Logo).
+
+Newsletter: Connect the email input to the existing backend collection point (coordinate with Manive on where this data goes).
+
+Search Overlay (The "One Search"):
+
+Functionality: Clicking "Search" takes over the entire screen (overlay).
+
+Logic: Needs to handle the 4 search types:
+
+Specific POI (Directs to POI Page).
+
+Missing POI (Prompts to add).
+
+Specialized Zone (e.g., "Jordan Lake" - Design pending).
+
+Keyword/Mood (e.g., "Adventurous" -> Results map).
+
+Default Page Template:
+
+Create a reusable wrapper class (Max-width 1400px on desktop, 80% width on mobile).
+
+4. Page Implementation (MVP Priorities)
+
+Home Page:
+
+Implement the main "One Search" bar.
+
+Categories: implement the 4 MVP categories: Businesses, Parks, Trails, Events (Remove Services, Youth Activities, and Volunteer for now).
+
+Blog Feed: Implement a section to pull and display blog posts via RSS feed from the external WordPress environment.
+
+Single POI Page (Point of Interest):
+
+Ref: Use the "Rustic Spoon" or "Circle City Ice Cream" designs.
+
+Gallery: Display photos. (Future state: categorized like TripAdvisor; MVP state: display available photos).
+
+Nearby Feature: Display "What's nearby" relative to the current POI (crucial feature).
+
+Explore/Map Pages:
+
+Note: Designs for these are being finalized by Barry/Rhonda next week.
+
+Action: Robert to wait for final design before coding complex map filters.
+
+5. Backend Integration (Robert & Manive)
+
+Search Logic: Robert to style the UI; Manive to handle the search query routing.
+
+Events: Ensure the "Add Event" functionality is working (Manive fixing current glitches).
+
+Data Feeds: Ensure the Home Page categories populate correctly from the database.
+
+6. Timeline & Milestones
+
+Weekly Check-in: Mondays via Slack.
+
+Goal: Functional MVP (Header, Footer, Home, Search, Single POI) in 5 weeks for the conference.
+
+Design Freeze: Barry and Rhonda to finish outstanding designs (Explore page, Events list) by next week.
+
+

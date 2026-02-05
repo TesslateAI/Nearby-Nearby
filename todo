@@ -1,0 +1,1 @@
+Ensure that the MINIO is only for dev mode and use the real S3 For production

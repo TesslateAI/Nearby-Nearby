@@ -1,0 +1,40 @@
+# requirements.txt
+
+# Core FastAPI and server
+fastapi
+uvicorn[standard]
+
+# Database
+sqlalchemy
+psycopg2-binary
+alembic
+geoalchemy2[shapely]
+pgvector
+
+# Configuration and Security
+pydantic[email]
+pydantic-settings
+python-dotenv
+passlib[bcrypt]
+python-jose[cryptography]
+
+# Utilities
+python-multipart
+bleach
+
+# Image processing
+Pillow
+aiofiles
+
+# Cloud storage (for S3 integration)
+boto3
+botocore
+
+# Testing dependencies
+pytest
+httpx
+
+# Machine Learning / Embeddings
+sentence-transformers
+torch
+transformers

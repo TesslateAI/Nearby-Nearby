@@ -1,0 +1,277 @@
+/* Nearby Card - Base Styles */
+.nearby-card {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  border: 2px solid #FEC764; /* Yellow outline as per design */
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: all 0.2s ease;
+}
+
+.nearby-card:hover {
+  box-shadow: 0 4px 16px rgba(254, 199, 100, 0.3);
+  transform: translateY(-2px);
+}
+
+.nearby-card--highlighted {
+  border-color: #328170;
+  box-shadow: 0 0 0 3px rgba(50, 129, 112, 0.2);
+  animation: highlight-pulse 0.5s ease-out;
+}
+
+@keyframes highlight-pulse {
+  0% { transform: scale(1.02); }
+  100% { transform: scale(1); }
+}
+
+/* Number Badge - Centered */
+.nearby-card__number {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--nn-primary, #562556);
+  color: white;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 8px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 14px;
+  box-shadow: 0 2px 6px rgba(86, 37, 86, 0.3);
+}
+
+/* Content Area */
+.nearby-card__content {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 8px;
+}
+
+/* Distance - Above name, purple semi-bold */
+.nearby-card__distance {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.nearby-card__distance-value {
+  color: var(--nn-primary, #562556);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.nearby-card__distance-label {
+  color: var(--nn-ink-muted, #597199);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* POI Name */
+.nearby-card__name {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--nn-ink, #33404E);
+  margin: 0;
+  line-height: 1.3;
+}
+
+/* Primary Category */
+.nearby-card__category {
+  font-size: 13px;
+  color: var(--nn-ink-muted, #597199);
+  font-weight: 500;
+}
+
+/* Hours Display */
+.nearby-card__hours {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.nearby-card__hours--open {
+  color: var(--nn-accent, #328170);
+}
+
+.nearby-card__hours--closed {
+  color: #dc2626;
+}
+
+/* Amenity Icons */
+.nearby-card__amenities {
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.nearby-card__amenity {
+  color: var(--nn-primary, #562556);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: help;
+  transition: color 0.2s;
+}
+
+.nearby-card__amenity:hover {
+  color: var(--nn-accent, #328170);
+}
+
+/* Action Buttons */
+.nearby-card__actions {
+  margin-top: auto;
+  display: flex;
+  gap: 8px;
+  padding-top: 8px;
+}
+
+.nearby-card__btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.nearby-card__btn--directions {
+  background: var(--nn-primary, #562556);
+  color: white;
+  border: 2px solid var(--nn-primary, #562556);
+}
+
+.nearby-card__btn--directions:hover {
+  background: #6b2f6b;
+  border-color: #6b2f6b;
+}
+
+.nearby-card__btn--details {
+  background: white;
+  color: var(--nn-accent, #328170);
+  border: 2px solid var(--nn-accent, #328170);
+}
+
+.nearby-card__btn--details:hover {
+  background: var(--nn-accent, #328170);
+  color: white;
+}
+
+/* Event Card Specific Styles */
+.nearby-card--event {
+  border-color: #328170;
+}
+
+.nearby-card--event .nearby-card__number {
+  background: #328170;
+}
+
+.nearby-card__event-date {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--nn-accent, #328170);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.nearby-card__event-date svg {
+  flex-shrink: 0;
+}
+
+/* Park Card Specific Styles */
+.nearby-card--park {
+  border-color: #22c55e;
+}
+
+.nearby-card--park .nearby-card__number {
+  background: #22c55e;
+}
+
+.nearby-card__park-type {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #22c55e;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* Trail Card Specific Styles */
+.nearby-card--trail {
+  border-color: #f59e0b;
+}
+
+.nearby-card--trail .nearby-card__number {
+  background: #f59e0b;
+}
+
+.nearby-card__trail-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.nearby-card__trail-length {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--nn-ink, #33404E);
+}
+
+.nearby-card__trail-difficulty {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 10px;
+  text-transform: uppercase;
+}
+
+.nearby-card__trail-difficulty--easy {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.nearby-card__trail-difficulty--moderate {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.nearby-card__trail-difficulty--difficult,
+.nearby-card__trail-difficulty--hard {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+/* Business Card keeps default yellow border */
+.nearby-card--business {
+  border-color: #FEC764;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .nearby-card {
+    padding: 16px;
+  }
+
+  .nearby-card__name {
+    font-size: 15px;
+  }
+
+  .nearby-card__btn {
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+}

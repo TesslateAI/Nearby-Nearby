@@ -1,0 +1,22 @@
+{
+  "name": "Nearby Nearby",
+  "short_name": "NearbyNearby",
+  "description": "Discover local businesses, events, parks, trails, and community spaces near you.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F4EFF7",
+  "theme_color": "#328170",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/Logo.png",
+      "sizes": "216x216",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["lifestyle", "navigation", "travel"],
+  "lang": "en-US",
+  "dir": "ltr"
+}

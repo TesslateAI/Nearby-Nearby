@@ -1,0 +1,99 @@
+/* Filter Pills Container */
+.nearby-filters {
+  width: 100%;
+  overflow: hidden;
+  padding: 0 24px;
+  box-sizing: border-box;
+}
+
+.nearby-filters__scroll {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+  padding: 4px 0;
+}
+
+.nearby-filters__scroll::-webkit-scrollbar {
+  display: none; /* Chrome/Safari */
+}
+
+/* Individual Filter Button */
+.nearby-filter {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  padding: 10px 16px;
+  border-radius: 100px; /* Pill shape */
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+  min-height: 44px; /* Touch target */
+}
+
+.nearby-filter:hover {
+  background: rgba(255, 255, 255, 0.25);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.nearby-filter:focus-visible {
+  outline: 2px solid #F4C542;
+  outline-offset: 2px;
+}
+
+.nearby-filter--active {
+  background: #F4C542;
+  color: var(--nn-ink, #33404E);
+  border-color: #F4C542;
+}
+
+.nearby-filter--active:hover {
+  background: #e5b73d;
+  border-color: #e5b73d;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .nearby-filters {
+    padding: 0 16px;
+    margin: 0 -16px;
+    width: calc(100% + 32px);
+  }
+
+  .nearby-filters__scroll {
+    padding: 4px 16px;
+  }
+
+  .nearby-filter {
+    padding: 8px 14px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 480px) {
+  .nearby-filters {
+    padding: 0 12px;
+    margin: 0 -12px;
+    width: calc(100% + 24px);
+  }
+
+  .nearby-filters__scroll {
+    padding: 4px 12px;
+    gap: 6px;
+  }
+
+  .nearby-filter {
+    padding: 8px 12px;
+    font-size: 12px;
+    gap: 4px;
+  }
+}

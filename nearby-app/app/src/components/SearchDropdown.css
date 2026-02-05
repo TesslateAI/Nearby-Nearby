@@ -1,0 +1,67 @@
+.search-dropdown {
+  background: #fff;
+  border: 2px solid #1db39b; /* green border */
+  border-radius: 14px;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.18);
+  overflow: hidden;
+}
+
+.search-dropdown__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  font-weight: 700;
+  color: #1db39b;
+  border-bottom: 1px solid #E5E7EB;
+}
+
+.search-dropdown__header-icon {
+  color: #1db39b;
+}
+
+.search-dropdown__state {
+  padding: 14px 16px;
+  color: #6B7280;
+  font-size: 14px;
+}
+
+.search-dropdown__list {
+  list-style: none;
+  margin: 0;
+  padding: 8px 0;
+  max-height: 420px;
+  overflow-y: auto;
+}
+
+.search-dropdown__item {
+  display: flex;
+  align-items: flex-start;
+  padding: 12px 16px;
+  cursor: pointer;
+  border-bottom: 1px solid #F3F4F6;
+}
+
+.search-dropdown__item:last-child {
+  border-bottom: none;
+}
+
+.search-dropdown__item:hover,
+.search-dropdown__item--selected {
+  background: #F4FBF9; /* light green tint */
+}
+
+.search-dropdown__content {
+  display: flex;
+  flex-direction: column;
+}
+
+.search-dropdown__name {
+  font-weight: 700;
+  color: #1F2937;
+}
+
+.search-dropdown__city {
+  color: #6B7280;
+  font-size: 13px;
+}
