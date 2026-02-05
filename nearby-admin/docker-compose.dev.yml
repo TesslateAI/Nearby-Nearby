@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  # Database only - for local development
+  db:
+    image: postgis/postgis:15-3.4
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    environment:
+      - POSTGRES_USER=nearby
+      - POSTGRES_PASSWORD=nearby
+      - POSTGRES_DB=nearbynearby
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nearby -d nearbynearby"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:

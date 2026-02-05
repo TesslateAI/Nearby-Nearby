@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["../../node_modules/@tiptap/extension-character-count/src/index.ts"],
+  "sourcesContent": ["import { CharacterCount } from '@tiptap/extensions'\n\nexport type { CharacterCountOptions } from '@tiptap/extensions'\nexport { CharacterCount } from '@tiptap/extensions'\n\nexport default CharacterCount\n"],
+  "mappings": ";;;;;;;AAKA,IAAO,gBAAQ;",
+  "names": []
+}

@@ -1,0 +1,58 @@
+/* GenericDetail uses the same styles as POIDetail */
+@import '../../pages/POIDetail.css';
+
+/* Alcohol + Smoking Section */
+.alcohol-smoking {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.alcohol-smoking__section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.alcohol-smoking__header {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1f2937;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 0;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.alcohol-smoking__description {
+  font-size: 14px;
+  color: #374151;
+  line-height: 1.6;
+  margin-top: 8px;
+}
+
+.alcohol-smoking__description p {
+  margin: 0 0 8px 0;
+}
+
+.alcohol-smoking__description p:last-child {
+  margin-bottom: 0;
+}
+
+/* Tags Grid */
+.tags-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tag {
+  font-size: 12px;
+  color: var(--nn-primary, #562556);
+  padding: 6px 12px;
+  background: #f5f3f7;
+  border: 1px solid var(--nn-primary, #562556);
+  border-radius: 16px;
+  white-space: nowrap;
+}

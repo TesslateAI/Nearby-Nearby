@@ -1,0 +1,250 @@
+/* HoursDisplay Component Styles */
+
+.hours-display {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Section styling */
+.hours-display__section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.hours-display__header {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #666;
+  margin: 0;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #eee;
+}
+
+/* Day-by-day hours */
+.hours-display__days {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.hours-display__day-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 0.9rem;
+  padding: 4px 0;
+}
+
+.hours-display__day-row--today {
+  background-color: #f0f9ff;
+  margin: 0 -8px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.hours-display__day-row--modified {
+  color: #0d6efd;
+}
+
+.hours-display__day-label {
+  min-width: 45px;
+  font-weight: 500;
+  color: #333;
+}
+
+.hours-display__day-hours {
+  color: #555;
+  flex: 1;
+}
+
+.hours-display__day-note {
+  font-size: 0.8rem;
+  color: #0d6efd;
+  font-style: italic;
+}
+
+/* General hour notes */
+.hours-display__notes {
+  font-size: 0.9rem;
+  color: #555;
+  line-height: 1.5;
+}
+
+.hours-display__notice {
+  margin: 0 0 8px 0;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+.hours-display__notice--appointment {
+  background-color: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffeeba;
+}
+
+.hours-display__notes-text {
+  color: #666;
+}
+
+.hours-display__notes-text p {
+  margin: 0 0 8px 0;
+}
+
+.hours-display__notes-text p:last-child {
+  margin-bottom: 0;
+}
+
+/* Upcoming holiday hours */
+.hours-display__holidays {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.hours-display__holiday-row {
+  display: grid;
+  grid-template-columns: 40px 1fr auto auto;
+  gap: 8px;
+  align-items: center;
+  font-size: 0.875rem;
+  padding: 6px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.hours-display__holiday-row:last-child {
+  border-bottom: none;
+}
+
+.hours-display__holiday-prefix {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #0d6efd;
+  text-transform: uppercase;
+}
+
+.hours-display__holiday-name {
+  font-weight: 500;
+  color: #333;
+}
+
+.hours-display__holiday-date {
+  font-size: 0.8rem;
+  color: #888;
+  white-space: nowrap;
+}
+
+.hours-display__holiday-status {
+  font-size: 0.8rem;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background-color: #f0f0f0;
+  color: #555;
+  white-space: nowrap;
+}
+
+/* SEE MORE button */
+.hours-display__see-more {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 8px;
+  padding: 6px 0;
+  background: none;
+  border: none;
+  color: #0d9488;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.hours-display__see-more:hover {
+  color: #0f766e;
+}
+
+.hours-display__see-more-icon {
+  transition: transform 0.2s;
+}
+
+.hours-display__see-more-icon--up {
+  transform: rotate(180deg);
+}
+
+/* Appointments section */
+.hours-display__appointments {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.hours-display__appointment-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.hours-display__service-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  background-color: #0d9488;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.1s;
+}
+
+.hours-display__service-btn:hover {
+  background-color: #0f766e;
+  transform: translateY(-1px);
+}
+
+.hours-display__service-btn:active {
+  transform: translateY(0);
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .hours-display__holiday-row {
+    grid-template-columns: 35px 1fr;
+    grid-template-rows: auto auto;
+    gap: 4px 8px;
+  }
+
+  .hours-display__holiday-prefix {
+    grid-row: 1 / 3;
+    align-self: start;
+    padding-top: 2px;
+  }
+
+  .hours-display__holiday-name {
+    grid-column: 2;
+  }
+
+  .hours-display__holiday-date,
+  .hours-display__holiday-status {
+    grid-column: 2;
+    justify-self: start;
+  }
+
+  .hours-display__day-row {
+    font-size: 0.85rem;
+  }
+
+  .hours-display__day-label {
+    min-width: 40px;
+  }
+}

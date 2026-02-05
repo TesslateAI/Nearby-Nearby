@@ -1,0 +1,436 @@
+Category,Subcategory,Feature/Component,Description,Location,Priority,Test Type,Test Method,Notes,Implementation Time,Current Status %
+Authentication,Login Flow,JWT Token Generation,POST /api/auth/login returns JWT token on valid credentials,Admin Backend,P0,AUTO,pytest: POST /api/auth/login returns valid JWT,Fully implemented with bcrypt hashing,,100%
+Authentication,Login Flow,Login Form UI,Email/password form with validation,Admin Frontend,P0,AUTO,"Playwright: fill form, submit, verify redirect",Working with validation,,100%
+Authentication,Login Flow,Token Storage,JWT stored in localStorage with expiration tracking,Admin Frontend,P0,AUTO,Playwright: check localStorage after login,localStorage with expiration tracking,,100%
+Authentication,Login Flow,Auto-redirect on Login,Redirect to dashboard after successful login,Admin Frontend,P0,AUTO,Playwright: verify URL change after login,Redirects to dashboard,,100%
+Authentication,Logout,Token Removal,Clear JWT from storage on logout,Admin Frontend,P0,AUTO,Playwright: verify localStorage cleared on logout,Clears on logout,,100%
+Authentication,Logout,Redirect to Login,Navigate to login page after logout,Admin Frontend,P0,AUTO,Playwright: verify URL after logout,Working,,100%
+Authentication,Session,Token Expiration Check,Validate token expiration before API calls,Admin Frontend,P0,AUTO,"pytest: mock expired token, verify rejection",Validates before API calls,,100%
+Authentication,Session,Auto-logout on 401,Automatically logout when API returns 401,Admin Frontend,P0,AUTO,"Playwright: mock 401 response, verify redirect",Automatically handles,,100%
+Authentication,Session,Get Current User,GET /api/auth/me returns current user info,Admin Backend,P0,AUTO,pytest: GET /api/auth/me with valid token,/api/auth/me endpoint working,,100%
+Authentication,Password,Bcrypt Hashing,Passwords hashed with bcrypt before storage,Admin Backend,P0,AUTO,pytest: verify password hash format,Industry-standard implementation,,100%
+Authentication,Password,Password Reset,Allow users to reset password,Admin Backend,P2,AUTO,pytest: test reset flow when implemented,Not implemented - requires email service,,0%
+Authorization,Roles,Admin Role,Full access to all features,Admin Backend,P0,AUTO,pytest: verify admin can access all endpoints,Fully implemented,,100%
+Authorization,Roles,Editor Role,"Create/update POIs, manage images, no delete",Admin Backend,P0,AUTO,pytest: verify editor permissions,"DB field exists, no endpoint enforcement",,60%
+Authorization,Roles,Viewer Role,Read-only access to all data,Admin Backend,P0,AUTO,pytest: verify viewer is read-only,"DB field exists, no endpoint enforcement",,60%
+Authorization,Permissions,Permission Decorator,require_permission() decorator on endpoints,Admin Backend,P0,AUTO,pytest: test decorator blocks unauthorized,"Basic auth only, no RBAC enforcement",,25%
+Authorization,Permissions,Frontend Role Check,useAuth() hook for permission checks,Admin Frontend,P0,AUTO,Playwright: verify UI elements per role,"useAuth exists, no granular checks",,25%
+Authorization,Permissions,Protected Routes,Routes require authentication to access,Admin Frontend,P0,AUTO,Playwright: verify redirect when not authenticated,Working,,100%
+POI Management,Create,Create POI Endpoint,POST /api/pois/ creates new POI,Admin Backend,P0,AUTO,pytest: POST /api/pois/ with valid data,POST /api/pois/ working,,100%
+POI Management,Create,Create POI Form,Multi-section accordion form for POI creation,Admin Frontend,P0,HYBRID,Playwright: fill form | Manual: verify UX flow,Multi-section form implemented,,90%
+POI Management,Create,Type Selection,"Select POI type (Business, Park, Trail, Event, etc.)",Admin Frontend,P0,AUTO,"Playwright: select each type, verify form changes",9 POI types supported,,100%
+POI Management,Create,Auto-save,Automatically save form changes,Admin Frontend,P1,AUTO,"Playwright: type, wait, verify API call made",Implemented but may cause issues (NN-4),,80%
+POI Management,Read,Get POI by ID,GET /api/pois/{id} returns POI details,Admin Backend,P0,AUTO,pytest: GET /api/pois/{id},Working,,100%
+POI Management,Read,Get POI by Slug,GET /api/pois/by-slug/{slug} returns POI,App Backend,P0,AUTO,pytest: GET /api/pois/by-slug/{slug},Working with redirects,,100%
+POI Management,Read,List POIs (Admin),GET /api/admin/pois/ includes drafts,Admin Backend,P0,AUTO,pytest: verify drafts included in response,Includes drafts,,100%
+POI Management,Read,List POIs (Public),GET /api/pois/ only published POIs,App Backend,P0,AUTO,pytest: verify only published returned,Filters to published only,,100%
+POI Management,Read,POI List Table,"Sortable, searchable table of all POIs",Admin Frontend,P0,HYBRID,Playwright: sort/filter | Manual: verify display,"Sortable, searchable",,100%
+POI Management,Update,Update POI Endpoint,PUT /api/pois/{id} updates POI,Admin Backend,P0,AUTO,pytest: PUT /api/pois/{id},NN-55: HTTP 422 errors reported,,70%
+POI Management,Update,Update POI Form,Pre-populated form with existing data,Admin Frontend,P0,HYBRID,Playwright: edit fields | Manual: verify pre-population,Pre-populated form working,,90%
+POI Management,Update,Partial Updates,Only send changed fields,Admin Frontend,P1,AUTO,pytest: PATCH with subset of fields,Schema validation may be too strict,,70%
+POI Management,Delete,Delete POI Endpoint,DELETE /api/pois/{id} removes POI,Admin Backend,P0,AUTO,pytest: DELETE /api/pois/{id},Working,,100%
+POI Management,Delete,Delete Confirmation,Confirm dialog before deletion,Admin Frontend,P0,AUTO,Playwright: verify modal appears,Dialog implemented,,100%
+POI Management,Publication,Draft Status,POIs created as drafts by default,Admin Backend,P0,AUTO,pytest: verify new POI has draft status,Default status working,,100%
+POI Management,Publication,Publish POI,Change status from draft to published,Admin Backend,P0,AUTO,pytest: verify status change endpoint,Status change working,,100%
+POI Management,Publication,Publication Filter,Public endpoints filter by published only,App Backend,P0,AUTO,pytest: public endpoint excludes drafts,Filters by published,,100%
+POI Management,Publication,Status Badge,Show draft/published status in admin list,Admin Frontend,P0,AUTO,Playwright: verify badge text matches status,Shows in admin list,,100%
+POI Management,Slugs,Auto-generate Slug,Generate slug from name + city,Admin Backend,P0,AUTO,"pytest: create POI, verify slug format",From name + city,,100%
+POI Management,Slugs,Unique Slug Enforcement,Append number if slug exists,Admin Backend,P0,AUTO,"pytest: create duplicate, verify suffix",Appends number if exists,,100%
+POI Management,Slugs,SEO-friendly URLs,Use slugs in public URLs,App Frontend,P0,AUTO,"Playwright: navigate, verify URL pattern","/places/, /parks/, /trails/, /events/",,100%
+POI Types,Business,Business Subtype Table,Separate table for business-specific fields,Database,P0,AUTO,pytest: verify table schema exists,25+ fields in businesses table,,100%
+POI Types,Business,Price Range,"price_range field (e.g., $, $$, $$$)",Admin Backend,P0,AUTO,pytest: save/retrieve price_range,$/$$/$$$/$$$ validated as Literal,,100%
+POI Types,Business,Business Hours,Regular operating hours,Admin Backend,P0,AUTO,Playwright: verify hours section,Shows hours but toggle broken (NN-36),,80%
+POI Types,Business,Business Amenities,"WiFi, parking, restrooms, etc.",Admin Backend,P0,AUTO,pytest: verify amenities fields,"business_amenities, entertainment_options, youth_amenities JSONB",,100%
+POI Types,Business,Business Detail Page,BusinessDetail.jsx component,App Frontend,P0,HYBRID,Playwright: sections exist | Manual: design review,"BusinessDetail.jsx comprehensive - price, hours, WiFi, menu, restrooms",,100%
+POI Types,Business,Key Facilities Display,"Show restrooms, wheelchair, WiFi, pet-friendly",App Frontend,P0,AUTO,Playwright: verify icons render,"Icons working for restrooms, wheelchair, WiFi, pet-friendly",,85%
+POI Types,Park,Park Subtype Table,Separate table for park-specific fields,Database,P0,AUTO,pytest: verify table exists,18+ fields in parks table,,100%
+POI Types,Park,Drone Policy,drones_allowed field,Admin Backend,P1,AUTO,pytest: save/retrieve drone policy,drone_usage_policy field in Park subtype,,100%
+POI Types,Park,Park Facilities,"Playgrounds, pavilions, trails",Admin Backend,P0,AUTO,pytest: verify facilities JSONB,Implemented via facilities JSONB,,100%
+POI Types,Park,Natural Features,"Lakes, forests, fields",Admin Backend,P1,AUTO,pytest: verify array field,natural_features JSONB array working,,100%
+POI Types,Park,Park Detail Page,ParkDetail.jsx component,App Frontend,P0,HYBRID,Playwright: sections | Manual: design,"ParkDetail.jsx - hours, parking, playground. Missing hunting/fishing display",,80%
+POI Types,Park,Playground Info,"Playground type, surface, notes",Admin Backend,P0,AUTO,pytest: verify playground fields,"playground_available, types, surface_types. NN-57: Missing lat/long",,75%
+POI Types,Park,Playground Duplicates,Add multiple playgrounds per park,Admin Backend,P1,AUTO,"Playwright: click add, verify section",NN-57: No duplicate button implemented,,0%
+POI Types,Trail,Trail Subtype Table,Separate table for trail-specific fields,Database,P0,AUTO,pytest: verify table exists,20+ fields in trails table,,100%
+POI Types,Trail,Trail Length,length_miles field,Admin Backend,P0,AUTO,pytest: save/retrieve length,length_text with multi-segment support,,100%
+POI Types,Trail,Trail Difficulty,"Easy, Moderate, Hard",Admin Backend,P0,AUTO,pytest: verify difficulty enum,difficulty with auto-populated difficulty_description,,100%
+POI Types,Trail,Route Type,"Loop, out-and-back, point-to-point",Admin Backend,P0,AUTO,pytest: verify route_type values,"Loop, out-and-back, point-to-point supported",,100%
+POI Types,Trail,Surface Types,"Dirt, gravel, asphalt, etc.",Admin Backend,P0,AUTO,Playwright: verify surfaces,Trail surfaces displayed,,100%
+POI Types,Trail,Trailhead Coordinates,Lat/long for trail start,Admin Backend,P0,AUTO,pytest: verify lat/long fields,trailhead_latitude/longitude fields,,100%
+POI Types,Trail,Trail Exit Coordinates,Lat/long for trail end,Admin Backend,P0,AUTO,pytest: verify lat/long fields,trail_exit_latitude/longitude fields,,100%
+POI Types,Trail,Trailhead Photos,Upload photos of trailhead,Admin Backend,P0,AUTO,"pytest: upload, verify type","NN-57: Need 10 images, currently limited to 1",,50%
+POI Types,Trail,Trail Exit Photos,Upload photos of trail exit,Admin Backend,P0,AUTO,pytest: upload trail_exit,1 max (need 10 per NN-57),,100%
+POI Types,Trail,Trail Detail Page,TrailDetail.jsx component,App Frontend,P0,HYBRID,Playwright: elements | Manual: layout,"TrailDetail.jsx excellent - length, difficulty, surfaces, address",,90%
+POI Types,Trail,Downloadable Maps,PDF map uploads,Admin Backend,P1,AUTO,pytest: upload PDF,"5 max, 50MB each, PDF support",,100%
+POI Types,Event,Event Subtype Table,Separate table for event-specific fields,Database,P0,AUTO,pytest: verify table exists,22+ fields in events table,,100%
+POI Types,Event,Start DateTime,Event start date and time,Admin Backend,P0,AUTO,pytest: verify timestamp saves,start_datetime TIMESTAMP field,,100%
+POI Types,Event,End DateTime,Event end date and time,Admin Backend,P0,AUTO,pytest: verify timestamp saves,end_datetime TIMESTAMP field,,100%
+POI Types,Event,Repeat Pattern,"Recurring event pattern (weekly, monthly)",Admin Backend,P1,AUTO,pytest: verify JSONB pattern,is_repeating boolean + repeat_pattern JSONB,,100%
+POI Types,Event,Organizer Info,"Name, email, phone of organizer",Admin Backend,P0,AUTO,Playwright: verify organizer,Organizer name displayed,,100%
+POI Types,Event,Venue Selection,Link event to venue POI,Admin Backend,P0,AUTO,Playwright: select venue,VenueSelector component exists but incomplete,,80%
+POI Types,Event,Venue Data Inheritance,"Pull address, parking, etc. from venue",Admin Backend,P1,AUTO,pytest: verify venue data,NOT IMPLEMENTED,,0%
+POI Types,Event,Ticket URL,Link to buy tickets,Admin Backend,P0,AUTO,pytest: verify URL saves,ticket_url field working,,100%
+POI Types,Event,Is Free,Boolean flag for free events,Admin Backend,P0,AUTO,pytest: verify boolean,is_free boolean field,,100%
+POI Types,Event,Vendor Management,List of vendors at event,Admin Backend,P1,AUTO,pytest: add vendors,"has_vendors, vendor_types, vendor_fee fields exist. Display incomplete",,80%
+POI Types,Event,Event Detail Page,EventDetail.jsx component,App Frontend,P0,HYBRID,Playwright: sections | Manual: design,"EventDetail.jsx functional but missing vendor info, venue settings, repeat pattern display",,70%
+POI Types,Event,Past Event Exclusion,Hide events after end date in Nearby,App Backend,P0,AUTO,"pytest: create past event, verify filtered",Automatically filters past events in Nearby,,100%
+POI Types,Event,Events Page,List of all events,App Frontend,P0,AUTO,"Playwright: navigate, verify renders",NN-57: Blank white screen - form doesn't render,,0%
+POI Types,Services,Services POI Type,Service provider listings,Admin Backend,P2,AUTO,pytest: create service POI,"Enum defined, no subtype table, no form, uses GenericDetail",,15%
+POI Types,Youth Activities,Youth Activities POI Type,Youth programs and activities,Admin Backend,P2,AUTO,pytest: create youth POI,"Enum + youth_amenities field, no dedicated form/detail",,25%
+POI Types,Jobs,Jobs POI Type,Job listings,Admin Backend,P3,AUTO,pytest: create job POI,"Enum only - no model, form, or detail page",,5%
+POI Types,Volunteer,Volunteer Opportunities Type,Volunteer positions,Admin Backend,P3,AUTO,pytest: create volunteer POI,Enum only - no infrastructure,,5%
+POI Types,Disaster Hubs,Disaster Hubs POI Type,Emergency resources,Admin Backend,P2,AUTO,pytest: create disaster POI,"is_disaster_hub, emergency_protocols fields. No dedicated detail page",,35%
+POI Form,Core Information,Name Field,POI name input,Admin Frontend,P0,AUTO,"Playwright: type, verify saves",Working,,100%
+POI Form,Core Information,Type Selection,POI type dropdown,Admin Frontend,P0,AUTO,"Playwright: select each type, verify form changes",9 POI types supported,,100%
+POI Form,Core Information,Teaser Paragraph,Short description (120 chars),Admin Frontend,P0,AUTO,Playwright: verify char limit,NN-57: Need 120 char limit with live counter,,80%
+POI Form,Core Information,Primary Type,Primary business type selection,Admin Frontend,P0,AUTO,"Playwright: select, verify",Selection working,,100%
+POI Form,Core Information,Listing Type,"Free, Paid, Sponsor, etc.",Admin Frontend,P0,AUTO,Playwright: select each option,Free/Paid/Paid Founding/Sponsor/Community Comped,,100%
+POI Form,Core Information,Lat/Long Accuracy Flag,Mark if coordinates are most accurate,Admin Frontend,P1,AUTO,"Playwright: click, verify state",NN-57: Need 'most accurate' button,,0%
+POI Form,Location,Street Address,Street address input,Admin Frontend,P0,AUTO,Playwright: type address,Working,,100%
+POI Form,Location,City,City input,Admin Frontend,P0,AUTO,Playwright: type/select city,NN-38: Should be dropdown for Chatham County cities,,80%
+POI Form,Location,State,State input,Admin Frontend,P0,AUTO,Playwright: verify default,NN-38: Should default to NC,,80%
+POI Form,Location,Zip Code,Zip code input,Admin Frontend,P0,AUTO,"Playwright: type, verify format",Working,,100%
+POI Form,Location,County,County input,Admin Frontend,P0,AUTO,Playwright: verify default,NN-38: Should default to Chatham,,80%
+POI Form,Location,Coordinates Picker,Map click to set lat/long,Admin Frontend,P0,AUTO,"Playwright: click map, verify coords",Map click to set lat/long working,,100%
+POI Form,Location,Map Zoom Level,Adjust default zoom for easier use,Admin Frontend,P1,MANUAL,Manual: verify zoom is usable,NN-38: Improved but still needs tuning,,70%
+POI Form,Location,Address Autocomplete,Suggest addresses as user types,Admin Frontend,P2,AUTO,"Playwright: type, verify suggestions",NOT IMPLEMENTED,,0%
+POI Form,Location,Front Door Coordinates,Separate lat/long for entrance,Admin Frontend,P0,AUTO,Playwright: verify fields update,Separate lat/long fields working,,100%
+POI Form,Parking,Parking Types,Multi-select parking options,Admin Frontend,P0,AUTO,Playwright: select multiple,Multi-select checkboxes working,,100%
+POI Form,Parking,Parking Notes,Text field for parking details,Admin Frontend,P0,AUTO,"Playwright: type, verify saves",NN-57: Missing on free listings,,70%
+POI Form,Parking,Parking Lat/Long,Coordinates for parking lot,Admin Frontend,P0,AUTO,pytest: verify fields,MISSING field,,0%
+POI Form,Parking,Parking Photos,Upload parking area photos,Admin Frontend,P0,AUTO,pytest: upload parking photo,"5 max, parking type",,100%
+POI Form,Parking,Additional Parking,Add multiple parking locations,Admin Frontend,P1,AUTO,Playwright: click add,NN-57: Goes to white screen when clicked,,0%
+POI Form,Parking,Public Transit Info,Transit access details,Admin Frontend,P1,AUTO,"Playwright: type, verify",NN-57: Missing on free listings,,70%
+POI Form,Parking,Expect to Pay,Parking fee indicator,Admin Frontend,P0,AUTO,Playwright: select option,NN-57: Missing on free listings,,70%
+POI Form,Contact,Phone Number,Primary phone input,Admin Frontend,P0,AUTO,"Playwright: type, verify format",Working,,100%
+POI Form,Contact,Email,Contact email input,Admin Frontend,P0,AUTO,"Playwright: type, verify validation",Working with validation,,100%
+POI Form,Contact,Website,Website URL input,Admin Frontend,P0,AUTO,Playwright: type URL,URL input working,,100%
+POI Form,Social Media,Instagram,Instagram handle/URL,Admin Frontend,P0,AUTO,Playwright: type handle,Working,,100%
+POI Form,Social Media,Facebook,Facebook page URL,Admin Frontend,P0,AUTO,Playwright: type URL,Working,,100%
+POI Form,Social Media,X/Twitter,Twitter/X handle,Admin Frontend,P0,AUTO,Playwright: type handle,Working,,100%
+POI Form,Social Media,TikTok,TikTok handle,Admin Frontend,P1,AUTO,Playwright: type handle,Working,,100%
+POI Form,Social Media,LinkedIn,LinkedIn page URL,Admin Frontend,P1,AUTO,Playwright: type URL,Working,,100%
+POI Form,Categories,Main Category Selector,Select primary category (required),Admin Frontend,P0,AUTO,"Playwright: select, verify",TreeCategorySelector with hierarchy,,100%
+POI Form,Categories,Secondary Categories,Select additional categories,Admin Frontend,P0,AUTO,Playwright: multi-select,Multi-select working,,100%
+POI Form,Categories,Category Tree Display,Hierarchical category picker,Admin Frontend,P0,HYBRID,Playwright: expand | Manual: hierarchy,Hierarchical picker with expand/collapse,,100%
+POI Form,Categories,Type-filtered Categories,Only show categories for POI type,Admin Frontend,P0,AUTO,"Playwright: change type, verify filter",Filters by POI type via applicable_to,,100%
+POI Form,Categories,Business Category Limit,Limit to 1 category for free business,Admin Frontend,P0,AUTO,"Playwright: try >1, verify blocked",NN-57: Free business allows multiple (should be 1),,50%
+POI Form,Hours,Regular Hours Input,Day-by-day hours picker,Admin Frontend,P0,AUTO,Playwright: set hours each day,Day-by-day picker with multiple periods,,100%
+POI Form,Hours,Seasonal Hours,Hours for specific seasons,Admin Frontend,P1,AUTO,"pytest: save, verify","Backend complete, frontend partial",,90%
+POI Form,Hours,Holiday Hours,Special holiday hours,Admin Frontend,P1,AUTO,"pytest: save, verify",Open/closed/modified statuses,,95%
+POI Form,Hours,Recurring Exceptions,Monthly exceptions (3rd Wed closed),Admin Frontend,P2,AUTO,pytest: verify patterns,IMPLEMENTED - 3rd Wednesday patterns work,,100%
+POI Form,Facilities,Public Restrooms Toggle,Are restrooms available?,Admin Frontend,P0,AUTO,"Playwright: toggle, verify",Working,,100%
+POI Form,Facilities,Restroom Options,Restroom type checkboxes,Admin Frontend,P0,AUTO,Playwright: select options,Checkboxes working,,100%
+POI Form,Facilities,Restroom Description,Text field for restroom details,Admin Frontend,P0,AUTO,"Playwright: type, verify",NN-57: Missing field,,0%
+POI Form,Facilities,Restroom Lat/Long,Coordinates for restroom location,Admin Frontend,P0,AUTO,Playwright: enter coords,NN-57: Missing field,,0%
+POI Form,Facilities,Restroom Photos,Upload restroom photos,Admin Frontend,P0,AUTO,pytest: upload restroom photo,"10 max, restroom type",,100%
+POI Form,Facilities,Add Another Restroom,Duplicate restroom section,Admin Frontend,P1,AUTO,Playwright: click add,Parks only - need for Trails/Events,,50%
+POI Form,Facilities,Wheelchair Accessible,Yes/No/Unknown selector,Admin Frontend,P0,AUTO,Playwright: select,Working,,100%
+POI Form,Facilities,Accessibility Details,Text field for details,Admin Frontend,P0,AUTO,Playwright: type,Text field working,,100%
+POI Form,Facilities,WiFi Available,Free WiFi checkbox,Admin Frontend,P0,AUTO,Playwright: toggle,Working,,100%
+POI Form,Facilities,Pet Policy,Pet-friendly options,Admin Frontend,P0,AUTO,Playwright: select options,Working with options,,100%
+POI Form,Facilities,Alcohol Available,Yes/No selector,Admin Frontend,P0,AUTO,Playwright: select,Working,,100%
+POI Form,Facilities,Alcohol Policy Details,Text for alcohol policy,Admin Frontend,P0,AUTO,Playwright: type,NN-57: Missing description paragraph,,0%
+POI Form,Outdoor Features,Drone Usage Policy,Drone rules text field,Admin Frontend,P1,AUTO,Playwright: type policy,Working for events/parks/trails,,100%
+POI Form,Outdoor Features,Fishing Info,Fishing availability and details,Admin Frontend,P1,AUTO,Playwright: select options,"fishing_allowed, fishing_types working",,100%
+POI Form,Outdoor Features,Hunting Info,Hunting availability and details,Admin Frontend,P1,AUTO,Playwright: select options,"hunting_allowed, hunting_types working",,100%
+POI Form,Rentals,Rentals Available,Toggle for rental availability,Admin Frontend,P1,AUTO,Playwright: toggle,Toggle with conditional fields,,100%
+POI Form,Rentals,Rental Description,Text field for rental details,Admin Frontend,P1,AUTO,Playwright: type,Rich text working,,100%
+POI Form,Rentals,Rental Link,URL for booking,Admin Frontend,P1,AUTO,Playwright: type URL,URL field working,,100%
+POI Form,Rentals,Rental Photos,Upload rental item photos,Admin Frontend,P1,AUTO,pytest: upload rental photo,"10 max, rental type",,100%
+POI Form,Rentals,Rental Pricing Box,Pricing input section,Admin Frontend,P3,AUTO,Playwright: verify removed,NN-57: Remove - not used,,100%
+POI Form,Community,Community Connections,Links to related content,Admin Frontend,P1,AUTO,Playwright: add links,Links working,,80%
+POI Form,Community,Article Links,Links with custom titles,Admin Frontend,P1,AUTO,Playwright: add with title,"NN-57: Need custom title field for DoorDash, Calendly",,70%
+POI Form,Community,Community Impact,Community involvement section,Admin Frontend,P2,AUTO,Playwright: type,NN-57: Remove from free listings,,80%
+POI Form,Corporate,Comments Restrictions,Restrictions on public comments,Admin Frontend,P2,AUTO,Playwright: click radio,NN-57: Checkbox not clickable - Radio.Group styling issue,,0%
+POI Form,Corporate,Social Media Restrictions,Platforms that can't be used,Admin Frontend,P2,AUTO,Playwright: click checkboxes,NN-57: Checkbox not clickable,,0%
+POI Form,Corporate,Pre-approval Required,Approval before featuring,Admin Frontend,P2,AUTO,Playwright: click radio,NN-57: Checkbox not clickable,,0%
+POI Form,Corporate,Branding Requirements,Required/avoided language,Admin Frontend,P2,AUTO,Playwright: click radio,NN-57: Checkbox not clickable,,0%
+POI Form,Misc,Long Description,Rich text editor for full description,Admin Frontend,P0,AUTO,Playwright: type rich text,Rich text editor working,,100%
+POI Form,Misc,Internal Notes,Admin-only notes,Admin Frontend,P1,AUTO,Playwright: type notes,Working,,100%
+POI Form,Misc,History Paragraph,Historical information,Admin Frontend,P2,AUTO,Playwright: type history,Working for paid listings,,100%
+POI Form,Misc,Verified Flag,Mark as verified by team,Admin Frontend,P0,AUTO,Playwright: toggle,Working,,100%
+POI Form,Misc,Disaster Hub Flag,Mark as disaster resource,Admin Frontend,P2,AUTO,Playwright: toggle,Working,,100%
+Categories,Structure,Hierarchical Tree,Categories with parent-child relationships,Database,P0,AUTO,"pytest: create nested, verify structure",Unlimited nesting with self-referencing parent_id,,100%
+Categories,Structure,Unlimited Nesting,Any depth of category nesting,Admin Backend,P0,AUTO,pytest: create 5+ levels,"No depth limit, proper tree building",,100%
+Categories,Structure,POI Type Filtering,applicable_types array per category,Admin Backend,P0,AUTO,pytest: filter by type,applicable_to ARRAY with .contains() query,,100%
+Categories,Structure,Slug Generation,Auto-generate category slugs,Admin Backend,P0,AUTO,"pytest: create, verify slug",Auto-generated from name,,100%
+Categories,API,Get Category Tree,GET /api/categories/tree endpoint,Admin Backend,P0,AUTO,pytest: GET /api/categories/tree,GET /api/categories/tree returns nested structure,,100%
+Categories,API,Get by POI Type,GET /api/categories/by-poi-type/{type},Admin Backend,P0,AUTO,pytest: GET by-poi-type endpoint,GET /api/categories/by-poi-type/{type} working,,100%
+Categories,API,Create Category,POST /api/categories/ endpoint,Admin Backend,P0,AUTO,pytest: POST /api/categories/,POST /api/categories/ with validation,,100%
+Categories,API,Update Category,PUT /api/categories/{id} endpoint,Admin Backend,P0,AUTO,pytest: PUT endpoint,PUT /api/categories/{id} working,,100%
+Categories,API,Delete Category,DELETE /api/categories/{id} endpoint,Admin Backend,P0,AUTO,"pytest: DELETE, verify children blocked",Blocks if children exist (no reparenting),,100%
+Categories,API,Circular Reference Prevention,Prevent category from being its own parent,Admin Backend,P0,AUTO,"pytest: try self-parent, verify error",NOT IMPLEMENTED - major gap. No is_descendant() check,,20%
+Categories,Frontend,Category List Page,Admin page showing all categories,Admin Frontend,P0,AUTO,"Playwright: navigate, verify table",Admin page with hierarchical display,,100%
+Categories,Frontend,Category Selector,Hierarchical picker in POI form,Admin Frontend,P0,HYBRID,Playwright: expand | Manual: usability,TreeCategorySelector with expand/collapse,,100%
+Categories,Frontend,Main Category Badge,Indicate main vs secondary,Admin Frontend,P0,AUTO,Playwright: verify badge,is_main flag in poi_category_association,,100%
+Images,Storage,S3 Storage,Store images in AWS S3,Admin Backend,P0,AUTO,"pytest: upload, verify S3 URL",boto3 integration with CloudFront support,,100%
+Images,Storage,MinIO (Dev),S3-compatible local storage,Infrastructure,P0,AUTO,pytest: upload to MinIO,S3-compatible with auto-bucket creation,,100%
+Images,Storage,Database Storage Deprecated,No longer store binary in DB,Admin Backend,P0,AUTO,pytest: verify no binary in DB,S3-only storage now,,100%
+Images,Types,Main Image,Primary featured image,Admin Backend,P0,AUTO,"pytest: upload, verify limit=1","1 max, main type",,100%
+Images,Types,Gallery Images,Additional photo gallery,Admin Backend,P0,AUTO,"pytest: upload 20, verify limit","20 max, gallery type",,100%
+Images,Types,Entry Photos,Entrance/storefront photos,Admin Backend,P0,AUTO,pytest: upload entry photo,"3 max, entry type",,100%
+Images,Types,Parking Photos,Parking area photos,Admin Backend,P0,AUTO,pytest: upload parking photo,"5 max, parking type",,100%
+Images,Types,Restroom Photos,Restroom photos,Admin Backend,P0,AUTO,pytest: upload restroom photo,"10 max, restroom type",,100%
+Images,Types,Rental Photos,Rental equipment photos,Admin Backend,P1,AUTO,pytest: upload rental photo,"10 max, rental type",,100%
+Images,Types,Playground Photos,Playground photos,Admin Backend,P1,AUTO,pytest: upload playground photo,"10 max, playground type",,100%
+Images,Types,Menu Photos,Menu images,Admin Backend,P0,AUTO,pytest: upload menu photo,"10 max, menu type",,100%
+Images,Types,Trail Head Photos,Trailhead location photos,Admin Backend,P0,AUTO,pytest: upload trail_head,1 max (need 10 per NN-57),,100%
+Images,Types,Trail Exit Photos,Trail exit location photos,Admin Backend,P0,AUTO,pytest: upload trail_exit,1 max (need 10 per NN-57),,100%
+Images,Types,Map Images,Map graphics,Admin Backend,P1,AUTO,pytest: upload map image,"5 max, map type",,100%
+Images,Types,Downloadable Maps,PDF maps (20MB max),Admin Backend,P1,AUTO,pytest: upload PDF,"5 max, 50MB each, PDF support",,100%
+Images,Variants,Original Size,Full resolution upload,Admin Backend,P0,AUTO,pytest: verify dimensions,Preserved on upload,,100%
+Images,Variants,XLarge (1920x1080),Hero image size,Admin Backend,P0,AUTO,pytest: verify variant,Auto-generated via PIL,,100%
+Images,Variants,Large (1200x800),Detail page size,Admin Backend,P0,AUTO,pytest: verify variant,Auto-generated,,100%
+Images,Variants,Medium (600x400),Card/list size,Admin Backend,P0,AUTO,pytest: verify variant,Auto-generated,,100%
+Images,Variants,Thumbnail (200x200),Grid preview size,Admin Backend,P0,AUTO,pytest: verify thumbnail,Auto-generated,,100%
+Images,Variants,Auto-generation,Create variants on upload,Admin Backend,P0,AUTO,"pytest: upload, verify all variants","PIL LANCZOS resampling, per-type variants",,100%
+Images,Upload,Single Upload,POST /api/images/upload/{poi_id},Admin Backend,P0,AUTO,pytest: POST single file,POST /api/images/upload/{poi_id},,100%
+Images,Upload,Bulk Upload,POST /api/images/bulk-upload/{poi_id},Admin Backend,P0,AUTO,pytest: POST multiple files,POST /api/images/upload-multiple/{poi_id},,100%
+Images,Upload,Drag-and-Drop,Drag files to upload,Admin Frontend,P0,AUTO,Playwright: simulate drop,Mantine Dropzone with progress tracking,,100%
+Images,Upload,File Size Limit,10MB max (20MB for PDFs),Admin Backend,P0,AUTO,"pytest: upload >10MB, verify rejection",Per-type limits (5MB-50MB),,100%
+Images,Upload,Format Validation,"JPEG, PNG, WebP, PDF only",Admin Backend,P0,AUTO,"pytest: upload .exe, verify rejection","MIME type checking for JPEG, PNG, WebP, PDF",,100%
+Images,Management,Reorder Images,Drag to reorder gallery,Admin Frontend,P0,AUTO,Playwright: drag reorder,@hello-pangea/dnd drag reordering,,100%
+Images,Management,Alt Text,Add alt text for accessibility,Admin Frontend,P0,AUTO,"Playwright: edit, verify saves",Inline editing with debounced save,,100%
+Images,Management,Captions,Add captions to images,Admin Frontend,P1,AUTO,"Playwright: edit, verify saves",Inline editing with debounced save,,100%
+Images,Management,Delete Image,Remove image from POI,Admin Frontend,P0,AUTO,"Playwright: delete, verify S3 cleanup",S3 cleanup on deletion,,100%
+Attributes,Types,Text Attribute,Single line text input,Admin Backend,P0,AUTO,pytest: create text attribute,"Only categories implemented, not field input types",,15%
+Attributes,Types,Textarea Attribute,Multi-line text input,Admin Backend,P0,AUTO,pytest: create textarea,"Categories only, not field types",,15%
+Attributes,Types,Number Attribute,Numeric input with min/max,Admin Backend,P0,AUTO,pytest: create number with min/max,Categories only,,15%
+Attributes,Types,Select Attribute,Single choice dropdown,Admin Backend,P0,AUTO,pytest: create select,Categories only,,15%
+Attributes,Types,Multi-select Attribute,Multiple choice checkboxes,Admin Backend,P0,AUTO,pytest: create multi-select,Categories only,,15%
+Attributes,Types,Checkbox Attribute,Boolean toggle,Admin Backend,P0,AUTO,pytest: create checkbox,Categories only,,15%
+Attributes,Types,Date Attribute,Date picker input,Admin Backend,P0,AUTO,pytest: create date,Categories only,,15%
+Attributes,Types,Time Attribute,Time picker input,Admin Backend,P0,AUTO,pytest: create time,Categories only,,15%
+Attributes,Types,URL Attribute,URL input with validation,Admin Backend,P0,AUTO,pytest: create URL,Categories only,,15%
+Attributes,Types,Email Attribute,Email input with validation,Admin Backend,P0,AUTO,pytest: create email,Categories only,,15%
+Attributes,Config,POI Type Filtering,Limit attributes to POI types,Admin Backend,P0,AUTO,pytest: filter by type,applicable_to ARRAY with .contains() query,,100%
+Attributes,Config,Required Flag,Mark attribute as required,Admin Backend,P0,AUTO,"pytest: mark required, verify validation",Not in database model,,0%
+Attributes,Config,Default Value,Set default value,Admin Backend,P1,AUTO,"pytest: set default, verify applied",Not implemented,,0%
+Attributes,Config,Help Text,Display help text to users,Admin Backend,P1,AUTO,Playwright: verify help displays,Not implemented,,0%
+Attributes,Config,Display Order,Control attribute order,Admin Backend,P1,AUTO,"pytest: set order, verify sorting",sort_order field working,,100%
+Attributes,Frontend,Dynamic Form Rendering,Render attributes based on config,Admin Frontend,P0,HYBRID,Playwright: fields | Manual: correct type,DynamicAttributeForm renders checkboxes only,,50%
+Attributes,Frontend,Validation,Client-side validation per type,Admin Frontend,P0,AUTO,"pytest: submit invalid, verify error","Basic presence only, no type-specific validation",,30%
+Relationships,Types,Event-Venue,Link event to venue location,Admin Backend,P0,AUTO,pytest: create event-venue,venue relationship type fully implemented,,100%
+Relationships,Types,Event-Vendor,Link event to vendor businesses,Admin Backend,P1,AUTO,pytest: create event-vendor,vendor relationship type working,,100%
+Relationships,Types,Event-Sponsor,Link event to sponsors,Admin Backend,P2,AUTO,pytest: create event-sponsor,sponsor relationship type working,,100%
+Relationships,Types,Trail-in-Park,Link trail to containing park,Admin Backend,P0,AUTO,pytest: create trail-in-park,trail_in_park type with strict validation,,100%
+Relationships,Types,Service Provider,Link service to POI,Admin Backend,P2,AUTO,pytest: create service provider,service_provider bidirectional working,,100%
+Relationships,Types,Related POIs,Generic relation between POIs,Admin Backend,P1,AUTO,pytest: create related link,related type for generic connections,,100%
+Relationships,API,Create Relationship,POST /api/relationships/,Admin Backend,P0,AUTO,pytest: POST /api/relationships/,POST /api/relationships/ with validation,,100%
+Relationships,API,Get POI Relationships,GET /api/relationships/{poi_id},Admin Backend,P0,AUTO,pytest: GET endpoint,Returns both outgoing and incoming,,100%
+Relationships,API,Delete Relationship,DELETE /api/relationships/...,Admin Backend,P0,AUTO,pytest: DELETE,DELETE endpoint working,,100%
+Relationships,Frontend,Relationship Manager,UI to add/remove relationships,Admin Frontend,P0,AUTO,"Playwright: open modal, add",UI modal for add/remove with color-coded badges,,100%
+Relationships,Frontend,POI Search for Linking,Search POIs to create link,Admin Frontend,P0,AUTO,"Playwright: search, select",RelationshipSearch component working,,100%
+Relationships,Frontend,Display Relationships,Show linked POIs on detail page,App Frontend,P1,AUTO,Playwright: verify on detail page,NN-40: NOT shown on public detail pages,,0%
+Search,Keyword,pg_trgm Fuzzy Search,Trigram-based fuzzy matching,App Backend,P0,AUTO,pytest: 'coffe' finds 'coffee',"Extension working, 'coffe' finds 'coffee'",,100%
+Search,Keyword,Search Endpoint,GET /api/pois/search?q=...,App Backend,P0,AUTO,pytest: GET /api/pois/search,GET /api/pois/search?q=...,,100%
+Search,Keyword,Similarity Threshold,0.3 minimum similarity,App Backend,P0,AUTO,pytest: test threshold,0.3 minimum similarity configured,,100%
+Search,Keyword,Name Weighting,Name matches weighted 2x,App Backend,P0,AUTO,pytest: verify name ranks higher,Name matches weighted 2x,,100%
+Search,Semantic,Embedding Model,michaelfeil/embeddinggemma-300m (~1GB),App Backend,P0,AUTO,pytest: verify model loads,"michaelfeil/embeddinggemma-300m ~1GB, loads on startup",,90%
+Search,Semantic,Vector Storage,pgvector extension for embeddings,Database,P0,AUTO,pytest: verify column exists (prod),"pgvector on prod, NOT on local dev",,65%
+Search,Semantic,Semantic Endpoint,GET /api/pois/semantic-search?q=...,App Backend,P0,AUTO,pytest: GET semantic-search,"GET /api/pois/semantic-search, falls back to keyword",,90%
+Search,Semantic,Natural Language,Understand queries like 'dog friendly cafe',App Backend,P0,HYBRID,pytest: query | Manual: relevance,Understands 'dog friendly cafe' intent,,90%
+Search,Semantic,Fallback to Keyword,Use keyword if embeddings unavailable,App Backend,P0,AUTO,"pytest: disable vector, verify fallback",Graceful degradation when embeddings unavailable,,100%
+Search,Hybrid,Combined Search,30% keyword + 70% semantic,App Backend,P0,AUTO,pytest: verify hybrid scoring,30% keyword + 70% semantic working,,100%
+Search,Hybrid,Configurable Weights,Adjust keyword/semantic balance,App Backend,P1,AUTO,pytest: change weights,Hardcoded but functioning,,80%
+Search,Hybrid,Hybrid Endpoint,GET /api/pois/hybrid-search?q=...,App Backend,P0,AUTO,pytest: GET hybrid-search,GET /api/pois/hybrid-search working,,100%
+Search,Frontend,Search Bar Component,SearchBar.jsx with input,App Frontend,P0,AUTO,"Playwright: type, verify dropdown",SearchBar.jsx with full functionality,,100%
+Search,Frontend,Debounced Input,300ms delay before API call,App Frontend,P0,AUTO,"Playwright: type fast, verify single call",300ms delay before API call,,100%
+Search,Frontend,Search Dropdown,Results list with keyboard nav,App Frontend,P0,AUTO,Playwright: verify results,Results list with keyboard navigation,,100%
+Search,Frontend,Keyboard Navigation,"Arrow keys, Enter, Escape",App Frontend,P0,AUTO,"Playwright: arrow, enter","Arrow keys, Enter, Escape all working",,100%
+Search,Frontend,Result Highlighting,Highlight selected result,App Frontend,P0,AUTO,"Playwright: arrow, verify highlight",Selected result highlighted,,100%
+Nearby,Core,Nearby API Endpoint,GET /api/pois/{poi_id}/nearby,App Backend,P0,AUTO,pytest: GET /api/pois/{id}/nearby,GET /api/pois/{id}/nearby?radius_miles=,,100%
+Nearby,Core,Distance Calculation,PostGIS ST_DWithin/ST_Distance,App Backend,P0,AUTO,pytest: verify distance accuracy,PostGIS ST_DWithin/ST_Distance in meters,,100%
+Nearby,Core,Miles to Meters,Convert miles to meters for PostGIS,App Backend,P0,AUTO,pytest: verify conversion,Conversion working (1609.34m/mile),,100%
+Nearby,Core,Sort by Distance,Return nearest first,App Backend,P0,AUTO,pytest: verify ascending order,Returns nearest first,,100%
+Nearby,Filters,Radius Dropdown,"1, 3, 5, 10, 15 miles",App Frontend,P0,AUTO,"Playwright: select, verify results","1, 3, 5, 10, 15 miles options",,100%
+Nearby,Filters,Type Filter Pills,"All, Businesses, Events, Parks, Trails",App Frontend,P0,AUTO,"Playwright: click, verify filter","All, Businesses, Events, Parks, Trails with icons",,100%
+Nearby,Filters,Youth Events Filter,Filter for youth activities,App Frontend,P1,AUTO,Playwright: click Youth,Filters by category names containing youth/kids/family,,100%
+Nearby,Filters,Date Presets,"Today, Tomorrow, This Weekend",App Frontend,P0,AUTO,Playwright: select Today,"Today, Tomorrow, This Weekend working",,100%
+Nearby,Filters,Custom Date Picker,Select specific date,App Frontend,P0,AUTO,Playwright: pick date,"Calendar picker, no manual entry",,100%
+Nearby,Filters,Search Within Nearby,Hybrid search filtered to nearby,App Frontend,P0,AUTO,"Playwright: search, verify filtered",Hybrid search filtered to nearby POI IDs,,100%
+Nearby,Filters,Clear Filters Button,Reset all filters,App Frontend,P0,AUTO,"Playwright: click, verify reset",Reset all filters working,,100%
+Nearby,Map,Leaflet Map,Map showing nearby POIs,App Frontend,P0,AUTO,Playwright: verify map renders,React-Leaflet MapContainer working,,100%
+Nearby,Map,Carto Voyager Tiles,"Warm, MapQuest-like colors",App Frontend,P0,MANUAL,Manual: verify tile appearance,"Warm MapQuest-like colors, accessible",,100%
+Nearby,Map,Numbered Markers,Purple circles with numbers,App Frontend,P0,AUTO,Playwright: verify numbers,SVG-based with dynamic creation,,100%
+Nearby,Map,Current POI Marker,Gold/yellow circle for current,App Frontend,P0,AUTO,Playwright: verify gold marker,Gold/yellow circle (#F4C542) with white center,,100%
+Nearby,Map,Auto-fit Bounds,Zoom to show all markers,App Frontend,P0,AUTO,Playwright: verify bounds,Radius-based zoom levels with padding,,95%
+Nearby,Map,Marker Click Highlight,Click marker to highlight card,App Frontend,P0,AUTO,"Playwright: click, verify highlight","Click marker → highlight card, 3s timeout",,100%
+Nearby,Map,Card Click Pan,Click card to highlight marker,App Frontend,P0,AUTO,Playwright: click card,Click card → highlight marker,,100%
+Nearby,Cards,NearbyCard Component,Individual POI card in list,App Frontend,P0,AUTO,Playwright: verify elements,"Distance, hours, amenities, action buttons",,100%
+Nearby,Cards,Distance Display,Show miles from current POI,App Frontend,P0,AUTO,Playwright: verify distance,Miles or feet based on distance,,100%
+Nearby,Cards,Hours Display,Show hours for selected date,App Frontend,P0,AUTO,Playwright: verify hours,Shows hours but no (Modified) override labels,,75%
+Nearby,Cards,Category Display,Show primary category,App Frontend,P0,AUTO,Playwright: verify category,Primary category shown,,100%
+Nearby,Cards,Amenity Icons,"Restrooms, wheelchair, WiFi, pets",App Frontend,P0,AUTO,Playwright: verify icons,"Restrooms, wheelchair, WiFi, pet-friendly icons",,100%
+Nearby,Cards,Trail Info,Length and difficulty for trails,App Frontend,P0,AUTO,Playwright: verify length/difficulty,Length + difficulty rating displayed,,100%
+Nearby,Cards,Event Info,Date for events,App Frontend,P0,AUTO,Playwright: verify date,Event date displayed,,100%
+Nearby,Cards,Park Info,Park type for parks,App Frontend,P0,AUTO,Playwright: verify type,Park type displayed,,100%
+Nearby,Actions,Directions Modal,Choose navigation app,App Frontend,P0,AUTO,"Playwright: click, verify modal",NN-31: Works but styling needs updates,,90%
+Nearby,Actions,Google Maps Link,Open in Google Maps,App Frontend,P0,AUTO,Playwright: verify URL format,Opens with correct coordinates,,100%
+Nearby,Actions,Apple Maps Link,Open in Apple Maps,App Frontend,P0,AUTO,Playwright: verify URL format,Working,,100%
+Nearby,Actions,Waze Link,Open in Waze,App Frontend,P0,AUTO,Playwright: verify URL format,Working,,100%
+Nearby,Actions,Copy Address,Copy address to clipboard,App Frontend,P0,AUTO,"Playwright: click, verify full address","Only copying city, not full address",,0%
+Nearby,Actions,Copy Lat/Long,Copy coordinates to clipboard,App Frontend,P0,AUTO,"Playwright: click, verify clipboard","Fixed - was showing null, now uses front_door coords",,100%
+Nearby,Pagination,Page Navigation,Next/previous page buttons,App Frontend,P0,AUTO,Playwright: click next,Next/prev with page numbers,,100%
+Nearby,Pagination,Items Per Page,6 items per page default,App Frontend,P0,AUTO,Playwright: count items,6 items default,,100%
+Nearby,Mobile,Touch Targets,44px+ for accessibility,App Frontend,P0,MANUAL,Manual: verify 44px+ on mobile,44px+ WCAG compliant,,100%
+Nearby,Mobile,Horizontal Scroll Pills,Swipe filter buttons,App Frontend,P0,MANUAL,Manual: test swipe on mobile,Swipe on mobile with hidden scrollbar,,100%
+Nearby,Mobile,Icon-only Mode,Icons without text on small screens,App Frontend,P0,AUTO,Playwright: resize <480px,Icons only on <480px screens,,100%
+Nearby,Mobile,Responsive Breakpoints,"768px, 480px, 360px",App Frontend,P0,AUTO,"Playwright: resize, verify layout","768px, 480px, 360px handled",,100%
+Detail Pages,Routing,Smart Router,POIDetail.jsx dispatches to type-specific,App Frontend,P0,AUTO,"Playwright: navigate, verify component",POIDetail.jsx dispatches to type-specific components,,100%
+Detail Pages,Routing,Slug-based URLs,"/places/, /parks/, /trails/, /events/",App Frontend,P0,AUTO,Playwright: verify URL pattern,"/places/, /parks/, /trails/, /events/ working",,100%
+Detail Pages,Routing,UUID Fallback,/poi/{uuid} redirects to slug URL,App Frontend,P0,AUTO,"Playwright: navigate UUID, verify redirect","Client-side redirect via history.replaceState, not HTTP 301",,85%
+Detail Pages,Business,BusinessDetail Page,Full business detail view,App Frontend,P0,HYBRID,Playwright: sections | Manual: design,"Comprehensive - price, hours, amenities, menu, contact",,90%
+Detail Pages,Business,Price Range Display,"$, $$, $$$ indicator",App Frontend,P0,AUTO,Playwright: verify price shown,$/$$/$$$ indicator working,,100%
+Detail Pages,Business,Business Hours,Show weekly hours with toggle,App Frontend,P0,AUTO,Playwright: verify hours section,Shows hours but toggle broken (NN-36),,80%
+Detail Pages,Business,Contact Info,"Phone, email, website",App Frontend,P0,AUTO,Playwright: verify phone/email/website,"Phone, email, website displayed",,100%
+Detail Pages,Business,Social Links,"Instagram, Facebook, X, etc.",App Frontend,P0,AUTO,Playwright: verify icons/links,All platforms with icons,,100%
+Detail Pages,Park,ParkDetail Page,Full park detail view,App Frontend,P0,HYBRID,Playwright: sections | Manual: design,"Hours, parking, playground. Missing hunting/fishing",,85%
+Detail Pages,Park,Park Type Display,"State park, local park, etc.",App Frontend,P0,AUTO,Playwright: verify type,"State park, local park, etc.",,100%
+Detail Pages,Park,Facilities List,"Playgrounds, pavilions, etc.",App Frontend,P0,AUTO,Playwright: verify facilities,Displays park facilities,,100%
+Detail Pages,Trail,TrailDetail Page,Full trail detail view,App Frontend,P0,HYBRID,Playwright: sections | Manual: design,"Excellent - length, difficulty, surfaces, trailhead",,92%
+Detail Pages,Trail,Length Display,Miles with icon,App Frontend,P0,AUTO,Playwright: verify length,Miles with icon,,100%
+Detail Pages,Trail,Difficulty Badge,Easy/Moderate/Hard,App Frontend,P0,AUTO,Playwright: verify badge,Easy/Moderate/Hard badge,,100%
+Detail Pages,Trail,Surface Types,"Dirt, gravel, paved, etc.",App Frontend,P0,AUTO,Playwright: verify surfaces,Trail surfaces displayed,,100%
+Detail Pages,Event,EventDetail Page,Full event detail view,App Frontend,P0,HYBRID,Playwright: sections | Manual: design,"Good but missing vendor info, repeat pattern",,88%
+Detail Pages,Event,Date/Time Display,Event date and time,App Frontend,P0,AUTO,Playwright: verify date/time,Event date/time shown,,100%
+Detail Pages,Event,Status Indicator,"Upcoming, happening now, past",App Frontend,P0,AUTO,Playwright: verify status,Upcoming/happening/past,,100%
+Detail Pages,Event,Organizer Info,Event organizer details,App Frontend,P0,AUTO,Playwright: verify organizer,Organizer name displayed,,100%
+Detail Pages,Event,Ticket Link,Button to buy tickets,App Frontend,P0,AUTO,Playwright: verify button,Button to buy tickets,,100%
+Detail Pages,Common,Photo Gallery,Display all POI images,App Frontend,P0,AUTO,Playwright: verify images,Grid display with first 8 images,,100%
+Detail Pages,Common,Photo Lightbox,Full-screen image viewer,App Frontend,P0,AUTO,"Playwright: click, verify lightbox",Working but some type pages have broken lightbox,,95%
+Detail Pages,Common,Directions Button,Open in maps app,App Frontend,P0,AUTO,"Playwright: click, verify maps",Opens Google Maps with coordinates,,100%
+Detail Pages,Common,Share Button,Share via social/email,App Frontend,P0,AUTO,"Playwright: click, verify menu","NN-38: Only 'Link Copied' showing, other options missing",,40%
+Detail Pages,Common,Copy Lat/Long,Copy coordinates,App Frontend,P0,AUTO,"Playwright: click, verify clipboard","Fixed - was showing null, now uses front_door coords",,100%
+Detail Pages,Common,Verified Badge,Show verified status,App Frontend,P0,AUTO,"Playwright: hover, verify popup",NN-48: Badge shows but popup not showing,,70%
+Detail Pages,Common,Nearby Section,Embedded nearby feature,App Frontend,P0,AUTO,Playwright: verify section renders,Embedded NearbySection component,,100%
+Detail Pages,Common,Amenity Display,Icons for facilities,App Frontend,P0,AUTO,Playwright: verify icons,Icons for facilities working,,100%
+Maps,Library,React-Leaflet,Leaflet wrapper for React,App Frontend,P0,AUTO,Playwright: verify map initializes,Fully integrated with MapContainer,,100%
+Maps,Tiles,Carto Voyager,"Warm, colorful map tiles",App Frontend,P0,MANUAL,Manual: verify tile appearance,Accessible warm color tiles,,100%
+Maps,Tiles,Parks Green,Parks shown in green,App Frontend,P1,MANUAL,Manual: verify parks green,NN-50: Not implemented - parks not green on map,,0%
+Maps,Tiles,Water Blue,Water shown in blue,App Frontend,P1,MANUAL,Manual: verify water blue,NN-50: Not implemented,,0%
+Maps,Tiles,County Borders,Show Chatham County border,App Frontend,P2,MANUAL,Manual: verify borders visible,NN-50: Not implemented,,0%
+Maps,Markers,Numbered Markers,Purple circles with numbers,App Frontend,P0,AUTO,Playwright: verify numbers,SVG-based with dynamic creation,,100%
+Maps,Markers,Current Location,Gold marker for current POI,App Frontend,P0,AUTO,Playwright: verify gold marker,Gold marker with white center,,100%
+Maps,Markers,Marker Popups,Info popup on click,App Frontend,P0,AUTO,"Playwright: click, verify popup",NN-28: Need better card list connection,,80%
+Maps,Interaction,Click to Set Location,Admin map for coordinates,Admin Frontend,P0,AUTO,"Playwright: click, verify coords",Admin LocationMap working,,100%
+Maps,Interaction,Auto-fit Bounds,Zoom to show all markers,App Frontend,P0,AUTO,Playwright: verify bounds,Radius-based zoom levels with padding,,95%
+Maps,Interaction,Zoom Controls,Plus/minus buttons,App Frontend,P0,AUTO,"Playwright: click +/-, verify zoom",Plus/minus buttons working,,100%
+SEO,Meta Tags,Dynamic Title,Page title from POI name,App Frontend,P0,AUTO,Playwright: verify <title>,SEO component exists but not used in specialized detail pages,,60%
+SEO,Meta Tags,Description,Meta description from teaser,App Frontend,P0,AUTO,Playwright: verify meta description,'No Ads. No Clutter.' text,,100%
+SEO,Meta Tags,Canonical URL,Canonical link tag,App Frontend,P0,AUTO,Playwright: verify canonical link,Implemented in SEO component,,100%
+SEO,Open Graph,og:title,Title for social shares,App Frontend,P0,AUTO,Playwright: verify og:title meta,"Not used in BusinessDetail, EventDetail, etc.",,50%
+SEO,Open Graph,og:description,Description for social,App Frontend,P0,AUTO,Playwright: verify og:description,Not used in specialized pages,,50%
+SEO,Open Graph,og:image,Image for social preview,App Frontend,P0,AUTO,Playwright: verify og:image,Not used in specialized pages,,50%
+SEO,Open Graph,og:type,place/event type,App Frontend,P0,AUTO,Playwright: verify og:type,Not used in specialized pages,,50%
+SEO,Twitter,twitter:card,summary_large_image,App Frontend,P0,AUTO,Playwright: verify twitter:card,In SEO component,,60%
+SEO,Twitter,twitter:title,Title for Twitter,App Frontend,P0,AUTO,Playwright: verify twitter:title,In SEO component,,60%
+SEO,Twitter,twitter:description,Description for Twitter,App Frontend,P0,AUTO,Playwright: verify twitter:description,In SEO component,,60%
+SEO,Structured Data,LocalBusiness JSON-LD,Schema.org LocalBusiness,App Frontend,P0,AUTO,Playwright: parse JSON-LD,"Comprehensive schema with hours, geo, amenities",,95%
+SEO,Structured Data,Event JSON-LD,Schema.org Event,App Frontend,P0,AUTO,Playwright: parse Event schema,"Full Event schema with organizer, offers, location",,95%
+SEO,Structured Data,GeoCoordinates,Lat/long in structured data,App Frontend,P0,AUTO,Playwright: verify coords,In structured data,,100%
+SEO,Structured Data,OpeningHours,Hours in structured data,App Frontend,P1,AUTO,Playwright: verify hours,In structured data,,90%
+Sharing,Buttons,Native Share API,Device native share,App Frontend,P0,MANUAL,Manual: test on mobile,navigator.share working on mobile,,100%
+Sharing,Buttons,Facebook Share,Share to Facebook,App Frontend,P0,AUTO,Playwright: verify share URL,Code exists but NN-38: not showing in dropdown,,100%
+Sharing,Buttons,Twitter Share,Share to Twitter/X,App Frontend,P0,AUTO,Playwright: verify share URL,Code exists but NN-38: not showing,,100%
+Sharing,Buttons,Email Share,Share via email,App Frontend,P0,AUTO,Playwright: verify mailto,mailto: protocol working,,100%
+Sharing,Buttons,Copy Link,Copy URL to clipboard,App Frontend,P0,AUTO,"Playwright: click, verify clipboard",Clipboard API with fallback,,100%
+Hours,Regular,Weekly Hours,Day-by-day operating hours,Admin Backend,P0,AUTO,"pytest: save, verify JSONB",JSONB structure with day-by-day hours,,100%
+Hours,Regular,Open/Close Times,Start and end time per day,Admin Backend,P0,AUTO,pytest: verify format,"Fixed, dawn, dusk, appointment types supported",,100%
+Hours,Regular,Closed Days,Mark days as closed,Admin Backend,P0,AUTO,"pytest: set closed, verify",Status field per day,,100%
+Hours,Seasonal,Season Name,"Label for season (Summer, Winter)",Admin Backend,P1,AUTO,pytest: verify names,Spring/Summer/Fall/Winter predefined,,100%
+Hours,Seasonal,Start Date,Season start date,Admin Backend,P1,AUTO,pytest: verify MM-DD format,MM-DD format for seasonal,,100%
+Hours,Seasonal,End Date,Season end date,Admin Backend,P1,AUTO,pytest: verify MM-DD format,MM-DD format for seasonal,,100%
+Hours,Seasonal,Seasonal Hours,Hours during season,Admin Backend,P1,AUTO,"pytest: save, verify","Backend complete, frontend partial",,90%
+Hours,Holiday,Holiday Name,Name of holiday,Admin Backend,P1,AUTO,pytest: verify names,20 holidays predefined,,100%
+Hours,Holiday,Holiday Date,Specific date,Admin Backend,P1,AUTO,pytest: verify calculation,Calculated with moveable holiday support,,100%
+Hours,Holiday,Holiday Hours,Hours or closed,Admin Backend,P1,AUTO,"pytest: save, verify",Open/closed/modified statuses,,95%
+Hours,Exceptions,Recurring Monthly,"3rd Wednesday closed, etc.",Admin Backend,P2,AUTO,pytest: test 3rd Wednesday,3rd Wednesday patterns fully working,,100%
+Hours,Exceptions,Exception Type,"Closed, modified hours",Admin Backend,P2,AUTO,pytest: verify types,Closed or modified,,100%
+Hours,Exceptions,Exception Override,Override regular hours,Admin Backend,P2,AUTO,pytest: verify priority,Priority: exceptions > holidays > seasonal > regular,,100%
+Hours,Frontend,Hours Display Component,HoursDisplay.jsx,App Frontend,P0,AUTO,Playwright: verify renders,HoursDisplay.jsx working but toggle broken,,80%
+Hours,Frontend,Open Now Status,Show if currently open,App Frontend,P0,AUTO,"pytest: mock time, verify",isCurrentlyOpen() calculates correctly,,95%
+Hours,Frontend,Hours Toggle,Expand to see all hours,App Frontend,P0,AUTO,"Playwright: click, verify expand",NN-36: NOT WORKING - user reported,,0%
+Hours,Frontend,Date-specific Hours,Show hours for selected date,App Frontend,P0,AUTO,Playwright: pick date,Works but no (Modified) override labels,,75%
+Hours,Frontend,Override Display,Show modified/holiday indicator,App Frontend,P1,AUTO,Playwright: verify (Modified) label,NN-36: Not showing (Modified)/(Holiday) indicators,,0%
+Users,CLI,Create User,manage_users.py create command,Admin Backend,P0,AUTO,"pytest: run CLI, verify DB",manage_users.py create command working,,100%
+Users,CLI,List Users,manage_users.py list command,Admin Backend,P0,AUTO,"pytest: run CLI, verify output","Formatted table with email, role, created_at",,100%
+Users,CLI,Delete User,manage_users.py delete command,Admin Backend,P0,AUTO,"pytest: run CLI, verify removed",Working but no confirmation prompt,,80%
+Users,CLI,Test User,manage_users.py test-user command,Admin Backend,P0,AUTO,"pytest: run CLI, verify created",test@nearbynearby.com / 1234 working,,100%
+Users,CLI,Role Assignment,--role flag on create,Admin Backend,P0,AUTO,pytest: create with role,--role flag on create working,,100%
+Users,API,Create User Endpoint,POST /api/auth/users (Admin),Admin Backend,P1,AUTO,pytest: POST /api/auth/users,POST exists but no admin enforcement,,50%
+Users,Frontend,User Management UI,Admin page to manage users,Admin Frontend,P2,HYBRID,Playwright: CRUD | Manual: UX,Not implemented - CLI only,,0%
+Infrastructure,Docker,Dev Compose,docker-compose.yml,Infrastructure,P0,AUTO,Bash: docker compose up,"5 services: minio, db, backend, frontend, test-db",,100%
+Infrastructure,Docker,Prod Compose,docker-compose.prod.yml,Infrastructure,P0,AUTO,Bash: docker compose -f prod,2 services connecting to RDS,,100%
+Infrastructure,Docker,Multi-stage Build,Separate build and runtime,Infrastructure,P0,AUTO,"Bash: build, verify size",All Dockerfiles optimized with builder stages,,100%
+Infrastructure,Docker,Health Checks,Container health monitoring,Infrastructure,P0,AUTO,Bash: docker inspect,"DB/MinIO have checks, dev backend missing",,85%
+Infrastructure,Docker,Volume Mounts,Persistent data storage,Infrastructure,P0,AUTO,Bash: verify data persists,"Persistent postgres_data, minio_data, image_storage",,100%
+Infrastructure,Database,PostgreSQL 15,Main database server,Infrastructure,P0,AUTO,pytest: verify PG version,Running with extensions,,100%
+Infrastructure,Database,PostGIS 3.4,Geospatial extension,Infrastructure,P0,AUTO,pytest: SELECT PostGIS_Version(),Extension enabled and working,,100%
+Infrastructure,Database,Alembic Migrations,Schema version control,Infrastructure,P0,AUTO,Bash: alembic upgrade head,"25 migrations, some merged heads",,95%
+Infrastructure,Database,Connection Pooling,SQLAlchemy pool config,Infrastructure,P0,AUTO,pytest: verify pool config,SQLAlchemy pool configured,,100%
+Infrastructure,Storage,AWS S3,Production image storage,Infrastructure,P0,AUTO,pytest: upload/download S3,Production storage working,,100%
+Infrastructure,Storage,MinIO,Development S3 compatibility,Infrastructure,P0,AUTO,pytest: upload/download MinIO,Dev S3-compatible with auto-bucket,,100%
+Infrastructure,Storage,CloudFront CDN,Image delivery optimization,Infrastructure,P2,AUTO,pytest: verify CDN URL,Not configured yet,,0%
+Infrastructure,CI/CD,GitHub Actions,Automated pipeline,Infrastructure,P0,AUTO,GH Actions: verify workflow,CI/CD pipeline with OIDC,,100%
+Infrastructure,CI/CD,ECR Push,Push images to AWS ECR,Infrastructure,P0,AUTO,GH Actions: verify image,Docker image push working,,100%
+Infrastructure,CI/CD,ECS Deploy,Deploy to AWS ECS,Infrastructure,P0,AUTO,GH Actions: verify deployment,Force new deployment working,,100%
+Infrastructure,Network,Docker Network,nearby-admin_default network,Infrastructure,P0,AUTO,Bash: docker network inspect,"nearby-admin_default, DNS collision documented",,95%
+Infrastructure,Network,DNS Resolution,Container name resolution,Infrastructure,P0,AUTO,Bash: nslookup from container,Workaround with explicit container names,,90%
+Infrastructure,Network,CORS Config,Cross-origin settings,Infrastructure,P0,AUTO,pytest: verify CORS headers,Configured for allowed origins,,100%
+Database,Tables,points_of_interest,Main POI table (140+ fields),Database,P0,AUTO,pytest: verify schema,140+ fields main table,,100%
+Database,Tables,businesses,Business subtype table,Database,P0,AUTO,pytest: verify schema,25+ columns subtype,,100%
+Database,Tables,parks,Park subtype table,Database,P0,AUTO,pytest: verify schema,18+ columns subtype,,100%
+Database,Tables,trails,Trail subtype table,Database,P0,AUTO,pytest: verify schema,20+ columns subtype,,100%
+Database,Tables,events,Event subtype table,Database,P0,AUTO,pytest: verify schema,22+ columns subtype,,100%
+Database,Tables,categories,Category table (hierarchical),Database,P0,AUTO,pytest: verify schema,Hierarchical with parent_id,,100%
+Database,Tables,poi_category_association,POI-category junction,Database,P0,AUTO,pytest: verify junction,Junction with is_main flag,,100%
+Database,Tables,images,Image metadata table,Database,P0,AUTO,pytest: verify schema,S3 metadata with variants,,100%
+Database,Tables,attributes,Dynamic attribute definitions,Database,P0,AUTO,pytest: verify schema,Dynamic attribute definitions,,100%
+Database,Tables,poi_relationships,POI-to-POI links,Database,P0,AUTO,pytest: verify schema,Composite PK relationship table,,100%
+Database,Tables,users,Admin users table,Database,P0,AUTO,pytest: verify schema,With bcrypt hashed passwords,,100%
+Database,Tables,primary_types,POI primary types,Database,P0,AUTO,pytest: verify schema,POI primary type reference,,100%
+Database,Tables,waitlist,Email waitlist,Database,P1,AUTO,pytest: verify schema,Email collection table,,100%
+Database,Indexes,Trigram Index (name),GIN index for fuzzy search,Database,P0,AUTO,pytest: verify index,GIN index on name for fuzzy search,,100%
+Database,Indexes,Trigram Index (city),GIN index for city search,Database,P0,AUTO,pytest: verify index,"Documented, may need manual creation",,90%
+Database,Indexes,Geospatial Index,GIST index on location,Database,P0,AUTO,pytest: verify GIST,GIST index on location column,,100%
+Database,Indexes,Vector Index,IVFFlat on embedding column,Database,P0,AUTO,pytest: verify IVFFlat (prod),"IVFFlat on prod, not local dev",,65%
+Database,Indexes,Status Index,Index on publication_status,Database,P0,AUTO,pytest: verify index,Index on publication_status,,100%
+Database,Extensions,pg_trgm,Trigram text search,Database,P0,AUTO,pytest: verify extension,Extension enabled,,100%
+Database,Extensions,pgvector,Vector similarity search,Database,P0,AUTO,pytest: verify extension (prod),"Prod yes, local dev no",,65%
+Database,Extensions,PostGIS,Geospatial functions,Database,P0,AUTO,pytest: verify extension,Extension enabled with geometry functions,,100%
+Explore,Layout,Category Grid,4 category cards with icons,App Frontend,P0,AUTO,Playwright: verify 4 cards,4 categories with lucide-react icons,,100%
+Explore,Layout,Live Counts,Show POI count per category,App Frontend,P0,AUTO,Playwright: verify counts,Real-time API calls per category,,100%
+Explore,Layout,Split View,"List on left, map on right",App Frontend,P0,AUTO,Playwright: verify layout,"List left, map right layout",,100%
+Explore,Filtering,Type Filter,Filter by POI type,App Frontend,P0,AUTO,"Playwright: click, verify filter",URL parameter ?type=BUSINESS,,100%
+Explore,Filtering,Search Within,Search filtered results,App Frontend,P0,AUTO,"Playwright: search, verify",Real-time name filtering,,100%
+Explore,Filtering,Distance Sort,Sort by distance from location,App Frontend,P1,AUTO,Playwright: verify order,Haversine formula calculation,,100%
+Explore,Features,Save/Favorites,Save POIs to list,App Frontend,P2,AUTO,Playwright: click heart,Placeholder 'coming soon' alert only,,5%
+Homepage,Hero,Main Tagline,'What's Actually Nearby',App Frontend,P0,AUTO,Playwright: verify text,'What's Actually Nearby' displayed,,100%
+Homepage,Hero,Search Bar,Central search input,App Frontend,P0,AUTO,Playwright: verify input,Central SearchBar component,,100%
+Homepage,Hero,Announcement Bar,Testing location notice,App Frontend,P0,AUTO,Playwright: verify text,"Pittsboro, NC testing notice",,100%
+Homepage,Hero,Description,'No Ads. No Clutter.',App Frontend,P0,AUTO,Playwright: verify meta description,'No Ads. No Clutter.' text,,100%
+Homepage,Sections,Feature Showcase,Platform features display,App Frontend,P1,HYBRID,Playwright: sections | Manual: content,3-step SimpleSection guide,,100%
+Homepage,Sections,Signup Bar,Email waitlist signup,App Frontend,P0,AUTO,"Playwright: submit, verify API",Email collection to /api/waitlist,,95%
+Homepage,Sections,Info Sections,Additional info blocks,App Frontend,P1,HYBRID,Playwright: expand | Manual: content,6 FAQ questions in InfoSection,,100%
+Homepage,Navigation,Navbar,Top navigation bar,App Frontend,P0,AUTO,Playwright: verify links,Top navigation working,,100%
+Homepage,Navigation,Footer,Site footer with links,App Frontend,P0,AUTO,Playwright: verify links,"Social links, CTA. Sponsors hidden",,90%
+Known Issues,NN-55,POI Update HTTP 422,Error when updating POI,Admin Backend,P0,AUTO,"pytest: reproduce, verify fix",UNRESOLVED - Schema validation too strict,,0%
+Known Issues,NN-4,Can't Save New POIs,HTTP 500 on save,Admin Backend,P0,AUTO,pytest: create POI,"CRITICAL - HTTP 500, intermittent",,0%
+Known Issues,NN-38,Map Zoom Too Far,Default zoom needs adjustment,Admin Frontend,P1,MANUAL,Manual: verify zoom appropriate,Improved but needs more tuning,,70%
+Known Issues,NN-38,Address Autocomplete,Need address suggestions,Admin Frontend,P2,AUTO,"Playwright: type, verify suggestions",NOT IMPLEMENTED,,0%
+Known Issues,NN-36,Seasonal Date Ranges,Can't specify season dates,Admin Backend,P1,AUTO,pytest: verify saves,IMPLEMENTED in HoursSelector,,100%
+Known Issues,NN-36,Recurring Exceptions,Monthly patterns not supported,Admin Backend,P2,AUTO,pytest: verify patterns,IMPLEMENTED - 3rd Wednesday patterns work,,100%
+Known Issues,NN-36,Hours Toggle Frontend,Toggle button not working,App Frontend,P0,AUTO,Playwright: click toggle,NOT WORKING - toggle broken,,0%
+Known Issues,NN-46,Venue Data Inheritance,Events don't pull from venue,Admin Backend,P1,AUTO,pytest: verify venue data,NOT IMPLEMENTED,,0%
+Known Issues,NN-46,Events Page Blank,Events list showing blank,App Frontend,P0,AUTO,"Playwright: navigate, verify renders",CRITICAL - White screen,,0%
+Known Issues,NN-50,Map Colors A11y,Color contrast issues,App Frontend,P1,MANUAL,Manual: colorblind simulation,FIXED - Carto Voyager accessible tiles,,100%
+Known Issues,NN-57,Teaser Char Limit,Need 120 char limit,Admin Frontend,P0,AUTO,Playwright: type >120,No character counter in UI,,0%
+Known Issues,NN-57,Parking Lat/Long,Missing parking coordinates,Admin Backend,P1,AUTO,pytest: verify fields,MISSING field,,0%
+Known Issues,NN-57,Restroom Duplicate,Can't add multiple restrooms,Admin Frontend,P1,AUTO,Playwright: click add,"Parks only, need for Trails/Events",,50%
+Known Issues,NN-57,Playground Lat/Long,Missing playground coordinates,Admin Backend,P1,AUTO,pytest: verify fields,MISSING field,,0%
+Known Issues,NN-57,Corporate Checkboxes,Checkboxes not clickable,Admin Frontend,P0,AUTO,"Playwright: click, verify state",NOT CLICKABLE - Radio.Group issue,,0%
+Known Issues,NN-48,Verified Badge Popup,Popup not showing,App Frontend,P0,AUTO,"Playwright: hover, verify popup",NOT SHOWING on hover,,0%
+Known Issues,NN-38,Share Options,Only copy link showing,App Frontend,P0,AUTO,"Playwright: click, verify options",Only copy link showing,,0%
+Known Issues,NN-31,Copy Address,Only copying city,App Frontend,P0,AUTO,"Playwright: click, verify full address","Only copying city, not full address",,0%
+Known Issues,NN-28,Map Marker Connection,Connect markers to card list,App Frontend,P1,AUTO,"Playwright: click, verify scroll",Works but could be better UX,,80%

@@ -1,0 +1,131 @@
+.install-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--nn-accent, #328170);
+  color: white;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+  text-decoration: none;
+}
+
+.install-button:hover {
+  background: var(--nn-accent-600, #286857);
+  transform: translateY(-1px);
+}
+
+.install-button:active {
+  transform: translateY(0);
+}
+
+.install-button--installed {
+  background: #6b7280;
+  cursor: default;
+}
+
+.install-button--installed:hover {
+  background: #6b7280;
+  transform: none;
+}
+
+.install-button--footer {
+  background: transparent;
+  border: 2px solid var(--nn-accent, #328170);
+  color: var(--nn-accent, #328170);
+  padding: 10px 18px;
+  font-size: 13px;
+}
+
+.install-button--footer:hover {
+  background: var(--nn-accent, #328170);
+  color: white;
+}
+
+.install-button__icon {
+  flex-shrink: 0;
+}
+
+/* Modal styles */
+.install-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 20px;
+}
+
+.install-modal__content {
+  background: white;
+  border-radius: 16px;
+  padding: 32px;
+  max-width: 400px;
+  width: 100%;
+  position: relative;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+}
+
+.install-modal__close {
+  position: absolute;
+  top: 12px;
+  right: 16px;
+  background: none;
+  border: none;
+  font-size: 28px;
+  color: #6b7280;
+  cursor: pointer;
+  line-height: 1;
+  padding: 4px;
+}
+
+.install-modal__close:hover {
+  color: #374151;
+}
+
+.install-modal__title {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--nn-ink, #33404E);
+  margin: 0 0 20px;
+}
+
+.install-modal__instructions p {
+  font-size: 15px;
+  color: var(--nn-ink-muted, #597199);
+  line-height: 1.6;
+  margin: 0 0 16px;
+}
+
+.install-modal__instructions ol {
+  margin: 16px 0;
+  padding-left: 24px;
+}
+
+.install-modal__instructions li {
+  font-size: 15px;
+  color: var(--nn-ink-muted, #597199);
+  line-height: 1.8;
+  margin-bottom: 12px;
+}
+
+.install-modal__instructions strong {
+  color: var(--nn-ink, #33404E);
+}
+
+.install-modal__note {
+  font-size: 13px;
+  background: var(--nn-bg, #F4EFF7);
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-top: 16px;
+}

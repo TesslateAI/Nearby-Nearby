@@ -1,0 +1,122 @@
+.nn-signup {
+  background: #F9C35A; /* warm yellow from screenshot */
+  padding: 16px 16px 22px; /* reduce vertical padding */
+}
+
+.nn-signup__inner {
+  max-width: 900px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.nn-signup__title {
+  font-size: 32px;
+  margin: 0 0 14px;
+  font-weight: 600;
+}
+.nn-signup__title span { font-weight: 800; }
+
+/* Form */
+.su-form { display: flex; justify-content: center; }
+.su-control {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  width: min(720px, 100%);
+  border: 2px solid #5a2a6c; /* purple border */
+  border-radius: 12px;
+  background: #ffffff; /* make entire bar white */
+  overflow: hidden; /* kill any inner white gaps */
+}
+
+.su-input {
+  border: none;
+  padding: 14px 16px;
+  font-size: 16px;
+  border-radius: 0; /* clipped by parent */
+  outline: none;
+  background: #ffffff; /* white search field */
+  color: #33404E; /* bolder font color */
+}
+.su-input::placeholder { color: #8d859a; }
+
+.su-button {
+  background: #328170; /* green - color blind accessible */
+  color: #fff;
+  font-weight: 700;
+  border: 2px solid #286857;
+  border-radius: 10px; /* rounded button inside clipped parent */
+  padding: 10px 18px;
+  margin: 6px; /* small breathing room without creating a white "border" */
+}
+.su-button:hover { background: #286857; }
+
+@media (max-width: 768px) {
+  .nn-signup {
+    padding: 14px 16px 20px;
+  }
+
+  .nn-signup__title {
+    font-size: 26px;
+  }
+
+  .su-control {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .su-input {
+    padding: 12px 16px;
+    font-size: 15px;
+    border-radius: 10px 10px 0 0;
+  }
+
+  .su-button {
+    padding: 12px 18px;
+    border-radius: 0 0 10px 10px;
+    margin: 0;
+    width: 100%;
+  }
+}
+
+@media (max-width: 560px) {
+  .nn-signup__title {
+    font-size: 22px;
+  }
+
+  .nn-signup {
+    padding: 12px 12px 18px;
+  }
+}
+
+/* Feedback messages */
+.su-message {
+  margin-top: 12px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  text-align: center;
+}
+
+.su-message--success {
+  background: #d1f4e0;
+  color: #1a6635;
+  border: 1px solid #4caf76;
+}
+
+.su-message--error {
+  background: #fdecea;
+  color: #b91c1c;
+  border: 1px solid #f87171;
+}
+
+@media (max-width: 480px) {
+  .nn-signup__title {
+    font-size: 20px;
+  }
+
+  .su-message {
+    font-size: 13px;
+    padding: 10px 14px;
+  }
+}

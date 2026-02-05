@@ -1,0 +1,104 @@
+.search-bar-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.search-bar-input {
+  position: relative;
+  width: 100%;
+}
+
+.search-bar-input__icon {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #9CA3AF;
+  display: flex;
+  align-items: center;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.search-bar-input input {
+  width: 100%;
+  padding: 14px 20px 14px 48px;
+  font-size: 16px;
+  border: 2px solid transparent;
+  border-radius: 10px;
+  background: white;
+  color: var(--nn-ink, #213547);
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.search-bar-input input:focus {
+  border-color: var(--nn-primary, #532b62);
+  box-shadow: 0 0 0 3px rgba(83, 43, 98, 0.1);
+}
+
+.search-bar-input input::placeholder {
+  color: #9CA3AF;
+}
+
+/* Autocomplete dropdown */
+.search-bar-autocomplete {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+  z-index: 1000;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.search-bar-autocomplete__loading,
+.search-bar-autocomplete__empty {
+  padding: 16px 20px;
+  text-align: center;
+  color: var(--nn-ink-muted, #6B7280);
+  font-size: 14px;
+}
+
+.search-bar-autocomplete__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.search-bar-autocomplete__item {
+  padding: 12px 20px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  border-bottom: 1px solid #F3F4F6;
+}
+
+.search-bar-autocomplete__item:last-child {
+  border-bottom: none;
+}
+
+.search-bar-autocomplete__item:hover,
+.search-bar-autocomplete__item--selected {
+  background-color: var(--nn-bg, #F4EFF7);
+}
+
+.search-bar-autocomplete__item-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.search-bar-autocomplete__name {
+  font-weight: 600;
+  color: var(--nn-ink, #213547);
+  font-size: 15px;
+}
+
+.search-bar-autocomplete__city {
+  font-size: 13px;
+  color: var(--nn-ink-muted, #6B7280);
+}

@@ -20,7 +20,10 @@
       "Bash(docker compose:*)",
       "Bash(git restore:*)",
       "Bash(docker inspect:*)",
-      "Bash(docker exec:*)"
+      "Bash(docker exec:*)",
+      "Bash(git rebase:*)",
+      "Bash(GIT_EDITOR=true git rebase:*)",
+      "Bash(GIT_EDITOR=\"cmd //c echo\" git rebase --continue)"
     ],
     "deny": [],
     "ask": []

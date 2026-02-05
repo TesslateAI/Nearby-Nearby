@@ -1,0 +1,27 @@
+fastapi
+uvicorn[standard]
+sqlalchemy
+psycopg2-binary
+pydantic[email]
+pydantic-settings
+alembic
+python-dotenv
+# FIX: Include the optional shapely dependency
+GeoAlchemy2[shapely]
+passlib[bcrypt]
+bcrypt<4.2.0
+python-jose[cryptography]
+python-multipart
+bleach
+
+# Image processing
+Pillow
+aiofiles
+
+# Cloud storage
+boto3
+botocore
+
+# Test dependencies
+pytest
+httpx
