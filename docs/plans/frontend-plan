@@ -1,0 +1,742 @@
+Frontend Redesign Implementation Plan                                                                                                                                                      │
+│                                                                                                                                                                                            │
+│ Context                                                                                                                                                                                    │
+│                                                                                                                                                                                            │
+│ Barry (designer) has delivered HTML/CSS templates in nn-templates/ (cloned from github.com/barrycosta/nn-templates). These templates define the complete design system: colors, fonts,     │
+│ breakpoints, accessible navigation, overlay system, header, footer, and page structure. The existing PLAN Google Sheet has 112 tasks but none cover integrating Barry's design system.     │
+│ Robert's 40 existing tasks are all bug fixes and feature work on the current codebase (tasks 5-8, 52-78, 103-110).                                                                         │
+│                                                                                                                                                                                            │
+│ This plan adds new tasks for the design system integration. It does NOT duplicate existing tasks.                                                                                          │
+│                                                                                                                                                                                            │
+│ Execution Plan                                                                                                                                                                             │
+│                                                                                                                                                                                            │
+│ Use scripts/google_sheets/sheets_client.py to append all 20 tasks (113-132) to the PLAN sheet. Each task will be appended as a row with the columns: Task #, Ticket, Category, Task Title, │
+│  Description, Assigned To, Priority, Status, Start Date, Due Date, Week, Dependencies, Notes.                                                                                              │
+│                                                                                                                                                                                            │
+│ Steps:                                                                                                                                                                                     │
+│ 1. Run python -m scripts.google_sheets.sheets_client next-task to confirm the next task number is 113                                                                                      │
+│ 2. Append each task row using the append CLI command                                                                                                                                       │
+│ 3. Verify with python -m scripts.google_sheets.sheets_client count plan that 20 new rows were added                                                                                        │
+│                                                                                                                                                                                            │
+│ ---                                                                                                                                                                                        │
+│ Existing Tasks Overlap Check                                                                                                                                                               │
+│                                                                                                                                                                                            │
+│ No duplicates found. The 112 existing tasks cover:                                                                                                                                         │
+│ - Tasks 1-4: Critical backend blockers (Manav)                                                                                                                                             │
+│ - Tasks 5-8: Critical frontend bug fixes (Robert) - copy address, share dropdown, hours toggle, verified badge                                                                             │
+│ - Tasks 9-51: Admin backend features (Manav)                                                                                                                                               │
+│ - Tasks 52-53: SEO components (Robert)                                                                                                                                                     │
+│ - Tasks 54-61: Nearby feature fixes (Robert)                                                                                                                                               │
+│ - Tasks 62-69: Frontend detail page fixes (Robert)                                                                                                                                         │
+│ - Tasks 70-72: Map fixes (Robert)                                                                                                                                                          │
+│ - Tasks 73-78: Infrastructure/SEO/Blog (mixed)                                                                                                                                             │
+│ - Tasks 79-85: Testing & launch (Rhonda/mixed)                                                                                                                                             │
+│ - Tasks 86-112: Post-MVP features                                                                                                                                                          │
+│                                                                                                                                                                                            │
+│ What's missing: Everything from Barry's meeting - design system, new header/footer, mobile nav bar, search overlay, home page redesign, explore page redesign, accessibility foundation.   │
+│ These are the new tasks below.                                                                                                                                                             │
+│                                                                                                                                                                                            │
+│ ---                                                                                                                                                                                        │
+│ NEW TASKS TO ADD (Starting at Task 113)                                                                                                                                                    │
+│                                                                                                                                                                                            │
+│ Phase 1: Design System Foundation (Week 1)                                                                                                                                                 │
+│                                                                                                                                                                                            │
+│ Task 113 - Integrate Barry's Design Tokens into CSS                                                                                                                                        │
+│                                                                                                                                                                                            │
+│ Category: Frontend Design System                                                                                                                                                           │
+│ Assigned To: Robert                                                                                                                                                                        │
+│ Priority: P0 - Critical                                                                                                                                                                    │
+│ Dependencies: None                                                                                                                                                                         │
+│ Description:                                                                                                                                                                               │
+│ Port Barry's design variables from nn-templates/inc/options.scss into CSS custom properties (CSS variables). Create a central variables file using native CSS custom properties (no SCSS - │
+│  our platform uses plain CSS).                                                                                                                                                             │
+│                                                                                                                                                                                            │
+│ Colors to define:                                                                                                                                                                          │
+│ --nn-dark: #1A2128       (primary text)                                                                                                                                                    │
+│ --nn-slate: #33404E      (body text)                                                                                                                                                       │
+│ --nn-gray: #597189       (secondary text)                                                                                                                                                  │
+│ --nn-purple1: #562556    (brand primary - buttons, header, accents)                                                                                                                        │
+│ --nn-purple2: #853885    (lighter purple)                                                                                                                                                  │
+│ --nn-teal1: #276255      (links, hover states)                                                                                                                                             │
+│ --nn-teal2: #328170      (highlighted markers, active states)                                                                                                                              │
+│ --nn-gold: #FEC764       (accents, borders, highlights)                                                                                                                                    │
+│ --nn-red: #AF1818        (errors, close buttons)                                                                                                                                           │
+│ --nn-green: #6dba24      (checkmarks, success)                                                                                                                                             │
+│ --nn-blue: #0846E2       (focus rings)                                                                                                                                                     │
+│                                                                                                                                                                                            │
+│ Gray scale: --gray-a through --gray-9 (#aaa to #f9f9f9)                                                                                                                                    │
+│ Light yellows: --light-yellow1 (#FFE3B2), --light-yellow2 (#FEF9A7), --light-yellow3 (#E4DB8D)                                                                                             │
+│                                                                                                                                                                                            │
+│ Breakpoints (document these, CSS can't store breakpoints as variables but document the standard set):                                                                                      │
+│ - 600px, 700px, 980px, 1200px (critical: mobile/desktop switch), 1400px, 1600px, 1900px, 2400px                                                                                            │
+│                                                                                                                                                                                            │
+│ Files to create: nearby-app/app/src/styles/variables.css                                                                                                                                   │
+│ Files to modify: nearby-app/app/src/index.css (import variables)                                                                                                                           │
+│ Source: nn-templates/inc/options.scss                                                                                                                                                      │
+│                                                                                                                                                                                            │
+│ ---                                                                                                                                                                                        │
+│ Task 114 - Self-Host Fonts (Poppins, Roboto, Libre Bodoni)                                                                                                                                 │
+│                                                                                                                                                                                            │
+│ Category: Frontend Design System                                                                                                                                                           │
+│ Assigned To: Robert                                                                                                                                                                        │
+│ Priority: P0 - Critical                                                                                                                                                                    │
+│ Dependencies: 113                                                                                                                                                                          │
+│ Description:                                                                                                                                                                               │
+│ Copy WOFF2 font files from nn-templates/fonts/ into the app's assets. Create @font-face declarations matching Barry's nn-templates/inc/fonts.scss. Currently the app loads Poppins from    │
+│ Google CDN - switch to self-hosted for privacy (rural users don't trust big tech - this was discussed in the meeting).                                                                     │
+│                                                                                                                                                                                            │
+│ Fonts to include:                                                                                                                                                                          │
+│ - Poppins: 300, 400, 500, 600, 700, 800, 900 (regular + italic) - headings/UI                                                                                                              │
+│ - Roboto: 300, 400, 500, 600, 700 (regular + italic) - body text                                                                                                                           │
+│ - Roboto Condensed: 400, 700 - compact UI elements                                                                                                                                         │
+│ - Libre Bodoni: 400, 500, 600, 700 - decorative/accent text                                                                                                                                │
+│                                                                                                                                                                                            │
+│ All with font-display: swap for performance.                                                                                                                                               │
+│                                                                                                                                                                                            │
+│ Files to create: nearby-app/app/src/styles/fonts.css, copy font files to nearby-app/app/src/assets/fonts/                                                                                  │
+│ Source: nn-templates/fonts/ (77 WOFF2 files), nn-templates/inc/fonts.scss                                                                                                                  │
+│                                                                                                                                                                                            │
+│ ---                                                                                                                                                                                        │
+│ Task 115 - Create Global Layout & Typography CSS                                                                                                                                           │
+│                                                                                                                                                                                            │
+│ Category: Frontend Design System                                                                                                                                                           │
+│ Assigned To: Robert (Barry provides CSS snippets)                                                                                                                                          │
+│ Priority: P0 - Critical                                                                                                                                                                    │
+│ Dependencies: 113, 114                                                                                                                                                                     │
+│ Description:                                                                                                                                                                               │
+│ Port Barry's layout utilities, typography styles, and button system from nn-templates/inc/stylez.scss into plain CSS. These are used across every page.                                    │
+│                                                                                                                                                                                            │
+│ Wrapper classes:                                                                                                                                                                           │
+│ - .wrapper_default - width: 84%, max-width: 1400px, centered                                                                                                                               │
+│ - .wrapper_wide - width: 90-95%, minimal padding                                                                                                                                           │
+│ - .wrapper_intro - width: 90% mobile / 80% desktop, max-width: 900px                                                                                                                       │
+│                                                                                                                                                                                            │
+│ Spacing classes:                                                                                                                                                                           │
+│ - .main_content_padding - 55px mobile / 65px desktop / 75px 2400px+                                                                                                                        │
+│ - .space_content_1 - 50px mobile / 75px 980px+ / 100px 2400px+                                                                                                                             │
+│                                                                                                                                                                                            │
+│ Typography:                                                                                                                                                                                │
+│ - h1-h6 reset and styled (Poppins, various weights)                                                                                                                                        │
+│ - Paragraph: 18px base, line-height 1.4em, scales with breakpoints                                                                                                                         │
+│ - Lists: .list-check (green checkmarks), .no-bullet-list                                                                                                                                   │
+│ - Links: color --nn-teal1, underline, darken on hover                                                                                                                                      │
+│                                                                                                                                                                                            │
+│ Buttons:                                                                                                                                                                                   │
+│ - .button / .btn_default - Poppins 600, 12px 26px padding, 6px radius                                                                                                                      │
+│ - .btn_outline_purple - 2px border --nn-purple1                                                                                                                                            │
+│ - .btn_outline_teal - 2px border --nn-teal1                                                                                                                                                │
+│ - .btn_small - smaller padding                                                                                                                                                             │
+│ - .btn_reset - removes all default button styling (for icon buttons)                                                                                                                       │
+│                                                                                                                                                                                            │
+│ Files to create: nearby-app/app/src/styles/layout.css, nearby-app/app/src/styles/typography.css, nearby-app/app/src/styles/buttons.css                                                     │
+│ Source: nn-templates/inc/stylez.scss (lines 1-3000)                                                                                                                                        │
+│                                                                                                                                                                                            │
+│ ---                                                                                                                                                                                        │
+│ Task 116 - Create Accessibility Foundation (AAA Compliance)                                                                                                                                │
+│                                                                                                                                                                                            │
+│ Category: Frontend Accessibility                                                                                                                                                           │
+│ Assigned To: Robert (Barry provides code/guidance)                                                                                                                                         │
+│ Priority: P0 - Critical                                                                                                                                                                    │
+│ Dependencies: 113                                                                                                                                                                          │
+│ Description:                                                                                                                                                                               │
+│ Set up the accessibility infrastructure that every component needs. AAA compliance is mandatory from day one per the meeting.                                                              │
+│                                                                                                                                                                                            │
+│ Must implement:                                                                                                                                                                            │
+│ 1. Skip-main link: <a class="skip-main" href="#main_content">Skip to main content</a> - hidden until focused, then visible                                                                 │
+│ 2. Focus-visible styles: :focus-visible { outline: 3px solid #0066cc; outline-offset: 2px; } - only shows for keyboard, not mouse clicks                                                   │
+│ 3. Visually hidden class: .visually_hidden - hides text visually but keeps for screen readers (for labels, hints)                                                                          │
+│ 4. Reduced motion: @media (prefers-reduced-motion: reduce) - disable animations                                                                                                            │
+│ 5. High contrast: @media (prefers-contrast: high) - ensure borders and outlines visible                                                                                                    │
+│ 6. 44px minimum touch targets: All buttons/links on mobile must be at least 44x44px                                                                                                        │
+│ 7. Color contrast: All text/background combos must pass AAA (7:1 ratio for normal text, 4.5:1 for large text). Barry's color sheet in Figma already maps which color combos are AAA-safe.  │
+│                                                                                                                                                                                            │
+│ Files to create: nearby-app/app/src/styles/accessibility.css                                                                                                                               │
+│ Files to modify: nearby-app/app/src/App.jsx (add skip-main link, id="main_content" on <main>)                                                                                              │
+│                                                                                                                                                                                            │
+│ ---                                                                                                                                                                                        │
+│ Phase 2: Shell Components (Week 2)                                                                                                                                                         │
+│                                                                                                                                                                                            │
+│ Task 117 - Convert Overlay System to React                                                                                                                                                 │
+│                                                                                                                                                                                            │
+│ Category: Frontend Components                                                                                                                                                              │
+│ Assigned To: Robert (Manav assists with React patterns)                                                                                                                                    │
+│ Priority: P0 - Critical                                                                                                                                                                    │
+│ Dependencies: 113, 116                                                                                                                                                                     │
+│ Description:                                                                                                                                                                               │
+│ Convert Barry's vanilla JS overlay system (nn-templates/inc/overlay.js) into a reusable React component + hook. This system is used for both the search overlay and the mobile nav         │
+│ overlay.                                                                                                                                                                                   │
+│                                                                                                                                                                                            │
+│ Features to port:                                                                                                                                                                          │
+│ - Open/close with toggle behavior                                                                                                                                                          │
+│ - Backdrop click to close                                                                                                                                                                  │
+│ - Escape key to close                                                                                                                                                                      │
+│ - Focus trap (Tab cycles through interactive elements inside overlay only)                                                                                                                 │
+│ - Body scroll lock (overflow: hidden on body when open)                                                                                                                                    │
+│ - Chevron scroll indicator (appears when content overflows, fades on scroll)                                                                                                               │
+│ - Focus restoration (returns focus to trigger button when closing)                                                                                                                         │
+│ - Auto-focus management (focus on specified element or close button when opening)                                                                                                          │
+│ - Skip nav overlay open at desktop (1200px+) for nav overlay specifically                                                                                                                  │
+│                                                                                                                                                                                            │
+│ React implementation:                                                                                                                                                                      │
+│ - useOverlay(id) hook - returns { isOpen, open, close, toggle, overlayRef }                                                                                                                │
+│ - <Overlay> component - renders backdrop + panel + close button + chevron                                                                                                                  │
+│ - CSS from nn-templates/inc/overlay.scss ported to plain CSS                                                                                                                               │
+│                                                                                                                                                                                            │
+│ Files to create: nearby-app/app/src/hooks/useOverlay.js, nearby-app/app/src/components/Overlay.jsx, nearby-app/app/src/components/Overlay.css                                              │
+│ Source: nn-templates/inc/overlay.js (206 lines), nn-templates/inc/overlay.scss (442 lines)                                                                                                 │
+│                                                                                                                                                                                            │
+│ ---                                                                                                                                                                                        │
+│ Task 118 - Build Mobile Bottom Nav Bar                                                                                                                                                     │
+│                                                                                                                                                                                            │
+│ Category: Frontend Components                                                                                                                                                              │
+│ Assigned To: Robert                                                                                                                                                                        │
+│ Priority: P0 - Critical                                                                                                                                                                    │
+│ Dependencies: 117                                                                                                                                                                          │
+│ Description:                                                                                                                                                                               │
+│ New component: fixed purple bar at the bottom of the screen on mobile. This is the primary way mobile users access search and navigation. Does NOT exist in the current app.               │
+│                                                                                                                                                                                            │
+│ Specifications:                                                                                                                                                                            │
+│ - Fixed position bottom, z-index 10                                                                                                                                                        │
+│ - Height: 55px                                                                                                                                                                             │
+│ - Background: --nn-purple1 (#562556)                                                                                                                                                       │
+│ - Hidden at 1200px+ (desktop)                                                                                                                                                              │
+│ - Contains 2 buttons:                                                                                                                                                                      │
+│   a. Search button: Opens search overlay. Shows search icon (white SVG) when closed, X icon when open. Text "Search" below icon.                                                           │
+│   b. Menu button: Opens nav overlay. Shows hamburger icon (white SVG) when closed, X icon when open. Text "Menu" below icon.                                                               │
+│ - Buttons use .btn_reset .btn_nav_icon_style_1 classes                                                                                                                                     │
+│ - Each button has data-overlay_target for the overlay system                                                                                                                               │
+│ - aria-expanded toggles with overlay state                                                                                                                                                 │
+│ - aria-controls references the overlay panel ID                                                                                                                                            │
+│                                                                                                                                                                                            │
+│ SVG icons: Copy from nn-templates/default-page-01.html lines 42-73 (search + close + hamburger + close)                                                                                    │
+│                                                                                                                                                                                            │
+│ Files to create: nearby-app/app/src/components/MobileNavBar.jsx, nearby-app/app/src/components/MobileNavBar.css                                                                            │
+│ Files to modify: nearby-app/app/src/App.jsx (add <MobileNavBar /> to layout)                                                                                                               │
+│ Source: nn-templates/default-page-01.html lines 32-76, nn-templates/inc/stylez.scss mobile_nav_bar styles                                                                                  │
+│                                                                                                                                                                                            │
+│ ---                                                                                                                                                                                        │
+│ Task 119 - Redesign Header/Navbar with Accessible Menu                                                                                                                                     │
+│                                                                                                                                                                                            │
+│ Category: Frontend Components                                                                                                                                                              │
+│ Assigned To: Robert (Barry provides CSS, Manav assists with React)                                                                                                                         │
+│ Priority: P0 - Critical                                                                                                                                                                    │
+│ Dependencies: 117, 118                                                                                                                                                                     │
+│ Description:                                                                                                                                                                               │
+│ Replace the current Navbar.jsx with Barry's header structure. The current navbar is a simple hamburger menu. Barry's design uses an overlay-based navigation that transitions from mobile  │
+│ overlay to visible desktop menu at 1200px.                                                                                                                                                 │
+│                                                                                                                                                                                            │
+│ Structure:                                                                                                                                                                                 │
+│ <header id="header_primary_parent">                                                                                                                                                        │
+│   <div id="logo1">  <!-- Logo (SVG 152x50px) -->                                                                                                                                           │
+│   <div id="wrapper_header_primary">                                                                                                                                                        │
+│     <Overlay id="nav_overlay">  <!-- Overlay for mobile, visible for desktop -->                                                                                                           │
+│       <div id="navigation_primary1">                                                                                                                                                       │
+│         <div id="logo2">  <!-- Logo in mobile menu -->                                                                                                                                     │
+│         <nav id="aaa_menu_primary1" aria-label="main navigation">                                                                                                                          │
+│           <!-- Accessible menu -->                                                                                                                                                         │
+│         </nav>                                                                                                                                                                             │
+│         <div id="account_box">  <!-- Placeholder -->                                                                                                                                       │
+│       </div>                                                                                                                                                                               │
+│     </Overlay>                                                                                                                                                                             │
+│   </div>                                                                                                                                                                                   │
+│ </header>                                                                                                                                                                                  │
+│                                                                                                                                                                                            │
+│ Nav items (from Barry's template, line 170-204):                                                                                                                                           │
+│ 1. Search button (triggers search overlay, purple search icon)                                                                                                                             │
+│ 2. Home (/)                                                                                                                                                                                │
+│ 3. Explore (/explore)                                                                                                                                                                      │
+│ 4. Events (/events or /explore?type=EVENT)                                                                                                                                                 │
+│ 5. Disaster (/disaster-network - coming soon)                                                                                                                                              │
+│ 6. Updates (https://blog.nearbynearby.com/ - external)                                                                                                                                     │
+│ 7. More (dropdown submenu):                                                                                                                                                                │
+│   - Help / FAQs                                                                                                                                                                            │
+│   - Contact                                                                                                                                                                                │
+│   - Register Your Business                                                                                                                                                                 │
+│                                                                                                                                                                                            │
+│ Accessible menu features (port from nn-templates/inc/accessible-menu.js):                                                                                                                  │
+│ - role="menubar", role="menuitem", role="menu" ARIA attributes                                                                                                                             │
+│ - Click to toggle submenus on mobile                                                                                                                                                       │
+│ - Hover to open submenus on desktop (1200px+)                                                                                                                                              │
+│ - Click outside closes open submenus                                                                                                                                                       │
+│ - aria-expanded managed on dropdown buttons                                                                                                                                                │
+│ - Dropdown button (▾) for items with submenus                                                                                                                                              │
+│ - Window resize handler: close submenus when crossing 1200px breakpoint                                                                                                                    │
+│                                                                                                                                                                                            │
+│ Logo: SVG from nn-templates/default-page-01.html lines 99-116                                                                                                                              │
+│                                                                                                                                                                                            │
+│ Files to modify: nearby-app/app/src/components/Navbar.jsx (full rewrite), nearby-app/app/src/components/Navbar.css (replace)                                                               │
+│ Source: nn-templates/default-page-01.html lines 95-241, nn-templates/inc/accessible-menu.scss (591 lines), nn-templates/inc/accessible-menu.js (274 lines)                                 │
+│                                                                                                                                                                                            │
+│ ---                                                                                                                                                                                        │
+│ Task 120 - Build Search Overlay                                                                                                                                                            │
+│                                                                                                                                                                                            │
+│ Category: Frontend Components                                                                                                                                                              │
+│ Assigned To: Robert (Manav assists with search API connection)                                                                                                                             │
+│ Priority: P0 - Critical                                                                                                                                                                    │
+│ Dependencies: 117                                                                                                                                                                          │
+│ Description:                                                                                                                                                                               │
+│ Full-screen overlay triggered by search buttons (mobile bottom bar + desktop header). This is the main entry point for the "One Search" system.                                            │
+│                                                                                                                                                                                            │
+│ UI Structure (from Barry's template, lines 350-398):                                                                                                                                       │
+│ <Overlay id="search_overlay">                                                                                                                                                              │
+│   <h2 class="search_main_title">Search</h2>                                                                                                                                                │
+│   <form role="search" aria-label="one search">                                                                                                                                             │
+│     <label for="one_search" class="visually_hidden">Search for locations or interests</label>                                                                                              │
+│     <div class="search_input_wrapper">                                                                                                                                                     │
+│       <span class="search_icon" aria-hidden="true"><!-- purple search SVG --></span>                                                                                                       │
+│       <input type="search" id="one_search"                                                                                                                                                 │
+│         placeholder="What's nearby? Search for locations or interests..."                                                                                                                  │
+│         autocomplete="off" aria-describedby="search_hint">                                                                                                                                 │
+│     </div>                                                                                                                                                                                 │
+│     <button type="submit" class="button btn_search">Search</button>                                                                                                                        │
+│   </form>                                                                                                                                                                                  │
+│   <span id="search_hint" class="visually_hidden">Enter a location or interest to search</span>                                                                                             │
+│   <p class="search_terms_text">All verified... <a href="/terms-of-service/">Terms of Service</a></p>                                                                                       │
+│ </Overlay>                                                                                                                                                                                 │
+│                                                                                                                                                                                            │
+│ Behavior:                                                                                                                                                                                  │
+│ - Auto-focuses the search input when opened (data-focus_target="one_search")                                                                                                               │
+│ - Connects to existing /api/pois/hybrid-search?q={query}&limit=50 API                                                                                                                      │
+│ - Shows dropdown results as user types (reuse existing SearchDropdown.jsx logic)                                                                                                           │
+│ - On submit/selection, navigates to the appropriate page (see Task 121 for routing)                                                                                                        │
+│                                                                                                                                                                                            │
+│ Files to create: nearby-app/app/src/components/SearchOverlay.jsx, nearby-app/app/src/components/SearchOverlay.css                                                                          │
+│ Files to modify: nearby-app/app/src/components/SearchBar.jsx (extract reusable search logic)                                                                                               │
+│ Source: nn-templates/default-page-01.html lines 350-398                                                                                                                                    │
+│                                                                                                                                                                                            │
+│ ---                                                                                                                                                                                        │
+│ Task 121 - Document "One Search" Routing Logic (for Manav)                                                                                                                                 │
+│                                                                                                                                                                                            │
+│ Category: Search Architecture                                                                                                                                                              │
+│ Assigned To: Manav                                                                                                                                                                         │
+│ Priority: P1                                                                                                                                                                               │
+│ Dependencies: None                                                                                                                                                                         │
+│ Description:                                                                                                                                                                               │
+│ This task documents all the decisions made by Barry and Rhonda about how the "One Search" system should route users. Manav owns the search backend implementation. Robert will connect the │
+│  frontend to whatever API Manav provides.                                                                                                                                                  │
+│                                                                                                                                                                                            │
+│ The "One Search" concept: A single search input that intelligently routes to 4 different result types:                                                                                     │
+│                                                                                                                                                                                            │
+│ Type 1 - Exact POI Match (POI is in the system):                                                                                                                                           │
+│ - User types a specific business name (e.g., "Creamy Cones Ice Cream"), park name ("Pittsboro Park"), service ("Barry's Website Design"), or event ("Happy Hour at Barry's Pub")           │
+│ - System recognizes this matches a POI in the database                                                                                                                                     │
+│ - Action: Navigate directly to that POI's detail page (e.g., /places/creamy-cones-ice-cream-pittsboro-nc)                                                                                  │
+│ - This is the "easy one" - the POI exists, send them right there                                                                                                                           │
+│                                                                                                                                                                                            │
+│ Type 2 - POI Not Found (searched like Type 1, but doesn't exist):                                                                                                                          │
+│ - User searches for a specific place that is NOT in the database                                                                                                                           │
+│ - System determines no POI matches                                                                                                                                                         │
+│ - Action: Show a message below the search box: "We couldn't find [LOCATION NAME] but you can help us by adding it." with an "Add new place" button                                         │
+│ - The "Add new place" button goes to the Add POI form (/addlocation/)                                                                                                                      │
+│ - This encourages community contribution (important for rural communities)                                                                                                                 │
+│                                                                                                                                                                                            │
+│ Type 3 - Specialized Zones (broader location/area search):                                                                                                                                 │
+│ - User types a town, county, shopping mall, state, or named area                                                                                                                           │
+│ - Examples: "Pittsboro, North Carolina", "Chatham County", "Jordan Lake", "State of North Carolina", "Downtown Pittsboro"                                                                  │
+│ - Action: Navigate to a specialized page showing:                                                                                                                                          │
+│   - Explore by County/Town cards                                                                                                                                                           │
+│   - "People Also Searched For" suggestions                                                                                                                                                 │
+│   - Upcoming Events from that area                                                                                                                                                         │
+│   - Map centered on the area with nearby POIs                                                                                                                                              │
+│   - All trails in that area (if applicable, like Jordan Lake)                                                                                                                              │
+│   - All businesses in that area (if applicable, like a shopping mall)                                                                                                                      │
+│ - POST-MVP: This page type is not fully designed yet. For MVP, redirect to the Explore page with appropriate filters.                                                                      │
+│                                                                                                                                                                                            │
+│ Type 4 - Keyword or Interest (mood/attribute/activity search):                                                                                                                             │
+│ - User types a keyword, interest, mood, or attribute                                                                                                                                       │
+│ - Examples: "pet friendly", "wheelchair accessible", "calm", "adventurous", "hiking in Boston MA", "live music", "waterfalls"                                                              │
+│ - Action: Navigate to a results page showing:                                                                                                                                              │
+│   - Left sidebar: Filter checkboxes by type (Businesses, Parks, Trails, Events)                                                                                                            │
+│   - Map showing all matching results                                                                                                                                                       │
+│   - Result cards below the map                                                                                                                                                             │
+│   - All results are places matching that keyword/attribute                                                                                                                                 │
+│ - This is where the hybrid AI search shines - semantic search understands "adventurous" or moods                                                                                           │
+│                                                                                                                                                                                            │
+│ How to determine which type: The backend search API needs to classify the query:                                                                                                           │
+│ 1. If the query exactly or closely matches a POI name → Type 1                                                                                                                             │
+│ 2. If the query looks like a specific place name but has no match → Type 2                                                                                                                 │
+│ 3. If the query matches a known location/area/zone → Type 3                                                                                                                                │
+│ 4. Otherwise → Type 4                                                                                                                                                                      │
+│                                                                                                                                                                                            │
+│ Current search state: The existing SearchBar.jsx uses /api/pois/hybrid-search?q={query}&limit=50 which returns POI results. It doesn't classify query type. This classification logic      │
+│ needs to be added, either frontend-side (by analyzing results) or backend-side (preferred).                                                                                                │
+│                                                                                                                                                                                            │
+│ ---                                                                                                                                                                                        │
+│ Task 122 - Add Announcement Banner                                                                                                                                                         │
+│                                                                                                                                                                                            │
+│ Category: Frontend Components                                                                                                                                                              │
+│ Assigned To: Robert                                                                                                                                                                        │
+│ Priority: P1                                                                                                                                                                               │
+│ Dependencies: 113                                                                                                                                                                          │
+│ Description:                                                                                                                                                                               │
+│ Add a dismissible banner at the top of every page announcing that the service is currently limited to Pittsboro, NC.                                                                       │
+│                                                                                                                                                                                            │
+│ Specifications:                                                                                                                                                                            │
+│ - Background: #f5e2a3 (light yellow)                                                                                                                                                       │
+│ - Text color: --nn-slate (#33404E)                                                                                                                                                         │
+│ - Accent color: --nn-purple1 (#562556) for "Testing in Progress:" prefix                                                                                                                   │
+│ - Border bottom: 1px solid #ffec1c                                                                                                                                                         │
+│ - Font size: 14px mobile, 18px at 980px+                                                                                                                                                   │
+│ - Padding: 13px 0                                                                                                                                                                          │
+│ - Text: "Testing in Progress:" Currently, Nearby Nearby is available only in select areas of Pittsboro, NC. We are starting small to ensure we get it right.                               │
+│ - Position: Below mobile nav area, above header content                                                                                                                                    │
+│ - Should be visible on EVERY page                                                                                                                                                          │
+│                                                                                                                                                                                            │
+│ Files to create: nearby-app/app/src/components/AnnouncementBanner.jsx, nearby-app/app/src/components/AnnouncementBanner.css                                                                │
+│ Files to modify: nearby-app/app/src/App.jsx (add to layout)                                                                                                                                │
+│ Source: nn-templates/default-page-01.html lines 83-87                                                                                                                                      │
+│                                                                                                                                                                                            │
+│ ---                                                                                                                                                                                        │
+│ Task 123 - Redesign Footer from Barry's Template                                                                                                                                           │
+│                                                                                                                                                                                            │
+│ Category: Frontend Components                                                                                                                                                              │
+│ Assigned To: Robert (Barry provides CSS)                                                                                                                                                   │
+│ Priority: P1                                                                                                                                                                               │
+│ Dependencies: 113, 115                                                                                                                                                                     │
+│ Description:                                                                                                                                                                               │
+│ Replace the current Footer.jsx with Barry's 3-layer footer structure.                                                                                                                      │
+│                                                                                                                                                                                            │
+│ Layer 1: Email Newsletter (#footer_layer_email):                                                                                                                                           │
+│ - Purple background (--nn-purple1)                                                                                                                                                         │
+│ - Left side: Email SVG icon + "Email Newsletter" title + "Get notified..." subtitle                                                                                                        │
+│ - Right side: Email input + Subscribe button                                                                                                                                               │
+│ - Accessible form with role="search", hidden label, aria-describedby                                                                                                                       │
+│ - Connect to existing subscribe endpoint (check with Manav where emails are stored)                                                                                                        │
+│                                                                                                                                                                                            │
+│ Layer 2: Community Interest (#footer_layer_community):                                                                                                                                     │
+│ - Gold background (--nn-gold)                                                                                                                                                              │
+│ - Title: "Want Nearby Nearby in Your Community?"                                                                                                                                           │
+│ - Subtitle: "We're just getting started!"                                                                                                                                                  │
+│ - Description text + "Let's Bring it Home" button linking to /community-interest/                                                                                                          │
+│                                                                                                                                                                                            │
+│ Layer 3: Main Footer (#footer_footer):                                                                                                                                                     │
+│ - Dark background                                                                                                                                                                          │
+│ - Column 1: Logo (SVG) + "Stay Connected" + Social icons (Facebook, Instagram, LinkedIn)                                                                                                   │
+│ - Column 2: Company links                                                                                                                                                                  │
+│ - Column 3: Get Involved links (Services, Feedback, Contact, Register Your Business, Community Interest)                                                                                   │
+│ - Column 4: Legal & Policies (Terms & Conditions, Privacy Policy)                                                                                                                          │
+│ - Bottom: Copyright notice                                                                                                                                                                 │
+│                                                                                                                                                                                            │
+│ Files to modify: nearby-app/app/src/components/Footer.jsx (full rewrite), nearby-app/app/src/components/Footer.css (replace)                                                               │
+│ Source: nn-templates/default-page-01.html lines 408-500+                                                                                                                                   │
+│                                                                                                                                                                                            │
+│ ---                                                                                                                                                                                        │
+│ Phase 3: Home Page (Week 3)                                                                                                                                                                │
+│                                                                                                                                                                                            │
+│ Task 124 - Redesign Home Page                                                                                                                                                              │
+│                                                                                                                                                                                            │
+│ Category: Frontend Pages                                                                                                                                                                   │
+│ Assigned To: Robert                                                                                                                                                                        │
+│ Priority: P1                                                                                                                                                                               │
+│ Dependencies: 119, 120, 123                                                                                                                                                                │
+│ Description:                                                                                                                                                                               │
+│ Redesign the home page to match the Figma wireframe. The current home page has Hero + SimpleSection + SignupBar + InfoSection. The new design centers on search and category discovery.    │
+│                                                                                                                                                                                            │
+│ New structure:                                                                                                                                                                             │
+│ 1. Hero with Search: Large prominent search area (same content as search overlay - "What's nearby?"). This is the #1 thing users should do.                                                │
+│ 2. Category Cards: Grid of 4 cards for MVP - Businesses, Parks, Trails, Events. Each card shows:                                                                                           │
+│   - Icon (from lucide-react or custom SVG)                                                                                                                                                 │
+│   - Category name                                                                                                                                                                          │
+│   - Count of POIs from API (e.g., "24 Businesses")                                                                                                                                         │
+│   - Arrow/link to /explore?type=TYPE                                                                                                                                                       │
+│ 3. "Road Trip" Teaser Graphic: Barry will provide as separate SVG parts for responsive assembly. Placeholder for now.                                                                      │
+│ 4. Footer (via layout, not page-specific)                                                                                                                                                  │
+│                                                                                                                                                                                            │
+│ Removed for now: Blog RSS feed (post-MVP, Task 78 already exists), Sponsor logos (post-MVP, Rhonda will sell sponsorships after platform launch), Events feed (explore handles this).      │
+│                                                                                                                                                                                            │
+│ API needed: GET /api/pois/count-by-type or derive counts from existing endpoints.                                                                                                          │
+│                                                                                                                                                                                            │
+│ Files to modify: nearby-app/app/src/pages/Home.jsx, nearby-app/app/src/components/Hero.jsx, nearby-app/app/src/components/Hero.css                                                         │
+│ Files to remove/simplify: SimpleSection.jsx, InfoSection.jsx, SignupBar.jsx (replaced by footer email layer)                                                                               │
+│                                                                                                                                                                                            │
+│ ---                                                                                                                                                                                        │
+│ Phase 4: Explore & Results Pages (Week 3-4)                                                                                                                                                │
+│                                                                                                                                                                                            │
+│ Task 125 - Redesign Explore Page                                                                                                                                                           │
+│                                                                                                                                                                                            │
+│ Category: Frontend Pages                                                                                                                                                                   │
+│ Assigned To: Robert                                                                                                                                                                        │
+│ Priority: P1                                                                                                                                                                               │
+│ Dependencies: 115, 124                                                                                                                                                                     │
+│ Description:                                                                                                                                                                               │
+│ Redesign the Explore page to match the Figma wireframe. Currently has a category grid + filtered results view.                                                                             │
+│                                                                                                                                                                                            │
+│ New Explore page (category view, no type filter active):                                                                                                                                   │
+│ - Page header: "Explore by Category"                                                                                                                                                       │
+│ - Category cards grid (same 4 as home: Businesses, Parks, Trails, Events) with counts                                                                                                      │
+│ - "People Also Searched For" section - show popular/recent search terms as clickable pills (can be hardcoded for MVP: "pet friendly", "live music", "waterfalls", "wheelchair accessible") │
+│ - "Upcoming Events from Pittsboro" section - pull next 4-6 events from API, show as cards with images                                                                                      │
+│                                                                                                                                                                                            │
+│ Filtered view (when ?type= is set) - keep existing but restyle:                                                                                                                            │
+│ - Location bar                                                                                                                                                                             │
+│ - Search within results                                                                                                                                                                    │
+│ - Two-column: scrollable POI list + Leaflet map                                                                                                                                            │
+│ - Apply new design system colors and typography                                                                                                                                            │
+│                                                                                                                                                                                            │
+│ Files to modify: nearby-app/app/src/pages/Explore.jsx, nearby-app/app/src/pages/Explore.css                                                                                                │
+│                                                                                                                                                                                            │
+│ ---                                                                                                                                                                                        │
+│ Task 126 - Build Keyword/Interest Results Page (Search Type 4)                                                                                                                             │
+│                                                                                                                                                                                            │
+│ Category: Frontend Pages                                                                                                                                                                   │
+│ Assigned To: Robert                                                                                                                                                                        │
+│ Priority: P2                                                                                                                                                                               │
+│ Dependencies: 121, 125                                                                                                                                                                     │
+│ Description:                                                                                                                                                                               │
+│ New page for when users search by keyword, mood, or interest (Type 4 from One Search). This is the Figma "Results Page 4 - Keyword or Interest Type".                                      │
+│                                                                                                                                                                                            │
+│ Layout:                                                                                                                                                                                    │
+│ - Header with search query shown                                                                                                                                                           │
+│ - Left sidebar: type filter checkboxes (Businesses, Parks, Trails, Events)                                                                                                                 │
+│ - Right: Map showing matching results                                                                                                                                                      │
+│ - Below: POI result cards in grid                                                                                                                                                          │
+│ - "Search information and options in filter results" banner                                                                                                                                │
+│                                                                                                                                                                                            │
+│ Route: /search?q={query} or /results?q={query}                                                                                                                                             │
+│                                                                                                                                                                                            │
+│ Files to create: nearby-app/app/src/pages/SearchResults.jsx, nearby-app/app/src/pages/SearchResults.css                                                                                    │
+│ Files to modify: nearby-app/app/src/App.jsx (add route)                                                                                                                                    │
+│                                                                                                                                                                                            │
+│ ---                                                                                                                                                                                        │
+│ Phase 5: POI Detail Restyling (Week 4)                                                                                                                                                     │
+│                                                                                                                                                                                            │
+│ Task 127 - Restyle POI Detail Pages to Match Design System                                                                                                                                 │
+│                                                                                                                                                                                            │
+│ Category: Frontend Detail                                                                                                                                                                  │
+│ Assigned To: Robert                                                                                                                                                                        │
+│ Priority: P1                                                                                                                                                                               │
+│ Dependencies: 115, 116                                                                                                                                                                     │
+│ Description:                                                                                                                                                                               │
+│ Apply the new design system (colors, typography, buttons, spacing) to all 4 POI detail page types. This is NOT a structural rewrite - the existing accordion layout and data display work. │
+│  This is a visual restyling pass.                                                                                                                                                          │
+│                                                                                                                                                                                            │
+│ Changes:                                                                                                                                                                                   │
+│ - Page header uses .page_header_style_1 pattern                                                                                                                                            │
+│ - Action buttons (Directions, Lat/Long, View Nearby, Call, Website) use new button classes                                                                                                 │
+│ - Accordions use design system colors                                                                                                                                                      │
+│ - Typography matches new h2/h3/paragraph styles                                                                                                                                            │
+│ - Links use --nn-teal1 color                                                                                                                                                               │
+│ - Verified badge uses --nn-purple1                                                                                                                                                         │
+│ - Cards use proper border radius and shadow from design system                                                                                                                             │
+│                                                                                                                                                                                            │
+│ Files to modify:                                                                                                                                                                           │
+│ - nearby-app/app/src/components/details/BusinessDetail.jsx + .css                                                                                                                          │
+│ - nearby-app/app/src/components/details/EventDetail.jsx + .css                                                                                                                             │
+│ - nearby-app/app/src/components/details/ParkDetail.jsx + .css                                                                                                                              │
+│ - nearby-app/app/src/components/details/TrailDetail.jsx + .css                                                                                                                             │
+│ - nearby-app/app/src/components/details/GenericDetail.jsx + .css                                                                                                                           │
+│                                                                                                                                                                                            │
+│ ---                                                                                                                                                                                        │
+│ Task 128 - Restyle Nearby Section to Match Design System                                                                                                                                   │
+│                                                                                                                                                                                            │
+│ Category: Nearby Feature                                                                                                                                                                   │
+│ Assigned To: Robert                                                                                                                                                                        │
+│ Priority: P2                                                                                                                                                                               │
+│ Dependencies: 115                                                                                                                                                                          │
+│ Description:                                                                                                                                                                               │
+│ Apply design system to the nearby section components. Note: Task 61 (existing) already covers the Nearby Card redesign per Figma (yellow border, centered numbers, etc.). This task covers │
+│  the container, filters, map markers, and directions modal.                                                                                                                                │
+│                                                                                                                                                                                            │
+│ Changes:                                                                                                                                                                                   │
+│ - Filter pills use design system colors (--nn-purple1 active, --nn-gold accents)                                                                                                           │
+│ - Map markers use --nn-purple1 (dark) and --nn-teal2 (highlighted)                                                                                                                         │
+│ - Current location marker uses --nn-gold                                                                                                                                                   │
+│ - Search bar within nearby uses design system input styles                                                                                                                                 │
+│ - Radius/date dropdowns use design system select styles                                                                                                                                    │
+│ - Directions modal uses new button classes                                                                                                                                                 │
+│ - Pagination uses design system colors                                                                                                                                                     │
+│                                                                                                                                                                                            │
+│ Files to modify:                                                                                                                                                                           │
+│ - nearby-app/app/src/components/nearby-feature/NearbySection.jsx + .css                                                                                                                    │
+│ - nearby-app/app/src/components/nearby-feature/NearbyFilters.jsx + .css                                                                                                                    │
+│ - nearby-app/app/src/components/Map.jsx + .css                                                                                                                                             │
+│                                                                                                                                                                                            │
+│ ---                                                                                                                                                                                        │
+│ Phase 6: QA & Polish (Week 5)                                                                                                                                                              │
+│                                                                                                                                                                                            │
+│ Task 129 - AAA Accessibility Audit                                                                                                                                                         │
+│                                                                                                                                                                                            │
+│ Category: Accessibility                                                                                                                                                                    │
+│ Assigned To: Robert (Barry reviews)                                                                                                                                                        │
+│ Priority: P1                                                                                                                                                                               │
+│ Dependencies: 116, 119, 120, 123                                                                                                                                                           │
+│ Description:                                                                                                                                                                               │
+│ Full AAA compliance audit before the conference demos.                                                                                                                                     │
+│                                                                                                                                                                                            │
+│ Checklist:                                                                                                                                                                                 │
+│ - Run Lighthouse accessibility audit on every page (score must be 95+)                                                                                                                     │
+│ - Run axe-core browser extension on every page (zero violations)                                                                                                                           │
+│ - Keyboard-navigate entire site: Tab through all interactive elements, Enter activates, Escape closes overlays/menus                                                                       │
+│ - Screen reader test (NVDA on Windows, VoiceOver on Mac): verify all content is announced, buttons have labels, images have alt text                                                       │
+│ - Color contrast: verify all text/background combos against Barry's Accessible Colors Figma page - must pass AAA (7:1 normal, 4.5:1 large)                                                 │
+│ - Touch targets: verify all buttons/links are at least 44x44px on mobile                                                                                                                   │
+│ - Focus trap works in search overlay and nav overlay                                                                                                                                       │
+│ - Skip-main link works (Tab from fresh page load focuses it)                                                                                                                               │
+│ - prefers-reduced-motion disables animations                                                                                                                                               │
+│ - lang="en" on <html> element                                                                                                                                                              │
+│                                                                                                                                                                                            │
+│ Files: May modify any CSS file to fix contrast/sizing issues found                                                                                                                         │
+│                                                                                                                                                                                            │
+│ ---                                                                                                                                                                                        │
+│ Task 130 - Responsive Testing Across All Breakpoints                                                                                                                                       │
+│                                                                                                                                                                                            │
+│ Category: Testing                                                                                                                                                                          │
+│ Assigned To: Robert (Barry reviews)                                                                                                                                                        │
+│ Priority: P1                                                                                                                                                                               │
+│ Dependencies: All component tasks                                                                                                                                                          │
+│ Description:                                                                                                                                                                               │
+│ Test every page at all 8 breakpoints. Barry is "very picky about breakpoints" and uses 5-6 breakpoints per design.                                                                         │
+│                                                                                                                                                                                            │
+│ Test matrix:                                                                                                                                                                               │
+│ - 360px: Extra small mobile (iPhone SE)                                                                                                                                                    │
+│ - 480px: Small mobile                                                                                                                                                                      │
+│ - 600px: Large mobile / small tablet                                                                                                                                                       │
+│ - 700px: Tablet portrait                                                                                                                                                                   │
+│ - 980px: Tablet landscape                                                                                                                                                                  │
+│ - 1200px: Desktop (CRITICAL: mobile nav hides, desktop nav appears)                                                                                                                        │
+│ - 1400px: Large desktop (max wrapper width kicks in)                                                                                                                                       │
+│ - 1600px+: Wide screens                                                                                                                                                                    │
+│                                                                                                                                                                                            │
+│ Check at each breakpoint:                                                                                                                                                                  │
+│ - Mobile nav bar appears/disappears correctly at 1200px                                                                                                                                    │
+│ - Header layout transitions smoothly                                                                                                                                                       │
+│ - Content width and padding adjust                                                                                                                                                         │
+│ - Typography scales appropriately                                                                                                                                                          │
+│ - Cards reflow (grid to single column)                                                                                                                                                     │
+│ - Map resizes properly                                                                                                                                                                     │
+│ - Touch targets remain >= 44px on mobile                                                                                                                                                   │
+│ - No horizontal scrollbar at any width                                                                                                                                                     │
+│                                                                                                                                                                                            │
+│ ---                                                                                                                                                                                        │
+│ POST-MVP Tasks                                                                                                                                                                             │
+│                                                                                                                                                                                            │
+│ Task 131 - Specialized Zones Page (Search Type 3)                                                                                                                                          │
+│                                                                                                                                                                                            │
+│ Category: Frontend Pages                                                                                                                                                                   │
+│ Assigned To: Robert                                                                                                                                                                        │
+│ Priority: P3                                                                                                                                                                               │
+│ Dependencies: 121, 125                                                                                                                                                                     │
+│ Description:                                                                                                                                                                               │
+│ This is the page users see when they search for a broader location like a town, county, or named area (e.g., "Pittsboro", "Chatham County", "Jordan Lake").                                │
+│                                                                                                                                                                                            │
+│ What "Specialized Zones" means (from the meeting):                                                                                                                                         │
+│ - It's a "hodgepodge page" that shows a lot of different things about an area                                                                                                              │
+│ - If someone types "Jordan Lake" → shows all trails, parks, events in/around Jordan Lake                                                                                                   │
+│ - If someone types "Pittsboro" → shows businesses, events, what people search for in that area                                                                                             │
+│ - If someone types a shopping mall → shows all businesses in that mall                                                                                                                     │
+│ - Essentially it's an area-scoped explore page with curated content                                                                                                                        │
+│                                                                                                                                                                                            │
+│ Figma wireframe shows:                                                                                                                                                                     │
+│ - "Explore by County" section with town/area cards                                                                                                                                         │
+│ - "People Also Searched For" section with suggestion pills                                                                                                                                 │
+│ - "Upcoming Events from Pittsboro" section with event cards + carousel arrows                                                                                                              │
+│                                                                                                                                                                                            │
+│ Why post-MVP: Barry said "those are ones that we're figuring out. We don't have that quite there yet." Rhonda and Barry need to define exactly what content appears for each zone type.    │
+│ For MVP, these searches can redirect to the Explore page with filters.                                                                                                                     │
+│                                                                                                                                                                                            │
+│ ---                                                                                                                                                                                        │
+│ Task 132 - Blog RSS Feed Integration                                                                                                                                                       │
+│                                                                                                                                                                                            │
+│ Category: Frontend Pages                                                                                                                                                                   │
+│ Assigned To: Robert                                                                                                                                                                        │
+│ Priority: P2                                                                                                                                                                               │
+│ Dependencies: 124                                                                                                                                                                          │
+│ Description:                                                                                                                                                                               │
+│ Integrate the WordPress blog RSS feed into the home page. The blog is at a separate domain (blog.nearbynearby.com) in a separate WordPress environment.                                    │
+│                                                                                                                                                                                            │
+│ Why post-MVP: Rhonda mentioned wanting this on the home page, but it requires RSS parsing, styling the feed to match the design, and the blog itself needs content first. Task 78 in the   │
+│ existing plan already covers "Blog Integration with Main Site."                                                                                                                            │
+│                                                                                                                                                                                            │
+│ ---                                                                                                                                                                                        │
+│ Task Summary Table                                                                                                                                                                         │
+│ ┌────────┬─────────────────────────────────────┬──────────┬──────────┬────────────────────┬──────────┐                                                                                     │
+│ │ Task # │                Title                │ Priority │ Assigned │    Dependencies    │   Week   │                                                                                     │
+│ ├────────┼─────────────────────────────────────┼──────────┼──────────┼────────────────────┼──────────┤                                                                                     │
+│ │ 113    │ Integrate Design Tokens into CSS    │ P0       │ Robert   │ -                  │ 1        │                                                                                     │
+│ ├────────┼─────────────────────────────────────┼──────────┼──────────┼────────────────────┼──────────┤                                                                                     │
+│ │ 114    │ Self-Host Fonts                     │ P0       │ Robert   │ 113                │ 1        │                                                                                     │
+│ ├────────┼─────────────────────────────────────┼──────────┼──────────┼────────────────────┼──────────┤                                                                                     │
+│ │ 115    │ Global Layout & Typography CSS      │ P0       │ Robert   │ 113, 114           │ 1        │                                                                                     │
+│ ├────────┼─────────────────────────────────────┼──────────┼──────────┼────────────────────┼──────────┤                                                                                     │
+│ │ 116    │ Accessibility Foundation            │ P0       │ Robert   │ 113                │ 1        │                                                                                     │
+│ ├────────┼─────────────────────────────────────┼──────────┼──────────┼────────────────────┼──────────┤                                                                                     │
+│ │ 117    │ Convert Overlay System to React     │ P0       │ Robert   │ 113, 116           │ 2        │                                                                                     │
+│ ├────────┼─────────────────────────────────────┼──────────┼──────────┼────────────────────┼──────────┤                                                                                     │
+│ │ 118    │ Build Mobile Bottom Nav Bar         │ P0       │ Robert   │ 117                │ 2        │                                                                                     │
+│ ├────────┼─────────────────────────────────────┼──────────┼──────────┼────────────────────┼──────────┤                                                                                     │
+│ │ 119    │ Redesign Header/Navbar              │ P0       │ Robert   │ 117, 118           │ 2        │                                                                                     │
+│ ├────────┼─────────────────────────────────────┼──────────┼──────────┼────────────────────┼──────────┤                                                                                     │
+│ │ 120    │ Build Search Overlay                │ P0       │ Robert   │ 117                │ 2        │                                                                                     │
+│ ├────────┼─────────────────────────────────────┼──────────┼──────────┼────────────────────┼──────────┤                                                                                     │
+│ │ 121    │ Document One Search Routing (Manav) │ P1       │ Manav    │ -                  │ 2        │                                                                                     │
+│ ├────────┼─────────────────────────────────────┼──────────┼──────────┼────────────────────┼──────────┤                                                                                     │
+│ │ 122    │ Add Announcement Banner             │ P1       │ Robert   │ 113                │ 2        │                                                                                     │
+│ ├────────┼─────────────────────────────────────┼──────────┼──────────┼────────────────────┼──────────┤                                                                                     │
+│ │ 123    │ Redesign Footer                     │ P1       │ Robert   │ 113, 115           │ 2        │                                                                                     │
+│ ├────────┼─────────────────────────────────────┼──────────┼──────────┼────────────────────┼──────────┤                                                                                     │
+│ │ 124    │ Redesign Home Page                  │ P1       │ Robert   │ 119, 120, 123      │ 3        │                                                                                     │
+│ ├────────┼─────────────────────────────────────┼──────────┼──────────┼────────────────────┼──────────┤                                                                                     │
+│ │ 125    │ Redesign Explore Page               │ P1       │ Robert   │ 115, 124           │ 3        │                                                                                     │
+│ ├────────┼─────────────────────────────────────┼──────────┼──────────┼────────────────────┼──────────┤                                                                                     │
+│ │ 126    │ Keyword/Interest Results Page       │ P2       │ Robert   │ 121, 125           │ 4        │                                                                                     │
+│ ├────────┼─────────────────────────────────────┼──────────┼──────────┼────────────────────┼──────────┤                                                                                     │
+│ │ 127    │ Restyle POI Detail Pages            │ P1       │ Robert   │ 115, 116           │ 4        │                                                                                     │
+│ ├────────┼─────────────────────────────────────┼──────────┼──────────┼────────────────────┼──────────┤                                                                                     │
+│ │ 128    │ Restyle Nearby Section              │ P2       │ Robert   │ 115                │ 4        │                                                                                     │
+│ ├────────┼─────────────────────────────────────┼──────────┼──────────┼────────────────────┼──────────┤                                                                                     │
+│ │ 129    │ AAA Accessibility Audit             │ P1       │ Robert   │ 116, 119, 120, 123 │ 5        │                                                                                     │
+│ ├────────┼─────────────────────────────────────┼──────────┼──────────┼────────────────────┼──────────┤                                                                                     │
+│ │ 130    │ Responsive Testing                  │ P1       │ Robert   │ All                │ 5        │                                                                                     │
+│ ├────────┼─────────────────────────────────────┼──────────┼──────────┼────────────────────┼──────────┤                                                                                     │
+│ │ 131    │ Specialized Zones Page              │ P3       │ Robert   │ 121, 125           │ Post-MVP │                                                                                     │
+│ ├────────┼─────────────────────────────────────┼──────────┼──────────┼────────────────────┼──────────┤                                                                                     │
+│ │ 132    │ Blog RSS Feed                       │ P2       │ Robert   │ 124                │ Post-MVP │                                                                                     │
+│ └────────┴─────────────────────────────────────┴──────────┴──────────┴────────────────────┴──────────┘                                                                                     │
+│ Critical Files Reference                                                                                                                                                                   │
+│ ┌────────────────────────┬────────────────────────────────────────────────────────────────┐                                                                                                │
+│ │        Purpose         │                           File Path                            │                                                                                                │
+│ ├────────────────────────┼────────────────────────────────────────────────────────────────┤                                                                                                │
+│ │ Design tokens source   │ nn-templates/inc/options.scss                                  │                                                                                                │
+│ ├────────────────────────┼────────────────────────────────────────────────────────────────┤                                                                                                │
+│ │ Main stylesheet source │ nn-templates/inc/stylez.scss                                   │                                                                                                │
+│ ├────────────────────────┼────────────────────────────────────────────────────────────────┤                                                                                                │
+│ │ Accessible menu source │ nn-templates/inc/accessible-menu.scss + .js                    │                                                                                                │
+│ ├────────────────────────┼────────────────────────────────────────────────────────────────┤                                                                                                │
+│ │ Overlay system source  │ nn-templates/inc/overlay.scss + .js                            │                                                                                                │
+│ ├────────────────────────┼────────────────────────────────────────────────────────────────┤                                                                                                │
+│ │ Page template source   │ nn-templates/default-page-01.html                              │                                                                                                │
+│ ├────────────────────────┼────────────────────────────────────────────────────────────────┤                                                                                                │
+│ │ Font files source      │ nn-templates/fonts/*.woff2                                     │                                                                                                │
+│ ├────────────────────────┼────────────────────────────────────────────────────────────────┤                                                                                                │
+│ │ SVG icons source       │ nn-templates/media/*.svg                                       │                                                                                                │
+│ ├────────────────────────┼────────────────────────────────────────────────────────────────┤                                                                                                │
+│ │ App entry point        │ nearby-app/app/src/App.jsx                                     │                                                                                                │
+│ ├────────────────────────┼────────────────────────────────────────────────────────────────┤                                                                                                │
+│ │ Current navbar         │ nearby-app/app/src/components/Navbar.jsx                       │                                                                                                │
+│ ├────────────────────────┼────────────────────────────────────────────────────────────────┤                                                                                                │
+│ │ Current footer         │ nearby-app/app/src/components/Footer.jsx                       │                                                                                                │
+│ ├────────────────────────┼────────────────────────────────────────────────────────────────┤                                                                                                │
+│ │ Current home page      │ nearby-app/app/src/pages/Home.jsx                              │                                                                                                │
+│ ├────────────────────────┼────────────────────────────────────────────────────────────────┤                                                                                                │
+│ │ Current explore page   │ nearby-app/app/src/pages/Explore.jsx                           │                                                                                                │
+│ ├────────────────────────┼────────────────────────────────────────────────────────────────┤                                                                                                │
+│ │ Current search bar     │ nearby-app/app/src/components/SearchBar.jsx                    │                                                                                                │
+│ ├────────────────────────┼────────────────────────────────────────────────────────────────┤                                                                                                │
+│ │ Current nearby section │ nearby-app/app/src/components/nearby-feature/NearbySection.jsx │                                                                                                │
+│ ├────────────────────────┼────────────────────────────────────────────────────────────────┤                                                                                                │
+│ │ Existing PLAN CSV      │ docs/archive/NearbyNearby_Project_Plan.csv                     │                                                                                                │
+│ ├────────────────────────┼────────────────────────────────────────────────────────────────┤                                                                                                │
+│ │ Sheets CLI             │ scripts/google_sheets/sheets_client.py                         │                                                                                                │
+│ └────────────────────────┴────────────────────────────────────────────────────────────────┘                                                                                                │
+│ Verification                                                                                                                                                                               │
+│                                                                                                                                                                                            │
+│ After implementation, test by:                                                                                                                                                             │
+│ 1. Run locally: cd nearby-app && docker compose -f docker-compose.dev.yml up --build                                                                                                       │
+│ 2. Frontend: http://localhost:8003 (dev with hot reload)                                                                                                                                   │
+│ 3. Backend API: http://localhost:8002                                                                                                                                                      │
+│ 4. Test mobile nav at < 1200px width (Chrome DevTools responsive mode)                                                                                                                     │
+│ 5. Test desktop nav at > 1200px width                                                                                                                                                      │
+│ 6. Test search overlay opens from both mobile bottom bar and desktop header                                                                                                                │
+│ 7. Test keyboard navigation: Tab through entire site                                                                                                                                       │
+│ 8. Run Lighthouse accessibility audit (target: 95+ score)                                                                                                                                  │
+│ 9. Verify all colors match Barry's Accessible Colors Figma spec           

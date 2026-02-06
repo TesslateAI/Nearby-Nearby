@@ -1,227 +1,164 @@
-:root {
-  --nn-bg: #F4EFF7; /* very light lavender/gray from screenshot */
-  --nn-ink: #33404E; /* bolder font color - color blind accessible */
-  --nn-ink-muted: #597199; /* muted font color for secondary text */
-  --nn-primary: #562556; /* purple color for banner/nav */
-  --nn-accent: #328170; /* green button - color blind accessible */
-  --nn-accent-600: #286857; /* darker green for hover states */
-  --nn-card: #ffffff;
-  --nn-border: #D9CFE3; /* subtle purple border */
-  --nn-border-strong: #6f3a80; /* card outline purple */
-}
+/* ==========================================================================
+   Hero section — restyled with nn-templates design system
+   ========================================================================== */
 
 .nn-hero {
   position: relative;
-  background: var(--nn-bg);
-  color: var(--nn-ink);
+  background: var(--color-bg);
+  color: var(--nn-dark);
   overflow: hidden;
 }
 
-/* Announcement bar */
-.nn-announce {
-  background: var(--nn-primary);
-  color: #fff;
-  font-weight: 500;
-  text-align: center;
-  padding: 10px 16px;
-  font-size: 14px;
-}
-.nn-announce-icon { margin-right: 8px; }
-
-/* Navbar styles have moved to Navbar.css */
-
-/* Inner hero content */
 .nn-hero__inner {
-  max-width: 960px;
   margin: 0 auto;
   padding: 40px 20px 80px;
   text-align: center;
   position: relative;
-  z-index: 1; /* keep above background image */
-}
-
-.nn-eyebrow {
-  color: #c8bdd8;
-  font-weight: 600;
-  letter-spacing: 0.05em;
-  margin: 20px 0 6px;
+  z-index: 1;
 }
 
 .nn-title {
+  font-family: var(--font-poppins);
   font-weight: 800;
   font-size: 56px;
   line-height: 1.05;
   margin: 6px 0 8px;
+  color: var(--nn-purple1);
 }
 
 .nn-subtitle {
+  font-family: var(--font-poppins);
   font-size: 28px;
   font-weight: 700;
-  color: var(--nn-ink);
+  color: var(--nn-dark);
   margin: 0 0 16px;
 }
 
 .nn-lede {
-  color: #6d3b7f; /* purple text line seen in screenshot */
+  color: var(--nn-purple2);
   font-weight: 600;
   margin: 6px 0 8px;
 }
 
-.nn-support { color: var(--nn-ink-muted); max-width: 760px; margin: 0 auto 16px; }
+.nn-support {
+  color: var(--nn-gray);
+  max-width: 760px;
+  margin: 0 auto 16px;
+}
 
 /* Hero filter pills */
 .nn-hero-filters {
   margin: 0 0 12px;
 }
-
 .nn-hero-filters .nearby-filters {
   padding: 0;
   justify-content: center;
 }
-
 .nn-hero-filters .nearby-filters__scroll {
   justify-content: center;
 }
 
-/* Search card wrapper */
+/* Search card */
 .nn-search-card {
   position: relative;
-  background: var(--nn-card);
-  border: 2px solid var(--nn-border-strong);
+  background: #fff;
+  border: 2px solid var(--nn-purple1);
   border-radius: 12px;
   padding: 18px 18px 14px;
   max-width: 760px;
   margin: 14px auto 0;
-  box-shadow: 0 2px 0 0 rgba(83, 43, 98, 0.12);
-  z-index: 2; /* ensure above the doodle background */
+  box-shadow: 0 2px 0 0 rgba(86, 37, 86, 0.12);
+  z-index: 2;
 }
 
-/* Search bar card */
+/* Search form row */
 .nn-search {
   display: grid;
   grid-template-columns: 1fr auto;
   align-items: center;
   gap: 0;
-  border: 2px solid #5a2a6c; /* purple border to match subscribe section */
+  border: 2px solid var(--nn-purple1);
   border-radius: 12px;
-  background: #ffffff; /* white background */
-  overflow: hidden; /* clip any inner white gaps */
+  background: #fff;
+  overflow: hidden;
   max-width: 100%;
   margin: 8px auto 6px;
 }
 
-/* SearchBar integration with Hero */
-.nn-search .search-bar-wrapper {
-  flex: 1;
-}
-
+.nn-search .search-bar-wrapper { flex: 1; }
 .nn-search .search-bar-input input {
-  border: none; /* remove border, parent container has it */
-  border-radius: 0; /* clipped by parent */
+  border: none;
+  border-radius: 0;
   font-size: 16px;
-  padding: 14px 16px 14px 48px; /* match subscribe section padding */
-  background: #ffffff;
+  padding: 14px 16px 14px 48px;
+  background: #fff;
 }
 
-.nn-button {
-  background: var(--nn-accent);
-  color: #fff;
-  border: 2px solid #286857;
-  border-radius: 10px; /* rounded button inside clipped parent */
-  padding: 10px 18px; /* match subscribe button padding */
-  margin: 6px; /* small breathing room without creating white "border" */
-  font-weight: 700;
-  font-size: 15px;
-  cursor: pointer;
+.nn-search .button {
+  margin: 6px;
 }
-.nn-button:hover { background: var(--nn-accent-600); }
 
-.nn-terms { color: #9b97a8; font-size: 12px; margin: 6px 0 0; }
-
+.nn-terms {
+  color: var(--nn-gray);
+  font-size: 12px;
+  margin: 6px 0 0;
+}
 .nn-terms__link {
-  color: var(--nn-accent);
+  color: var(--nn-teal1);
   text-decoration: underline;
-  transition: color 0.2s ease;
 }
-
 .nn-terms__link:hover {
-  color: var(--nn-accent-600);
+  color: var(--nn-teal2);
 }
 
-/* Decorative doodle area */
+/* Decorative background */
 .nn-doodle {
   position: absolute;
   inset: 0;
   background: url('../assets/nearby-nearby-home-page-paths-1.svg') center/cover no-repeat;
   opacity: 0.6;
   pointer-events: none;
-  z-index: 0; /* ensure behind the card */
+  z-index: 0;
 }
 
-/* Responsive tweaks */
+/* ── Responsive ──────────────────────────────────────────────── */
 @media (max-width: 768px) {
-  .nn-hero__inner {
-    padding: 30px 16px 60px;
-  }
-
-  .nn-title {
-    font-size: 36px;
-  }
-
-  .nn-subtitle {
-    font-size: 20px;
-  }
-
-  .nn-lede {
-    font-size: 14px;
-  }
-
-  .nn-search-card {
-    padding: 16px 14px 12px;
-  }
-
+  .nn-hero__inner { padding: 30px 16px 60px; }
+  .nn-title { font-size: 36px; }
+  .nn-subtitle { font-size: 20px; }
+  .nn-lede { font-size: 14px; }
+  .nn-search-card { padding: 16px 14px 12px; }
   .nn-search {
     grid-template-columns: 1fr;
     gap: 8px;
   }
-
   .nn-search .search-bar-input input {
-    border: 2px solid #5a2a6c;
+    border: 2px solid var(--nn-purple1);
     border-radius: 10px;
     font-size: 15px;
   }
-
-  .nn-button {
+  .nn-search .button {
     padding: 12px 18px;
     border-radius: 10px;
     margin: 0;
     width: 100%;
   }
-
-  .nn-support {
-    font-size: 14px;
-  }
-
-  .nn-terms {
-    font-size: 11px;
-  }
-
-  .nn-announce {
-    font-size: 12px;
-    padding: 8px 12px;
-  }
+  .nn-support { font-size: 14px; }
+  .nn-terms { font-size: 11px; }
 }
 
 @media (max-width: 480px) {
-  .nn-title {
-    font-size: 28px;
-  }
+  .nn-title { font-size: 28px; }
+  .nn-subtitle { font-size: 18px; }
+  .nn-hero__inner { padding: 20px 12px 50px; }
+}
 
-  .nn-subtitle {
-    font-size: 18px;
-  }
+@media (min-width: 1400px) {
+  .nn-title { font-size: 64px; }
+  .nn-subtitle { font-size: 32px; }
+}
 
-  .nn-hero__inner {
-    padding: 20px 12px 50px;
-  }
+@media (min-width: 1900px) {
+  .nn-title { font-size: 72px; }
+  .nn-subtitle { font-size: 36px; }
 }

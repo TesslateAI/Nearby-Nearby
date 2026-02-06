@@ -16,13 +16,28 @@ The user-facing frontend is a React application built with Vite. It provides sea
 nearby-app/app/src/
 ├── components/           # Reusable components
 │   ├── common/           # Shared components (HoursDisplay, etc.)
-│   ├── details/          # POI detail components (BusinessDetail, GenericDetail, etc.)
+│   ├── details/          # POI detail components
 │   ├── nearby-feature/   # Nearby feature components
-│   └── seo/              # SEO components
+│   ├── seo/              # SEO components
+│   ├── MobileNavBar.jsx  # Mobile bottom navigation
+│   ├── AnnouncementBanner.jsx  # Top announcement bar
+│   ├── SearchOverlay.jsx # Full-screen search overlay
+│   ├── Overlay.jsx       # Backdrop overlay component
+│   └── NNLogo.jsx        # Logo component
 ├── pages/                # Page components
+│   ├── Home.jsx
+│   ├── Explore.jsx       # Browse + URL-driven search results
+│   ├── POIDetail.jsx     # Smart router to type-specific detail
+│   ├── CommunityInterest.jsx  # Community interest form
+│   ├── Contact.jsx       # Contact form
+│   ├── Feedback.jsx      # Feedback with file uploads
+│   └── ClaimBusiness.jsx # Business claim form
 ├── hooks/                # Custom hooks
+│   ├── useOverlay.js     # Shared overlay state management
+│   └── usePWAInstall.js  # PWA install prompt
+├── styles/               # Shared CSS styles
 ├── utils/                # Utilities (hoursUtils, slugify, etc.)
-└── App.jsx               # Root component
+└── App.jsx               # Root component with overlay system
 ```
 
 ---
@@ -34,26 +49,43 @@ nearby-app/app/src/
 ```jsx
 // nearby-app/app/src/App.jsx
 
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { HelmetProvider } from 'react-helmet-async';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import useOverlay from './hooks/useOverlay';
 
 function App() {
+  const navOverlay = useOverlay('nav_overlay', { skipDesktop: true });
+  const searchOverlay = useOverlay('search_overlay', { focusTargetId: 'one_search' });
+
   return (
-    <HelmetProvider>
-      <BrowserRouter>
+    <>
+      <a className="skip-main" href="#main_content">Skip to main content</a>
+      <MobileNavBar searchOverlay={searchOverlay} navOverlay={navOverlay} />
+      <AnnouncementBanner />
+      <Navbar navOverlay={navOverlay} searchOverlay={searchOverlay} />
+      <SearchOverlay isOpen={searchOverlay.isOpen} onClose={searchOverlay.close} panelRef={searchOverlay.panelRef} />
+
+      <main id="main_content">
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/explore" element={<Explore />} />
           <Route path="/poi/:id" element={<POIDetail />} />
           <Route path="/places/:slug" element={<POIDetail />} />
+          <Route path="/events/:slug" element={<POIDetail />} />
           <Route path="/parks/:slug" element={<POIDetail />} />
           <Route path="/trails/:slug" element={<POIDetail />} />
-          <Route path="/events/:slug" element={<POIDetail />} />
           <Route path="/terms-of-service" element={<TermsOfService />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="/services" element={<Services />} />
+          <Route path="/community-interest" element={<CommunityInterest />} />
+          <Route path="/contact" element={<Contact />} />
+          <Route path="/feedback" element={<Feedback />} />
+          <Route path="/claim-business" element={<ClaimBusiness />} />
+          <Route path="/suggest-place" element={<Navigate to="/claim-business" replace />} />
         </Routes>
-      </BrowserRouter>
-    </HelmetProvider>
+      </main>
+
+      <Footer />
+    </>
   );
 }
 ```
@@ -67,6 +99,12 @@ function App() {
 | `/trails/:slug` | TRAIL | `/trails/lakeshore-loop` |
 | `/events/:slug` | EVENT | `/events/food-festival` |
 | `/poi/:id` | Any (UUID) | `/poi/550e8400-...` |
+| `/community-interest` | CommunityInterest | Community interest form |
+| `/contact` | Contact | Contact form |
+| `/feedback` | Feedback | Feedback with file uploads |
+| `/claim-business` | ClaimBusiness | Business claim form |
+| `/suggest-place` | Redirect | Redirects to `/claim-business` |
+| `/services` | Services | Services page |
 
 ---
 
@@ -510,6 +548,38 @@ function NearbyCard({ poi, index }) {
   );
 }
 ```
+
+---
+
+## New Components
+
+### Overlay System
+
+The app uses a shared overlay system via `useOverlay` hook for consistent modal/overlay behavior:
+
+```jsx
+// hooks/useOverlay.js
+const navOverlay = useOverlay('nav_overlay', { skipDesktop: true });
+const searchOverlay = useOverlay('search_overlay', { focusTargetId: 'one_search' });
+```
+
+- **MobileNavBar**: Bottom navigation bar for mobile with hamburger menu and search toggle
+- **SearchOverlay**: Full-screen search overlay with focus management
+- **AnnouncementBanner**: Dismissible top banner for announcements
+- **Overlay**: Backdrop component used by both nav and search overlays
+
+### Form Pages
+
+Four form pages following a consistent pattern (card layout, success state, error handling):
+
+| Page | Route | API Endpoint | Key Feature |
+|------|-------|-------------|-------------|
+| `CommunityInterest.jsx` | `/community-interest` | `POST /api/community-interest` | Multi-select checkbox for roles |
+| `Contact.jsx` | `/contact` | `POST /api/contact` | Simple 3-field form |
+| `Feedback.jsx` | `/feedback` | `POST /api/feedback` | Drag-and-drop file upload with preview |
+| `ClaimBusiness.jsx` | `/claim-business` | `POST /api/business-claims` | Chatham County gate (Yes/No) |
+
+See [Forms System](../systems/forms.md) for full backend documentation.
 
 ### SEO Component
 

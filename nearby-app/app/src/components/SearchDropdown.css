@@ -1,6 +1,6 @@
 .search-dropdown {
   background: #fff;
-  border: 2px solid #1db39b;
+  border: 2px solid var(--nn-teal2);
   border-radius: 14px;
   box-shadow: 0 18px 40px rgba(0, 0, 0, 0.18);
   overflow: hidden;
@@ -12,17 +12,17 @@
   gap: 8px;
   padding: 12px 16px;
   font-weight: 700;
-  color: #1db39b;
-  border-bottom: 1px solid #E5E7EB;
+  color: var(--nn-teal2);
+  border-bottom: 1px solid var(--gray-d);
 }
 
 .search-dropdown__header-icon {
-  color: #1db39b;
+  color: var(--nn-teal2);
 }
 
 .search-dropdown__state {
   padding: 14px 16px;
-  color: #6B7280;
+  color: var(--nn-gray);
   font-size: 14px;
 }
 
@@ -39,7 +39,7 @@
   align-items: flex-start;
   padding: 12px 16px;
   cursor: pointer;
-  border-bottom: 1px solid #F3F4F6;
+  border-bottom: 1px solid var(--gray-3);
 }
 
 .search-dropdown__item:last-child {
@@ -48,7 +48,7 @@
 
 .search-dropdown__item:hover,
 .search-dropdown__item--selected {
-  background: #F4FBF9;
+  background: var(--light-yellow1);
 }
 
 .search-dropdown__content {
@@ -67,7 +67,7 @@
 
 .search-dropdown__name {
   font-weight: 700;
-  color: #1F2937;
+  color: var(--nn-dark);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -77,15 +77,15 @@
   flex-shrink: 0;
   font-size: 11px;
   font-weight: 600;
-  color: var(--nn-primary, #562556);
-  background: var(--nn-bg, #F4EFF7);
+  color: var(--nn-purple1);
+  background: var(--light-yellow1);
   padding: 2px 8px;
   border-radius: 100px;
   white-space: nowrap;
 }
 
 .search-dropdown__city {
-  color: #6B7280;
+  color: var(--nn-gray);
   font-size: 13px;
 }
 
@@ -95,8 +95,8 @@
   align-items: center;
   gap: 8px;
   padding: 12px 16px;
-  border-top: 1px solid #E5E7EB;
-  color: var(--nn-accent, #328170);
+  border-top: 1px solid var(--gray-d);
+  color: var(--nn-teal2);
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
@@ -104,7 +104,7 @@
 }
 
 .search-dropdown__footer:hover {
-  background: #F4FBF9;
+  background: var(--light-yellow1);
 }
 
 /* "Not found" empty state */
@@ -114,14 +114,14 @@
 }
 
 .search-dropdown__empty-text {
-  color: #6B7280;
+  color: var(--nn-gray);
   font-size: 14px;
   margin: 0 0 8px;
 }
 
 .search-dropdown__suggest-link {
   display: inline-block;
-  color: var(--nn-accent, #328170);
+  color: var(--nn-teal2);
   font-weight: 600;
   font-size: 14px;
   text-decoration: underline;
@@ -129,5 +129,5 @@
 }
 
 .search-dropdown__suggest-link:hover {
-  color: var(--nn-accent-600, #286857);
+  color: var(--nn-teal1);
 }

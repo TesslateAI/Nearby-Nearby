@@ -1,5 +1,9 @@
+/* ==========================================================================
+   "It's This Simple" — 3-step how-it-works section
+   ========================================================================== */
+
 .nn-simple {
-  background: #F4EFF7; /* same bg as hero */
+  background: var(--color-bg);
   padding: 40px 20px 80px;
 }
 
@@ -9,21 +13,23 @@
 }
 
 .nn-simple__title {
+  font-family: var(--font-poppins);
   text-align: center;
   font-size: 46px;
   line-height: 1.1;
   margin: 0 0 8px;
   font-weight: 800;
+  color: var(--nn-dark);
 }
 
 .nn-simple__step {
   text-align: center;
   font-size: 22px;
-  color: #222;
+  color: var(--nn-dark);
   margin: 0 0 22px;
 }
 .nn-simple__step strong { font-weight: 800; }
-.nn-simple__dash { color: #7e7e7e; }
+.nn-simple__dash { color: var(--nn-gray); }
 
 .nn-simple__block { margin: 18px auto 44px; }
 
@@ -36,9 +42,15 @@
   width: min(640px, 100%);
   height: auto;
   display: block;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 @media (max-width: 768px) {
   .nn-simple__title { font-size: 34px; }
   .nn-simple__step { font-size: 18px; }
+}
+
+@media (min-width: 1400px) {
+  .nn-simple__title { font-size: 52px; }
 }

@@ -1,0 +1,67 @@
+/* ==========================================================================
+   Layout utilities — ported from nn-templates/inc/stylez.scss
+   ========================================================================== */
+
+/* ── Wrappers ──────────────────────────────────────────────────── */
+.wrapper_default {
+  width: 84%;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.wrapper_wide {
+  width: 95%;
+  margin: 0 auto;
+  padding: 0 10px;
+}
+@media (min-width: 600px)  { .wrapper_wide { width: 92%; } }
+@media (min-width: 1200px) { .wrapper_wide { width: 90%; padding: 0; } }
+
+.wrapper_intro {
+  width: 90%;
+  max-width: 900px;
+  margin: 0 auto;
+}
+@media (min-width: 1200px) { .wrapper_intro { width: 80%; } }
+
+/* ── Main-content padding ──────────────────────────────────────── */
+.main_content_padding {
+  padding-top: 55px;
+  padding-bottom: 55px;
+}
+@media (min-width: 1200px) { .main_content_padding { padding-top: 65px; padding-bottom: 65px; } }
+@media (min-width: 2400px) { .main_content_padding { padding-top: 75px; padding-bottom: 75px; } }
+
+/* ── Section spacing ───────────────────────────────────────────── */
+.space_content_1 {
+  padding-top: 50px;
+  padding-bottom: 50px;
+}
+@media (min-width: 980px)  { .space_content_1 { padding-top: 75px; padding-bottom: 75px; } }
+@media (min-width: 2400px) { .space_content_1 { padding-top: 100px; padding-bottom: 100px; } }
+
+/* ── Column list layouts ───────────────────────────────────────── */
+.list-1-2-col { columns: 1; }
+@media (min-width: 600px)  { .list-1-2-col { columns: 2; } }
+
+.list-1-2-3-col { columns: 1; }
+@media (min-width: 700px)  { .list-1-2-3-col { columns: 2; } }
+@media (min-width: 1200px) { .list-1-2-3-col { columns: 3; } }
+
+.list-2-3-4-col { columns: 1; }
+@media (min-width: 700px)  { .list-2-3-4-col { columns: 2; } }
+@media (min-width: 1200px) { .list-2-3-4-col { columns: 3; } }
+@media (min-width: 1600px) { .list-2-3-4-col { columns: 4; } }
+
+/* ── Text alignment ────────────────────────────────────────────── */
+.text_align_center { text-align: center; }
+
+/* ── Color utility classes ─────────────────────────────────────── */
+.nn_text_color_purple { color: var(--nn-purple1); }
+.nn_text_color_teal   { color: var(--nn-teal1); }
+.nn_text_color_gold   { color: var(--nn-gold); }
+
+/* ── Spacing helpers ───────────────────────────────────────────── */
+.mt5px  { margin-top: 5px; }
+.mt10px { margin-top: 10px; }
+.mt20px { margin-top: 20px; }

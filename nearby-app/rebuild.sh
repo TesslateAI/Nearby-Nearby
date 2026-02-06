@@ -32,6 +32,9 @@ docker run -d --name nearby-app \
   -e PRODUCTION_DOMAIN="nearbynearby.com" \
   -e IMAGE_BASE_URL="/api/images" \
   -e IMAGE_STORAGE_PATH="/app/storage/images" \
+  -e FORMS_DATABASE_URL="postgresql://nearby_forms:nf_s3cure_2026!@nearby-admin-db.ce3mwk2ymjh4.us-east-1.rds.amazonaws.com:5432/nearbynearby" \
+  -e AWS_S3_BUCKET="nearby-images" \
+  -e AWS_REGION="us-east-1" \
   nearby-app:latest
 
 if [ $? -ne 0 ]; then

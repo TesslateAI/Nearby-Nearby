@@ -1,0 +1,87 @@
+/* ==========================================================================
+   Search overlay — ported from nn-templates
+   ========================================================================== */
+
+.search_overlay_box .overlay_content {
+  padding-top: 70px;
+}
+
+.search_main_title {
+  font-family: var(--font-poppins);
+  font-weight: 700;
+  font-size: 1.8em;
+  color: var(--nn-dark);
+  margin-bottom: 25px;
+}
+
+#search_box_header {
+  margin-bottom: 20px;
+}
+
+.search_container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+@media (min-width: 600px) {
+  .search_container {
+    flex-direction: row;
+    align-items: stretch;
+  }
+}
+
+.search_input_wrapper {
+  display: flex;
+  align-items: center;
+  border: 2px solid var(--gray-d);
+  border-radius: 6px;
+  padding: 0 12px;
+  background: #fff;
+  flex: 1;
+  transition: border-color 0.2s;
+}
+.search_input_wrapper:focus-within {
+  border-color: var(--nn-purple1);
+}
+
+.search_icon {
+  display: flex;
+  align-items: center;
+  margin-right: 8px;
+  flex-shrink: 0;
+}
+
+/* Override the SearchBar wrapper styles when inside the overlay */
+.search_input_wrapper .search-bar-wrapper {
+  flex: 1;
+  width: 100%;
+}
+.search_input_wrapper .search-bar-input {
+  border: none;
+  background: none;
+  padding: 0;
+}
+.search_input_wrapper .search-bar-input__icon {
+  display: none;
+}
+.search_input_wrapper .search-bar-input input {
+  border: none;
+  outline: none;
+  background: none;
+  padding: 12px 0;
+  font-size: 1em;
+  width: 100%;
+  color: var(--nn-slate);
+}
+.search_input_wrapper .search-bar-input input::placeholder {
+  color: var(--nn-gray);
+}
+
+.search_terms_text {
+  font-size: 0.82em;
+  color: var(--nn-gray);
+  margin-top: 15px;
+}
+.search_terms_text a {
+  color: var(--link-color);
+}

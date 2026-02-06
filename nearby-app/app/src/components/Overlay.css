@@ -1,0 +1,146 @@
+/* ==========================================================================
+   Overlay system — ported from nn-templates/inc/overlay.scss
+   ========================================================================== */
+
+/* ── Backdrop ──────────────────────────────────────────────────── */
+.overlay_backdrop {
+  position: fixed;
+  inset: 0;
+  bottom: var(--mobile-nav-height);
+  background: var(--overlay-backdrop);
+  z-index: 100;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+.overlay_backdrop.is_open {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* ── Panel ─────────────────────────────────────────────────────── */
+.overlay_panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: var(--mobile-nav-height);
+  width: 100%;
+  max-width: 500px;
+  background: var(--overlay-panel-bg);
+  z-index: 101;
+  overflow-y: auto;
+  transform: translateX(100%);
+  transition: transform 0.3s ease;
+}
+.overlay_panel.is_open {
+  transform: translateX(0);
+}
+
+/* ── Close button ──────────────────────────────────────────────── */
+.overlay_close {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 20px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  z-index: 2;
+  min-height: 55px;
+  color: var(--nn-slate);
+  font-family: var(--font-poppins);
+}
+.overlay_close:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: -3px;
+}
+
+.btn_close_icon {
+  font-size: 28px;
+  line-height: 1;
+  font-weight: 300;
+}
+.btn_close_text {
+  font-size: 13px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* ── Content area ──────────────────────────────────────────────── */
+.overlay_content {
+  padding: 55px 25px 30px;
+}
+
+/* ── Chevron scroll indicator ──────────────────────────────────── */
+.overlay_chevron {
+  position: sticky;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 55px;
+  background: linear-gradient(to top, rgba(255,255,255,1) 30%, rgba(255,255,255,0));
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 8px;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+.overlay_chevron.is_visible {
+  opacity: 1;
+  visibility: visible;
+}
+.overlay_chevron.is_scrolled {
+  opacity: 0;
+  visibility: hidden;
+}
+.overlay_chevron::after {
+  content: '';
+  width: 14px;
+  height: 14px;
+  border-right: 2px solid var(--nn-slate);
+  border-bottom: 2px solid var(--nn-slate);
+  transform: rotate(45deg);
+}
+
+/* ── Desktop: larger panels ────────────────────────────────────── */
+@media (min-width: 1200px) {
+  .overlay_backdrop {
+    bottom: 0;
+  }
+  .overlay_panel {
+    bottom: 0;
+    max-width: 550px;
+  }
+  .overlay_content {
+    padding: 55px 35px 30px;
+  }
+
+  /* Nav overlay should not be a panel on desktop — it's inline */
+  #nav_overlay.overlay_panel {
+    position: static;
+    transform: none;
+    max-width: none;
+    width: auto;
+    overflow: visible;
+    background: transparent;
+    z-index: auto;
+  }
+  #nav_overlay .overlay_close,
+  #nav_overlay .overlay_chevron {
+    display: none;
+  }
+  #nav_overlay .overlay_content {
+    padding: 0;
+  }
+  /* Hide nav backdrop on desktop */
+  [data-overlay-id="nav_overlay"].overlay_backdrop {
+    display: none;
+  }
+}

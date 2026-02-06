@@ -1,0 +1,153 @@
+/* ==========================================================================
+   Button system — ported from nn-templates/inc/stylez.scss
+   ========================================================================== */
+
+/* ── Default button ────────────────────────────────────────────── */
+.button,
+.btn_default {
+  display: inline-block;
+  font-family: var(--font-poppins);
+  font-weight: 600;
+  font-size: 0.9em;
+  padding: 12px 26px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  text-align: center;
+  line-height: 1.3;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  background: var(--nn-purple1);
+  color: #fff;
+}
+.button:hover,
+.btn_default:hover {
+  background: var(--nn-purple2);
+  color: #fff;
+}
+.button:focus-visible,
+.btn_default:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+/* ── Outline variants ──────────────────────────────────────────── */
+.btn_outline_purple {
+  background: transparent;
+  color: var(--nn-purple1);
+  border: 2px solid var(--nn-purple1);
+}
+.btn_outline_purple:hover {
+  background: var(--nn-purple1);
+  color: #fff;
+}
+
+.btn_outline_teal {
+  background: transparent;
+  color: var(--nn-teal1);
+  border: 2px solid var(--nn-teal1);
+}
+.btn_outline_teal:hover {
+  background: var(--nn-teal1);
+  color: #fff;
+}
+
+/* ── Small variant ─────────────────────────────────────────────── */
+.btn_small {
+  padding: 8px 18px;
+  font-size: 0.82em;
+}
+
+/* ── Reset (strip all default button styles — for icon buttons) ── */
+.btn_reset {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  outline: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+}
+.btn_reset:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+/* ── Search button (inside search overlay) ─────────────────────── */
+.btn_search {
+  background: var(--nn-purple1);
+  color: #fff;
+  font-family: var(--font-poppins);
+  font-weight: 600;
+  padding: 12px 30px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-size: 0.95em;
+}
+.btn_search:hover {
+  background: var(--nn-purple2);
+}
+
+/* ── Subscribe button (footer email layer) ─────────────────────── */
+.btn_subscribe {
+  background: var(--nn-gold);
+  color: var(--nn-dark);
+  font-family: var(--font-poppins);
+  font-weight: 600;
+  padding: 12px 30px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-size: 0.95em;
+}
+.btn_subscribe:hover {
+  background: var(--nn-gold-hover, #fdb93e);
+}
+
+/* ── Icon button styles (mobile nav, header search) ────────────── */
+.btn_nav_icon_style_1 {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: 55px;
+  min-height: 55px;
+  color: #fff;
+}
+.btn_nav_icon_style_1 .icon_open   { display: block; }
+.btn_nav_icon_style_1 .icon_close  { display: none; }
+.btn_nav_icon_style_1[aria-expanded="true"] .icon_open  { display: none; }
+.btn_nav_icon_style_1[aria-expanded="true"] .icon_close { display: block; }
+
+.text_nav_style_1 {
+  font-family: var(--font-poppins);
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.btn_nav_icon_style_2 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  color: var(--nn-purple1);
+}
+.btn_nav_icon_style_2 .icon_open   { display: block; }
+.btn_nav_icon_style_2 .icon_close  { display: none; }
+.btn_nav_icon_style_2[aria-expanded="true"] .icon_open  { display: none; }
+.btn_nav_icon_style_2[aria-expanded="true"] .icon_close { display: block; }
+
+.text_nav_style_2 {
+  font-family: var(--font-poppins);
+  font-size: 0.9em;
+  font-weight: 600;
+  color: var(--nn-purple1);
+}
