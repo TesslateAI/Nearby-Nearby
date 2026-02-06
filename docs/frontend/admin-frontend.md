@@ -88,25 +88,28 @@ The POI form is the most complex component, using a modular accordion-based arch
 
 ```
 components/POIForm/
-├── POIForm.jsx              # Main form component
+├── POIForm.jsx              # Main form component (accordion visibility logic)
+├── ImageIntegration.jsx     # Image upload components with context-based grouping
 ├── hooks/
 │   ├── usePOIForm.js        # Form state (Mantine useForm)
 │   ├── usePOIHandlers.jsx   # CRUD operations
 │   └── useAutoSave.js       # Auto-save logic
 ├── constants/
-│   ├── initialValues.js     # Default values
+│   ├── initialValues.js     # Default values (includes playground_locations array)
 │   ├── validationRules.js   # Validation schema
 │   ├── fieldOptions.js      # Field configurations
 │   └── helpers.js           # Helper functions
 └── sections/
-    ├── CoreInformationSection.jsx
-    ├── CategoriesSection.jsx
+    ├── CoreInformationSection.jsx   # Name, teaser, short desc, lat/long flag
+    ├── CategoriesSection.jsx        # Category tree (1-cat limit for free biz)
     ├── ContactSection.jsx
-    ├── LocationSection.jsx
+    ├── LocationSection.jsx          # Per-lot parking photos, parking/transit fields
     ├── BusinessDetailsSection.jsx
     ├── BusinessGallerySection.jsx
-    ├── FacilitiesSection.jsx
-    ├── TrailSpecificSections.jsx
+    ├── FacilitiesSection.jsx        # Multi-restroom cards, pay phone, rentals
+    ├── OutdoorFeaturesSection.jsx   # Multiple playgrounds array
+    ├── TrailSpecificSections.jsx    # Trail experience removed
+    ├── MiscellaneousSections.jsx    # Membership pass removed from trails
     ├── EventSpecificSections.jsx
     └── FormActions.jsx
 ```
@@ -664,6 +667,51 @@ export const useAuth = () => useContext(AuthContext);
 | Notifications | User feedback |
 | LoadingOverlay | Loading states |
 | Dropzone | File uploads |
+
+---
+
+## POI Form Section Visibility
+
+The POI form dynamically shows/hides sections based on POI type and listing type:
+
+### Free Business Restrictions
+
+| Section | Visible for Free Biz? | Notes |
+|---------|----------------------|-------|
+| Core Information | Yes | Teaser paragraph hidden |
+| Categories | Yes | Limited to 1 category |
+| Location / Parking | Yes | All parking fields shown |
+| Facilities & Accessibility | Yes | Wheelchair, restrooms |
+| Public Amenities | Yes | Restroom options |
+| Community Connections | No | Hidden entirely |
+
+### Multi-Item Sections
+
+| Section | POI Types | Feature |
+|---------|-----------|---------|
+| Multiple Playgrounds | Parks | Array of playground cards with types, surfaces, lat/lng, notes, per-playground photos |
+| Multiple Restrooms | Parks, Trails, Events | Array of restroom cards with lat/lng, description, per-restroom photos |
+| Per-Lot Parking Photos | All with parking | Each parking lot card includes its own photo upload |
+| Pay Phone Locations | Parks, Trails | Array of pay phone locations with lat/lng |
+
+### Removed/Cleaned Sections
+
+| Removed | From | Reason |
+|---------|------|--------|
+| Trail Experience checkboxes | TrailSpecificSections | Duplicated Categories |
+| Membership Pass | MiscellaneousSections (trails) | Duplicate |
+| Available to Rent toggle | FacilitiesSection restrooms | Duplicate of RentalsSection |
+| Rental Pricing box | FacilitiesSection | No longer used |
+
+---
+
+## Bug Fixes (Tasks 2-4)
+
+| Fix | File | Root Cause |
+|-----|------|------------|
+| Events page blank white screen | LocationSection.jsx | Missing TextInput import |
+| Add Additional Parking Location crash | LocationSection.jsx | Same missing TextInput import |
+| Corporate Compliance checkboxes not clickable | MiscellaneousSections.jsx | Mantine v8 broke click handling with cursor styles on Radio components |
 
 ---
 

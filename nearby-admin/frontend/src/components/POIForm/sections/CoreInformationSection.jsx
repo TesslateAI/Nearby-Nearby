@@ -58,16 +58,18 @@ export const CoreInformationSection = React.memo(function CoreInformationSection
         {...getDebouncedInputProps(form, 'name')}
       />
 
-      <RichTextEditor
-        label="Teaser Paragraph"
-        placeholder="Brief description (120 characters max)"
-        value={form.values.teaser_paragraph || ''}
-        onChange={(html) => form.setFieldValue('teaser_paragraph', html)}
-        error={form.errors.teaser_paragraph}
-        showCharCount={true}
-        maxLength={120}
-        minRows={2}
-      />
+      {!(isBusiness && isFreeListing) && (
+        <RichTextEditor
+          label="Teaser Paragraph"
+          placeholder="Brief description (120 characters max)"
+          value={form.values.teaser_paragraph || ''}
+          onChange={(html) => form.setFieldValue('teaser_paragraph', html)}
+          error={form.errors.teaser_paragraph}
+          showCharCount={true}
+          maxLength={120}
+          minRows={2}
+        />
+      )}
 
       {isBusiness && form.values.listing_type === 'free' ? (
         <RichTextEditor
@@ -76,6 +78,8 @@ export const CoreInformationSection = React.memo(function CoreInformationSection
           value={form.values.description_short || ''}
           onChange={(html) => form.setFieldValue('description_short', html)}
           error={form.errors.description_short}
+          showCharCount={true}
+          maxLength={250}
           minRows={3}
         />
       ) : (
@@ -112,6 +116,11 @@ export const CoreInformationSection = React.memo(function CoreInformationSection
         <Switch
           label="Disaster Hub"
           {...form.getInputProps('is_disaster_hub', { type: 'checkbox' })}
+        />
+        <Switch
+          label="Lat/Long Most Accurate"
+          description="Map coordinates are the most reliable location"
+          {...form.getInputProps('lat_long_most_accurate', { type: 'checkbox' })}
         />
         {isBusiness && (
           <Switch

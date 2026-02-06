@@ -292,3 +292,38 @@ class TestAppCategories:
         cat_entry = next((c for c in categories if c["name"] == "Crossapp Cat"), None)
         assert cat_entry is not None
         assert cat_entry["poi_count"] >= 1
+
+
+class TestHybridSearchAPI:
+    def test_hybrid_search_returns_results(self, db_session, app_client):
+        """hybrid-search endpoint returns matches for a known name."""
+        orm_create_business(db_session, name="Hybrid Search Cafe", published=True)
+        db_session.commit()
+
+        resp = app_client.get("/api/pois/hybrid-search", params={"q": "Hybrid Search Cafe"})
+        assert resp.status_code == 200
+        names = [r["name"] for r in resp.json()]
+        assert "Hybrid Search Cafe" in names
+
+    def test_hybrid_search_poi_type_filter(self, db_session, app_client):
+        """poi_type param filters results to that type only."""
+        orm_create_business(db_session, name="Filter Biz", published=True)
+        orm_create_park(db_session, name="Filter Park", published=True)
+        db_session.commit()
+
+        resp = app_client.get(
+            "/api/pois/hybrid-search",
+            params={"q": "Filter", "poi_type": "BUSINESS"},
+        )
+        assert resp.status_code == 200
+        types = [r["poi_type"] for r in resp.json()]
+        assert all(t == "BUSINESS" for t in types)
+
+    def test_hybrid_search_poi_type_invalid(self, db_session, app_client):
+        """Invalid poi_type handled gracefully (returns empty, no crash)."""
+        resp = app_client.get(
+            "/api/pois/hybrid-search",
+            params={"q": "test", "poi_type": "INVALID_TYPE"},
+        )
+        assert resp.status_code == 200
+        assert resp.json() == []

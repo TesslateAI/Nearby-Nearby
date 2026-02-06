@@ -70,9 +70,13 @@ class PointOfInterest(Base):
     youtube = Column(String(255))
 
     # Content
-    teaser_description = Column(Text)
+    teaser_paragraph = Column(Text)  # Visible text ≤ 120 chars (HTML allowed)
+    description_short = Column(Text)  # Visible text ≤ 250 chars (HTML allowed)
     long_description = Column(Text)
     internal_notes = Column(Text)
+
+    # Flags
+    lat_long_most_accurate = Column(Boolean, default=False)
 
     # Hours (JSONB)
     hours = Column(JSONB)
@@ -480,6 +484,40 @@ export const validationRules = {
   ),
 };
 ```
+
+---
+
+## Validation Rules
+
+### Backend Validators (Pydantic)
+
+| Field | Rule | Notes |
+|-------|------|-------|
+| `teaser_paragraph` | Visible text ≤ 120 chars | HTML tags stripped before counting |
+| `description_short` | Visible text ≤ 250 chars | HTML tags stripped before counting |
+
+Both validators use `strip_html_tags()` to remove HTML before measuring length. The database columns are `TEXT` (not VARCHAR) because HTML markup can exceed the visible character limit.
+
+### Free Business Listing Restrictions
+
+Free business listings (`listing_type == 'free'` and `poi_type == 'BUSINESS'`) have additional restrictions:
+
+| Restriction | Enforcement |
+|-------------|-------------|
+| Max 1 category | Backend: 400 error if `len(category_ids) > 1`. Frontend: disables "Add Category" after 1 selection |
+| No teaser paragraph | Frontend: field hidden for free business |
+| No Community Connections | Frontend: entire section hidden (community_impact, article_links) |
+| Has public restrooms | Frontend: Facilities & Public Amenities sections always visible |
+| Has wheelchair accessibility | Frontend: Facilities section always visible |
+| Has parking fields | Frontend: parking_notes, public_transit_info, expect_to_pay_parking always visible |
+
+### Multiple Playgrounds (JSONB)
+
+The `playground_location` field accepts either a single dict `{lat, lng}` or an array `[{lat, lng, types, surfaces, notes}, ...]`. The frontend normalizes both formats to an array for display. Each playground can have its own photos via `image_context` grouping.
+
+### Multiple Restrooms (JSONB)
+
+The `toilet_locations` field stores an array of restroom objects `[{lat, lng, description}, ...]`. Parks, trails, and events all use the multi-restroom card UI with add/remove buttons.
 
 ---
 

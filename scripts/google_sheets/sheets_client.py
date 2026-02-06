@@ -1048,7 +1048,7 @@ examples:
     elif args.command == "status":
         result = client.update_task_status(args.task_number, args.new_status, args.notes)
         if result:
-            print(f"Task {args.task_number} → '{args.new_status}'")
+            print(f"Task {args.task_number} -> '{args.new_status}'")
         else:
             print(f"Task {args.task_number} not found")
 

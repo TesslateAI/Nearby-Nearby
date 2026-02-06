@@ -7,7 +7,7 @@ import RichTextEditor from '../../RichTextEditor';
 import { getCheckboxGroupProps } from '../constants/helpers';
 import {
   TRAIL_ROUTE_TYPES, TRAIL_DIFFICULTIES, TRAIL_SURFACES,
-  TRAIL_CONDITIONS, TRAIL_EXPERIENCES
+  TRAIL_CONDITIONS
 } from '../../../utils/outdoorConstants';
 import {
   TrailHeadPhotoUpload,
@@ -74,15 +74,6 @@ export const TrailDetailsSection = React.memo(function TrailDetailsSection({ for
         <SimpleGrid cols={{ base: 1, sm: 2 }}>
           {TRAIL_CONDITIONS.map(condition => (
             <Checkbox key={condition} value={condition} label={condition} />
-          ))}
-        </SimpleGrid>
-      </Checkbox.Group>
-
-      <Divider my="md" label="Trail Experiences" />
-      <Checkbox.Group {...getCheckboxGroupProps(form, 'trail.trail_experiences')}>
-        <SimpleGrid cols={{ base: 2, sm: 3 }}>
-          {TRAIL_EXPERIENCES.map(experience => (
-            <Checkbox key={experience} value={experience} label={experience} />
           ))}
         </SimpleGrid>
       </Checkbox.Group>

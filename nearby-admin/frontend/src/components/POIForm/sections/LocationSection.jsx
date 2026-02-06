@@ -1,7 +1,7 @@
 import React, { lazy, Suspense } from 'react';
 import {
   Stack, SimpleGrid, Select, NumberInput, Button, Divider,
-  Checkbox, Radio, Card, Group, ActionIcon, Alert, Text
+  Checkbox, Radio, Card, Group, ActionIcon, Alert, Text, TextInput
 } from '@mantine/core';
 import { IconPlus, IconTrash, IconMapPin, IconInfoCircle } from '@tabler/icons-react';
 import RichTextEditor from '../../RichTextEditor';
@@ -238,36 +238,32 @@ export const LocationSection = React.memo(function LocationSection({
         </SimpleGrid>
       </Checkbox.Group>
 
-      {!isFreeListing && (
-        <>
-          <RichTextEditor
-            label="Parking Notes"
-            placeholder="Additional parking information"
-            value={form.values.parking_notes || ''}
-            onChange={(html) => form.setFieldValue('parking_notes', html)}
-            error={form.errors.parking_notes}
-          />
+      <RichTextEditor
+        label="Parking Notes"
+        placeholder="Additional parking information"
+        value={form.values.parking_notes || ''}
+        onChange={(html) => form.setFieldValue('parking_notes', html)}
+        error={form.errors.parking_notes}
+      />
 
-          <RichTextEditor
-            label="Public Transit Information"
-            placeholder="Bus routes, train stations, etc."
-            value={form.values.public_transit_info || ''}
-            onChange={(html) => form.setFieldValue('public_transit_info', html)}
-            error={form.errors.public_transit_info}
-          />
+      <RichTextEditor
+        label="Public Transit Information"
+        placeholder="Bus routes, train stations, etc."
+        value={form.values.public_transit_info || ''}
+        onChange={(html) => form.setFieldValue('public_transit_info', html)}
+        error={form.errors.public_transit_info}
+      />
 
-          <Radio.Group
-            label="Expect to Pay for Parking?"
-            {...form.getInputProps('expect_to_pay_parking')}
-          >
-            <Stack mt="xs">
-              <Radio value="yes" label="Yes" />
-              <Radio value="no" label="No" />
-              <Radio value="sometimes" label="Sometimes" />
-            </Stack>
-          </Radio.Group>
-        </>
-      )}
+      <Radio.Group
+        label="Expect to Pay for Parking?"
+        {...form.getInputProps('expect_to_pay_parking')}
+      >
+        <Stack mt="xs">
+          <Radio value="yes" label="Yes" />
+          <Radio value="no" label="No" />
+          <Radio value="sometimes" label="Sometimes" />
+        </Stack>
+      </Radio.Group>
 
       {/* Parking Locations for Parks, Trails, and Events */}
       {(isPark || isTrail || isEvent) && (
@@ -310,6 +306,11 @@ export const LocationSection = React.memo(function LocationSection({
                     form.setFieldValue('parking_locations', locations);
                   }}
                 />
+                {shouldUseImageUpload(id) ? (
+                  <ParkingPhotosUpload poiId={id} parkingIndex={index} parkingName={parking.name} form={form} />
+                ) : (
+                  <Text size="sm" c="dimmed">Save POI first to enable parking photo upload</Text>
+                )}
                 <Button
                   color="red"
                   variant="light"
@@ -336,12 +337,6 @@ export const LocationSection = React.memo(function LocationSection({
           >
             Add Another Parking Location
           </Button>
-
-          {shouldUseImageUpload(id) ? (
-            <ParkingPhotosUpload poiId={id} form={form} />
-          ) : (
-            <Text size="sm" c="dimmed">Save POI first to enable parking photo upload</Text>
-          )}
         </>
       )}
     </Stack>

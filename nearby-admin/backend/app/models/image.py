@@ -92,7 +92,7 @@ IMAGE_TYPE_CONFIG: Dict[ImageType, Dict[str, Any]] = {
         }
     },
     ImageType.trail_head: {
-        "max_count": 1,
+        "max_count": 10,
         "max_size_mb": 5,
         "allowed_mimes": ["image/jpeg", "image/png", "image/webp"],
         "sizes": {
@@ -101,7 +101,7 @@ IMAGE_TYPE_CONFIG: Dict[ImageType, Dict[str, Any]] = {
         }
     },
     ImageType.trail_exit: {
-        "max_count": 1,
+        "max_count": 10,
         "max_size_mb": 5,
         "allowed_mimes": ["image/jpeg", "image/png", "image/webp"],
         "sizes": {
