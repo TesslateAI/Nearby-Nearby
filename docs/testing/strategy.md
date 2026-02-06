@@ -17,7 +17,7 @@ Skip low-ROI tests: visual regression, snapshot tests, exhaustive unit tests for
 
 ## Current Test Suite
 
-The monorepo has **98 integration tests** in the root `tests/` directory covering admin CRUD, cross-app data flow, and real S3 (MinIO) image uploads.
+The monorepo has **178 integration tests** in the root `tests/` directory covering admin CRUD, cross-app data flow, real S3 (MinIO) image uploads, and admin form features (Tasks 2-41).
 
 ### Running Tests
 
@@ -71,6 +71,8 @@ Ports are offset from production to avoid collisions (5434 instead of 5432, 9100
 | `test_admin_relationships.py` | 7 | POI-to-POI links, cascade delete, validation |
 | `test_admin_venues.py` | 5 | Venue list, venue data for events |
 | `test_crossapp_read.py` | 13 | Admin writes data, app reads it — the core cross-app contract |
+| `test_new_poi_fields.py` | 20 | New POI fields: teaser_paragraph, lat_long_most_accurate, alcohol_policy_details, parking/playground/restroom locations |
+| `test_admin_form_tasks.py` | 20 | Tasks 17-41: short description limit, free biz category limit, multiple playgrounds, article links, trail head/exit max count |
 
 ### How Tests Work
 
@@ -94,6 +96,10 @@ The test suite exposed and fixed these real bugs:
 | Enum vs string comparison in updates | 500 on subtype updates | `POIType.BUSINESS == 'BUSINESS'` is always `False` |
 | `EventCreate` used for partial updates | 422 when updating any event field | Required `start_datetime` even for partial update |
 | `/api/nearby` returns raw WKB geometry | 500 on coordinate-based nearby search | Missing `PointGeometry.from_wkb()` conversion |
+| Events page blank white screen | Can't create events | Missing `TextInput` import in `LocationSection.jsx` |
+| Corporate compliance radios not clickable | Can't toggle yes/no | Mantine v8 broke click handling with cursor styles on Radio |
+| Short description DB rejection | 500 when HTML + text > 250 bytes | `String(250)` column too small for HTML — changed to `Text` |
+| Free biz category tests broke | 2 existing tests failed | New free-biz 1-category limit needed `listing_type="paid"` in tests |
 
 ---
 
@@ -101,7 +107,7 @@ The test suite exposed and fixed these real bugs:
 
 ```
 NearbyNearby/
-├── tests/                               # Integration & cross-app tests (98 tests)
+├── tests/                               # Integration & cross-app tests (178 tests)
 │   ├── conftest.py                      # Shared fixtures, auth mocking, ORM helpers
 │   ├── docker-compose.test.yml          # PostGIS + MinIO test containers
 │   ├── test_admin_business.py
@@ -116,7 +122,9 @@ NearbyNearby/
 │   ├── test_admin_images.py
 │   ├── test_admin_relationships.py
 │   ├── test_admin_venues.py
-│   └── test_crossapp_read.py
+│   ├── test_crossapp_read.py
+│   ├── test_new_poi_fields.py           # New fields: teaser, lat_long flag, alcohol, locations
+│   └── test_admin_form_tasks.py         # Tasks 17-41: validators, limits, playgrounds
 │
 ├── nearby-admin/
 │   └── backend/

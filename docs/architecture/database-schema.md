@@ -124,9 +124,12 @@ Main POI table with all shared fields.
 | tiktok | VARCHAR(255) | | TikTok handle |
 | youtube | VARCHAR(255) | | YouTube URL |
 | **Content Fields** |
-| teaser_description | TEXT | | Short description |
+| teaser_paragraph | TEXT | | Short teaser (visible text ≤ 120 chars, HTML allowed) |
+| description_short | TEXT | | Short description (visible text ≤ 250 chars, HTML allowed) |
 | long_description | TEXT | | Full description |
 | internal_notes | TEXT | | Admin-only notes |
+| **Flags** |
+| lat_long_most_accurate | BOOLEAN | DEFAULT false | Mark lat/long as verified accurate |
 | **Hours (JSONB)** |
 | hours | JSONB | | Regular operating hours |
 | seasonal_hours | JSONB | | Seasonal variations |
@@ -138,6 +141,13 @@ Main POI table with all shared fields.
 | front_door_latitude | FLOAT | | Entrance lat |
 | front_door_longitude | FLOAT | | Entrance lng |
 | parking_notes | TEXT | | Parking instructions |
+| public_transit_info | TEXT | | Public transit details |
+| expect_to_pay_parking | VARCHAR | | Parking fee expectations |
+| alcohol_policy_details | TEXT | | Alcohol policy description |
+| **Parking & Facilities (JSONB)** |
+| parking_locations | JSONB | | Array of {name, lat, lng} parking lots |
+| toilet_locations | JSONB | | Array of {lat, lng, description} restrooms |
+| playground_location | JSONB | | Array of {lat, lng, types, surfaces, notes} playgrounds |
 | **Timestamps** |
 | created_at | TIMESTAMP | DEFAULT NOW() | Creation time |
 | updated_at | TIMESTAMP | | Last update |
@@ -173,6 +183,11 @@ Junction table for POI-category many-to-many relationship.
 |--------|------|-------------|-------------|
 | poi_id | UUID | FK → points_of_interest.id | POI reference |
 | category_id | UUID | FK → categories.id | Category reference |
+| is_main | BOOLEAN | DEFAULT false | Whether this is the POI's main category |
+
+**Business rules:**
+- Free business listings are limited to 1 category (enforced backend + frontend)
+- Paid listings can have unlimited categories
 
 ### images
 
@@ -185,6 +200,7 @@ Image storage with variants. All POI photos are now stored in this table (consol
 | image_type | VARCHAR | NOT NULL | main, gallery, entry, etc. |
 | storage_provider | VARCHAR | DEFAULT 's3' | Always 's3' (database deprecated) |
 | storage_url | VARCHAR(500) | | S3 storage URL |
+| image_context | VARCHAR(50) | | Contextual grouping (e.g., 'parking_1', 'playground_2') |
 | alt_text | VARCHAR(255) | | Accessibility text |
 | caption | TEXT | | Image caption |
 | display_order | INTEGER | DEFAULT 0 | Sort order |

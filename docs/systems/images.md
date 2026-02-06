@@ -17,20 +17,31 @@ The Image Management System handles uploading, processing, storing, and serving 
 
 ## Image Types
 
-| Type | Code | Description | Max Size |
-|------|------|-------------|----------|
-| Main | `main` | Primary POI image | 10MB |
-| Gallery | `gallery` | Additional photos | 10MB |
-| Entry | `entry` | Entrance photos | 10MB |
-| Parking | `parking` | Parking area | 10MB |
-| Restroom | `restroom` | Restroom facilities | 10MB |
-| Rental | `rental` | Rental equipment | 10MB |
-| Playground | `playground` | Playground photos | 10MB |
-| Menu | `menu` | Menu images | 10MB |
-| Trail Head | `trail_head` | Trailhead photos | 10MB |
-| Trail Exit | `trail_exit` | Trail exit photos | 10MB |
-| Map | `map` | Map images | 10MB |
-| Downloadable Map | `downloadable_map` | PDF maps | 20MB |
+| Type | Code | Description | Max Count | Max Size |
+|------|------|-------------|-----------|----------|
+| Main | `main` | Primary POI image | 1 | 10MB |
+| Gallery | `gallery` | Additional photos | 20 | 10MB |
+| Entry | `entry` | Entrance photos | 3 | 5MB |
+| Parking | `parking` | Parking area (per-lot via context) | 5 | 5MB |
+| Restroom | `restroom` | Restroom facilities | 10 | 5MB |
+| Rental | `rental` | Rental equipment | 10 | 5MB |
+| Playground | `playground` | Playground photos (per-playground via context) | 10 | 5MB |
+| Menu | `menu` | Menu images | 10 | 10MB |
+| Trail Head | `trail_head` | Trailhead photos | 10 | 5MB |
+| Trail Exit | `trail_exit` | Trail exit photos | 10 | 5MB |
+| Map | `map` | Map images | 5 | 20MB |
+| Downloadable Map | `downloadable_map` | PDF maps | 5 | 50MB |
+
+### Image Context Grouping
+
+The `image_context` field on the Image model enables per-item photo association within a POI:
+
+| Context Pattern | Usage |
+|-----------------|-------|
+| `parking_1`, `parking_2`, ... | Photos for individual parking lots (matched by lot index) |
+| `playground_1`, `playground_2`, ... | Photos for individual playgrounds (matched by playground index) |
+
+This allows the frontend to upload and display photos specific to each parking lot or playground rather than sharing a single pool of photos for the POI.
 
 ### Photo Migration from POI Table
 

@@ -460,6 +460,17 @@ all_types_category = Category(
 
 ---
 
+## Free Business Category Limit
+
+Free business listings (`listing_type == 'free'`, `poi_type == 'BUSINESS'`) are limited to **1 category**. This is enforced in two places:
+
+1. **Backend** (`crud_poi.py`): Returns HTTP 400 if `len(category_ids) > 1` during create or update
+2. **Frontend** (`CategoriesSection.jsx`): Prevents selecting more than 1 category by disabling the selector once 1 is chosen
+
+Paid business listings and all other POI types have no category limit.
+
+---
+
 ## Best Practices
 
 1. **Use slugs for URLs** - Always generate URL-friendly slugs
