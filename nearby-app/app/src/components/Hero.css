@@ -69,6 +69,20 @@
 
 .nn-support { color: var(--nn-ink-muted); max-width: 760px; margin: 0 auto 16px; }
 
+/* Hero filter pills */
+.nn-hero-filters {
+  margin: 0 0 12px;
+}
+
+.nn-hero-filters .nearby-filters {
+  padding: 0;
+  justify-content: center;
+}
+
+.nn-hero-filters .nearby-filters__scroll {
+  justify-content: center;
+}
+
 /* Search card wrapper */
 .nn-search-card {
   position: relative;

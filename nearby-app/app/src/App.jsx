@@ -7,6 +7,7 @@ import TermsOfService from './pages/TermsOfService';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import Services from './pages/Services';
 import Explore from './pages/Explore';
+import SuggestPlace from './pages/SuggestPlace';
 
 function App() {
   return (
@@ -24,6 +25,7 @@ function App() {
         <Route path="/terms-of-service" element={<TermsOfService />} />
         <Route path="/privacy-policy" element={<PrivacyPolicy />} />
         <Route path="/services" element={<Services />} />
+        <Route path="/suggest-place" element={<SuggestPlace />} />
       </Routes>
       <Footer />
     </>
