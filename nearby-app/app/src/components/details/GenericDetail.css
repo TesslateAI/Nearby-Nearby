@@ -17,17 +17,17 @@
 .alcohol-smoking__header {
   font-size: 14px;
   font-weight: 700;
-  color: #1f2937;
+  color: var(--nn-dark);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin: 0;
   padding-bottom: 8px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--gray-d);
 }
 
 .alcohol-smoking__description {
   font-size: 14px;
-  color: #374151;
+  color: var(--nn-slate);
   line-height: 1.6;
   margin-top: 8px;
 }
@@ -49,10 +49,10 @@
 
 .tag {
   font-size: 12px;
-  color: var(--nn-primary, #562556);
+  color: var(--nn-purple1);
   padding: 6px 12px;
-  background: #f5f3f7;
-  border: 1px solid var(--nn-primary, #562556);
+  background: var(--light-yellow1);
+  border: 1px solid var(--nn-purple1);
   border-radius: 16px;
   white-space: nowrap;
 }

@@ -26,7 +26,10 @@ export const CategoriesSection = React.memo(function CategoriesSection({
       {/* Step 1: Select ALL categories first - Using Tree Selector */}
       <TreeCategorySelector
         value={form.values.category_ids || []}
-        onChange={(value) => form.setFieldValue('category_ids', value)}
+        onChange={(value) => {
+          if (isBusiness && isFreeListing && value.length > 1) return;
+          form.setFieldValue('category_ids', value);
+        }}
         poiType={form.values.poi_type}
         error={form.errors.category_ids}
       />

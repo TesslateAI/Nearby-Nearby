@@ -17,9 +17,9 @@
 ├─────────────────────────────────┤  ├─────────────────────────────────┤
 │  Backend (FastAPI)              │  │  Backend (FastAPI + ML)         │
 │  Port: 8001                     │  │  - Embedding Model (~1GB)       │
-│  - JWT Auth                     │  │  - Semantic Search              │
+│  - JWT Auth                     │  │  - Multi-Signal Search Engine   │
 │  - RBAC                         │  │  - Geospatial Queries           │
-│  - Image Processing             │  │                                 │
+│  - Image Processing             │  │  - Public Forms (rate-limited)  │
 └───────────────┬─────────────────┘  └───────────────┬─────────────────┘
                 │                                    │
                 └──────────────┬─────────────────────┘
@@ -34,19 +34,26 @@
 │  │  - businesses   │  └─────────────────┘  └─────────────────┘          │
 │  │  - parks        │                                                     │
 │  │  - trails       │  ┌─────────────────┐  ┌─────────────────┐          │
-│  │  - events       │  │  Image Tables   │  │  Extensions     │          │
-│  └─────────────────┘  │  - images       │  │  - pg_trgm      │          │
-│                       └─────────────────┘  │  - pgvector     │          │
-│                                            │  - postgis      │          │
+│  │  - events       │  │  Image Tables   │  │  Form Tables    │          │
+│  └─────────────────┘  │  - images       │  │  (nearby_forms) │          │
+│                       └─────────────────┘  │  - waitlist     │          │
+│  ┌─────────────────┐                       │  - community_   │          │
+│  │  Extensions     │                       │    interest     │          │
+│  │  - pg_trgm      │                       │  - contact_     │          │
+│  │  - pgvector     │                       │    submissions  │          │
+│  │  - postgis      │                       │  - feedback_    │          │
+│  └─────────────────┘                       │    submissions  │          │
+│                                            │  - business_    │          │
+│                                            │    claims       │          │
 │                                            └─────────────────┘          │
 └─────────────────────────────────────────────────────────────────────────┘
                                │
                                ▼
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                        S3 / MinIO                                        │
-│                    (Image Storage)                                       │
-│  - Original images                                                       │
-│  - Thumbnails, Medium, Large, XLarge variants                           │
+│                    (Image + File Storage)                                │
+│  - POI images (original + thumbnail/medium/large/xlarge variants)       │
+│  - Feedback file uploads (feedback/{submission_id}/{filename})          │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -71,23 +78,32 @@ User Action → React Frontend → FastAPI Backend → PostgreSQL
 ### User App (nearby-app)
 
 ```
-User Search → React Frontend → FastAPI Backend → Search Pipeline
+User Search → React Frontend → FastAPI Backend → Multi-Signal Search Engine
                                                         │
                                    ┌────────────────────┼────────────────────┐
                                    │                    │                    │
-                              Keyword Search    Semantic Search    Hybrid Search
-                              (pg_trgm)         (pgvector)         (Combined)
-                                   │                    │                    │
-                                   └────────────────────┼────────────────────┘
-                                                        │
-                                                        ▼
-                                                 Ranked Results
+                              6 Search Signals     Query Processor      Score Merger
+                              ┌─────────────┐    ┌──────────────┐    ┌──────────┐
+                              │ Exact Name  │    │ Amenity      │    │ Weighted │
+                              │ Trigram     │    │ Type Hints   │    │ Combine  │
+                              │ Full-Text   │    │ Location     │    │ Threshold│
+                              │ Semantic    │    │ Difficulty   │    │ Rank     │
+                              │ Structured  │    └──────────────┘    └──────────┘
+                              │ Type/City   │
+                              └─────────────┘
+
+Form Submit → React Frontend → FastAPI Backend → Forms Database (isolated)
+                                     │                    │
+                                     ├── Rate Limit Check (slowapi)
+                                     ├── Pydantic Validation
+                                     └── File Upload → S3 (feedback only)
 ```
 
 **Key Flows:**
-1. **Search**: Query → Encode with ML model → Vector similarity + Keyword matching → Ranked results
+1. **Search**: Query → Query Processor extracts filters/hints → 6 signals scored independently → Weighted merge → Dynamic threshold → Ranked results
 2. **Nearby**: Location → PostGIS distance query → Sorted by distance
 3. **SEO**: Request for POI → Inject meta tags → Return HTML with Open Graph data
+4. **Form Submit**: Input → Rate limit → Validate → Insert to forms DB → Success response
 
 ---
 
@@ -103,6 +119,8 @@ User Search → React Frontend → FastAPI Backend → Search Pipeline
 | Auth | JWT + bcrypt | N/A (public) |
 | Image Processing | Pillow | N/A |
 | ML Model | N/A | embeddinggemma-300m |
+| Rate Limiting | N/A | slowapi (5/min forms, 2/min file uploads) |
+| S3 Client | boto3 | boto3 (feedback file uploads) |
 
 ### Frontend Technologies
 
@@ -114,6 +132,7 @@ User Search → React Frontend → FastAPI Backend → Search Pipeline
 | Maps | N/A | React-Leaflet |
 | Rich Text | TipTap | N/A |
 | DnD | @hello-pangea/dnd | N/A |
+| Icons | N/A | lucide-react |
 
 ### Database Extensions
 
@@ -145,6 +164,7 @@ nearby-admin_default (shared network)
 | Admin Frontend | 5173 | 5175 | Admin UI |
 | Admin Backend | 8000 | 8001 | Admin API |
 | App Combined | 8000 | 8002 | User app |
+| App Frontend (dev) | 5173 | 8003 | Vite dev server (dev only) |
 | MinIO API | 9000 | 9000 | S3 API |
 | MinIO Console | 9001 | 9001 | S3 UI |
 | PostgreSQL | 5432 | 5432 | Database |
@@ -163,7 +183,8 @@ Local Machine
 │   │   ├── backend (uvicorn --reload)
 │   │   └── db (PostGIS)
 │   └── nearby-app
-│       └── combined container
+│       ├── frontend (Vite dev server, port 8003)
+│       └── backend (uvicorn --reload, port 8002)
 └── MinIO (local S3)
 ```
 
@@ -175,9 +196,11 @@ AWS Infrastructure
 │   ├── nearby-admin
 │   │   ├── frontend (nginx)
 │   │   └── backend (uvicorn)
-│   └── nearby-app (combined)
+│   └── nearby-app (combined: frontend baked into backend container)
 ├── RDS (PostgreSQL + PostGIS)
-└── S3 (image storage)
+│   ├── Main role: postgres_admin (full access)
+│   └── Forms role: nearby_forms (INSERT/SELECT on form tables only)
+└── S3 (image storage + feedback file uploads)
 ```
 
 ---
@@ -194,6 +217,7 @@ AWS Infrastructure
 | CRUD Logic | `backend/app/crud/*.py` |
 | Services | `backend/app/services/*.py` |
 | Auth | `backend/app/core/security.py`, `permissions.py` |
+| Migrations | `backend/alembic/versions/*.py` |
 | Frontend | `frontend/src/App.jsx`, `components/` |
 
 ### nearby-app
@@ -201,18 +225,30 @@ AWS Infrastructure
 | Layer | Files |
 |-------|-------|
 | Entry Point | `backend/app/main.py` |
-| Models | `backend/app/models/*.py` |
+| Models | `backend/app/models/*.py` (POI + form models) |
 | API Routes | `backend/app/api/endpoints/*.py` |
-| Search Logic | `backend/app/crud/crud_poi.py` |
+| Search Engine | `backend/app/search/search_engine.py`, `query_processor.py`, `constants.py` |
+| S3 Client | `backend/app/core/s3.py` |
+| Database | `backend/app/database.py` (main engine + forms engine) |
 | Frontend | `app/src/App.jsx`, `components/`, `pages/` |
+
+### Shared
+
+| Layer | Files |
+|-------|-------|
+| Enums | `shared/models/enums.py` (POIType, ImageType) |
+| Constants | `shared/constants/field_options.py` (amenity patterns for search) |
 
 ---
 
 ## Security Considerations
 
-1. **Authentication**: JWT tokens with configurable expiration
+1. **Authentication**: JWT tokens with configurable expiration (admin panel only)
 2. **Authorization**: Role-based access (Admin > Editor > Viewer)
-3. **Input Validation**: Pydantic schemas for all inputs
+3. **Input Validation**: Pydantic schemas with `Field(max_length=...)` for all inputs
 4. **HTML Sanitization**: DOMPurify for rich text content
 5. **CORS**: Configured allowed origins per environment
 6. **Non-root Containers**: Production containers run as appuser
+7. **Forms DB Isolation**: Separate `nearby_forms` PostgreSQL role with INSERT/SELECT only on form tables — prevents SQL injection escalation to POI data
+8. **Rate Limiting**: `slowapi` on all public form endpoints (5/min general, 2/min file uploads)
+9. **File Upload Validation**: Content-type whitelist (image/* only), 10MB size limit, max 10 files per submission

@@ -72,11 +72,26 @@ The platform uses PostgreSQL 15 with PostGIS 3.4 for geospatial support. Both ap
 │ email (unique)      │
 │ created_at          │       ┌─────────────────────┐
 └─────────────────────┘       │    primary_types    │
-                              ├─────────────────────┤
-                              │ id (UUID) PK        │
-                              │ name                │
-                              │ poi_type            │
-                              └─────────────────────┘
+         │                    ├─────────────────────┤
+         │ nearby_forms role  │ id (UUID) PK        │
+         ▼                    │ name                │
+┌──────────────────────┐      │ poi_type            │
+│ community_interest   │      └─────────────────────┘
+├──────────────────────┤
+│ id (UUID) PK         │      ┌──────────────────────┐
+│ name, email          │      │ contact_submissions  │
+│ location, role       │      ├──────────────────────┤
+│ why, how_heard       │      │ id (UUID) PK         │
+└──────────────────────┘      │ name, email, message │
+                              └──────────────────────┘
+┌──────────────────────┐
+│ feedback_submissions │      ┌──────────────────────┐
+├──────────────────────┤      │  business_claims     │
+│ id (UUID) PK         │      ├──────────────────────┤
+│ email, feedback      │      │ id (UUID) PK         │
+│ file_urls (JSONB)    │      │ business_name        │
+└──────────────────────┘      │ contact info, status │
+                              └──────────────────────┘
 ```
 
 ---
@@ -124,9 +139,12 @@ Main POI table with all shared fields.
 | tiktok | VARCHAR(255) | | TikTok handle |
 | youtube | VARCHAR(255) | | YouTube URL |
 | **Content Fields** |
-| teaser_description | TEXT | | Short description |
+| teaser_paragraph | TEXT | | Short teaser (visible text ≤ 120 chars, HTML allowed) |
+| description_short | TEXT | | Short description (visible text ≤ 250 chars, HTML allowed) |
 | long_description | TEXT | | Full description |
 | internal_notes | TEXT | | Admin-only notes |
+| **Flags** |
+| lat_long_most_accurate | BOOLEAN | DEFAULT false | Mark lat/long as verified accurate |
 | **Hours (JSONB)** |
 | hours | JSONB | | Regular operating hours |
 | seasonal_hours | JSONB | | Seasonal variations |
@@ -138,6 +156,13 @@ Main POI table with all shared fields.
 | front_door_latitude | FLOAT | | Entrance lat |
 | front_door_longitude | FLOAT | | Entrance lng |
 | parking_notes | TEXT | | Parking instructions |
+| public_transit_info | TEXT | | Public transit details |
+| expect_to_pay_parking | VARCHAR | | Parking fee expectations |
+| alcohol_policy_details | TEXT | | Alcohol policy description |
+| **Parking & Facilities (JSONB)** |
+| parking_locations | JSONB | | Array of {name, lat, lng} parking lots |
+| toilet_locations | JSONB | | Array of {lat, lng, description} restrooms |
+| playground_location | JSONB | | Array of {lat, lng, types, surfaces, notes} playgrounds |
 | **Timestamps** |
 | created_at | TIMESTAMP | DEFAULT NOW() | Creation time |
 | updated_at | TIMESTAMP | | Last update |
@@ -173,6 +198,11 @@ Junction table for POI-category many-to-many relationship.
 |--------|------|-------------|-------------|
 | poi_id | UUID | FK → points_of_interest.id | POI reference |
 | category_id | UUID | FK → categories.id | Category reference |
+| is_main | BOOLEAN | DEFAULT false | Whether this is the POI's main category |
+
+**Business rules:**
+- Free business listings are limited to 1 category (enforced backend + frontend)
+- Paid listings can have unlimited categories
 
 ### images
 
@@ -185,6 +215,7 @@ Image storage with variants. All POI photos are now stored in this table (consol
 | image_type | VARCHAR | NOT NULL | main, gallery, entry, etc. |
 | storage_provider | VARCHAR | DEFAULT 's3' | Always 's3' (database deprecated) |
 | storage_url | VARCHAR(500) | | S3 storage URL |
+| image_context | VARCHAR(50) | | Contextual grouping (e.g., 'parking_1', 'playground_2') |
 | alt_text | VARCHAR(255) | | Accessibility text |
 | caption | TEXT | | Image caption |
 | display_order | INTEGER | DEFAULT 0 | Sort order |
@@ -307,13 +338,71 @@ POI subtype classifications (e.g., Food Truck, Ghost Kitchen for BUSINESS).
 
 ### waitlist
 
-Email signup collection.
+Email signup collection. Migrated from SQLite to PostgreSQL. Uses isolated `nearby_forms` DB role.
 
 | Column | Type | Description |
 |--------|------|-------------|
 | id | UUID | PK |
 | email | VARCHAR | UNIQUE, email address |
 | created_at | TIMESTAMP | Signup time |
+
+### community_interest
+
+Public form for users interested in bringing Nearby Nearby to their community.
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| id | UUID | PK, DEFAULT gen_random_uuid() | Primary key |
+| name | VARCHAR(100) | | Submitter name |
+| email | VARCHAR(255) | | Contact email |
+| location | VARCHAR(200) | NOT NULL | "Town, County, State" |
+| role | JSONB | | Array of roles: Resident, Business Owner, etc. |
+| role_other | VARCHAR(100) | | Custom role if "Other" selected |
+| why | TEXT | | Why they want NN in their area |
+| how_heard | VARCHAR(500) | | How they heard about NN |
+| anything_else | TEXT | | Additional comments |
+| created_at | TIMESTAMPTZ | DEFAULT NOW() | Submission time |
+
+### contact_submissions
+
+General contact form submissions.
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| id | UUID | PK, DEFAULT gen_random_uuid() | Primary key |
+| name | VARCHAR(100) | NOT NULL | Submitter name |
+| email | VARCHAR(255) | NOT NULL | Contact email |
+| message | TEXT | NOT NULL | Message content (min 10 chars) |
+| created_at | TIMESTAMPTZ | DEFAULT NOW() | Submission time |
+
+### feedback_submissions
+
+User feedback with optional file uploads.
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| id | UUID | PK, DEFAULT gen_random_uuid() | Primary key |
+| email | VARCHAR(255) | | Optional contact email |
+| feedback | TEXT | NOT NULL | Feedback content (min 10 chars) |
+| file_urls | JSONB | | Array of S3 URLs for uploaded screenshots |
+| created_at | TIMESTAMPTZ | DEFAULT NOW() | Submission time |
+
+### business_claims
+
+Business owner registration/claim requests.
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| id | UUID | PK, DEFAULT gen_random_uuid() | Primary key |
+| business_name | VARCHAR(200) | NOT NULL | Business name |
+| contact_name | VARCHAR(100) | NOT NULL | Owner/contact name |
+| contact_phone | VARCHAR(20) | NOT NULL | Phone number |
+| contact_email | VARCHAR(255) | NOT NULL | Email address |
+| business_address | VARCHAR(500) | NOT NULL | Business street address |
+| how_heard | VARCHAR(500) | | How they heard about NN |
+| anything_else | TEXT | | Additional notes |
+| status | VARCHAR(20) | NOT NULL, DEFAULT 'pending' | Claim status |
+| created_at | TIMESTAMPTZ | DEFAULT NOW() | Submission time |
 
 ---
 
@@ -342,6 +431,34 @@ CREATE INDEX idx_poi_location ON points_of_interest
 CREATE INDEX idx_poi_embedding ON points_of_interest
   USING ivfflat (embedding vector_cosine_ops);
 ```
+
+### Full-Text Search Indexes (tsvector)
+
+```sql
+CREATE INDEX idx_poi_tsvector ON points_of_interest
+  USING gin (tsvector_col);
+```
+
+The `tsvector_col` is a GENERATED ALWAYS column using `to_tsvector('english', ...)` for full-text search with English stemming.
+
+---
+
+## Database Roles
+
+### nearby_forms (Public Forms Isolation)
+
+A restricted PostgreSQL role used by the nearby-app for public form submissions.
+
+**Permissions:**
+- `CONNECT` on the database
+- `USAGE` on public schema
+- `SELECT, INSERT` on: waitlist, community_interest, contact_submissions, feedback_submissions, business_claims
+
+**Cannot access:** points_of_interest, businesses, parks, trails, events, images, users, categories, or any other POI-related table.
+
+**Connection:** Via `FORMS_DATABASE_URL` env var (separate SQLAlchemy engine in nearby-app). Falls back to `DATABASE_URL` if not set.
+
+Migration: `nearby-admin/backend/alembic/versions/c3f4g5h6i7j8_create_form_tables.py`
 
 ---
 

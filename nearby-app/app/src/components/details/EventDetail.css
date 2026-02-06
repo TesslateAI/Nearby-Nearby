@@ -47,7 +47,7 @@
 
 .poi-detail__status-text {
   font-size: 14px;
-  color: #6b7280;
+  color: var(--nn-gray);
 }
 
 .poi-detail__status-value {
@@ -85,6 +85,7 @@
   font-weight: 800;
   color: #581c87;
   margin: 0 0 8px 0;
+  font-family: var(--font-poppins);
 }
 
 .poi-detail__subtitle {
@@ -114,14 +115,14 @@
 
 .poi-detail__sponsor-label {
   font-size: 14px;
-  color: #374151;
+  color: var(--nn-slate);
   display: block;
   margin-bottom: 4px;
 }
 
 .poi-detail__sponsor-text {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--nn-gray);
   margin: 4px 0;
 }
 
@@ -167,11 +168,11 @@
 }
 
 .poi-detail__info-secondary {
-  color: #6b7280;
+  color: var(--nn-gray);
 }
 
 .poi-detail__info-text {
-  color: #6b7280;
+  color: var(--nn-gray);
 }
 
 .poi-detail__info-link {
@@ -210,7 +211,7 @@
   background: white;
   border: 1px solid #c4b5fd;
   border-radius: 6px;
-  color: #374151;
+  color: var(--nn-slate);
   text-decoration: none;
   font-size: 14px;
   font-weight: 500;
@@ -254,7 +255,7 @@
   background: white;
   cursor: pointer;
   font-size: 14px;
-  color: #374151;
+  color: var(--nn-slate);
   transition: background-color 0.2s;
 }
 
@@ -273,7 +274,7 @@
 .poi-detail__description-text {
   white-space: pre-line;
   font-size: 14px;
-  color: #374151;
+  color: var(--nn-slate);
   line-height: 1.6;
 }
 
@@ -366,15 +367,15 @@
   justify-content: space-between;
   padding: 12px 16px;
   background: white;
-  color: var(--nn-primary, #562556);
+  color: var(--nn-purple1);
   font-weight: 600;
-  border: 2px solid var(--nn-primary, #562556);
+  border: 2px solid var(--nn-purple1);
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .collapsible-section__header:hover {
-  background: #f9fafb;
+  background: var(--gray-9);
 }
 
 .collapsible-section__title {
@@ -406,13 +407,13 @@
 
 .info-row__label {
   font-weight: 600;
-  color: #374151;
+  color: var(--nn-slate);
   width: 33.333%;
   font-size: 14px;
 }
 
 .info-row__value {
-  color: #6b7280;
+  color: var(--nn-gray);
   width: 66.666%;
   font-size: 14px;
 }
@@ -484,7 +485,7 @@
 }
 
 .poi-detail__info-primary--closed {
-  color: #dc2626 !important;
+  color: var(--nn-red) !important;
 }
 
 /* Verified tooltip */
@@ -503,7 +504,7 @@
   position: absolute;
   top: 100%;
   right: 0;
-  background: #1f2937;
+  background: var(--nn-dark);
   color: white;
   padding: 12px 16px;
   border-radius: 8px;
@@ -549,7 +550,7 @@
   border: none;
   background: none;
   font-size: 14px;
-  color: #374151;
+  color: var(--nn-slate);
   cursor: pointer;
   text-align: left;
 }
@@ -578,7 +579,7 @@
 
 .poi-detail__loading {
   font-size: 18px;
-  color: #6B7280;
+  color: var(--nn-gray);
 }
 
 .poi-detail__error h2 {

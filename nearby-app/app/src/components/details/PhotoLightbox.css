@@ -198,7 +198,7 @@
 }
 
 .lightbox-thumbnail--active {
-  border-color: var(--nn-accent, #3C7D6F);
+  border-color: var(--nn-teal2);
 }
 
 .lightbox-thumbnail img {

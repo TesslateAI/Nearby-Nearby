@@ -1,0 +1,78 @@
+/* ==========================================================================
+   Design Tokens — ported from nn-templates/inc/options.scss
+   Breakpoints (document only, CSS can't store as variables):
+     600px, 700px, 980px, 1200px, 1400px, 1600px, 1900px, 2400px
+   ========================================================================== */
+
+:root {
+  /* ── Font stacks ─────────────────────────────────────────────── */
+  --font-sans:           Arial, Helvetica, sans-serif;
+  --font-serif:          'Times New Roman', Georgia, Times, serif;
+  --font-roboto:         'Roboto', Arial, Helvetica, sans-serif;
+  --font-roboto-condensed: 'Roboto Condensed', Arial, Helvetica, sans-serif;
+  --font-poppins:        'Poppins', Arial, Helvetica, sans-serif;
+  --font-libre-bodoni:   'Libre Bodoni', Georgia, Times, serif;
+
+  /* ── Brand colors ────────────────────────────────────────────── */
+  --nn-dark:     #1A2128;
+  --nn-slate:    #33404E;
+  --nn-gray:     #597189;
+
+  --nn-purple1:  #562556;
+  --nn-purple2:  #853885;
+
+  --nn-teal1:    #276255;
+  --nn-teal2:    #328170;
+  --nn-gold:     #FEC764;
+
+  /* ── Spectrum ────────────────────────────────────────────────── */
+  --nn-red:      #AF1818;
+  --nn-orange:   #ff8500;
+  --nn-yellow:   #f9d503;
+  --nn-green:    #6dba24;
+  --nn-aqua:     #00dbdb;
+  --nn-blue:     #0846E2;
+  --nn-magenta:  #c02aac;
+  --nn-brown:    #523a2e;
+
+  /* ── Grayscale ───────────────────────────────────────────────── */
+  --gray-a:      #aaaaaa;
+  --gray-b:      #bbbbbb;
+  --gray-c:      #cccccc;
+  --gray-d:      #dddddd;
+  --gray-e:      #eeeeee;
+  --gray-3:      #f3f3f3;
+  --gray-5:      #f5f5f5;
+  --gray-7:      #f7f7f7;
+  --gray-9:      #f9f9f9;
+
+  /* ── Light yellows ───────────────────────────────────────────── */
+  --light-yellow1: #FFE3B2;
+  --light-yellow2: #FEF9A7;
+  --light-yellow3: #E4DB8D;
+
+  /* ── Social-media colors ─────────────────────────────────────── */
+  --color-facebook:   #3B5998;
+  --color-instagram:  #E4405F;
+  --color-twitter:    #1DA1F2;
+  --color-linkedin:   #0077B5;
+  --color-youtube:    #FF0000;
+  --color-tiktok:     #141414;
+  --color-pinterest:  #BD081C;
+
+  /* ── Semantic tokens ─────────────────────────────────────────── */
+  --color-text:        var(--nn-slate);
+  --color-text-light:  var(--nn-gray);
+  --color-heading:     var(--nn-dark);
+  --link-color:        var(--nn-teal1);
+  --link-color-hover:  #1f5046;
+  --color-bg:          #F4F2F7;
+  --color-error:       var(--nn-red);
+  --color-success:     var(--nn-green);
+  --color-focus:       #0066cc;
+
+  /* ── Overlay / shell ─────────────────────────────────────────── */
+  --mobile-nav-height: 55px;
+  --overlay-backdrop:  hsla(0, 0%, 0%, 0.55);
+  --overlay-panel-bg:  #ffffff;
+}

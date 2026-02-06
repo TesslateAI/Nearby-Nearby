@@ -5,7 +5,7 @@
   border-radius: 0;
   overflow: hidden;
   position: relative;
-  background: #E0E5E9;
+  background: var(--gray-d);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
@@ -21,8 +21,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #E0E5E9;
-  color: var(--nn-ink-muted, #6B7280);
+  background: var(--gray-d);
+  color: var(--nn-gray);
   font-size: 16px;
 }
 
@@ -51,7 +51,7 @@
 
 .popup-content strong {
   display: block;
-  color: var(--nn-ink, #213547);
+  color: var(--nn-dark);
   font-size: 14px;
   font-weight: 700;
   margin-bottom: 4px;
@@ -59,7 +59,7 @@
 }
 
 .popup-label {
-  color: #F4C542;
+  color: var(--nn-gold);
   font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
@@ -68,14 +68,14 @@
 }
 
 .popup-distance {
-  color: var(--nn-accent, #3C7D6F);
+  color: var(--nn-teal2);
   font-size: 12px;
   font-weight: 600;
   margin: 4px 0;
 }
 
 .popup-city {
-  color: var(--nn-ink-muted, #6B7280);
+  color: var(--nn-gray);
   font-size: 11px;
   margin: 4px 0 0;
 }
@@ -85,14 +85,14 @@
 }
 
 .leaflet-popup-close-button {
-  color: var(--nn-ink-muted, #6B7280) !important;
+  color: var(--nn-gray) !important;
   font-size: 18px !important;
   padding: 6px 10px !important;
   font-weight: 600 !important;
 }
 
 .leaflet-popup-close-button:hover {
-  color: var(--nn-ink, #213547) !important;
+  color: var(--nn-dark) !important;
 }
 
 /* Zoom Controls - Larger and more visible */
@@ -105,7 +105,7 @@
 
 .leaflet-control-zoom a {
   background: white !important;
-  color: var(--nn-primary, #532b62) !important;
+  color: var(--nn-purple1) !important;
   border: none !important;
   width: 36px !important;
   height: 36px !important;
@@ -116,12 +116,12 @@
 }
 
 .leaflet-control-zoom a:hover {
-  background: var(--nn-bg, #F4EFF7) !important;
-  color: var(--nn-primary, #532b62) !important;
+  background: var(--light-yellow1) !important;
+  color: var(--nn-purple1) !important;
 }
 
 .leaflet-control-zoom-in {
-  border-bottom: 1px solid #e5e7eb !important;
+  border-bottom: 1px solid var(--gray-d) !important;
 }
 
 /* Attribution - Subtle */
@@ -130,12 +130,12 @@
   border-radius: 4px !important;
   padding: 2px 6px !important;
   font-size: 10px !important;
-  color: var(--nn-ink-muted, #6B7280) !important;
+  color: var(--nn-gray) !important;
   margin: 0 8px 8px 0 !important;
 }
 
 .leaflet-control-attribution a {
-  color: var(--nn-accent, #3C7D6F) !important;
+  color: var(--nn-teal2) !important;
   text-decoration: none;
 }
 

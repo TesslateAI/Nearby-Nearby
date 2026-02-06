@@ -140,23 +140,6 @@ export const ConnectionsSection = React.memo(function ConnectionsSection({ form,
         </>
       )}
 
-      {!isPark && (
-        <>
-          <Alert color="blue" variant="light">
-            Use this section to indicate if this location shares memberships with other parks/trails
-          </Alert>
-
-          <RichTextEditor
-            label="Membership & Pass Details"
-            placeholder="Information about shared passes or membership programs"
-            value={form.values.membership_details || ''}
-            onChange={(html) => form.setFieldValue('membership_details', html)}
-            error={form.errors.membership_details}
-            minRows={3}
-          />
-        </>
-      )}
-
       <RichTextEditor
         label="Camping & Lodging"
         placeholder="Available camping or lodging options"
@@ -240,8 +223,8 @@ export const CorporateComplianceSection = React.memo(function CorporateComplianc
         }}
       >
         <Group mt="xs" gap="lg">
-          <Radio value="yes" label="Yes" styles={{ radio: { cursor: 'pointer' }, label: { cursor: 'pointer' } }} />
-          <Radio value="no" label="No" styles={{ radio: { cursor: 'pointer' }, label: { cursor: 'pointer' } }} />
+          <Radio value="yes" label="Yes" />
+          <Radio value="no" label="No" />
         </Group>
       </Radio.Group>
 
@@ -293,8 +276,8 @@ export const CorporateComplianceSection = React.memo(function CorporateComplianc
         }}
       >
         <Group mt="xs" gap="lg">
-          <Radio value="yes" label="Yes" styles={{ radio: { cursor: 'pointer' }, label: { cursor: 'pointer' } }} />
-          <Radio value="no" label="No" styles={{ radio: { cursor: 'pointer' }, label: { cursor: 'pointer' } }} />
+          <Radio value="yes" label="Yes" />
+          <Radio value="no" label="No" />
         </Group>
       </Radio.Group>
 
@@ -320,8 +303,8 @@ export const CorporateComplianceSection = React.memo(function CorporateComplianc
         }}
       >
         <Group mt="xs" gap="lg">
-          <Radio value="yes" label="Yes" styles={{ radio: { cursor: 'pointer' }, label: { cursor: 'pointer' } }} />
-          <Radio value="no" label="No" styles={{ radio: { cursor: 'pointer' }, label: { cursor: 'pointer' } }} />
+          <Radio value="yes" label="Yes" />
+          <Radio value="no" label="No" />
         </Group>
       </Radio.Group>
 

@@ -31,6 +31,7 @@ The platform is a monorepo containing two applications that share a PostgreSQL d
 | [Search](systems/search.md) | Keyword, semantic, and hybrid search |
 | [Geospatial](systems/geospatial.md) | PostGIS nearby queries |
 | [SEO](systems/seo.md) | Meta tags, Open Graph, structured data |
+| [Forms](systems/forms.md) | Public forms, rate limiting, DB isolation |
 | [Users](systems/users.md) | User management and scripts |
 
 ### Infrastructure
@@ -104,15 +105,14 @@ SEO-friendly URLs using slugs (e.g., `/places/joes-coffee-pittsboro`)
 Hierarchical system with parent-child relationships, filtered by POI type
 
 ### Search Methods
-1. **Keyword** - Fuzzy matching with pg_trgm
-2. **Semantic** - Vector similarity with pgvector
-3. **Hybrid** - 30% keyword + 70% semantic scoring
+1. **Multi-Signal** - 6 signals: exact name, trigram, full-text (tsvector), semantic (pgvector), structured filters, type/city boost
+2. **Query Processor** - Extracts amenity filters, POI type hints, location hints from natural language
 
 ---
 
 ## Database Connection
 
-Both applications share the same PostgreSQL database:
+Both applications share the same PostgreSQL database. Public form submissions use an isolated `nearby_forms` role with INSERT/SELECT-only access.
 - **Production**: AWS RDS endpoint
 - **Development**: Local PostGIS container
 

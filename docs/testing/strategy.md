@@ -17,7 +17,7 @@ Skip low-ROI tests: visual regression, snapshot tests, exhaustive unit tests for
 
 ## Current Test Suite
 
-The monorepo has **98 integration tests** in the root `tests/` directory covering admin CRUD, cross-app data flow, and real S3 (MinIO) image uploads.
+The monorepo has **225 integration tests** in the root `tests/` directory covering admin CRUD, cross-app data flow, real S3 (MinIO) image uploads, and admin form features (Tasks 2-41).
 
 ### Running Tests
 
@@ -71,6 +71,13 @@ Ports are offset from production to avoid collisions (5434 instead of 5432, 9100
 | `test_admin_relationships.py` | 7 | POI-to-POI links, cascade delete, validation |
 | `test_admin_venues.py` | 5 | Venue list, venue data for events |
 | `test_crossapp_read.py` | 13 | Admin writes data, app reads it — the core cross-app contract |
+| `test_new_poi_fields.py` | 20 | New POI fields: teaser_paragraph, lat_long_most_accurate, alcohol_policy_details, parking/playground/restroom locations |
+| `test_admin_form_tasks.py` | 20 | Tasks 17-41: short description limit, free biz category limit, multiple playgrounds, article links, trail head/exit max count |
+| `test_search_engine.py` | 14 | Multi-signal search: exact/fuzzy/city/type/ordering/empty/fallback/published-only |
+| `test_query_processor.py` | 13 | Query parsing: amenity/type/location/difficulty extraction, edge cases |
+| `test_fulltext_search.py` | 11 | tsvector column, stemming, description-only matches |
+| `test_form_endpoints.py` | 23 | All 5 public forms: happy path, validation, duplicates, file uploads |
+| `test_event_lifecycle.py` | varies | Event creation and lifecycle |
 
 ### How Tests Work
 
@@ -94,6 +101,11 @@ The test suite exposed and fixed these real bugs:
 | Enum vs string comparison in updates | 500 on subtype updates | `POIType.BUSINESS == 'BUSINESS'` is always `False` |
 | `EventCreate` used for partial updates | 422 when updating any event field | Required `start_datetime` even for partial update |
 | `/api/nearby` returns raw WKB geometry | 500 on coordinate-based nearby search | Missing `PointGeometry.from_wkb()` conversion |
+| Events page blank white screen | Can't create events | Missing `TextInput` import in `LocationSection.jsx` |
+| Corporate compliance radios not clickable | Can't toggle yes/no | Mantine v8 broke click handling with cursor styles on Radio |
+| Short description DB rejection | 500 when HTML + text > 250 bytes | `String(250)` column too small for HTML — changed to `Text` |
+| Free biz category tests broke | 2 existing tests failed | New free-biz 1-category limit needed `listing_type="paid"` in tests |
+| Suggestions endpoint obsolete | Test failures after deletion | Old `test_suggestions.py` tested deleted endpoint → deleted test file |
 
 ---
 
@@ -101,7 +113,7 @@ The test suite exposed and fixed these real bugs:
 
 ```
 NearbyNearby/
-├── tests/                               # Integration & cross-app tests (98 tests)
+├── tests/                               # Integration & cross-app tests (225 tests)
 │   ├── conftest.py                      # Shared fixtures, auth mocking, ORM helpers
 │   ├── docker-compose.test.yml          # PostGIS + MinIO test containers
 │   ├── test_admin_business.py
@@ -116,7 +128,14 @@ NearbyNearby/
 │   ├── test_admin_images.py
 │   ├── test_admin_relationships.py
 │   ├── test_admin_venues.py
-│   └── test_crossapp_read.py
+│   ├── test_crossapp_read.py
+│   ├── test_new_poi_fields.py           # New fields: teaser, lat_long flag, alcohol, locations
+│   ├── test_admin_form_tasks.py         # Tasks 17-41: validators, limits, playgrounds
+│   ├── test_search_engine.py            # Multi-signal search engine tests
+│   ├── test_query_processor.py          # Query processor extraction tests
+│   ├── test_fulltext_search.py          # tsvector / full-text search tests
+│   ├── test_form_endpoints.py           # Public form API tests (23 tests)
+│   └── test_event_lifecycle.py          # Event lifecycle tests
 │
 ├── nearby-admin/
 │   └── backend/
@@ -142,6 +161,7 @@ NearbyNearby/
 | # | What to Test | Status | Where |
 |---|-------------|--------|-------|
 | 1 | POI CRUD (all 4 types, all fields) | Done | `test_admin_business/park/trail/event.py` |
+| 1b | Public form endpoints (all 5 forms) | Done | `test_form_endpoints.py` |
 | 2 | Update every field type | Done | `test_admin_update.py` |
 | 3 | Publication status filtering | Done | `test_admin_publish.py` |
 | 4 | Cross-app data flow (admin writes, app reads) | Done | `test_crossapp_read.py` |
@@ -308,7 +328,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - run: pip install -r nearby-admin/backend/requirements.txt
+      - run: pip install -r nearby-admin/backend/requirements.txt && pip install slowapi
       - run: pytest tests/ -v --tb=short
         env:
           DATABASE_URL: postgresql://test:test@localhost:5434/test_nearby

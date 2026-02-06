@@ -365,6 +365,15 @@ services:
       - "8002:8000"
     volumes:
       - ./backend:/app
+      - ../shared:/app/shared
+    environment:
+      - PYTHONPATH=/app
+      - FORMS_DATABASE_URL=
+      - AWS_S3_BUCKET=nearby-images
+      - AWS_REGION=us-east-1
+      - AWS_S3_ENDPOINT_URL=http://minio:9000
+      - AWS_ACCESS_KEY_ID=minioadmin
+      - AWS_SECRET_ACCESS_KEY=minioadmin
     env_file:
       - ./backend/.env
     depends_on:
@@ -479,6 +488,16 @@ AWS_S3_BUCKET=nearby-images
 AWS_S3_ENDPOINT_URL=http://minio:9000
 AWS_ACCESS_KEY_ID=minioadmin
 AWS_SECRET_ACCESS_KEY=minioadmin123
+
+# Forms Database (nearby-app only)
+FORMS_DATABASE_URL=postgresql://nearby_forms:password@host:5432/dbname
+
+# S3 Storage for feedback file uploads (nearby-app)
+AWS_S3_BUCKET=nearby-images
+AWS_REGION=us-east-1
+AWS_ACCESS_KEY_ID=your-key
+AWS_SECRET_ACCESS_KEY=your-secret
+AWS_S3_ENDPOINT_URL=http://minio:9000  # Dev only (MinIO)
 ```
 
 ---

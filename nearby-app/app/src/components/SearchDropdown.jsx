@@ -1,6 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { Link } from 'react-router-dom';
+import { Search } from 'lucide-react';
 import './SearchDropdown.css';
+
+// Friendly display names for POI types
+const TYPE_LABELS = {
+  BUSINESS: 'Business',
+  PARK: 'Park',
+  TRAIL: 'Trail',
+  EVENT: 'Event',
+};
 
 function SearchDropdown({
   visible,
@@ -11,6 +21,8 @@ function SearchDropdown({
   onItemClick,
   onItemHover,
   onClose,
+  query = '',
+  onSearchAll = null,
 }) {
   const portalRootRef = useRef(null);
   const [position, setPosition] = useState(null);
@@ -79,37 +91,77 @@ function SearchDropdown({
     zIndex: 10000,
   };
 
+  const trimmedQuery = query.trim();
+
   const content = (
     <div className="search-dropdown" style={style} role="listbox">
       {isLoading ? (
         <div className="search-dropdown__state">Searching...</div>
       ) : results && results.length > 0 ? (
-        <ul className="search-dropdown__list">
-          {results.map((poi, index) => (
-            <li
-              key={poi.id}
-              className={`search-dropdown__item ${index === selectedIndex ? 'search-dropdown__item--selected' : ''}`}
-              onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); onItemClick?.(poi); }}
-              onClick={(e) => { e.preventDefault(); e.stopPropagation(); onItemClick?.(poi); }}
-              onMouseEnter={() => onItemHover?.(index)}
-            >
-              <div className="search-dropdown__content">
-                <div className="search-dropdown__name">{poi.name}</div>
-                {(poi.address_city || poi.address_state) && (
-                  <div className="search-dropdown__city">
-                    {[
-                      poi.address_city,
-                      poi.address_state === 'NC' ? 'North Carolina' : poi.address_state
-                    ].filter(Boolean).join(', ')}
+        <>
+          <ul className="search-dropdown__list">
+            {results.map((poi, index) => {
+              const typeLabel = TYPE_LABELS[poi.poi_type] || poi.poi_type;
+              return (
+                <li
+                  key={poi.id}
+                  className={`search-dropdown__item ${index === selectedIndex ? 'search-dropdown__item--selected' : ''}`}
+                  onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); onItemClick?.(poi); }}
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); onItemClick?.(poi); }}
+                  onMouseEnter={() => onItemHover?.(index)}
+                >
+                  <div className="search-dropdown__content">
+                    <div className="search-dropdown__name-row">
+                      <span className="search-dropdown__name">{poi.name}</span>
+                      <span className="search-dropdown__type-badge">{typeLabel}</span>
+                    </div>
+                    {(poi.address_city || poi.address_state) && (
+                      <div className="search-dropdown__city">
+                        {[
+                          poi.address_city,
+                          poi.address_state === 'NC' ? 'North Carolina' : poi.address_state
+                        ].filter(Boolean).join(', ')}
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <div className="search-dropdown__state">No results found</div>
-      )}
+                </li>
+              );
+            })}
+          </ul>
+          {/* "Search all" footer */}
+          {trimmedQuery && onSearchAll && (
+            <div
+              className="search-dropdown__footer"
+              onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); onSearchAll(trimmedQuery); }}
+            >
+              <Search size={14} />
+              <span>Search for &lsquo;{trimmedQuery}&rsquo; in Explore</span>
+            </div>
+          )}
+        </>
+      ) : trimmedQuery ? (
+        <div className="search-dropdown__empty">
+          <p className="search-dropdown__empty-text">
+            We can&rsquo;t find &lsquo;{trimmedQuery}&rsquo;
+          </p>
+          <Link
+            to={`/suggest-place?name=${encodeURIComponent(trimmedQuery)}`}
+            className="search-dropdown__suggest-link"
+            onMouseDown={() => onClose?.()}
+          >
+            Suggest this place
+          </Link>
+          {onSearchAll && (
+            <div
+              className="search-dropdown__footer"
+              onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); onSearchAll(trimmedQuery); }}
+            >
+              <Search size={14} />
+              <span>Search for &lsquo;{trimmedQuery}&rsquo; in Explore</span>
+            </div>
+          )}
+        </div>
+      ) : null}
     </div>
   );
 

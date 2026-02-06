@@ -2,18 +2,19 @@
 .nearby-section {
   max-width: 900px;
   margin: 40px auto 0;
-  background: var(--nn-primary, #562556);
+  background: var(--nn-purple1);
   border-radius: 12px;
   overflow: hidden;
 }
 
 .nearby-section__header {
-  background: var(--nn-primary, #562556);
+  background: var(--nn-purple1);
   padding: 24px 24px 16px;
   text-align: center;
 }
 
 .nearby-section__title {
+  font-family: var(--font-poppins);
   color: white;
   font-size: 28px;
   font-weight: 800;
@@ -31,7 +32,7 @@
 
 /* Controls Section */
 .nearby-section__controls {
-  background: var(--nn-primary, #562556);
+  background: var(--nn-purple1);
   padding: 16px 24px 24px;
   display: flex;
   flex-direction: column;
@@ -67,26 +68,27 @@
   background: white;
   border: none;
   border-radius: 10px;
+  font-family: var(--font-roboto);
   font-size: 14px;
   font-weight: 600;
-  color: var(--nn-ink, #33404E);
+  color: var(--nn-dark);
   cursor: pointer;
   transition: all 0.2s ease;
   min-height: 48px; /* Large touch target */
 }
 
 .nearby-dropdown__btn:hover {
-  background: #f5f5f5;
+  background: var(--gray-5);
 }
 
 .nearby-dropdown__btn:focus-visible {
-  outline: 2px solid #F4C542;
+  outline: 2px solid var(--nn-gold);
   outline-offset: 2px;
 }
 
 .nearby-dropdown__btn--active {
-  background: #F4C542;
-  color: var(--nn-ink, #33404E);
+  background: var(--nn-gold);
+  color: var(--nn-dark);
 }
 
 .nearby-dropdown__select {
@@ -133,24 +135,24 @@
   text-align: left;
   font-size: 14px;
   font-weight: 500;
-  color: var(--nn-ink, #33404E);
+  color: var(--nn-dark);
   cursor: pointer;
   transition: background 0.15s ease;
 }
 
 .nearby-dropdown__option:hover {
-  background: #f5f5f5;
+  background: var(--gray-5);
 }
 
 .nearby-dropdown__option--active {
   background: rgba(86, 37, 86, 0.1);
-  color: var(--nn-primary, #562556);
+  color: var(--nn-purple1);
   font-weight: 600;
 }
 
 .nearby-dropdown__divider {
   height: 1px;
-  background: #e5e7eb;
+  background: var(--gray-d);
   margin: 4px 0;
 }
 
@@ -162,16 +164,17 @@
   cursor: pointer;
   font-size: 14px;
   font-weight: 500;
-  color: var(--nn-ink, #33404E);
+  color: var(--nn-dark);
 }
 
 .nearby-dropdown__date-label:hover {
-  background: #f5f5f5;
+  background: var(--gray-5);
 }
 
 .nearby-dropdown__date-input {
+  font-family: var(--font-roboto);
   padding: 6px 10px;
-  border: 1px solid #ddd;
+  border: 1px solid var(--gray-d);
   border-radius: 6px;
   font-size: 13px;
   cursor: pointer;
@@ -202,7 +205,7 @@
 }
 
 .nearby-clear-btn:focus-visible {
-  outline: 2px solid #F4C542;
+  outline: 2px solid var(--nn-gold);
   outline-offset: 2px;
 }
 
@@ -214,7 +217,7 @@
   gap: 24px;
   justify-content: center;
   align-items: center;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--gray-d);
 }
 
 .nearby-map-legend__item {
@@ -233,7 +236,7 @@
 .nearby-map-legend__marker--current {
   width: 20px;
   height: 20px;
-  background: #F4C542;
+  background: var(--nn-gold);
   border: 2px solid white;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
@@ -241,7 +244,7 @@
 .nearby-map-legend__marker--nearby {
   width: 24px;
   height: 24px;
-  background: var(--nn-primary, #562556);
+  background: var(--nn-purple1);
   border: 2px solid white;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
   color: white;
@@ -251,13 +254,13 @@
 
 .nearby-map-legend__label {
   font-size: 13px;
-  color: var(--nn-ink-muted, #597199);
+  color: var(--nn-gray);
   font-weight: 500;
 }
 
 /* Nearby Results */
 .nearby-results {
-  background: #F4EFF7;
+  background: var(--light-yellow1);
   padding: 32px 24px;
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -269,13 +272,13 @@
   grid-column: 1 / -1;
   text-align: center;
   padding: 40px;
-  color: var(--nn-ink-muted, #597199);
+  color: var(--nn-gray);
   font-size: 16px;
 }
 
 /* Pagination */
 .nearby-pagination {
-  background: #F4EFF7;
+  background: var(--light-yellow1);
   padding: 0 24px 32px 24px;
   display: flex;
   justify-content: center;
@@ -286,8 +289,8 @@
 .nearby-pagination__btn,
 .nearby-pagination__num {
   background: white;
-  border: 2px solid #D9CFE3;
-  color: var(--nn-ink, #33404E);
+  border: 2px solid var(--gray-d);
+  color: var(--nn-dark);
   padding: 10px 14px;
   border-radius: 8px;
   font-size: 14px;
@@ -305,15 +308,15 @@
 
 .nearby-pagination__btn:not(:disabled):hover,
 .nearby-pagination__num:hover {
-  background: var(--nn-primary, #562556);
+  background: var(--nn-purple1);
   color: white;
-  border-color: var(--nn-primary, #562556);
+  border-color: var(--nn-purple1);
 }
 
 .nearby-pagination__num.active {
-  background: var(--nn-primary, #562556);
+  background: var(--nn-purple1);
   color: white;
-  border-color: var(--nn-primary, #562556);
+  border-color: var(--nn-purple1);
 }
 
 /* Directions Modal */
@@ -347,7 +350,7 @@
   right: 12px;
   background: none;
   border: none;
-  color: var(--nn-ink-muted, #597199);
+  color: var(--nn-gray);
   cursor: pointer;
   padding: 8px;
   display: flex;
@@ -360,21 +363,22 @@
 }
 
 .directions-modal__close-x:hover {
-  background: #f5f5f5;
-  color: var(--nn-ink, #33404E);
+  background: var(--gray-5);
+  color: var(--nn-dark);
 }
 
 .directions-modal__title {
+  font-family: var(--font-poppins);
   font-size: 18px;
   font-weight: 700;
-  color: var(--nn-ink, #33404E);
+  color: var(--nn-dark);
   margin: 0 0 4px 0;
   padding-right: 40px;
 }
 
 .directions-modal__address {
   font-size: 14px;
-  color: var(--nn-ink-muted, #597199);
+  color: var(--nn-gray);
   margin: 0 0 16px 0;
   line-height: 1.4;
 }
@@ -391,25 +395,26 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
-  background: #f5f5f5;
-  border: 1px solid #e5e7eb;
+  background: var(--gray-5);
+  border: 1px solid var(--gray-d);
   padding: 10px 12px;
   border-radius: 8px;
   font-size: 12px;
   font-weight: 600;
-  color: var(--nn-ink, #33404E);
+  color: var(--nn-dark);
   cursor: pointer;
   transition: all 0.2s;
   min-height: 44px;
 }
 
 .directions-modal__copy-btn:hover {
-  background: #e5e7eb;
+  background: var(--gray-d);
 }
 
 .directions-modal__subtitle {
+  font-family: var(--font-poppins);
   font-size: 12px;
-  color: var(--nn-ink-muted, #597199);
+  color: var(--nn-gray);
   margin: 0 0 12px 0;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -447,11 +452,11 @@
 }
 
 .directions-modal__btn--apple {
-  background: #333333;
+  background: var(--nn-dark);
 }
 
 .directions-modal__btn--apple:hover {
-  background: #1a1a1a;
+  background: var(--nn-slate);
 }
 
 .directions-modal__btn--waze {

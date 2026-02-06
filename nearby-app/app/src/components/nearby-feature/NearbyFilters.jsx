@@ -11,14 +11,16 @@ const filterIcons = {
   'Youth Events': Users
 };
 
-function NearbyFilters({ selectedFilter, onFilterChange }) {
-  const filters = ['All', 'Businesses', 'Events', 'Parks', 'Trails', 'Youth Events'];
+const DEFAULT_FILTERS = ['All', 'Businesses', 'Events', 'Parks', 'Trails', 'Youth Events'];
+
+function NearbyFilters({ selectedFilter, onFilterChange, variant = 'dark', filters = null }) {
+  const filterList = filters || DEFAULT_FILTERS;
 
   return (
-    <div className="nearby-filters">
+    <div className={`nearby-filters nearby-filters--${variant}`}>
       <div className="nearby-filters__scroll">
-        {filters.map(filter => {
-          const Icon = filterIcons[filter];
+        {filterList.map(filter => {
+          const Icon = filterIcons[filter] || LayoutGrid;
           return (
             <button
               key={filter}

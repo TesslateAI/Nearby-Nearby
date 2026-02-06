@@ -1,0 +1,257 @@
+.claim-page {
+  min-height: 100vh;
+  background: var(--color-bg);
+  padding: 60px 20px 80px;
+}
+
+.claim-page__container {
+  max-width: 560px;
+  margin: 0 auto;
+}
+
+.claim-page__header {
+  text-align: center;
+  margin-bottom: 32px;
+  color: var(--nn-purple1);
+}
+
+.claim-page__header h1 {
+  font-family: var(--font-poppins);
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--nn-dark);
+  margin: 12px 0 8px;
+}
+
+.claim-page__header p {
+  color: var(--nn-gray);
+  font-size: 15px;
+  margin: 0;
+}
+
+/* ── Gate (yes/no question) ─────────────────────────────────── */
+.claim-page__gate {
+  background: white;
+  border: 2px solid var(--gray-d);
+  border-radius: 16px;
+  padding: 36px 24px;
+  text-align: center;
+}
+
+.claim-page__gate-question {
+  font-family: var(--font-poppins);
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--nn-dark);
+  margin: 0 0 24px;
+}
+
+.claim-page__gate-buttons {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+}
+
+.claim-page__gate-btn {
+  padding: 14px 32px;
+  border: none;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 700;
+  font-family: var(--font-poppins);
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.claim-page__gate-btn--yes {
+  background: var(--nn-teal2);
+  color: white;
+}
+.claim-page__gate-btn--yes:hover {
+  background: var(--nn-teal1);
+}
+
+.claim-page__gate-btn--no {
+  background: var(--gray-d);
+  color: var(--nn-dark);
+}
+.claim-page__gate-btn--no:hover {
+  background: #ccc;
+}
+
+/* ── Outside area message ───────────────────────────────────── */
+.claim-page__outside {
+  background: white;
+  border: 2px solid var(--gray-d);
+  border-radius: 16px;
+  padding: 36px 24px;
+  text-align: center;
+}
+
+.claim-page__outside p {
+  color: var(--nn-gray);
+  font-size: 15px;
+  margin: 0 0 20px;
+}
+
+.claim-page__cta-link {
+  display: inline-block;
+  padding: 14px 28px;
+  background: var(--nn-purple1);
+  color: white;
+  border-radius: 10px;
+  text-decoration: none;
+  font-weight: 600;
+  font-family: var(--font-poppins);
+  transition: background 0.2s ease;
+}
+
+.claim-page__cta-link:hover {
+  background: var(--nn-purple2);
+}
+
+.claim-page__back-btn {
+  display: block;
+  margin: 16px auto 0;
+  background: none;
+  border: none;
+  color: var(--nn-gray);
+  cursor: pointer;
+  font-size: 14px;
+  text-decoration: underline;
+}
+
+/* ── Form ───────────────────────────────────────────────────── */
+.claim-page__form {
+  background: white;
+  border: 2px solid var(--gray-d);
+  border-radius: 16px;
+  padding: 28px 24px;
+}
+
+.claim-page__field {
+  margin-bottom: 20px;
+}
+
+.claim-page__field label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--nn-dark);
+  margin-bottom: 6px;
+}
+
+.claim-page__field input,
+.claim-page__field textarea {
+  width: 100%;
+  padding: 12px 14px;
+  border: 2px solid var(--gray-d);
+  border-radius: 10px;
+  font-size: 15px;
+  color: var(--nn-dark);
+  background: white;
+  outline: none;
+  transition: border-color 0.2s ease;
+  font-family: var(--font-roboto);
+  box-sizing: border-box;
+}
+
+.claim-page__field input:focus,
+.claim-page__field textarea:focus {
+  border-color: var(--nn-purple1);
+}
+
+.claim-page__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.claim-page__error {
+  color: var(--nn-red);
+  font-size: 14px;
+  margin: 0 0 16px;
+}
+
+.claim-page__submit {
+  width: 100%;
+  padding: 14px;
+  background: var(--nn-teal2);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 700;
+  font-family: var(--font-poppins);
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.claim-page__submit:hover:not(:disabled) {
+  background: var(--nn-teal1);
+}
+
+.claim-page__submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── Success ────────────────────────────────────────────────── */
+.claim-page__success {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--nn-teal2);
+}
+
+.claim-page__success h2 {
+  font-family: var(--font-poppins);
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--nn-dark);
+  margin: 16px 0 8px;
+}
+
+.claim-page__success p {
+  color: var(--nn-gray);
+  font-size: 15px;
+  max-width: 400px;
+  margin: 0 auto 24px;
+}
+
+.claim-page__back-link {
+  display: inline-block;
+  padding: 12px 24px;
+  background: var(--nn-purple1);
+  color: white;
+  border-radius: 10px;
+  text-decoration: none;
+  font-weight: 600;
+  font-family: var(--font-poppins);
+  transition: background 0.2s ease;
+}
+
+.claim-page__back-link:hover {
+  background: var(--nn-purple2);
+}
+
+@media (max-width: 768px) {
+  .claim-page {
+    padding: 40px 16px 60px;
+  }
+
+  .claim-page__header h1 {
+    font-size: 26px;
+  }
+
+  .claim-page__form {
+    padding: 20px 16px;
+  }
+
+  .claim-page__row {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 1199px) {
+  .claim-page { padding-bottom: calc(80px + var(--mobile-nav-height)); }
+}

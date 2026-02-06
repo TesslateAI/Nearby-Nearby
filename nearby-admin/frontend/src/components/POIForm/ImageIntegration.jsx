@@ -60,14 +60,15 @@ export const EntryPhotoUpload = ({ poiId, poiType, form }) => {
 };
 
 // Parking Photos Upload
-export const ParkingPhotosUpload = ({ poiId, form }) => {
+export const ParkingPhotosUpload = ({ poiId, parkingIndex, parkingName, form }) => {
+  const hasContext = parkingIndex !== undefined;
   return (
     <ImageUploadField
       poiId={poiId}
       imageType="parking"
-      label="Parking Lot Photos"
-      description="Photos of parking areas (up to 5)"
-      // Images stored in Images table - no sync to POI fields needed
+      context={hasContext ? `parking_${parkingIndex + 1}` : undefined}
+      label={hasContext ? `${parkingName || `Lot ${parkingIndex + 1}`} Photos` : "Parking Lot Photos"}
+      description={hasContext ? `Photos of ${parkingName || `parking lot ${parkingIndex + 1}`}` : "Photos of parking areas (up to 5)"}
     />
   );
 };
@@ -100,14 +101,15 @@ export const RentalPhotosUpload = ({ poiId, form }) => {
 };
 
 // Playground Photos Upload
-export const PlaygroundPhotosUpload = ({ poiId, form }) => {
+export const PlaygroundPhotosUpload = ({ poiId, playgroundIndex, form }) => {
+  const hasContext = playgroundIndex !== undefined;
   return (
     <ImageUploadField
       poiId={poiId}
       imageType="playground"
-      label="Playground Photos"
-      description="Photos of playground areas"
-      // Images stored in Images table - no sync to POI fields needed
+      context={hasContext ? `playground_${playgroundIndex + 1}` : undefined}
+      label={hasContext ? `Playground ${playgroundIndex + 1} Photos` : "Playground Photos"}
+      description={hasContext ? `Photos of playground ${playgroundIndex + 1}` : "Photos of playground areas"}
     />
   );
 };
@@ -118,8 +120,8 @@ export const TrailHeadPhotoUpload = ({ poiId, form }) => {
     <ImageUploadField
       poiId={poiId}
       imageType="trail_head"
-      label="Trail Head Photo"
-      description="Photo of the trail starting point"
+      label="Trail Head Photos"
+      description="Photos of the trail starting point (up to 10)"
       // Images stored in Images table - no sync to POI fields needed
     />
   );
@@ -131,8 +133,8 @@ export const TrailExitPhotoUpload = ({ poiId, form }) => {
     <ImageUploadField
       poiId={poiId}
       imageType="trail_exit"
-      label="Trail Exit Photo"
-      description="Photo of the trail ending point"
+      label="Trail Exit Photos"
+      description="Photos of the trail ending point (up to 10)"
       // Images stored in Images table - no sync to POI fields needed
     />
   );

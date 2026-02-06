@@ -18,6 +18,9 @@ python-dotenv
 passlib[bcrypt]
 python-jose[cryptography]
 
+# Rate limiting
+slowapi
+
 # Utilities
 python-multipart
 bleach

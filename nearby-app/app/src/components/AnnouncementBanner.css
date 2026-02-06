@@ -1,0 +1,41 @@
+/* Announcement banner — ported from nn-templates */
+#announce_box {
+  background: var(--light-yellow2);
+  color: var(--nn-slate);
+  border-bottom: none;
+  padding: 13px 0;
+  font-size: 14px;
+  text-align: center;
+  line-height: 1.4;
+}
+
+.announce_inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.announce_highlight {
+  color: var(--nn-purple1);
+}
+
+.announce_close {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  font-size: 22px;
+  line-height: 1;
+  color: var(--nn-slate);
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+.announce_close:hover {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+@media (min-width: 980px) {
+  #announce_box { font-size: 18px; }
+}

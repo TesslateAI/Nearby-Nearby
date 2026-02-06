@@ -208,6 +208,13 @@ def create_poi(db: Session, poi: schemas.PointOfInterestCreate):
         else:
             raise HTTPException(status_code=400, detail="Invalid main category")
 
+    # Validate free business category limit
+    if poi.category_ids:
+        poi_type_str = poi.poi_type if isinstance(poi.poi_type, str) else poi.poi_type
+        listing_type = poi_data.get('listing_type', 'free')
+        if listing_type == 'free' and poi_type_str == 'BUSINESS' and len(poi.category_ids) > 1:
+            raise HTTPException(status_code=400, detail="Free business listings are limited to 1 category")
+
     # Add secondary categories via poi_categories table with is_main=False
     if poi.category_ids:
         from app.models.category import poi_category_association
@@ -360,6 +367,12 @@ def update_poi(db: Session, *, db_obj: models.PointOfInterest, obj_in: schemas.P
     # Handle secondary category updates via poi_categories table
     if 'category_ids' in update_data:
         category_ids = update_data.pop('category_ids')
+
+        # Validate free business category limit
+        listing_type = update_data.get('listing_type', getattr(db_obj, 'listing_type', 'free'))
+        if listing_type == 'free' and poi_type_str == 'BUSINESS' and len(category_ids) > 1:
+            raise HTTPException(status_code=400, detail="Free business listings are limited to 1 category")
+
         from app.models.category import poi_category_association
 
         # Get current main category to preserve it

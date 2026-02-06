@@ -1,0 +1,129 @@
+/* ==========================================================================
+   Typography — ported from nn-templates/inc/stylez.scss
+   ========================================================================== */
+
+/* ── Headings ──────────────────────────────────────────────────── */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-poppins);
+  color: var(--color-heading);
+  line-height: 1.2;
+  margin: 0 0 15px;
+}
+
+h1 { font-size: 2em;   font-weight: 700; }
+h2 { font-size: 1.6em; font-weight: 600; }
+h3 { font-size: 1.35em; font-weight: 600; }
+h4 { font-size: 1.15em; font-weight: 600; }
+h5 { font-size: 1em;   font-weight: 600; }
+h6 { font-size: 0.9em; font-weight: 600; }
+
+@media (min-width: 600px) {
+  h1 { font-size: 2.2em; }
+  h2 { font-size: 1.8em; }
+}
+@media (min-width: 980px) {
+  h1 { font-size: 2.6em; }
+  h2 { font-size: 2em; }
+  h3 { font-size: 1.5em; }
+}
+@media (min-width: 1400px) {
+  h1 { font-size: 2.8em; }
+}
+
+/* ── Paragraphs ────────────────────────────────────────────────── */
+p {
+  font-size: 1em;
+  line-height: 1.4em;
+  margin: 0 0 20px;
+}
+@media (min-width: 980px) { p { line-height: 1.45em; } }
+
+/* ── Links ─────────────────────────────────────────────────────── */
+a {
+  color: var(--link-color);
+  text-decoration: underline;
+  transition: color 0.15s ease;
+}
+a:hover,
+a:focus {
+  color: var(--link-color-hover);
+}
+
+/* ── Lists ─────────────────────────────────────────────────────── */
+ul, ol {
+  margin: 0 0 30px 23px;
+  padding: 0;
+}
+li {
+  margin-bottom: 0.75em;
+  padding-left: 5px;
+}
+
+.list-check {
+  list-style: none;
+  margin-left: 0;
+  padding-left: 0;
+}
+.list-check li {
+  padding-left: 28px;
+  position: relative;
+}
+.list-check li::before {
+  content: '\2713';
+  color: var(--nn-green);
+  font-weight: 700;
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+
+.no-bullet-list {
+  list-style: none;
+  margin-left: 0;
+  padding-left: 0;
+}
+
+/* ── Horizontal rules ──────────────────────────────────────────── */
+hr {
+  border: none;
+  height: 1px;
+  background: var(--nn-gold);
+  margin: 40px 0;
+}
+
+/* ── Title utility classes ─────────────────────────────────────── */
+.title_style_3 {
+  font-family: var(--font-poppins);
+  font-weight: 700;
+  font-size: 1.3em;
+  color: inherit;
+}
+@media (min-width: 980px) { .title_style_3 { font-size: 1.5em; } }
+
+.title_style_4 {
+  font-family: var(--font-poppins);
+  font-weight: 700;
+  font-size: 1em;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* ── Page header style ─────────────────────────────────────────── */
+.page_header_style_1 {
+  background: var(--gray-5);
+  padding: 40px 0;
+  margin-bottom: 0;
+}
+.page_header_style_1 .page_title {
+  font-size: 2em;
+  margin-bottom: 10px;
+}
+.page_header_style_1 .page_excerpt {
+  color: var(--color-text-light);
+  font-size: 1.05em;
+  max-width: 700px;
+}
+@media (min-width: 980px) {
+  .page_header_style_1 { padding: 55px 0; }
+  .page_header_style_1 .page_title { font-size: 2.4em; }
+}

@@ -28,37 +28,31 @@ def seed_categories():
             {
                 "name": "Restaurant & Food",
                 "applicable_to": ["BUSINESS"],
-                "is_main_category": True,
                 "sort_order": 1
             },
             {
                 "name": "Shopping & Retail",
                 "applicable_to": ["BUSINESS"],
-                "is_main_category": True,
                 "sort_order": 2
             },
             {
                 "name": "Services",
                 "applicable_to": ["BUSINESS"],
-                "is_main_category": True,
                 "sort_order": 3
             },
             {
                 "name": "Health & Wellness",
                 "applicable_to": ["BUSINESS"],
-                "is_main_category": True,
                 "sort_order": 4
             },
             {
                 "name": "Entertainment & Arts",
                 "applicable_to": ["BUSINESS"],
-                "is_main_category": True,
                 "sort_order": 5
             },
             {
                 "name": "Professional Services",
                 "applicable_to": ["BUSINESS"],
-                "is_main_category": True,
                 "sort_order": 6
             },
 
@@ -66,37 +60,31 @@ def seed_categories():
             {
                 "name": "Municipal Park",
                 "applicable_to": ["PARK"],
-                "is_main_category": True,
                 "sort_order": 1
             },
             {
                 "name": "County Park",
                 "applicable_to": ["PARK"],
-                "is_main_category": True,
                 "sort_order": 2
             },
             {
                 "name": "State Park",
                 "applicable_to": ["PARK"],
-                "is_main_category": True,
                 "sort_order": 3
             },
             {
                 "name": "National Park",
                 "applicable_to": ["PARK"],
-                "is_main_category": True,
                 "sort_order": 4
             },
             {
                 "name": "Nature Preserve",
                 "applicable_to": ["PARK"],
-                "is_main_category": True,
                 "sort_order": 5
             },
             {
                 "name": "Recreation Area",
                 "applicable_to": ["PARK"],
-                "is_main_category": True,
                 "sort_order": 6
             },
 
@@ -104,31 +92,26 @@ def seed_categories():
             {
                 "name": "Easy",
                 "applicable_to": ["TRAIL"],
-                "is_main_category": True,
                 "sort_order": 1
             },
             {
                 "name": "Moderate",
                 "applicable_to": ["TRAIL"],
-                "is_main_category": True,
                 "sort_order": 2
             },
             {
                 "name": "Hard",
                 "applicable_to": ["TRAIL"],
-                "is_main_category": True,
                 "sort_order": 3
             },
             {
                 "name": "Very Difficult",
                 "applicable_to": ["TRAIL"],
-                "is_main_category": True,
                 "sort_order": 4
             },
             {
                 "name": "Extreme",
                 "applicable_to": ["TRAIL"],
-                "is_main_category": True,
                 "sort_order": 5
             },
 
@@ -136,43 +119,36 @@ def seed_categories():
             {
                 "name": "Festival",
                 "applicable_to": ["EVENT"],
-                "is_main_category": True,
                 "sort_order": 1
             },
             {
                 "name": "Market",
                 "applicable_to": ["EVENT"],
-                "is_main_category": True,
                 "sort_order": 2
             },
             {
                 "name": "Workshop & Class",
                 "applicable_to": ["EVENT"],
-                "is_main_category": True,
                 "sort_order": 3
             },
             {
                 "name": "Sports & Recreation",
                 "applicable_to": ["EVENT"],
-                "is_main_category": True,
                 "sort_order": 4
             },
             {
                 "name": "Arts & Culture",
                 "applicable_to": ["EVENT"],
-                "is_main_category": True,
                 "sort_order": 5
             },
             {
                 "name": "Community Meeting",
                 "applicable_to": ["EVENT"],
-                "is_main_category": True,
                 "sort_order": 6
             },
             {
                 "name": "Social Gathering",
                 "applicable_to": ["EVENT"],
-                "is_main_category": True,
                 "sort_order": 7
             },
         ]
@@ -184,7 +160,6 @@ def seed_categories():
                 name=cat_data["name"],
                 slug=generate_slug(cat_data["name"]),
                 applicable_to=cat_data["applicable_to"],
-                is_main_category=cat_data["is_main_category"],
                 is_active=True,
                 sort_order=cat_data["sort_order"]
             )
@@ -224,7 +199,6 @@ def seed_categories():
                 name=secondary_name,
                 slug=generate_slug(secondary_name),
                 applicable_to=["PARK"],
-                is_main_category=False,
                 is_active=True,
                 sort_order=i + 1
             )
@@ -254,7 +228,6 @@ def seed_categories():
                 name=secondary_name,
                 slug=generate_slug(secondary_name),
                 applicable_to=["TRAIL"],
-                is_main_category=False,
                 is_active=True,
                 sort_order=i + 1
             )
@@ -285,7 +258,6 @@ def seed_categories():
                 name=secondary_name,
                 slug=generate_slug(secondary_name),
                 applicable_to=["EVENT"],
-                is_main_category=False,
                 is_active=True,
                 sort_order=i + 1
             )
@@ -315,7 +287,6 @@ def seed_categories():
                 name=secondary_name,
                 slug=generate_slug(secondary_name),
                 applicable_to=["BUSINESS"],
-                is_main_category=False,
                 is_active=True,
                 sort_order=i + 1
             )

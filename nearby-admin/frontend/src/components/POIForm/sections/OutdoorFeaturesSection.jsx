@@ -1,7 +1,9 @@
 import React from 'react';
 import {
-  Stack, SimpleGrid, Checkbox, Divider, Radio, Switch, TextInput
+  Stack, SimpleGrid, Checkbox, Divider, Radio, Switch, TextInput, NumberInput,
+  Button, Card, Text
 } from '@mantine/core';
+import { IconPlus } from '@tabler/icons-react';
 import RichTextEditor from '../../RichTextEditor';
 import { getCheckboxGroupProps } from '../constants/helpers';
 import {
@@ -180,6 +182,19 @@ export const PetPolicySection = React.memo(function PetPolicySection({ form }) {
 });
 
 export const PlaygroundSection = React.memo(function PlaygroundSection({ form, id }) {
+  // Normalize: if playground_location is a single dict, wrap in array
+  const playgrounds = React.useMemo(() => {
+    const val = form.values.playground_location;
+    if (!val) return [];
+    if (Array.isArray(val)) return val;
+    // Legacy single dict format
+    return [val];
+  }, [form.values.playground_location]);
+
+  const updatePlaygrounds = (newPlaygrounds) => {
+    form.setFieldValue('playground_location', newPlaygrounds);
+  };
+
   return (
     <Stack>
       <Switch
@@ -189,37 +204,113 @@ export const PlaygroundSection = React.memo(function PlaygroundSection({ form, i
 
       {form.values.playground_available && (
         <>
-          <Divider my="md" label="Playground Types" />
-          <Checkbox.Group {...getCheckboxGroupProps(form, 'playground_types')}>
-            <SimpleGrid cols={{ base: 1, sm: 2 }}>
-              {PLAYGROUND_TYPES.map(type => (
-                <Checkbox key={type} value={type} label={type} />
-              ))}
-            </SimpleGrid>
-          </Checkbox.Group>
+          {playgrounds.map((pg, index) => (
+            <Card key={index} withBorder p="md" mb="sm">
+              <Stack>
+                <Text fw={500}>Playground {index + 1}</Text>
 
-          <Divider my="md" label="Playground Surface Type" />
-          <Checkbox.Group {...getCheckboxGroupProps(form, 'playground_surface_types')}>
-            <SimpleGrid cols={{ base: 2, sm: 3 }}>
-              {PLAYGROUND_SURFACES.map(surface => (
-                <Checkbox key={surface} value={surface} label={surface} />
-              ))}
-            </SimpleGrid>
-          </Checkbox.Group>
+                <Divider my="xs" label="Playground Types" />
+                <Checkbox.Group
+                  value={pg.types || form.values.playground_types || []}
+                  onChange={(value) => {
+                    const updated = [...playgrounds];
+                    updated[index] = { ...updated[index], types: value };
+                    updatePlaygrounds(updated);
+                  }}
+                >
+                  <SimpleGrid cols={{ base: 1, sm: 2 }}>
+                    {PLAYGROUND_TYPES.map(type => (
+                      <Checkbox key={type} value={type} label={type} />
+                    ))}
+                  </SimpleGrid>
+                </Checkbox.Group>
 
-          <RichTextEditor
-            label="Playground Notes"
-            placeholder="Additional playground information"
-            value={form.values.playground_notes || ''}
-            onChange={(html) => form.setFieldValue('playground_notes', html)}
-            error={form.errors.playground_notes}
-          />
+                <Divider my="xs" label="Surface Type" />
+                <Checkbox.Group
+                  value={pg.surfaces || form.values.playground_surface_types || []}
+                  onChange={(value) => {
+                    const updated = [...playgrounds];
+                    updated[index] = { ...updated[index], surfaces: value };
+                    updatePlaygrounds(updated);
+                  }}
+                >
+                  <SimpleGrid cols={{ base: 2, sm: 3 }}>
+                    {PLAYGROUND_SURFACES.map(surface => (
+                      <Checkbox key={surface} value={surface} label={surface} />
+                    ))}
+                  </SimpleGrid>
+                </Checkbox.Group>
 
-          {shouldUseImageUpload(id) ? (
-            <PlaygroundPhotosUpload poiId={id} form={form} />
-          ) : (
-            <Text size="sm" c="dimmed">Save POI first to enable playground photo upload</Text>
-          )}
+                <Divider my="xs" label="Location" />
+                <SimpleGrid cols={{ base: 1, sm: 2 }}>
+                  <NumberInput
+                    label="Latitude"
+                    placeholder="35.7128"
+                    precision={6}
+                    value={pg.lat || ''}
+                    onChange={(value) => {
+                      const updated = [...playgrounds];
+                      updated[index] = { ...updated[index], lat: value };
+                      updatePlaygrounds(updated);
+                    }}
+                  />
+                  <NumberInput
+                    label="Longitude"
+                    placeholder="-79.0064"
+                    precision={6}
+                    value={pg.lng || ''}
+                    onChange={(value) => {
+                      const updated = [...playgrounds];
+                      updated[index] = { ...updated[index], lng: value };
+                      updatePlaygrounds(updated);
+                    }}
+                  />
+                </SimpleGrid>
+
+                <RichTextEditor
+                  label="Notes"
+                  placeholder="Additional playground information"
+                  value={pg.notes || ''}
+                  onChange={(html) => {
+                    const updated = [...playgrounds];
+                    updated[index] = { ...updated[index], notes: html };
+                    updatePlaygrounds(updated);
+                  }}
+                />
+
+                {shouldUseImageUpload(id) ? (
+                  <PlaygroundPhotosUpload poiId={id} playgroundIndex={index} form={form} />
+                ) : (
+                  <Text size="sm" c="dimmed">Save POI first to enable playground photo upload</Text>
+                )}
+
+                {playgrounds.length > 1 && (
+                  <Button
+                    color="red"
+                    variant="light"
+                    size="xs"
+                    onClick={() => {
+                      const updated = [...playgrounds];
+                      updated.splice(index, 1);
+                      updatePlaygrounds(updated);
+                    }}
+                  >
+                    Remove Playground {index + 1}
+                  </Button>
+                )}
+              </Stack>
+            </Card>
+          ))}
+
+          <Button
+            variant="light"
+            leftSection={<IconPlus size={16} />}
+            onClick={() => {
+              updatePlaygrounds([...playgrounds, { lat: null, lng: null, types: [], surfaces: [], notes: '' }]);
+            }}
+          >
+            Add Another Playground
+          </Button>
         </>
       )}
     </Stack>

@@ -4,6 +4,7 @@ from pydantic import ConfigDict
 
 class Settings(BaseSettings):
     DATABASE_URL: str
+    FORMS_DATABASE_URL: str = ""
     SECRET_KEY: str
     ENVIRONMENT: str = "development"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
