@@ -2,12 +2,13 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from typing import List
+from typing import List, Optional
 import uuid
 from ... import schemas, crud, models
 from ...database import get_db
 from ...schemas.poi import PointGeometry
 from ...models.image import Image
+from ...search import multi_signal_search
 
 router = APIRouter()
 
@@ -48,59 +49,42 @@ def get_poi_images(db: Session, poi_id: uuid.UUID) -> List[dict]:
     return result
 
 @router.get("/pois/search", response_model=List[schemas.poi.POISearchResult])
-def api_search_pois(q: str = Query(..., min_length=1), db: Session = Depends(get_db)):
-    pois = crud.crud_poi.search_pois(db, query=q)
-    return pois
+def api_search_pois(
+    request: Request,
+    q: str = Query(..., min_length=1),
+    poi_type: Optional[str] = Query(None, description="Filter by POI type (BUSINESS, PARK, TRAIL, EVENT)"),
+    db: Session = Depends(get_db),
+):
+    """Keyword + multi-signal search for POIs."""
+    embedding_model = getattr(request.app.state, 'embedding_model', None)
+    return multi_signal_search(db, query=q, limit=10, poi_type=poi_type, model=embedding_model)
 
 @router.get("/pois/semantic-search", response_model=List[schemas.poi.POISearchResult])
 def api_semantic_search_pois(
     request: Request,
     q: str = Query(..., min_length=1, description="Natural language search query"),
     limit: int = Query(10, ge=1, le=50, description="Number of results to return"),
-    db: Session = Depends(get_db)
+    poi_type: Optional[str] = Query(None, description="Filter by POI type"),
+    db: Session = Depends(get_db),
 ):
-    """
-    Semantic search for POIs using natural language queries.
-
-    Examples:
-    - "dog friendly cafe with wifi"
-    - "romantic dinner spot"
-    - "outdoor activities for kids"
-    - "rainy day indoor fun"
-
-    Returns POIs ranked by semantic similarity to the query.
-    """
+    """Semantic search — now routed through the multi-signal engine."""
     embedding_model = getattr(request.app.state, 'embedding_model', None)
-    pois = crud.crud_poi.semantic_search_pois(db, query=q, limit=limit, model=embedding_model)
-    return pois
+    return multi_signal_search(db, query=q, limit=limit, poi_type=poi_type, model=embedding_model)
 
 @router.get("/pois/hybrid-search", response_model=List[schemas.poi.POISearchResult])
 def api_hybrid_search_pois(
     request: Request,
     q: str = Query(..., min_length=1, description="Search query"),
     limit: int = Query(10, ge=1, le=50, description="Number of results to return"),
-    keyword_weight: float = Query(0.3, ge=0, le=1, description="Weight for keyword search (0-1)"),
-    semantic_weight: float = Query(0.7, ge=0, le=1, description="Weight for semantic search (0-1)"),
-    db: Session = Depends(get_db)
+    poi_type: Optional[str] = Query(None, description="Filter by POI type (BUSINESS, PARK, TRAIL, EVENT)"),
+    db: Session = Depends(get_db),
 ):
     """
-    Hybrid search combining keyword matching and semantic understanding.
-
-    Combines traditional keyword search (finds exact matches) with semantic search
-    (understands meaning) for best of both worlds.
-
-    Default weights: 30% keyword, 70% semantic
+    Multi-signal hybrid search combining exact match, trigram, full-text,
+    semantic, and structured filter signals.
     """
     embedding_model = getattr(request.app.state, 'embedding_model', None)
-    pois = crud.crud_poi.hybrid_search_pois(
-        db,
-        query=q,
-        limit=limit,
-        keyword_weight=keyword_weight,
-        semantic_weight=semantic_weight,
-        model=embedding_model
-    )
-    return pois
+    return multi_signal_search(db, query=q, limit=limit, poi_type=poi_type, model=embedding_model)
 
 @router.get("/pois/{poi_id}", response_model=schemas.poi.POIDetail)
 def api_get_poi(poi_id: uuid.UUID, db: Session = Depends(get_db)):

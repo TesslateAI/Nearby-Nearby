@@ -458,6 +458,27 @@
   color: var(--nn-ink-muted, #597199);
 }
 
+.filtered__filters-row {
+  margin-bottom: 12px;
+}
+
+.filtered__filters-row .nearby-filters {
+  padding: 0;
+}
+
+.filtered__suggest-link {
+  display: inline-block;
+  color: var(--nn-accent, #328170);
+  font-weight: 600;
+  font-size: 14px;
+  text-decoration: underline;
+  margin-top: 8px;
+}
+
+.filtered__suggest-link:hover {
+  color: var(--nn-accent-600, #286857);
+}
+
 /* Location Change Modal */
 .location-modal-overlay {
   position: fixed;

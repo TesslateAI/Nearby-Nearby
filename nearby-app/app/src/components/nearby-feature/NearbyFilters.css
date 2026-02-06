@@ -61,6 +61,33 @@
   border-color: #e5b73d;
 }
 
+/* Light variant (for homepage Hero & Explore page) */
+.nearby-filters--light .nearby-filter {
+  background: white;
+  color: var(--nn-ink, #33404E);
+  border-color: var(--nn-border, #D9CFE3);
+}
+
+.nearby-filters--light .nearby-filter:hover {
+  background: var(--nn-bg, #F4EFF7);
+  border-color: var(--nn-primary, #562556);
+}
+
+.nearby-filters--light .nearby-filter--active {
+  background: var(--nn-primary, #562556);
+  color: white;
+  border-color: var(--nn-primary, #562556);
+}
+
+.nearby-filters--light .nearby-filter--active:hover {
+  background: #432043;
+  border-color: #432043;
+}
+
+.nearby-filters--light .nearby-filter:focus-visible {
+  outline-color: var(--nn-primary, #562556);
+}
+
 /* Mobile */
 @media (max-width: 768px) {
   .nearby-filters {

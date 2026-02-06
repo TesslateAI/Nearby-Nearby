@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, HTMLResponse
 from .core.config import settings
-from .api.endpoints import pois, waitlist
+from .api.endpoints import pois, waitlist, suggestions
 from .database import engine, get_db
 from sqlalchemy import text
 from sqlalchemy.orm import Session
@@ -36,6 +36,7 @@ async def startup_event():
             except Exception as ext_error:
                 print(f"[WARNING] Could not enable pg_trgm extension: {ext_error}")
                 print("[INFO] Fuzzy search will still work with basic matching")
+                connection.rollback()
 
             # Enable pgvector extension for semantic search
             try:
@@ -45,6 +46,7 @@ async def startup_event():
             except Exception as ext_error:
                 print(f"[WARNING] Could not enable pgvector extension: {ext_error}")
                 print("[INFO] Semantic search will not be available")
+                connection.rollback()
 
             # Create trigram indexes for better search performance
             try:
@@ -58,6 +60,41 @@ async def startup_event():
                 print("[SUCCESS] Search indexes created for optimal performance!")
             except Exception as idx_error:
                 print(f"[WARNING] Could not create search indexes: {idx_error}")
+
+            # Create tsvector search_document column for full-text search
+            try:
+                # Check if column already exists
+                col_exists = connection.execute(text(
+                    "SELECT column_name FROM information_schema.columns "
+                    "WHERE table_name = 'points_of_interest' AND column_name = 'search_document'"
+                )).fetchone()
+
+                if not col_exists:
+                    connection.execute(text("""
+                        ALTER TABLE points_of_interest
+                        ADD COLUMN search_document tsvector
+                        GENERATED ALWAYS AS (
+                            setweight(to_tsvector('english', COALESCE(name, '')), 'A') ||
+                            setweight(to_tsvector('english', COALESCE(description_short, '')), 'B') ||
+                            setweight(to_tsvector('english', COALESCE(address_city, '')), 'B') ||
+                            setweight(to_tsvector('english', COALESCE(description_long, '')), 'C')
+                        ) STORED
+                    """))
+                    connection.commit()
+                    print("[SUCCESS] search_document tsvector column created!")
+
+                connection.execute(text(
+                    "CREATE INDEX IF NOT EXISTS idx_poi_search_document "
+                    "ON points_of_interest USING GIN (search_document)"
+                ))
+                connection.commit()
+                print("[SUCCESS] Full-text search index created!")
+            except Exception as fts_error:
+                print(f"[WARNING] Could not create full-text search column: {fts_error}")
+                try:
+                    connection.rollback()
+                except Exception:
+                    pass
 
     except Exception as e:
         print(f"[ERROR] Database connection failed: {e}")
@@ -90,6 +127,7 @@ app.add_middleware(
 # Include API Routers
 app.include_router(pois.router, prefix="/api", tags=["Points of Interest"])
 app.include_router(waitlist.router, prefix="/api", tags=["Waitlist"])
+app.include_router(suggestions.router, prefix="/api", tags=["Suggestions"])
 
 # Static files configuration
 BASE_DIR = Path(__file__).resolve().parent.parent
