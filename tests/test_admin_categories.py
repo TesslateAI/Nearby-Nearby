@@ -47,6 +47,7 @@ class TestAssignCategories:
         biz = create_business(
             admin_client,
             name="Multi-Cat Biz",
+            listing_type="paid",
             category_ids=[cat1["id"], cat2["id"]],
         )
         sec_names = [c["name"] for c in biz.get("secondary_categories", [])]
@@ -80,6 +81,7 @@ class TestUpdateCategories:
         biz = create_business(
             admin_client,
             name="Update Sec Cat Biz",
+            listing_type="paid",
             category_ids=[cat1["id"], cat2["id"]],
         )
 

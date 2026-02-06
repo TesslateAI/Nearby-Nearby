@@ -4,6 +4,10 @@ from datetime import datetime
 from typing import Optional, List, Any, Literal, Dict, Union
 
 from pydantic import BaseModel, field_validator, model_validator, field_serializer, Field, ConfigDict
+
+def strip_html_tags(html: str) -> str:
+    """Strip HTML tags and return visible text only."""
+    return re.sub(r'<[^>]+>', '', html).strip()
 from geoalchemy2.elements import WKBElement
 from geoalchemy2.shape import to_shape
 
@@ -180,9 +184,27 @@ class PointOfInterestBase(BaseModel):
     slug: Optional[str] = None  # SEO-friendly URL slug (auto-generated from name + city)
     description_long: Optional[str] = None
     description_short: Optional[str] = None  # Business free listings only (200 char limit)
-    teaser_paragraph: Optional[str] = None  # All POI types (shows character count but no limit)
+    teaser_paragraph: Optional[str] = None  # All POI types (120 visible char limit)
     primary_type_id: Optional[uuid.UUID] = None
-    
+
+    @field_validator('teaser_paragraph', mode='before')
+    @classmethod
+    def validate_teaser_length(cls, v):
+        if v is not None and isinstance(v, str) and v.strip():
+            visible_text = strip_html_tags(v)
+            if len(visible_text) > 120:
+                raise ValueError(f'Teaser paragraph must be 120 visible characters or fewer (currently {len(visible_text)})')
+        return v
+
+    @field_validator('description_short', mode='before')
+    @classmethod
+    def validate_short_description_length(cls, v):
+        if v is not None and isinstance(v, str) and v.strip():
+            visible_text = strip_html_tags(v)
+            if len(visible_text) > 250:
+                raise ValueError(f'Short description must be 250 visible characters or fewer (currently {len(visible_text)})')
+        return v
+
     # Listing type for all POIs
     listing_type: LISTING_TYPES = 'free'
     
@@ -273,6 +295,7 @@ class PointOfInterestBase(BaseModel):
     status_message: Optional[str] = None
     is_verified: bool = False
     is_disaster_hub: bool = False
+    lat_long_most_accurate: bool = False
 
     # Publication status (draft, published, archived)
     publication_status: PUBLICATION_STATUS = 'draft'
@@ -303,6 +326,7 @@ class PointOfInterestBase(BaseModel):
     payment_methods: Optional[List[str]] = None
     key_facilities: Optional[List[str]] = None
     alcohol_options: Optional[List[str]] = None
+    alcohol_policy_details: Optional[str] = None
     wheelchair_accessible: Optional[List[str]] = None
     wheelchair_details: Optional[str] = None
     smoking_options: Optional[List[str]] = None
@@ -312,7 +336,7 @@ class PointOfInterestBase(BaseModel):
     drone_policy: Optional[str] = None
     pet_options: Optional[List[str]] = None
     pet_policy: Optional[str] = None
-    
+
     # Public Toilets
     public_toilets: Optional[List[str]] = None
     toilet_locations: Optional[List[Dict[str, Any]]] = None
@@ -331,8 +355,8 @@ class PointOfInterestBase(BaseModel):
     playground_surface_types: Optional[List[str]] = None
     playground_notes: Optional[str] = None
     # playground_photos - DEPRECATED: moved to Images table (image_type='playground')
-    playground_location: Optional[Dict[str, Any]] = None
-    
+    playground_location: Optional[Any] = None  # Single dict or list of dicts (multiple playgrounds)
+
     # Parks & Trails Additional Info
     payphone_location: Optional[Dict[str, Any]] = None
     payphone_locations: Optional[List[Dict[str, Any]]] = None
@@ -403,6 +427,25 @@ class PointOfInterestUpdate(BaseModel):
     description_long: Optional[str] = None
     description_short: Optional[str] = None
     teaser_paragraph: Optional[str] = None
+
+    @field_validator('teaser_paragraph', mode='before')
+    @classmethod
+    def validate_teaser_length(cls, v):
+        if v is not None and isinstance(v, str) and v.strip():
+            visible_text = strip_html_tags(v)
+            if len(visible_text) > 120:
+                raise ValueError(f'Teaser paragraph must be 120 visible characters or fewer (currently {len(visible_text)})')
+        return v
+
+    @field_validator('description_short', mode='before')
+    @classmethod
+    def validate_short_description_length(cls, v):
+        if v is not None and isinstance(v, str) and v.strip():
+            visible_text = strip_html_tags(v)
+            if len(visible_text) > 250:
+                raise ValueError(f'Short description must be 250 visible characters or fewer (currently {len(visible_text)})')
+        return v
+
     listing_type: Optional[LISTING_TYPES] = None
     cost: Optional[str] = None
     pricing_details: Optional[str] = None
@@ -459,6 +502,7 @@ class PointOfInterestUpdate(BaseModel):
     status_message: Optional[str] = None
     is_verified: Optional[bool] = None
     is_disaster_hub: Optional[bool] = None
+    lat_long_most_accurate: Optional[bool] = None
     publication_status: Optional[PUBLICATION_STATUS] = None
     website_url: Optional[str] = None
     phone_number: Optional[str] = None
@@ -479,6 +523,7 @@ class PointOfInterestUpdate(BaseModel):
     payment_methods: Optional[List[str]] = None
     key_facilities: Optional[List[str]] = None
     alcohol_options: Optional[List[str]] = None
+    alcohol_policy_details: Optional[str] = None
     wheelchair_accessible: Optional[List[str]] = None
     wheelchair_details: Optional[str] = None
     smoking_options: Optional[List[str]] = None
@@ -501,7 +546,7 @@ class PointOfInterestUpdate(BaseModel):
     playground_surface_types: Optional[List[str]] = None
     playground_notes: Optional[str] = None
     # playground_photos - DEPRECATED: moved to Images table (image_type='playground')
-    playground_location: Optional[Dict[str, Any]] = None
+    playground_location: Optional[Any] = None  # Single dict or list of dicts (multiple playgrounds)
     payphone_location: Optional[Dict[str, Any]] = None
     payphone_locations: Optional[List[Dict[str, Any]]] = None
     park_entry_notes: Optional[str] = None
