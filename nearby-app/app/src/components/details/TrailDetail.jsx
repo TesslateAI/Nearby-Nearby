@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { MapPin, Clock, Phone, Globe, Heart, Share2, Navigation, Plus, ChevronDown, ChevronUp, Mountain, AlertCircle, Copy, Check, ExternalLink, Info, CalendarCheck, Truck, ShoppingCart } from 'lucide-react';
 import NearbySection from '../nearby-feature/NearbySection';
 import HoursDisplay from '../common/HoursDisplay';
+import SEO from '../SEO';
+import { truncateText, getPOIUrl } from '../../utils/slugify';
 import { isCurrentlyOpen } from '../../utils/hoursUtils';
 import './TrailDetail.css';
 
@@ -142,7 +144,25 @@ function TrailDetail({ poi }) {
 
   // POIDetail handles loading/error states, so poi is guaranteed to exist here
 
+  // Prepare SEO data
+  const seoTitle = poi.name;
+  const seoDescription = truncateText(
+    poi.description_long || poi.description_short || poi.teaser_paragraph ||
+    `Discover ${poi.name} in ${poi.address_city || 'your area'}. Local trail on NearbyNearby.`,
+    155
+  );
+  const seoImage = poi.featured_image || (poi.images && poi.images.length > 0 ? poi.images[0].url : null);
+  const seoUrl = `${window.location.origin}${getPOIUrl(poi)}`;
+
   return (
+    <>
+      <SEO
+        title={seoTitle}
+        description={seoDescription}
+        image={seoImage}
+        url={seoUrl}
+        type="place"
+      />
     <div className="poi-detail">
       <div className="poi-detail__container">
         <button onClick={() => navigate('/')} className="poi-detail__back-link">
@@ -467,6 +487,7 @@ function TrailDetail({ poi }) {
       {/* Nearby Section */}
       <NearbySection currentPOI={poi} />
     </div>
+    </>
   );
 }
 
