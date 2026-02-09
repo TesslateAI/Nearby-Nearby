@@ -20,6 +20,8 @@ function BusinessDetail({ poi }) {
   const navigate = useNavigate();
   const [expandedSections, setExpandedSections] = useState({});
   const [copiedCoords, setCopiedCoords] = useState(false);
+  const [geocodedCoords, setGeocodedCoords] = useState(null);
+  const [isGeocoding, setIsGeocoding] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
 
@@ -33,13 +35,46 @@ function BusinessDetail({ poi }) {
     return null;
   };
 
+  // Geocode the POI's street address into lat/long using Nominatim (OpenStreetMap)
+  const geocodeAddress = async () => {
+    if (geocodedCoords) return geocodedCoords; // Already cached
+    if (!poi?.address_street) return null;
+
+    const parts = [poi.address_street, poi.address_city, poi.address_state, poi.address_zip].filter(Boolean);
+    const query = parts.join(', ');
+
+    try {
+      setIsGeocoding(true);
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`,
+        { headers: { 'User-Agent': 'NearbyNearby/1.0' } }
+      );
+      const results = await response.json();
+      if (results && results.length > 0) {
+        const coords = { lat: parseFloat(results[0].lat), lng: parseFloat(results[0].lon) };
+        setGeocodedCoords(coords);
+        return coords;
+      }
+    } catch (err) {
+      console.error('Geocoding failed:', err);
+    } finally {
+      setIsGeocoding(false);
+    }
+    return null;
+  };
+
   const handleDirections = () => {
-    const coords = getCoordinates();
-    if (coords) {
-      window.open(`https://www.google.com/maps/dir/?api=1&destination=${coords.lat},${coords.lng}`, '_blank');
-    } else if (poi?.address_street) {
-      const address = encodeURIComponent(`${poi.address_street}, ${poi.address_city}, ${poi.address_state} ${poi.address_zip}`);
+    // Prefer the POI's actual street address for directions (more accurate than coordinates)
+    if (poi?.address_street) {
+      const parts = [poi.address_street, poi.address_city, poi.address_state, poi.address_zip].filter(Boolean);
+      const address = encodeURIComponent(parts.join(', '));
       window.open(`https://www.google.com/maps/dir/?api=1&destination=${address}`, '_blank');
+    } else {
+      // Fallback to coordinates if no street address is available
+      const coords = getCoordinates();
+      if (coords) {
+        window.open(`https://www.google.com/maps/dir/?api=1&destination=${coords.lat},${coords.lng}`, '_blank');
+      }
     }
   };
 
@@ -78,7 +113,23 @@ function BusinessDetail({ poi }) {
   };
 
   const handleCopyCoords = async () => {
-    const coords = getCoordinates();
+    let coords;
+
+    // 1. Use front-door coordinates if explicitly set for this POI
+    if (poi?.front_door_latitude && poi?.front_door_longitude) {
+      coords = { lat: poi.front_door_latitude, lng: poi.front_door_longitude };
+    }
+
+    // 2. Geocode the street address to get accurate lat/long
+    if (!coords && poi?.address_street) {
+      coords = await geocodeAddress();
+    }
+
+    // 3. Last resort: use location.coordinates
+    if (!coords && poi?.location?.coordinates) {
+      coords = { lat: poi.location.coordinates[1], lng: poi.location.coordinates[0] };
+    }
+
     if (coords) {
       const text = `${coords.lat}, ${coords.lng}`;
       const success = await copyToClipboard(text);
@@ -343,10 +394,10 @@ function BusinessDetail({ poi }) {
           <button type="button" className="bd-action-btn" onClick={handleDirections}>
             <Navigation size={16} /> DIRECTIONS
           </button>
-          {getCoordinates() && (
-            <button type="button" className="bd-action-btn" onClick={handleCopyCoords}>
+          {(getCoordinates() || poi?.address_street) && (
+            <button type="button" className="bd-action-btn" onClick={handleCopyCoords} disabled={isGeocoding}>
               {copiedCoords ? <Check size={16} /> : <Copy size={16} />}
-              {copiedCoords ? 'COPIED!' : 'LAT + LONG'}
+              {isGeocoding ? 'LOADING...' : copiedCoords ? 'COPIED!' : 'LAT + LONG'}
             </button>
           )}
           <button type="button" className="bd-action-btn" onClick={scrollToNearby}>
@@ -569,14 +620,15 @@ function BusinessDetail({ poi }) {
                 )}
 
                 {/* Copy Lat/Long Button */}
-                {getCoordinates() && (
+                {(getCoordinates() || poi?.address_street) && (
                   <button
                     type="button"
                     className="bd-address-btn bd-address-btn--outline"
                     onClick={handleCopyCoords}
+                    disabled={isGeocoding}
                   >
                     {copiedCoords ? <Check size={14} /> : <Copy size={14} />}
-                    {copiedCoords ? 'Copied!' : 'Copy Latitude + Longitude'}
+                    {isGeocoding ? 'Loading...' : copiedCoords ? 'Copied!' : 'Copy Latitude + Longitude'}
                   </button>
                 )}
 

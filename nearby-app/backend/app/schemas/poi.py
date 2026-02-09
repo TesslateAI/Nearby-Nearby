@@ -99,6 +99,8 @@ class POIDetail(BaseModel):
     address_state: Optional[str] = None
     address_zip: Optional[str] = None
     address_county: Optional[str] = None
+    front_door_latitude: Optional[float] = None
+    front_door_longitude: Optional[float] = None
     location: PointGeometry
     dont_display_location: Optional[bool] = None
 
