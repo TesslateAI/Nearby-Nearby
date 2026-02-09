@@ -252,6 +252,16 @@ def create_poi(db: Session, poi: schemas.PointOfInterestCreate):
 def update_poi(db: Session, *, db_obj: models.PointOfInterest, obj_in: schemas.PointOfInterestUpdate) -> models.PointOfInterest:
     update_data = obj_in.model_dump(exclude_unset=True)
 
+    # Remove read-only / relationship fields that should never be set via update
+    readonly_fields = [
+        'id', 'created_at', 'last_updated',
+        'categories', 'main_category', 'secondary_categories',
+        'primary_type', 'images',
+        'source_relationships', 'target_relationships',
+    ]
+    for field in readonly_fields:
+        update_data.pop(field, None)
+
     # Remove deprecated photo columns that have been moved to the Images table
     deprecated_photo_fields = [
         'business_entry_photo', 'park_entry_photo', 'event_entry_photo',
@@ -285,35 +295,44 @@ def update_poi(db: Session, *, db_obj: models.PointOfInterest, obj_in: schemas.P
         db_obj.location = f'POINT({coords[0]} {coords[1]})'
     
     # Handle subtype updates
-    # Note: db_obj.poi_type may be a POIType enum or a string depending on context
-    poi_type_str = db_obj.poi_type.value if hasattr(db_obj.poi_type, 'value') else str(db_obj.poi_type)
+    # Use the INCOMING poi_type if being updated, otherwise use the DB value.
+    # This is critical when the user changes a POI's type (e.g., BUSINESS → PARK).
+    if 'poi_type' in update_data:
+        incoming_type = update_data['poi_type']
+        poi_type_str = incoming_type.value if hasattr(incoming_type, 'value') else str(incoming_type)
+    else:
+        poi_type_str = db_obj.poi_type.value if hasattr(db_obj.poi_type, 'value') else str(db_obj.poi_type)
 
-    if 'business' in update_data and poi_type_str == 'BUSINESS':
-        business_data = update_data.pop('business')
+    # Always pop ALL subtype fields from update_data to prevent them from reaching
+    # the generic setattr loop (which would crash on relationship attributes).
+    # Only process the one matching the target poi_type.
+    business_data = update_data.pop('business', None)
+    park_data = update_data.pop('park', None)
+    trail_data = update_data.pop('trail', None)
+    event_data = update_data.pop('event', None)
+
+    if business_data and poi_type_str == 'BUSINESS':
         if db_obj.business:
             for key, value in business_data.items():
                 setattr(db_obj.business, key, value)
         else:
             db_obj.business = models.Business(**business_data)
 
-    if 'park' in update_data and poi_type_str == 'PARK':
-        park_data = update_data.pop('park')
+    if park_data and poi_type_str == 'PARK':
         if db_obj.park:
             for key, value in park_data.items():
                 setattr(db_obj.park, key, value)
         else:
             db_obj.park = models.Park(**park_data)
 
-    if 'trail' in update_data and poi_type_str == 'TRAIL':
-        trail_data = update_data.pop('trail')
+    if trail_data and poi_type_str == 'TRAIL':
         if db_obj.trail:
             for key, value in trail_data.items():
                 setattr(db_obj.trail, key, value)
         else:
             db_obj.trail = models.Trail(**trail_data)
 
-    if 'event' in update_data and poi_type_str == 'EVENT':
-        event_data = update_data.pop('event')
+    if event_data and poi_type_str == 'EVENT':
         if db_obj.event:
             for key, value in event_data.items():
                 setattr(db_obj.event, key, value)
@@ -388,47 +407,9 @@ def update_poi(db: Session, *, db_obj: models.PointOfInterest, obj_in: schemas.P
                 ))
         db.flush()
 
-    # Update remaining fields
+    # Update remaining scalar fields (subtypes already popped above)
     for field, value in update_data.items():
-        # For relationship fields, ensure we assign model instances, not dicts
-        if field == "event" and poi_type_str == "EVENT":
-            if isinstance(value, dict):
-                if db_obj.event:
-                    for k, v in value.items():
-                        setattr(db_obj.event, k, v)
-                else:
-                    db_obj.event = models.Event(**value)
-            else:
-                db_obj.event = value
-        elif field == "business" and poi_type_str == "BUSINESS":
-            if isinstance(value, dict):
-                if db_obj.business:
-                    for k, v in value.items():
-                        setattr(db_obj.business, k, v)
-                else:
-                    db_obj.business = models.Business(**value)
-            else:
-                db_obj.business = value
-        elif field == "park" and poi_type_str == "PARK":
-            if isinstance(value, dict):
-                if db_obj.park:
-                    for k, v in value.items():
-                        setattr(db_obj.park, k, v)
-                else:
-                    db_obj.park = models.Park(**value)
-            else:
-                db_obj.park = value
-        elif field == "trail" and poi_type_str == "TRAIL":
-            if isinstance(value, dict):
-                if db_obj.trail:
-                    for k, v in value.items():
-                        setattr(db_obj.trail, k, v)
-                else:
-                    db_obj.trail = models.Trail(**value)
-            else:
-                db_obj.trail = value
-        else:
-            setattr(db_obj, field, value)
+        setattr(db_obj, field, value)
 
     try:
         db.add(db_obj)
