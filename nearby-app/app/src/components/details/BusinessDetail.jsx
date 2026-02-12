@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   MapPin, Phone, Globe, Navigation, Copy, Check,
-  ChevronDown, Users, Mail, ExternalLink,
+  ChevronDown, Users, Mail, ExternalLink, Share2,
   Wifi, Car, TreePine, Bath, Bike, Droplets, Dog, UtensilsCrossed, CirclePlus
 } from 'lucide-react';
 import NearbySection from '../nearby-feature/NearbySection';
@@ -24,6 +24,7 @@ function BusinessDetail({ poi }) {
   const [isGeocoding, setIsGeocoding] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
+  const [showShareMenu, setShowShareMenu] = useState(false);
 
   const getCoordinates = () => {
     if (poi?.front_door_latitude && poi?.front_door_longitude) {
@@ -140,6 +141,30 @@ function BusinessDetail({ poi }) {
         alert(`Lat/Long: ${text}`);
       }
     }
+  };
+
+  const handleShare = async (platform) => {
+    const url = window.location.href;
+    const title = poi?.name || 'Check out this business';
+    const description = poi?.teaser_paragraph || poi?.description_short || poi?.description_long?.substring(0, 150) || '';
+
+    const shareUrls = {
+      facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}&quote=${encodeURIComponent(title)}`,
+      twitter: `https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(title)}&hashtags=NearbyNearby`,
+      email: `mailto:?subject=${encodeURIComponent(title)}&body=${encodeURIComponent(description + '\n\n' + url)}`,
+    };
+
+    if (platform === 'copy') {
+      const success = await copyToClipboard(url);
+      if (!success) {
+        alert(`Link: ${url}`);
+      }
+    } else if (platform === 'native' && navigator.share) {
+      try { await navigator.share({ title, text: description, url }); } catch {}
+    } else if (shareUrls[platform]) {
+      window.open(shareUrls[platform], '_blank', 'width=600,height=400');
+    }
+    setShowShareMenu(false);
   };
 
   const handleCall = () => {
@@ -413,6 +438,23 @@ function BusinessDetail({ poi }) {
               {isGeocoding ? 'LOADING...' : copiedCoords ? 'COPIED!' : 'LAT + LONG'}
             </button>
           )}
+          <div className="bd-share-wrapper" style={{ position: 'relative' }}>
+            <button
+              type="button"
+              className="bd-action-btn"
+              onClick={() => navigator.share ? handleShare('native') : setShowShareMenu(!showShareMenu)}
+            >
+              <Share2 size={16} /> SHARE
+            </button>
+            {showShareMenu && (
+              <div className="bd-share-menu">
+                <button type="button" onClick={() => handleShare('facebook')}><ExternalLink size={14} /> Facebook</button>
+                <button type="button" onClick={() => handleShare('twitter')}><ExternalLink size={14} /> Twitter/X</button>
+                <button type="button" onClick={() => handleShare('email')}><Mail size={14} /> Email</button>
+                <button type="button" onClick={() => handleShare('copy')}><Copy size={14} /> Copy Link</button>
+              </div>
+            )}
+          </div>
           <button type="button" className="bd-action-btn" onClick={scrollToNearby}>
             <MapPin size={16} /> VIEW NEARBY
           </button>
