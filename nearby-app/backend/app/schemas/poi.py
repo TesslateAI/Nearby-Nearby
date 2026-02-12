@@ -65,42 +65,136 @@ class POISearchResult(BaseModel):
     main_category: Optional[Category] = None  # Primary display category
 
     # Attribute fields needed for frontend attribute-based filtering
+    # Basic amenities
     pet_options: Optional[Any] = None
     pet_policy: Optional[str] = None
     wifi_options: Optional[Any] = None
-    key_facilities: Optional[Any] = None  # Added for admin panel facilities (Wifi, Pet Friendly, etc.)
+    key_facilities: Optional[Any] = None
     amenities: Optional[Any] = None
     business_amenities: Optional[Any] = None
+    youth_amenities: Optional[Any] = None
+    entertainment_options: Optional[Any] = None
+
+    # Parking & transit
     parking_types: Optional[Any] = None
     parking_notes: Optional[str] = None
+    parking_locations: Optional[Any] = None
+    expect_to_pay_parking: Optional[str] = None
+    public_transit_info: Optional[str] = None
+
+    # Accessibility
     wheelchair_accessible: Optional[Any] = None
     wheelchair_details: Optional[str] = None
+
+    # Restrooms
     public_toilets: Optional[Any] = None
     toilet_locations: Optional[Any] = None
     toilet_description: Optional[str] = None
+
+    # Playground
     playground_available: Optional[bool] = None
     playground_types: Optional[Any] = None
+    playground_surface_types: Optional[Any] = None
     playground_notes: Optional[str] = None
+    playground_location: Optional[Any] = None
+
+    # Alcohol & smoking
     alcohol_options: Optional[Any] = None
-    alcohol_description: Optional[str] = None
     smoking_options: Optional[Any] = None
     smoking_details: Optional[str] = None
+
+    # Rentals
     available_for_rent: Optional[bool] = None
     rental_info: Optional[str] = None
     rental_pricing: Optional[str] = None
     rental_link: Optional[str] = None
+
+    # Food & dining
     menu_link: Optional[str] = None
-    categories: Optional[List[dict]] = None
+    menu_photos: Optional[Any] = None
+    delivery_links: Optional[Any] = None
+    online_ordering_links: Optional[Any] = None
+    food_and_drink_info: Optional[str] = None
+
+    # Booking & reservations
     reservation_links: Optional[Any] = None
     appointment_links: Optional[Any] = None
     appointment_booking_url: Optional[str] = None
-    delivery_links: Optional[Any] = None
-    online_ordering_links: Optional[Any] = None
-    gift_cards_available: Optional[Any] = None
-    discounts_offered: Optional[Any] = None
-    discount_description: Optional[str] = None
-    ideal_for: Optional[Any] = None
+    hours_but_appointment_required: Optional[bool] = None
+
+    # Pricing & payment
     price_range_per_person: Optional[str] = None
+    pricing: Optional[str] = None
+    cost: Optional[str] = None
+    pricing_details: Optional[str] = None
+    payment_methods: Optional[Any] = None
+    gift_cards: Optional[str] = None
+    discounts: Optional[Any] = None
+
+    # Outdoor & nature features
+    natural_features: Optional[Any] = None
+    outdoor_types: Optional[Any] = None
+    things_to_do: Optional[Any] = None
+    birding_wildlife: Optional[str] = None
+    night_sky_viewing: Optional[str] = None
+
+    # Hunting & fishing
+    hunting_fishing_allowed: Optional[str] = None
+    hunting_types: Optional[Any] = None
+    fishing_allowed: Optional[str] = None
+    fishing_types: Optional[Any] = None
+    licenses_required: Optional[Any] = None
+    hunting_fishing_info: Optional[str] = None
+
+    # Drones
+    drone_usage: Optional[str] = None
+    drone_policy: Optional[str] = None
+
+    # Camping & lodging
+    camping_lodging: Optional[str] = None
+
+    # Park & trail facilities
+    facilities_options: Optional[Any] = None
+    downloadable_maps: Optional[Any] = None
+    payphone_location: Optional[Any] = None
+    payphone_locations: Optional[Any] = None
+
+    # Trail-specific
+    associated_trails: Optional[Any] = None
+    difficulty: Optional[str] = None
+    difficulty_description: Optional[str] = None
+    length_text: Optional[str] = None
+    length_segments: Optional[Any] = None
+    route_type: Optional[str] = None
+    trail_surfaces: Optional[Any] = None
+    trail_markings: Optional[Any] = None
+    trail_experiences: Optional[Any] = None
+    trail_conditions: Optional[str] = None
+    downloadable_trail_map: Optional[str] = None
+    trailhead_access_details: Optional[str] = None
+
+    # Memberships & passes
+    membership_passes: Optional[Any] = None
+    membership_details: Optional[str] = None
+
+    # Event-specific
+    ticket_link: Optional[str] = None
+    event_entry_notes: Optional[str] = None
+    has_vendors: Optional[bool] = None
+    vendor_types: Optional[Any] = None
+    vendor_application_info: Optional[str] = None
+    vendor_application_deadline: Optional[str] = None
+    vendor_requirements: Optional[str] = None
+    vendor_fee: Optional[str] = None
+    vendor_poi_links: Optional[Any] = None
+    venue_settings: Optional[Any] = None
+
+    # Compliance & requirements
+    compliance: Optional[Any] = None
+
+    # General
+    categories: Optional[List[dict]] = None
+    ideal_for: Optional[Any] = None
     hours: Optional[Any] = None
 
     model_config = ConfigDict(from_attributes=True)
@@ -108,13 +202,6 @@ class POISearchResult(BaseModel):
 class POINearbyResult(POISearchResult):
     distance_meters: Optional[float] = None
     location: Optional[PointGeometry] = None
-    poi_type: Optional[str] = None
-    hours: Optional[dict] = None
-    wheelchair_accessible: Optional[list] = None
-    wifi_options: Optional[list] = None
-    pet_options: Optional[list] = None
-    key_facilities: Optional[list] = None
-    categories: Optional[List[dict]] = None
     model_config = ConfigDict(from_attributes=True, arbitrary_types_allowed=True)
     
 class POIDetail(BaseModel):
