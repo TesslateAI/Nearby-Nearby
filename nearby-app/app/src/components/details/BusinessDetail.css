@@ -146,26 +146,54 @@
   font-weight: 600;
 }
 
-.bd-badge--verified {
+/* Verified Badge Box */
+.bd-verified-box {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  position: relative;
+}
+
+.bd-verified-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
   background: transparent;
   color: #16a34a;
   border: 1px solid #16a34a;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 600;
 }
 
-.bd-badge--verified svg {
+.bd-verified-icon {
+  width: 16px;
+  height: 16px;
+  fill: #16a34a;
+  flex-shrink: 0;
+}
+
+.bd-verified-badge-title {
   color: #16a34a;
+  font-weight: 600;
 }
 
-/* Verified Badge Wrapper and Tooltip */
-.bd-verified-wrapper {
-  position: relative;
-  display: inline-block;
+.bd-verified-about {
+  background: transparent;
+  border: none;
+  color: #16a34a;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+  transition: opacity 0.2s;
 }
 
-.bd-verified-info {
-  margin-left: 4px;
-  opacity: 0.7;
-  cursor: help;
+.bd-verified-about:hover {
+  opacity: 0.8;
 }
 
 .bd-verified-tooltip {
@@ -182,7 +210,9 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   opacity: 0;
   visibility: hidden;
-  transition: opacity 0.2s ease, visibility 0.2s ease;
+  max-height: 0;
+  overflow: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease, max-height 0.2s ease;
   z-index: 100;
 }
 
@@ -196,9 +226,10 @@
   border-bottom: 6px solid #1f2937;
 }
 
-.bd-verified-wrapper:hover .bd-verified-tooltip {
+.bd-verified-tooltip.bd-tooltip-open {
   opacity: 1;
   visibility: visible;
+  max-height: 200px;
 }
 
 .bd-badge--sponsor {

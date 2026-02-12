@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   MapPin, Phone, Globe, Navigation, Copy, Check,
-  ChevronDown, BadgeCheck, Users, Mail, ExternalLink,
-  Wifi, Car, TreePine, Bath, Bike, Droplets, Dog, UtensilsCrossed, CirclePlus, Info
+  ChevronDown, Users, Mail, ExternalLink,
+  Wifi, Car, TreePine, Bath, Bike, Droplets, Dog, UtensilsCrossed, CirclePlus
 } from 'lucide-react';
 import NearbySection from '../nearby-feature/NearbySection';
 import PhotoLightbox from './PhotoLightbox';
@@ -355,15 +355,28 @@ function BusinessDetail({ poi }) {
           </div>
 
           <div className="bd-header__right">
-            {/* Verified Badge with Hover Tooltip */}
+            {/* Verified Badge with Click Tooltip */}
             {poi.is_verified && (
-              <div className="bd-verified-wrapper">
-                <div className="bd-badge bd-badge--verified">
-                  <BadgeCheck size={16} /> Verified
-                  <Info size={14} className="bd-verified-info" />
+              <div className="bd-verified-box">
+                <div className="bd-verified-badge">
+                  <svg className="bd-verified-icon" viewBox="0 0 12 12" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink" xmlSpace="preserve" xmlnsSerif="http://www.serif.com/" style={{fillRule: 'evenodd', clipRule: 'evenodd', strokeLinejoin: 'round', strokeMiterlimit: 2}}>
+                    <g transform="matrix(0.0176433,0,0,0.0176433,-4.586,-4.58602)">
+                      <path d="M600,259.93C634.012,259.93 643.281,307.055 676.133,315.856C708.984,324.661 740.582,288.489 770.039,305.497C799.492,322.501 783.953,367.954 808,392.005C832.051,416.052 877.504,400.513 894.508,429.966C911.516,459.419 875.344,491.02 884.149,523.872C892.95,556.72 940.075,565.993 940.075,600.001C940.075,634.013 892.95,643.282 884.149,676.134C875.344,708.985 911.516,740.583 894.508,770.04C877.504,799.493 832.051,783.954 808,808.001C783.953,832.052 799.492,877.505 770.039,894.509C740.582,911.517 708.985,875.345 676.133,884.15C643.281,892.951 634.012,940.076 600,940.076C565.992,940.076 556.719,892.951 523.871,884.15C491.02,875.345 459.418,911.517 429.965,894.509C400.512,877.505 416.051,832.052 392.004,808.001C367.953,783.954 322.5,799.493 305.496,770.04C288.488,740.583 324.66,708.986 315.855,676.134C307.054,643.282 259.929,634.013 259.929,600.001C259.929,565.993 307.054,556.72 315.855,523.872C324.66,491.021 288.488,459.419 305.496,429.966C322.5,400.513 367.953,416.052 392.004,392.005C416.051,367.954 400.512,322.501 429.965,305.497C459.418,288.489 491.019,324.661 523.871,315.856C556.719,307.055 565.992,259.93 600,259.93ZM600,373.293C539.87,373.293 482.206,397.178 439.69,439.698C397.171,482.218 373.288,539.883 373.288,600.008C373.288,660.138 397.17,717.802 439.69,760.318C482.21,802.833 539.875,826.72 600,826.72C639.798,826.72 678.896,816.247 713.36,796.349C747.824,776.451 776.446,747.83 796.344,713.365C816.242,678.9 826.715,639.806 826.715,600.005C826.715,560.204 816.242,521.11 796.344,486.645C776.446,452.181 747.825,423.559 713.36,403.661C678.895,383.763 639.797,373.293 600,373.293ZM600,392.18C704.34,392.18 807.82,495.66 807.82,600C807.82,704.34 704.34,807.82 600,807.82C495.66,807.82 392.18,704.34 392.18,600C392.18,495.66 495.66,392.18 600,392.18ZM695.168,505.45C688.941,505.275 683.024,508.181 679.356,513.216L579.066,646.926L518.906,586.762C501.101,568.227 473.656,595.668 492.191,613.477L567.761,689.047C575.89,697.172 589.336,696.219 596.234,687.024L709.594,535.884C719.031,523.661 710.609,505.888 695.168,505.45Z"/>
+                    </g>
+                  </svg>
+                  <span className="bd-verified-badge-title">Verified</span>
                 </div>
+                <button
+                  type="button"
+                  className="bd-verified-about"
+                  onClick={(e) => {
+                    e.currentTarget.nextElementSibling.classList.toggle('bd-tooltip-open');
+                  }}
+                >
+                  What's This
+                </button>
                 <div className="bd-verified-tooltip">
-                  This place has been checked and confirmed as accurate by a Nearby Nearby Team member
+                  This place has been checked and confirmed as accurate by a Nearby Nearby Team member.
                 </div>
               </div>
             )}
