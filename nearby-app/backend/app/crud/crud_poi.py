@@ -60,14 +60,69 @@ def get_poi(db: Session, poi_id: str):
 
 def search_pois(db: Session, query: str):
     """
-    Enhanced search with typo tolerance and relevance ranking using PostgreSQL pg_trgm
+    Enhanced search with typo tolerance, attribute matching, and relevance ranking.
+
+    Searches across:
+    - POI names and cities (fuzzy matching with pg_trgm)
+    - Attributes (pet-friendly, wifi, parking, etc.) - returns ALL POIs for frontend filtering
+    - Categories
+    - Descriptions
+
+    For attribute searches (pet, wifi, parking, etc.), returns all published POIs
+    and lets the frontend filter by actual attribute data.
     """
+    from sqlalchemy import cast, String, text
+
+    query_lower = query.lower().strip()
+
+    # List of attribute keywords that should return all POIs for frontend filtering
+    attribute_keywords = [
+        'pet', 'pets', 'dog', 'dogs', 'animal',
+        'wifi', 'wi-fi', 'internet', 'wireless',
+        'parking', 'wheelchair', 'accessible', 'accessibility',
+        'restroom', 'bathroom', 'toilet',
+        'playground', 'play',
+        'alcohol', 'beer', 'wine', 'bar', 'drink'
+    ]
+
+    # Check if this is an attribute-only search
+    is_attribute_search = any(keyword == query_lower or keyword in query_lower.split() for keyword in attribute_keywords)
+
+    if is_attribute_search:
+        # For attribute searches, return all published POIs
+        # Frontend will filter based on actual attribute values
+        print(f"[INFO] Attribute search detected for '{query}', returning all POIs for frontend filtering")
+        pois = db.query(models.poi.PointOfInterest).filter(
+            models.poi.PointOfInterest.publication_status == 'published'
+        ).limit(100).all()
+
+        # Enrich with category information
+        for poi in pois:
+            _enrich_poi_with_category_info(db, poi)
+
+        return pois
+
+    # For non-attribute searches, use normal text-based search
     # Calculate similarity scores for fuzzy matching (catches typos)
     name_similarity = func.similarity(models.poi.PointOfInterest.name, query)
     city_similarity = func.similarity(models.poi.PointOfInterest.address_city, query)
 
-    # Search with typo tolerance and relevance ranking
+    # Search pattern for ILIKE searches
     search_pattern = f"%{query}%"
+
+    # Build the main search filter
+    search_conditions = [
+        # Fuzzy match on name (similarity > 0.3 means reasonably close match)
+        name_similarity > 0.3,
+        # Fuzzy match on city
+        city_similarity > 0.3,
+        # Exact substring match as fallback for precise searches
+        models.poi.PointOfInterest.name.ilike(search_pattern),
+        models.poi.PointOfInterest.address_city.ilike(search_pattern),
+        # Search in descriptions
+        models.poi.PointOfInterest.description_long.ilike(search_pattern),
+        models.poi.PointOfInterest.description_short.ilike(search_pattern)
+    ]
 
     results = db.query(
         models.poi.PointOfInterest,
@@ -76,19 +131,11 @@ def search_pois(db: Session, query: str):
     ).filter(
         models.poi.PointOfInterest.publication_status == 'published'
     ).filter(
-        or_(
-            # Fuzzy match on name (similarity > 0.3 means reasonably close match)
-            name_similarity > 0.3,
-            # Fuzzy match on city
-            city_similarity > 0.3,
-            # Exact substring match as fallback for precise searches
-            models.poi.PointOfInterest.name.ilike(search_pattern),
-            models.poi.PointOfInterest.address_city.ilike(search_pattern)
-        )
+        or_(*search_conditions)
     ).order_by(
         # Sort by relevance (best matches first)
         literal_column('relevance').desc()
-    ).limit(10).all()
+    ).limit(50).all()
 
     # Return just the POI objects (not the tuples with relevance score)
     pois = [result[0] for result in results]
@@ -246,6 +293,36 @@ def hybrid_search_pois(
     Returns:
         List of POIs ranked by combined score
     """
+    # Check if this is an attribute-based search - delegate to keyword search
+    # which returns all published POIs for frontend attribute filtering
+    query_lower = query.lower().strip()
+    attribute_keywords = [
+        'pet', 'pets', 'dog', 'dogs', 'animal',
+        'wifi', 'wi-fi', 'internet', 'wireless',
+        'parking', 'wheelchair', 'accessible', 'accessibility',
+        'restroom', 'bathroom', 'toilet',
+        'playground', 'play',
+        'alcohol', 'beer', 'wine', 'bar', 'drink',
+        'outdoor', 'patio', 'terrace',
+        'bike', 'bicycle',
+        'rental', 'rent',
+        'smoking', 'smoke', 'cigarette',
+        'cheap', 'affordable', 'budget',
+        'expensive', 'upscale', 'luxury',
+        'gift card', 'discount', 'deal',
+        'delivery', 'takeout',
+        'reservation', 'appointment',
+        'family', 'kid friendly', 'kids', 'children',
+        'open now'
+    ]
+    is_attribute_search = any(
+        keyword == query_lower or keyword in query_lower.split()
+        for keyword in attribute_keywords
+    )
+    if is_attribute_search:
+        print(f"[INFO] Hybrid search: attribute keyword detected for '{query}', delegating to keyword search")
+        return search_pois(db, query)
+
     # Check if embedding column exists in database
     try:
         from sqlalchemy import text

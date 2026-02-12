@@ -477,14 +477,21 @@ function ParkDetail({ poi }) {
             );
           })()}
 
-          <CollapsibleSection title="WHAT TO EXPECT" show={poi.wheelchair_accessible || poi.wifi_options || poi.ideal_for}>
+          <CollapsibleSection title="WHAT TO EXPECT" show={
+            poi.wheelchair_accessible ||
+            poi.wifi_options ||
+            (poi.key_facilities && Array.isArray(poi.key_facilities) && poi.key_facilities.some(f => f && f.toLowerCase() === 'wifi')) ||
+            poi.ideal_for
+          }>
             <div className="collapsible-section__info">
               {poi.wheelchair_accessible && Array.isArray(poi.wheelchair_accessible) && (
                 <InfoRow label="Accessibility" value={poi.wheelchair_accessible.join(", ")} />
               )}
-              {poi.wifi_options && Array.isArray(poi.wifi_options) && (
+              {(poi.wifi_options && Array.isArray(poi.wifi_options) && poi.wifi_options.length > 0) ? (
                 <InfoRow label="Wi-Fi" value={poi.wifi_options.join(", ")} />
-              )}
+              ) : (poi.key_facilities && Array.isArray(poi.key_facilities) && poi.key_facilities.some(f => f && f.toLowerCase() === 'wifi')) ? (
+                <InfoRow label="Wi-Fi" value="Yes" />
+              ) : null}
               {poi.ideal_for && Array.isArray(poi.ideal_for) && (
                 <InfoRow label="Ideal For" value={poi.ideal_for.join(", ")} />
               )}

@@ -63,6 +63,46 @@ class POISearchResult(BaseModel):
     address_city: Optional[str] = None
     address_state: Optional[str] = None
     main_category: Optional[Category] = None  # Primary display category
+
+    # Attribute fields needed for frontend attribute-based filtering
+    pet_options: Optional[Any] = None
+    pet_policy: Optional[str] = None
+    wifi_options: Optional[Any] = None
+    key_facilities: Optional[Any] = None  # Added for admin panel facilities (Wifi, Pet Friendly, etc.)
+    amenities: Optional[Any] = None
+    business_amenities: Optional[Any] = None
+    parking_types: Optional[Any] = None
+    parking_notes: Optional[str] = None
+    wheelchair_accessible: Optional[Any] = None
+    wheelchair_details: Optional[str] = None
+    public_toilets: Optional[Any] = None
+    toilet_locations: Optional[Any] = None
+    toilet_description: Optional[str] = None
+    playground_available: Optional[bool] = None
+    playground_types: Optional[Any] = None
+    playground_notes: Optional[str] = None
+    alcohol_options: Optional[Any] = None
+    alcohol_description: Optional[str] = None
+    smoking_options: Optional[Any] = None
+    smoking_details: Optional[str] = None
+    available_for_rent: Optional[bool] = None
+    rental_info: Optional[str] = None
+    rental_pricing: Optional[str] = None
+    rental_link: Optional[str] = None
+    menu_link: Optional[str] = None
+    categories: Optional[List[dict]] = None
+    reservation_links: Optional[Any] = None
+    appointment_links: Optional[Any] = None
+    appointment_booking_url: Optional[str] = None
+    delivery_links: Optional[Any] = None
+    online_ordering_links: Optional[Any] = None
+    gift_cards_available: Optional[Any] = None
+    discounts_offered: Optional[Any] = None
+    discount_description: Optional[str] = None
+    ideal_for: Optional[Any] = None
+    price_range_per_person: Optional[str] = None
+    hours: Optional[Any] = None
+
     model_config = ConfigDict(from_attributes=True)
 
 class POINearbyResult(POISearchResult):
@@ -73,6 +113,7 @@ class POINearbyResult(POISearchResult):
     wheelchair_accessible: Optional[list] = None
     wifi_options: Optional[list] = None
     pet_options: Optional[list] = None
+    key_facilities: Optional[list] = None
     categories: Optional[List[dict]] = None
     model_config = ConfigDict(from_attributes=True, arbitrary_types_allowed=True)
     

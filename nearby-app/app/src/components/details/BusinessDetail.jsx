@@ -1024,10 +1024,17 @@ function BusinessDetail({ poi }) {
           {/* 9. WiFi */}
           <AccordionSection
             title="WiFi"
-            show={hasContent(poi.wifi_options)}
+            show={
+              hasContent(poi.wifi_options) ||
+              (poi.key_facilities && Array.isArray(poi.key_facilities) && poi.key_facilities.some(f => f && f.toLowerCase() === 'wifi'))
+            }
           >
             <div className="bd-accordion__grid">
-              <InfoItem label="WiFi Available" value={poi.wifi_options} />
+              {hasContent(poi.wifi_options) ? (
+                <InfoItem label="WiFi Available" value={poi.wifi_options} />
+              ) : (
+                <InfoItem label="WiFi Available" value="Yes" />
+              )}
             </div>
           </AccordionSection>
 
