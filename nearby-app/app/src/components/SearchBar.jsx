@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getApiUrl } from '../config';
 import { getPOIUrl } from '../utils/slugify';
+import { filterPOIsByAttributes } from '../utils/attributeFilters';
 import './SearchBar.css';
 import SearchDropdown from './SearchDropdown';
 
@@ -66,17 +67,20 @@ function SearchBar({
       if (response.ok) {
         const data = await response.json();
 
+        // Apply attribute-based filtering to results
+        const attributeFilteredData = filterPOIsByAttributes(query, data);
+
         // If in nearby filter mode, filter results to only include nearby POIs
         if (nearbyPoiIds && onFilterNearby) {
           const nearbyIdSet = new Set(nearbyPoiIds);
-          const filteredResults = data.filter(poi => nearbyIdSet.has(poi.id));
+          const filteredResults = attributeFilteredData.filter(poi => nearbyIdSet.has(poi.id));
           setSearchResults(filteredResults);
           setShowDropdown(filteredResults.length > 0);
           // Call the filter callback with matching POI IDs
           onFilterNearby(filteredResults.map(poi => poi.id));
         } else {
-          setSearchResults(data.slice(0, 8)); // Limit to 8 for regular search
-          setShowDropdown(data.length > 0);
+          setSearchResults(attributeFilteredData.slice(0, 8)); // Limit to 8 for regular search
+          setShowDropdown(attributeFilteredData.length > 0);
         }
       }
     } catch (error) {

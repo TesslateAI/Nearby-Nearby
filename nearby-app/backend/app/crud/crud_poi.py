@@ -60,14 +60,219 @@ def get_poi(db: Session, poi_id: str):
 
 def search_pois(db: Session, query: str):
     """
-    Enhanced search with typo tolerance and relevance ranking using PostgreSQL pg_trgm
+    Enhanced search with typo tolerance, attribute matching, and relevance ranking.
+
+    Searches across:
+    - POI names and cities (fuzzy matching with pg_trgm)
+    - Attributes (pet-friendly, wifi, parking, etc.) - returns ALL POIs for frontend filtering
+    - Categories
+    - Descriptions
+
+    For attribute searches (pet, wifi, parking, etc.), returns all published POIs
+    and lets the frontend filter by actual attribute data.
     """
+    from sqlalchemy import cast, String, text
+
+    query_lower = query.lower().strip()
+
+    # List of attribute keywords that should return all POIs for frontend filtering
+    attribute_keywords = [
+        # Pets
+        'pet', 'pets', 'dog', 'dogs', 'animal', 'animals', 'pet friendly', 'pet-friendly', 'dog friendly', 'dog-friendly',
+
+        # WiFi & Internet
+        'wifi', 'wi-fi', 'wi fi', 'internet', 'wireless',
+
+        # Parking
+        'parking', 'park', 'lot', 'garage', 'valet', 'paid parking', 'free parking',
+
+        # Accessibility
+        'wheelchair', 'accessible', 'accessibility', 'handicap', 'disabled', 'ada', 'ramp',
+
+        # Restrooms
+        'restroom', 'restrooms', 'bathroom', 'bathrooms', 'toilet', 'toilets', 'washroom',
+
+        # Playground
+        'playground', 'play area', 'playarea', 'play ground', 'play structure',
+
+        # Alcohol & Smoking
+        'alcohol', 'beer', 'wine', 'liquor', 'bar', 'drinks', 'cocktails', 'spirits',
+        'smoking', 'smoke', 'cigarette', 'cigar', 'tobacco',
+
+        # Outdoor
+        'outdoor', 'outdoor seating', 'patio', 'terrace', 'outside', 'al fresco',
+        'garden', 'courtyard', 'rooftop', 'deck', 'gardens',
+
+        # Bike
+        'bike', 'bicycle', 'cycling', 'bike rack', 'bike parking',
+
+        # Rentals
+        'rental', 'rent', 'for rent', 'book', 'booking', 'reserve space',
+
+        # Food & Dining
+        'food', 'dining', 'restaurant', 'eat', 'eating', 'meal', 'menu',
+        'coffee', 'cafe', 'café', 'espresso', 'latte', 'cappuccino',
+        'delivery', 'deliver', 'delivered', 'takeout', 'take out', 'to go',
+
+        # Reservations
+        'reservation', 'reservations', 'appointment', 'appointments',
+        'appointment required', 'appointment only', 'by appointment',
+
+        # Discounts & Gift Cards
+        'gift card', 'gift cards', 'giftcard', 'giftcards',
+        'discount', 'discounts', 'deal', 'deals', 'special', 'specials', 'promotion',
+
+        # Family
+        'family', 'family friendly', 'family-friendly', 'kid friendly', 'kid-friendly', 'kids', 'children',
+        'changing table', 'high chair', 'highchair', 'kids menu', 'booster seat',
+
+        # Price
+        'cheap', 'affordable', 'budget', 'inexpensive', 'low cost', 'value',
+        'expensive', 'upscale', 'fine dining', 'luxury', 'high end', 'pricey',
+
+        # Hours
+        'open now', 'open today', 'currently open',
+
+        # Fishing & Hunting
+        'fishing', 'fish', 'fishing allowed', 'catch and release', 'catch and keep', 'angling',
+        'hunting', 'hunt', 'hunting allowed', 'game', 'deer hunting', 'turkey hunting',
+
+        # Drones
+        'drone', 'drones', 'drone friendly', 'uav', 'quadcopter', 'drone allowed',
+
+        # Camping
+        'camping', 'camp', 'campground', 'campsite', 'lodging', 'overnight', 'overnight stay',
+
+        # Nature & Outdoor Activities
+        'stargazing', 'stars', 'night sky', 'astronomy', 'dark sky', 'star viewing',
+        'waterfall', 'waterfalls', 'lake', 'river', 'stream', 'mountain', 'mountain view', 'scenic', 'vista', 'overlook', 'viewpoint',
+        'bird watching', 'birding', 'birds', 'wildlife', 'wildlife viewing', 'nature watching', 'bird', 'birdwatching',
+        'hiking', 'hike', 'trail', 'trails', 'walking', 'trekking', 'hiking trail',
+        'kayak', 'kayaking', 'canoe', 'canoeing', 'paddling', 'paddle', 'boating', 'boat', 'water sports', 'paddleboard',
+        'swimming', 'swim', 'swimming pool', 'pool', 'swim area',
+
+        # Transit & Parking
+        'public transit', 'bus', 'metro', 'subway', 'train', 'light rail', 'transit', 'public transportation',
+
+        # Facilities
+        'picnic', 'picnic area', 'pavilion', 'shelter', 'covered area', 'picnic table',
+        'payphone', 'pay phone', 'phone', 'public phone',
+
+        # Entertainment
+        'live music', 'entertainment', 'trivia', 'karaoke', 'games', 'pool table', 'darts', 'live band', 'dj',
+
+        # Membership & Maps
+        'membership', 'pass', 'membership required', 'annual pass', 'member',
+        'map', 'trail map', 'downloadable map', 'park map', 'maps',
+
+        # Licenses & Permits
+        'license required', 'permit required', 'permit', 'license', 'pre-approval',
+
+        # Trail Features
+        'easy trail', 'moderate trail', 'difficult trail', 'hard trail', 'challenging trail', 'beginner trail',
+        'short trail', 'long trail', 'mile trail', 'km trail',
+        'loop trail', 'out and back', 'point to point', 'circuit',
+        'paved trail', 'paved', 'gravel', 'dirt trail', 'natural surface',
+
+        # Event Features
+        'tickets', 'buy tickets', 'ticket', 'ticketed event',
+        'vendors', 'vendor', 'food vendors', 'craft vendors', 'market',
+
+        # Misc
+        'coat check', 'coat room', 'cloakroom',
+        'cash only', 'credit card', 'debit card', 'apple pay', 'contactless',
+
+        # Articles & Resources
+        'article', 'articles', 'resource', 'resources', 'blog', 'news', 'reading',
+
+        # Entry Requirements
+        'business entry', 'entry requirements', 'entry notes', 'entrance requirements',
+        'event entry', 'event requirements', 'event entry notes',
+        'park entry', 'park requirements', 'park entry notes', 'park entrance',
+
+        # Community & Impact
+        'community impact', 'community', 'social impact', 'local impact', 'community service',
+
+        # Pricing & Cost
+        'cost', 'costs', 'price', 'prices', 'pricing', 'how much', 'fee', 'fees',
+
+        # Food & Drink Details
+        'food and drink', 'drink', 'bar',
+
+        # Emergency & Safety
+        'emergency', 'emergency protocols', 'safety', 'first aid', 'emergency contact',
+        'disaster hub', 'emergency shelter', 'disaster shelter', 'emergency hub',
+
+        # Organizations
+        'organization', 'organizations', 'member of', 'affiliated with', 'organization membership',
+
+        # Trail Details
+        'difficulty description', 'difficulty details', 'trail difficulty details',
+        'trail conditions', 'trail condition', 'path conditions', 'current conditions',
+        'trail experience', 'trail experiences', 'hiking experience',
+        'trail markings', 'trail markers', 'blazes', 'signage', 'trail signs',
+        'trailhead', 'trailhead access', 'trail access', 'trailhead parking', 'trailhead details',
+        'trail segments', 'trail sections', 'segment', 'sections',
+
+        # Playground Details
+        'playground surface', 'play surface', 'surface type', 'rubber surface', 'wood chips',
+
+        # Drone Policy
+        'drone policy', 'drone usage policy', 'drone rules', 'uav policy',
+
+        # Venue
+        'venue', 'venue settings', 'venue type', 'indoor venue', 'outdoor venue',
+
+        # Vendor Details
+        'vendor application', 'vendor apply', 'become a vendor', 'vendor info',
+        'vendor links', 'vendor pois', 'vendor locations',
+
+        # Listing & Location
+        'listing type', 'type of listing', 'listing category',
+        'locally found', 'find locally', 'local availability', 'where to find',
+
+        # Social Media
+        'social media', 'socials', 'social links', 'follow us'
+    ]
+
+    # Check if this is an attribute-only search
+    is_attribute_search = any(keyword == query_lower or keyword in query_lower.split() for keyword in attribute_keywords)
+
+    if is_attribute_search:
+        # For attribute searches, return all published POIs
+        # Frontend will filter based on actual attribute values
+        print(f"[INFO] Attribute search detected for '{query}', returning all POIs for frontend filtering")
+        pois = db.query(models.poi.PointOfInterest).filter(
+            models.poi.PointOfInterest.publication_status == 'published'
+        ).limit(100).all()
+
+        # Enrich with category information
+        for poi in pois:
+            _enrich_poi_with_category_info(db, poi)
+
+        return pois
+
+    # For non-attribute searches, use normal text-based search
     # Calculate similarity scores for fuzzy matching (catches typos)
     name_similarity = func.similarity(models.poi.PointOfInterest.name, query)
     city_similarity = func.similarity(models.poi.PointOfInterest.address_city, query)
 
-    # Search with typo tolerance and relevance ranking
+    # Search pattern for ILIKE searches
     search_pattern = f"%{query}%"
+
+    # Build the main search filter
+    search_conditions = [
+        # Fuzzy match on name (similarity > 0.3 means reasonably close match)
+        name_similarity > 0.3,
+        # Fuzzy match on city
+        city_similarity > 0.3,
+        # Exact substring match as fallback for precise searches
+        models.poi.PointOfInterest.name.ilike(search_pattern),
+        models.poi.PointOfInterest.address_city.ilike(search_pattern),
+        # Search in descriptions
+        models.poi.PointOfInterest.description_long.ilike(search_pattern),
+        models.poi.PointOfInterest.description_short.ilike(search_pattern)
+    ]
 
     results = db.query(
         models.poi.PointOfInterest,
@@ -76,19 +281,11 @@ def search_pois(db: Session, query: str):
     ).filter(
         models.poi.PointOfInterest.publication_status == 'published'
     ).filter(
-        or_(
-            # Fuzzy match on name (similarity > 0.3 means reasonably close match)
-            name_similarity > 0.3,
-            # Fuzzy match on city
-            city_similarity > 0.3,
-            # Exact substring match as fallback for precise searches
-            models.poi.PointOfInterest.name.ilike(search_pattern),
-            models.poi.PointOfInterest.address_city.ilike(search_pattern)
-        )
+        or_(*search_conditions)
     ).order_by(
         # Sort by relevance (best matches first)
         literal_column('relevance').desc()
-    ).limit(10).all()
+    ).limit(50).all()
 
     # Return just the POI objects (not the tuples with relevance score)
     pois = [result[0] for result in results]
@@ -246,6 +443,36 @@ def hybrid_search_pois(
     Returns:
         List of POIs ranked by combined score
     """
+    # Check if this is an attribute-based search - delegate to keyword search
+    # which returns all published POIs for frontend attribute filtering
+    query_lower = query.lower().strip()
+    attribute_keywords = [
+        'pet', 'pets', 'dog', 'dogs', 'animal',
+        'wifi', 'wi-fi', 'internet', 'wireless',
+        'parking', 'wheelchair', 'accessible', 'accessibility',
+        'restroom', 'bathroom', 'toilet',
+        'playground', 'play',
+        'alcohol', 'beer', 'wine', 'bar', 'drink',
+        'outdoor', 'patio', 'terrace',
+        'bike', 'bicycle',
+        'rental', 'rent',
+        'smoking', 'smoke', 'cigarette',
+        'cheap', 'affordable', 'budget',
+        'expensive', 'upscale', 'luxury',
+        'gift card', 'discount', 'deal',
+        'delivery', 'takeout',
+        'reservation', 'appointment',
+        'family', 'kid friendly', 'kids', 'children',
+        'open now'
+    ]
+    is_attribute_search = any(
+        keyword == query_lower or keyword in query_lower.split()
+        for keyword in attribute_keywords
+    )
+    if is_attribute_search:
+        print(f"[INFO] Hybrid search: attribute keyword detected for '{query}', delegating to keyword search")
+        return search_pois(db, query)
+
     # Check if embedding column exists in database
     try:
         from sqlalchemy import text

@@ -399,10 +399,27 @@ function GenericDetail({ poi }) {
               </CollapsibleSection>
             )}
 
-            <CollapsibleSection title="WHAT TO EXPECT" show={hasContent(poi.wheelchair_accessible) || hasContent(poi.wifi_options) || hasContent(poi.payment_methods) || hasContent(poi.ideal_for) || hasContent(poi.amenities) || hasContent(poi.key_facilities)}>
+            <CollapsibleSection title="WHAT TO EXPECT" show={
+              hasContent(poi.wheelchair_accessible) ||
+              hasContent(poi.wifi_options) ||
+              (poi.key_facilities && Array.isArray(poi.key_facilities) && poi.key_facilities.some(f => f && f.toLowerCase() === 'wifi')) ||
+              hasContent(poi.payment_methods) ||
+              hasContent(poi.ideal_for) ||
+              hasContent(poi.amenities) ||
+              hasContent(poi.key_facilities)
+            }>
               <div className="collapsible-section__info">
                 <InfoRow label="Accessibility" value={poi.wheelchair_accessible} />
-                <InfoRow label="Wi-Fi" value={poi.wifi_options} />
+                <InfoRow
+                  label="Wi-Fi"
+                  value={
+                    hasContent(poi.wifi_options)
+                      ? poi.wifi_options
+                      : (poi.key_facilities && Array.isArray(poi.key_facilities) && poi.key_facilities.some(f => f && f.toLowerCase() === 'wifi'))
+                        ? "Yes"
+                        : null
+                  }
+                />
                 <InfoRow label="Payment" value={poi.payment_methods} />
                 <InfoRow label="Ideal For" value={poi.ideal_for} />
                 <InfoRow label="Amenities" value={poi.amenities} />
