@@ -14,6 +14,7 @@ import {
 import Map from '../components/Map';
 import { getApiUrl } from '../config';
 import { getPOIUrl } from '../utils/slugify';
+import { filterPOIsByAttributes } from '../utils/attributeFilters';
 import './Explore.css';
 
 // Only 4 categories: Businesses, Parks, Trails, Events
@@ -37,6 +38,8 @@ function Explore() {
   const [categoryCounts, setCategoryCounts] = useState({});
   const [userLocation] = useState({ lat: 35.7198, lng: -79.1772 }); // Fixed: Pittsboro, NC
   const [locationName] = useState('Pittsboro, NC');
+  const [isSearching, setIsSearching] = useState(false);
+  const [originalPOIs, setOriginalPOIs] = useState([]); // Store original POIs from category fetch
 
   useEffect(() => {
     fetchCategoryCounts();
@@ -97,6 +100,7 @@ function Explore() {
       if (response.ok) {
         const data = await response.json();
         setPois(data);
+        setOriginalPOIs(data); // Store original POIs for when search is cleared
       } else {
         setError('Failed to load results');
       }
@@ -114,15 +118,82 @@ function Explore() {
 
   const clearFilters = () => {
     navigate('/explore');
+    setSearchQuery('');
   };
 
-  const getFilteredPOIs = () => {
-    if (searchQuery) {
-      return pois.filter(poi =>
-        poi.name.toLowerCase().includes(searchQuery.toLowerCase())
+  const handleSearch = async (query) => {
+    setIsSearching(true);
+    try {
+      console.log('[Explore Search] Starting search for:', query);
+      console.log('[Explore Search] Selected category:', selectedCategory);
+
+      // Call hybrid search API
+      const response = await fetch(
+        getApiUrl(`api/pois/hybrid-search?q=${encodeURIComponent(query)}&limit=50`)
       );
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('[Explore Search] API returned', data.length, 'POIs');
+
+        // Apply attribute filtering
+        const attributeFiltered = filterPOIsByAttributes(query, data);
+        console.log('[Explore Search] After attribute filtering:', attributeFiltered.length, 'POIs');
+
+        // If a specific type is selected, filter by that type
+        if (selectedCategory) {
+          console.log('[Explore Search] Filtering by type:', selectedCategory.type);
+          const typeFiltered = attributeFiltered.filter(poi => {
+            const matches = poi.poi_type === selectedCategory.type;
+            console.log(`[Explore Search] POI "${poi.name}" (${poi.poi_type}) matches ${selectedCategory.type}?`, matches);
+            return matches;
+          });
+          console.log('[Explore Search] After type filtering:', typeFiltered.length, 'POIs');
+          setPois(typeFiltered);
+        } else {
+          setPois(attributeFiltered);
+        }
+      } else {
+        console.error('Search API failed');
+        // Fallback to simple name search on original POIs
+        const nameFiltered = originalPOIs.filter(poi =>
+          poi.name.toLowerCase().includes(query.toLowerCase())
+        );
+        setPois(nameFiltered);
+      }
+    } catch (error) {
+      console.error('Search error:', error);
+      // Fallback to simple name search on original POIs
+      const nameFiltered = originalPOIs.filter(poi =>
+        poi.name.toLowerCase().includes(query.toLowerCase())
+      );
+      setPois(nameFiltered);
+    } finally {
+      setIsSearching(false);
     }
-    return pois;
+  };
+
+  // Debounced hybrid search effect
+  useEffect(() => {
+    // Skip search if no category is selected
+    if (!selectedCategory) return;
+
+    const delayDebounce = setTimeout(() => {
+      if (searchQuery.trim().length > 0) {
+        handleSearch(searchQuery);
+      } else {
+        // Reset to original POIs when search is cleared
+        setPois(originalPOIs);
+        setIsSearching(false);
+      }
+    }, 300); // 300ms debounce
+
+    return () => clearTimeout(delayDebounce);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchQuery, originalPOIs, selectedCategory]);
+
+  const getFilteredPOIs = () => {
+    return pois; // POIs are already filtered by handleSearch
   };
 
   if (loading) {
@@ -186,12 +257,17 @@ function Explore() {
               <Search size={20} className="search-icon" />
               <input
                 type="text"
-                placeholder="Search..."
+                placeholder="Search by name or attributes (pet friendly, WiFi, etc.)..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="search-input"
               />
-              {searchQuery && (
+              {isSearching && (
+                <div className="search-loading">
+                  <div className="search-spinner"></div>
+                </div>
+              )}
+              {searchQuery && !isSearching && (
                 <button onClick={() => setSearchQuery('')} className="search-clear">
                   <X size={16} />
                 </button>

@@ -1,5 +1,5 @@
 # app/schemas/poi.py
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, model_validator
 from typing import Optional, List, Any
 import uuid
 from datetime import datetime
@@ -62,6 +62,7 @@ class POISearchResult(BaseModel):
     poi_type: Optional[str] = None  # For generating SEO URLs
     address_city: Optional[str] = None
     address_state: Optional[str] = None
+    location: Optional[PointGeometry] = None  # GeoJSON Point with coordinates for map display
     main_category: Optional[Category] = None  # Primary display category
 
     # Attribute fields needed for frontend attribute-based filtering
@@ -197,7 +198,24 @@ class POISearchResult(BaseModel):
     ideal_for: Optional[Any] = None
     hours: Optional[Any] = None
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, arbitrary_types_allowed=True)
+
+    @model_validator(mode='before')
+    @classmethod
+    def convert_wkb_to_geojson(cls, data):
+        """Convert WKBElement to PointGeometry for location field"""
+        if isinstance(data, dict):
+            # Already a dict, check if location is WKBElement
+            if 'location' in data and isinstance(data['location'], WKBElement):
+                data['location'] = PointGeometry.from_wkb(data['location'])
+        else:
+            # It's a SQLAlchemy model object
+            if hasattr(data, 'location') and isinstance(data.location, WKBElement):
+                # Convert to dict and update location
+                data_dict = {key: getattr(data, key) for key in dir(data) if not key.startswith('_')}
+                data_dict['location'] = PointGeometry.from_wkb(data.location)
+                return data_dict
+        return data
 
 class POINearbyResult(POISearchResult):
     distance_meters: Optional[float] = None
