@@ -101,7 +101,7 @@ variable "admin_domain" {
 # GitHub Actions
 variable "github_repo" {
   type    = string
-  default = "TesslateAI/NearbyNearby"
+  default = "TesslateAI/Nearby-Nearby"
 }
 
 variable "create_github_oidc" {
