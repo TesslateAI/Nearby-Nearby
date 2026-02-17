@@ -29,3 +29,7 @@ output "rds_security_group_id" {
 output "db_subnet_group_name" {
   value = aws_db_subnet_group.main.name
 }
+
+output "private_route_table_id" {
+  value = aws_route_table.private.id
+}

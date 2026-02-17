@@ -66,3 +66,30 @@ variable "admin_frontend_image" {
   default = ""
   description = "nearby-admin frontend ECR image URI"
 }
+
+# VPC Peering (ECS VPC → default VPC where existing RDS lives)
+variable "default_vpc_id" {
+  type        = string
+  description = "Default VPC ID where existing RDS is located"
+}
+
+variable "default_vpc_cidr" {
+  type        = string
+  default     = "172.31.0.0/16"
+  description = "CIDR block of the default VPC"
+}
+
+variable "default_vpc_route_table_id" {
+  type        = string
+  description = "Main route table ID of the default VPC"
+}
+
+variable "rds_security_group_id" {
+  type        = string
+  description = "Security group ID of the existing RDS instance"
+}
+
+variable "rds_subnet_route_table_id" {
+  type        = string
+  description = "Route table ID used by the RDS subnets in the default VPC"
+}

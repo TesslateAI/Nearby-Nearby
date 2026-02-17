@@ -129,3 +129,52 @@ module "ecs" {
   github_oidc_provider_arn = "arn:aws:iam::487615743990:oidc-provider/token.actions.githubusercontent.com"
   ecr_repository_arns      = values(module.ecr.repository_arns)
 }
+
+# --- VPC Peering (ECS VPC ↔ Default VPC where RDS lives) ---
+resource "aws_vpc_peering_connection" "ecs_to_default" {
+  vpc_id      = module.networking.vpc_id
+  peer_vpc_id = var.default_vpc_id
+  auto_accept = true
+
+  accepter {
+    allow_remote_vpc_dns_resolution = true
+  }
+
+  requester {
+    allow_remote_vpc_dns_resolution = true
+  }
+
+  tags = { Name = "${var.project}-${var.environment}-ecs-to-default" }
+}
+
+# Route from ECS private subnets → default VPC (172.31.0.0/16)
+resource "aws_route" "ecs_to_default" {
+  route_table_id            = module.networking.private_route_table_id
+  destination_cidr_block    = var.default_vpc_cidr
+  vpc_peering_connection_id = aws_vpc_peering_connection.ecs_to_default.id
+}
+
+# Route from default VPC main route table → ECS VPC (10.0.0.0/16)
+resource "aws_route" "default_to_ecs" {
+  route_table_id            = var.default_vpc_route_table_id
+  destination_cidr_block    = "10.0.0.0/16"
+  vpc_peering_connection_id = aws_vpc_peering_connection.ecs_to_default.id
+}
+
+# Route from default VPC RDS subnet route table → ECS VPC (10.0.0.0/16)
+resource "aws_route" "rds_subnet_to_ecs" {
+  route_table_id            = var.rds_subnet_route_table_id
+  destination_cidr_block    = "10.0.0.0/16"
+  vpc_peering_connection_id = aws_vpc_peering_connection.ecs_to_default.id
+}
+
+# Allow ECS tasks to reach RDS on port 5432 via existing RDS security group
+resource "aws_security_group_rule" "rds_from_ecs" {
+  type              = "ingress"
+  from_port         = 5432
+  to_port           = 5432
+  protocol          = "tcp"
+  cidr_blocks       = ["10.0.0.0/16"]
+  security_group_id = var.rds_security_group_id
+  description       = "PostgreSQL from ECS VPC via peering"
+}
