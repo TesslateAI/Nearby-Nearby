@@ -311,18 +311,92 @@ docker network inspect nearby-admin_default --format '{{range .Containers}}{{.Na
 
 ### Production (AWS ECS)
 
-In production, networking is managed by Terraform (`terraform/modules/networking/`):
+In production, networking is managed by Terraform (`terraform/modules/networking/`).
 
-- **VPC**: `10.0.0.0/16` with public, private, and database subnets across 2 AZs
-- **ALB**: In public subnets, routes traffic to ECS tasks in private subnets
-- **ECS tasks**: In private subnets, reach internet via NAT Gateway
-- **RDS**: In database subnets, only accessible from ECS security group on port 5432
-- **Security groups**:
-  - ALB SG: inbound 80 from `0.0.0.0/0`
-  - ECS SG: all traffic from ALB SG only
-  - RDS SG: inbound 5432 from ECS SG only
+#### VPC Layout
 
-**nearby-admin ECS networking**: The nginx and backend containers share the same task network namespace (awsvpc mode), so nginx reaches the backend via `localhost:8000`. This is controlled by `BACKEND_HOST=localhost` in the nginx template.
+Two VPCs are involved in the production architecture:
+
+| VPC | CIDR | Purpose |
+|-----|------|---------|
+| **ECS VPC** | `10.0.0.0/16` | Managed by Terraform, hosts all ECS infrastructure |
+| **Default VPC** | `172.31.0.0/16` | Pre-existing AWS default VPC where RDS lives |
+
+**ECS VPC subnets** (across 2 availability zones):
+
+| Subnet Type | CIDRs | Purpose |
+|-------------|-------|---------|
+| Public | `10.0.1.0/24`, `10.0.2.0/24` | Application Load Balancer (ALB) |
+| Private | `10.0.10.0/24`, `10.0.11.0/24` | ECS tasks (Fargate) |
+| Database | `10.0.20.0/24`, `10.0.21.0/24` | Unused — RDS is in the default VPC, not here |
+
+#### VPC Peering
+
+Because the RDS instance lives in the default VPC (`172.31.0.0/16`) and ECS tasks run in the ECS VPC (`10.0.0.0/16`), a **VPC peering connection** bridges the two:
+
+- **Peering connection** established between ECS VPC and Default VPC
+- **DNS resolution** enabled in both directions so ECS tasks can resolve the RDS hostname to a private IP
+- **Route table entries** added in three places:
+  1. **ECS private subnet route table**: `172.31.0.0/16 → pcx-xxxxx` (peering connection)
+  2. **Default VPC main route table**: `10.0.0.0/16 → pcx-xxxxx`
+  3. **Default VPC RDS subnet route table**: `10.0.0.0/16 → pcx-xxxxx`
+- **RDS security group rule**: Inbound TCP port `5432` allowed from `10.0.0.0/16` CIDR
+
+#### Traffic Flow
+
+```
+┌──────────────────────────────────────────────────────────────────────────┐
+│  INBOUND (user requests)                                                 │
+│                                                                          │
+│  Internet → Cloudflare (SSL termination, HTTPS)                          │
+│          → ALB (public subnets 10.0.1.0/24, 10.0.2.0/24, port 80 HTTP) │
+│          → ECS tasks (private subnets 10.0.10.0/24, 10.0.11.0/24)      │
+└──────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────┐
+│  OUTBOUND (ECS → Internet)                                               │
+│                                                                          │
+│  ECS tasks (private subnets)                                             │
+│          → NAT Gateway (public subnets)                                  │
+│          → Internet (ECR image pulls, HuggingFace ML model download)    │
+└──────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────┐
+│  DATABASE (ECS → RDS)                                                    │
+│                                                                          │
+│  ECS tasks (private subnets, 10.0.10.0/24)                               │
+│          → VPC Peering (pcx-xxxxx)                                       │
+│          → RDS in default VPC (172.31.0.0/16, port 5432)                │
+└──────────────────────────────────────────────────────────────────────────┘
+```
+
+#### Security Groups
+
+| Security Group | Inbound Rules | Outbound Rules | Purpose |
+|----------------|---------------|----------------|---------|
+| **ALB SG** | TCP 80 from `0.0.0.0/0`, TCP 443 from `0.0.0.0/0` | All traffic | Public-facing load balancer |
+| **ECS SG** | All ports from ALB SG (source: ALB SG ID) | All traffic | ECS Fargate tasks |
+| **RDS SG** (existing) | TCP 5432 from ECS SG + TCP 5432 from `10.0.0.0/16` CIDR | All traffic | Database access via peering and SG reference |
+
+The RDS security group has two complementary rules for port 5432:
+- **SG reference rule**: Allows traffic from the ECS security group by ID (standard for same-VPC access patterns)
+- **CIDR rule**: Allows traffic from `10.0.0.0/16` (required because cross-VPC peered traffic cannot use SG references)
+
+#### ECS Networking Mode
+
+ECS tasks use **awsvpc** networking mode:
+- Each task gets its own Elastic Network Interface (ENI) with a private IP in the private subnet
+- Containers within the same task share `localhost` — they communicate over `127.0.0.1`
+- **nearby-admin**: The nginx and backend containers share the same task network namespace, so nginx reaches the backend via `localhost:8000`. This is controlled by `BACKEND_HOST=localhost` in the nginx template
+- **nearby-app**: Single container serving both API and prebuilt frontend on port 8000
+
+#### Cloudflare SSL
+
+SSL is handled in **Flexible mode**:
+- **Cloudflare** terminates HTTPS from the client (browser → Cloudflare is encrypted)
+- **Cloudflare → ALB** connection is plain HTTP on port 80 (within AWS network)
+- This avoids needing an ACM certificate on the ALB while still providing HTTPS to end users
+- `X-Forwarded-Proto` header is set to `https` by Cloudflare so the backend can detect the original scheme
 
 ---
 

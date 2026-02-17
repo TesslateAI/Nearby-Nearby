@@ -229,75 +229,126 @@ This rule ensures data integrity and prevents accidental modifications to live p
 
 ---
 
-## Production Deployment
+## Production Deployment (AWS ECS Fargate)
 
-**� CRITICAL: Production builds are currently running on the server**
+Production runs on **AWS ECS Fargate** with fully automated CI/CD. There are no manual rebuilds or SSH sessions — push to `main` and it deploys automatically.
 
-### When to Rebuild Production
+```
+Internet → Cloudflare (HTTPS) → ALB (HTTP port 80) → ECS Fargate
+                                    │
+                    ┌───────────────┴───────────────┐
+           nearbynearby.com              admin.nearbynearby.com
+           nearby-app service            nearby-admin service
+           1 vCPU / 3GB                  0.5 vCPU / 1GB
+           1 container                   2 containers (nginx + backend)
+                    └───────────────┬───────────────┘
+                              RDS PostgreSQL (existing, via VPC peering)
+                              S3 + CloudFront (existing)
+```
 
-You **MUST rebuild** when:
-- Making code changes to frontend or backend
-- Testing new features (changes won't appear until you rebuild)
-- Updating dependencies or configuration
-- Modifying Docker configurations
+### How to Deploy
+
+**Automatic**: Push code changes to `main` branch. GitHub Actions builds, tests, and deploys.
+- `nearby-app/**` or `shared/**` changes → triggers app workflow
+- `nearby-admin/**` or `shared/**` changes → triggers admin workflow
+
+**Manual**: Go to GitHub → Actions → Select workflow → "Run workflow" → optionally check "Skip integration tests"
+
+### Deployment Timing
+
+| Workflow | Tests | Build + Push | ECS Deploy | Total |
+|----------|-------|-------------|------------|-------|
+| nearby-app | ~12 min | ~8 min | ~2 min | **~20 min** |
+| nearby-app (skip tests) | skipped | ~8 min | ~2 min | **~10 min** |
+| nearby-admin | none | ~2 min | ~1 min | **~3 min** |
+
+### CI/CD Workflows
+
+**`.github/workflows/deploy-app.yml`**:
+1. Runs 225 integration tests against PostGIS service container
+2. Builds multi-stage Docker image (~5.7GB with ML model)
+3. Pushes to ECR with `latest` + `sha` tags
+4. Forces new ECS deployment
+5. Has `skip_tests` checkbox for manual triggers (push always runs tests)
+
+**`.github/workflows/deploy-admin.yml`**:
+1. Builds admin backend image (monorepo root context)
+2. Builds admin frontend image
+3. Pushes both to ECR
+4. Forces new ECS deployment
+
+Both use **GitHub OIDC** for AWS auth — no static credentials. Only secret: `AWS_ROLE_TO_ASSUME`.
+
+### Monitoring Production
+
+```bash
+# View app logs (use MSYS_NO_PATHCONV=1 on Windows/Git Bash)
+MSYS_NO_PATHCONV=1 aws logs tail '/ecs/nearbynearby-prod/app' --follow
+
+# View admin logs
+MSYS_NO_PATHCONV=1 aws logs tail '/ecs/nearbynearby-prod/admin' --follow
+
+# Check service health
+aws ecs describe-services \
+  --cluster nearbynearby-prod \
+  --services nearbynearby-prod-app nearbynearby-prod-admin \
+  --query 'services[].{name:serviceName,running:runningCount,desired:desiredCount}'
+
+# Check health endpoints directly
+curl http://nearbynearby-prod-1716569837.us-east-1.elb.amazonaws.com/api/health
+```
+
+### Rollback
+
+```bash
+# List recent task definition revisions
+aws ecs list-task-definitions --family-prefix nearbynearby-prod-app --sort DESC --max-items 5
+
+# Roll back to previous revision
+aws ecs update-service \
+  --cluster nearbynearby-prod \
+  --service nearbynearby-prod-app \
+  --task-definition nearbynearby-prod-app:PREVIOUS_REVISION
+```
+
+### Infrastructure (Terraform)
+
+All AWS infrastructure is managed in `terraform/`:
+- **Modules used**: networking, ecr, ecs, alb, secrets, monitoring
+- **Not used in prod**: database, storage (existing RDS and S3 kept as-is)
+- **VPC peering**: ECS VPC (10.0.0.0/16) ↔ Default VPC (172.31.0.0/16) for RDS connectivity
+- **State**: S3 backend with DynamoDB locking
+
+```bash
+# Apply infrastructure changes
+cd terraform/environments/prod
+export TF_VAR_database_url="postgresql://..."
+export TF_VAR_forms_database_url="postgresql://..."
+export TF_VAR_secret_key="..."
+terraform plan
+terraform apply
+```
+
+### Monthly Cost (~$156)
+
+| Resource | Cost |
+|----------|------|
+| ECS Fargate (app: 1 vCPU/3GB) | ~$73 |
+| ECS Fargate (admin: 0.5 vCPU/1GB) | ~$18 |
+| NAT Gateway | ~$32 |
+| ALB | ~$16 |
+| RDS (existing) | ~$13 |
+| ECR + CloudWatch | ~$4 |
 
 ---
 
 ## nearby-admin (Admin Panel)
 
 ### Architecture
-- **Frontend**: React + Vite � nginx (production)
+- **Frontend**: React + Vite → nginx (production)
 - **Backend**: FastAPI (Python)
-- **Ports**: Frontend: 5175, Backend: 8001
-- **Deployment**: Docker Compose with separate frontend/backend containers
-
-### Production Rebuild Commands
-
-```bash
-# Full production rebuild (after code changes)
-cd /home/ubuntu/nearby-admin
-docker compose -f docker-compose.prod.yml down
-docker compose -f docker-compose.prod.yml up --build -d
-
-# Restart services only (no code changes)
-docker compose -f docker-compose.prod.yml restart
-
-# View logs
-docker compose -f docker-compose.prod.yml logs -f
-
-# View specific service logs
-docker compose -f docker-compose.prod.yml logs -f frontend
-docker compose -f docker-compose.prod.yml logs -f backend
-
-# Stop production services
-docker compose -f docker-compose.prod.yml down
-```
-
-### Production Architecture
-- **Frontend**: nginx-served static build (Dockerfile.prod)
-  - Multi-stage build: npm build � nginx Alpine
-  - Gzip compression, security headers, asset caching
-  - API proxy to backend
-  - Port: 5175
-- **Backend**: FastAPI without reload flag
-  - Production-optimized with non-root user
-  - Health checks enabled
-  - Port: 8001
-- **Auto-restart**: Both services restart unless manually stopped
-
-### Development Mode
-
-```bash
-# Start development environment
-cd /home/ubuntu/nearby-admin
-docker-compose up --build
-
-# Or run in background
-docker-compose up -d
-
-# View logs
-docker-compose logs -f
-```
+- **ECS**: 2 containers in 1 task sharing localhost (awsvpc mode)
+- **Deployment**: Automatic via GitHub Actions on push to `main`
 
 ---
 
@@ -388,82 +439,26 @@ cd nearby-admin && docker compose down -v
 ## nearby-app (User-Facing Application)
 
 ### Architecture
-- **Combined Build**: Frontend + Backend in single container
-- **Frontend**: React + Vite (compiled to static files)
-- **Backend**: FastAPI (Python) with ML capabilities
-- **Port**: 8002:8000
-- **Deployment**: Single Docker container, multi-stage build
-
-### Production Rebuild Commands
-
-```bash
-# Full rebuild (required for testing changes)
-cd /home/ubuntu/nearby-app
-./rebuild.sh
-
-# Manual Docker commands
-docker stop nearby-app
-docker rm nearby-app
-docker build -t nearby-app:latest .
-docker run -d --name nearby-app \
-  -p 8002:8000 \
-  --network nearby-admin_default \
-  -e DATABASE_URL="postgresql://postgres_admin:Tesslate123!@nearby-admin-db.ce3mwk2ymjh4.us-east-1.rds.amazonaws.com:5432/nearbynearby" \
-  nearby-app:latest
-
-# View logs
-docker logs nearby-app
-
-# Follow logs in real-time
-docker logs -f nearby-app
-
-# Check container status
-docker ps | grep nearby-app
-
-# Stop container
-docker stop nearby-app
-
-# Remove container
-docker rm nearby-app
-```
-
-### Production Build Architecture
-- **Multi-stage build**: Frontend built first, then copied to backend container
-  - **Stage 1**: Node.js builds React app � outputs to `../backend/static`
-  - **Stage 2**: Python container serves both API and static frontend
-- **ML Model**: `michaelfeil/embeddinggemma-300m` loaded on startup (~1GB RAM)
-- **Database Extensions**: `pg_trgm` (fuzzy search), `pgvector` (semantic search)
-- **Single container** serves both frontend and backend on port 8000
-- **Network**: Connects to `nearby-admin_default` (shared with admin panel)
-
-### CI/CD (Automated Deployment)
-
-Changes to `main` branch trigger automated deployment to AWS ECS:
-
-**Workflow**: `.github/workflows/deploy-app.yml`
-- Builds Docker image
-- Pushes to Amazon ECR
-- Forces new ECS deployment
-- Uses GitHub OIDC for AWS authentication
-
-**AWS Resources**:
-- ECR Repository: Stores Docker images
-- ECS Cluster: Runs production containers
-- ECS Service: Manages container deployment
+- **Combined Build**: Frontend + Backend in single container (~5.7GB image)
+- **Frontend**: React + Vite (compiled to static files, served by FastAPI)
+- **Backend**: FastAPI (Python) with ML model (`embeddinggemma-300m`, ~1GB)
+- **ECS**: 1 vCPU / 3GB, single container, auto-scales 1-3 tasks
+- **Deployment**: Automatic via GitHub Actions on push to `main`
+- **Health check**: `/api/health` with 120s start period (ML model loading)
 
 ---
 
 ## Testing
 
-### Automated Tests (98 integration tests)
+### Automated Tests (225 integration tests)
 
-Tests live in the root `tests/` directory and cover admin CRUD, cross-app data flow, and real S3 image uploads. They run against disposable PostGIS + MinIO containers — never production.
+Tests live in the root `tests/` directory and cover admin CRUD, cross-app data flow, search engine, public forms, and real S3 image uploads. They run against disposable PostGIS + MinIO containers — never production.
 
 ```bash
-# Start test containers
+# 1. Start test containers (PostGIS on port 5434, MinIO on port 9100)
 docker compose -f tests/docker-compose.test.yml up -d
 
-# Run all tests
+# 2. Run all tests
 pytest tests/ -v
 
 # Run a specific file
@@ -472,81 +467,70 @@ pytest tests/test_admin_business.py -v
 # Stop on first failure
 pytest tests/ -v -x
 
-# Stop test containers when done
+# 3. Stop test containers when done
 docker compose -f tests/docker-compose.test.yml down
 ```
 
 No manual environment variable setup needed — `tests/conftest.py` handles everything.
 
-**When to run tests:**
-- Before pushing code (catch bugs locally)
-- CI runs them automatically on every push and PR to `main`
+### CI/CD Test Integration
+
+- Tests run automatically in GitHub Actions on every push to `main` (for nearby-app)
+- Tests run on **GitHub-hosted Ubuntu runners** — nothing runs on your AWS or local machine
+- GitHub free tier: 2,000 min/month (private repos), unlimited (public)
+- Test job takes ~12 minutes (PostGIS service container + 225 tests)
+- Tests gate deployment — build-and-deploy only runs if tests pass
+- Manual workflow_dispatch has "Skip integration tests" checkbox for hotfixes
+
+**When to run tests locally:**
+- Before pushing code (catch bugs before CI)
 - After any backend code change (models, schemas, CRUD, endpoints)
+- After modifying shared enums or constants
 
 **Full docs:** `docs/testing/strategy.md`
-
-### Manual Testing (Production Rebuild)
-
-For frontend/visual changes that automated tests don't cover:
-
-**nearby-admin:**
-1. Make your code changes
-2. Run production rebuild: `cd /home/ubuntu/nearby-admin && docker compose -f docker-compose.prod.yml up --build -d`
-3. Test at appropriate port (Frontend: 5175, Backend: 8001)
-4. Check logs: `docker compose -f docker-compose.prod.yml logs -f`
-5. **Remember**: Database is shared - do not modify production data
-
-**nearby-app:**
-1. Make your code changes
-2. Run rebuild script: `cd /home/ubuntu/nearby-app && ./rebuild.sh`
-3. Test at http://localhost:8002
-4. Check logs: `docker logs -f nearby-app`
-5. **Remember**: Database is shared - do not modify production data
 
 ---
 
 ## Quick Reference
 
-### Check Running Containers
+### Production (ECS)
+
 ```bash
-# All containers
-docker ps
+# Check service health
+aws ecs describe-services \
+  --cluster nearbynearby-prod \
+  --services nearbynearby-prod-app nearbynearby-prod-admin \
+  --query 'services[].{name:serviceName,running:runningCount,desired:desiredCount,events:events[0].message}'
 
-# nearby-admin services
-docker compose -f /home/ubuntu/nearby-admin/docker-compose.prod.yml ps
+# View logs (use MSYS_NO_PATHCONV=1 on Windows/Git Bash)
+MSYS_NO_PATHCONV=1 aws logs tail '/ecs/nearbynearby-prod/app' --follow
+MSYS_NO_PATHCONV=1 aws logs tail '/ecs/nearbynearby-prod/admin' --follow
 
-# nearby-app container
-docker ps | grep nearby-app
+# Force redeploy (without code changes)
+aws ecs update-service --cluster nearbynearby-prod --service nearbynearby-prod-app --force-new-deployment
+aws ecs update-service --cluster nearbynearby-prod --service nearbynearby-prod-admin --force-new-deployment
+
+# Check GitHub Actions workflow status
+gh run list --limit 5
+
+# Manually trigger deployment
+gh workflow run "Deploy nearby-app to AWS ECR/ECS" --ref main
+gh workflow run "Deploy nearby-admin to AWS ECR/ECS" --ref main
 ```
 
-### View All Logs
+### Local Development
+
 ```bash
-# nearby-admin
-docker compose -f /home/ubuntu/nearby-admin/docker-compose.prod.yml logs -f
+# nearby-admin (dev mode)
+cd nearby-admin && docker compose up --build
 
-# nearby-app
-docker logs -f nearby-app
-```
+# nearby-app (dev mode with hot reload)
+cd nearby-app && docker compose -f docker-compose.dev.yml up --build
 
-### Stop All Production Services
-```bash
-# nearby-admin
-cd /home/ubuntu/nearby-admin
-docker compose -f docker-compose.prod.yml down
-
-# nearby-app
-docker stop nearby-app
-```
-
-### Restart All Production Services
-```bash
-# nearby-admin
-cd /home/ubuntu/nearby-admin
-docker compose -f docker-compose.prod.yml restart
-
-# nearby-app
-cd /home/ubuntu/nearby-app
-./rebuild.sh
+# Run tests
+docker compose -f tests/docker-compose.test.yml up -d
+pytest tests/ -v
+docker compose -f tests/docker-compose.test.yml down
 ```
 
 ---
@@ -627,84 +611,87 @@ For detailed documentation about each application:
 
 ### If Production is Down
 
-1. **Check container status**:
+1. **Check ECS service status**:
    ```bash
-   docker ps -a
+   aws ecs describe-services \
+     --cluster nearbynearby-prod \
+     --services nearbynearby-prod-app nearbynearby-prod-admin \
+     --query 'services[].{name:serviceName,running:runningCount,desired:desiredCount,events:events[0:3]}'
    ```
 
-2. **Check logs for errors**:
+2. **Check CloudWatch logs for errors**:
    ```bash
-   # nearby-admin
-   docker compose -f /home/ubuntu/nearby-admin/docker-compose.prod.yml logs
-
-   # nearby-app
-   docker logs nearby-app
+   MSYS_NO_PATHCONV=1 aws logs tail '/ecs/nearbynearby-prod/app' --since 30m
+   MSYS_NO_PATHCONV=1 aws logs tail '/ecs/nearbynearby-prod/admin' --since 30m
    ```
 
-3. **Restart services**:
+3. **Force redeploy** (pulls latest image and restarts):
    ```bash
-   # nearby-admin
-   cd /home/ubuntu/nearby-admin
-   docker compose -f docker-compose.prod.yml restart
-
-   # nearby-app
-   cd /home/ubuntu/nearby-app
-   ./rebuild.sh
+   aws ecs update-service --cluster nearbynearby-prod --service nearbynearby-prod-app --force-new-deployment
+   aws ecs update-service --cluster nearbynearby-prod --service nearbynearby-prod-admin --force-new-deployment
    ```
 
-4. **If restart doesn't work, full rebuild**:
+4. **Rollback to previous version**:
    ```bash
-   # nearby-admin
-   cd /home/ubuntu/nearby-admin
-   docker compose -f docker-compose.prod.yml down
-   docker compose -f docker-compose.prod.yml up --build -d
+   # List recent task definition revisions
+   aws ecs list-task-definitions --family-prefix nearbynearby-prod-app --sort DESC --max-items 5
 
-   # nearby-app
-   cd /home/ubuntu/nearby-app
-   ./rebuild.sh
+   # Deploy a specific previous revision
+   aws ecs update-service --cluster nearbynearby-prod --service nearbynearby-prod-app \
+     --task-definition nearbynearby-prod-app:PREVIOUS_REVISION_NUMBER
+   ```
+
+5. **Check health endpoints**:
+   ```bash
+   curl http://nearbynearby-prod-1716569837.us-east-1.elb.amazonaws.com/api/health
    ```
 
 ### Database Connection Issues
 
-1. **Verify database is accessible**:
+1. **Check if ECS tasks can reach RDS** (look for "Connection timed out" in logs):
    ```bash
-   # From either app's backend container
-   docker exec -it <container_name> python -c "from app.database import engine; from sqlalchemy import text; connection = engine.connect(); print(connection.execute(text('SELECT 1')).scalar())"
+   MSYS_NO_PATHCONV=1 aws logs tail '/ecs/nearbynearby-prod/app' --filter-pattern "Connection" --since 10m
    ```
 
-2. **Check environment variables**:
+2. **Verify VPC peering is active**:
    ```bash
-   # nearby-admin
-   docker compose -f /home/ubuntu/nearby-admin/docker-compose.prod.yml exec backend env | grep DATABASE
+   aws ec2 describe-vpc-peering-connections \
+     --filters "Name=status-code,Values=active" \
+     --query 'VpcPeeringConnections[].{Id:VpcPeeringConnectionId,Status:Status.Code}'
+   ```
 
-   # nearby-app
-   docker exec nearby-app env | grep DATABASE
+3. **Check SSM parameter values** (secrets):
+   ```bash
+   MSYS_NO_PATHCONV=1 aws ssm get-parameter --name '/nearbynearby/prod/database-url' --with-decryption --query 'Parameter.Value' --output text
    ```
 
 ---
 
-For release, push to a release-XXXX (latest) branch.
-
-For EDITS to the database structure, make migrations not manual edits. 
+For EDITS to the database structure, make migrations not manual edits.
 
 ## User Management
 
-The nearby-admin backend includes a user management script for creating and managing admin users.
-
-### Commands
+The nearby-admin backend includes a user management script. In production (ECS), use `aws ecs execute-command`:
 
 ```bash
+# Get the running task ID
+TASK_ID=$(aws ecs list-tasks --cluster nearbynearby-prod --service-name nearbynearby-prod-admin --query 'taskArns[0]' --output text | awk -F/ '{print $NF}')
+
 # Create a new user
-docker exec nearby-admin-backend-1 python scripts/manage_users.py create <email> <password> --role admin
+aws ecs execute-command --cluster nearbynearby-prod --task $TASK_ID \
+  --container backend --interactive \
+  --command "python scripts/manage_users.py create admin@nearby.com password123 --role admin"
 
 # List all users
+aws ecs execute-command --cluster nearbynearby-prod --task $TASK_ID \
+  --container backend --interactive \
+  --command "python scripts/manage_users.py list"
+```
+
+For local development:
+```bash
+docker exec nearby-admin-backend-1 python scripts/manage_users.py create <email> <password> --role admin
 docker exec nearby-admin-backend-1 python scripts/manage_users.py list
-
-# Delete a user
-docker exec nearby-admin-backend-1 python scripts/manage_users.py delete <email>
-
-# Create default test user (test@nearbynearby.com / 1234)
-docker exec nearby-admin-backend-1 python scripts/manage_users.py test-user
 ```
 
 ---
@@ -869,6 +856,17 @@ docker network inspect nearby-admin_default
 | App search functions | `nearby-app/backend/app/crud/crud_poi.py` |
 | App POI model | `nearby-app/backend/app/models/poi.py` |
 | Admin docker compose (dev) | `nearby-admin/docker-compose.yml` |
-| Admin docker compose (prod) | `nearby-admin/docker-compose.prod.yml` |
+| Admin docker compose (local prod) | `nearby-admin/docker-compose.prod.yml` |
 | App docker compose (dev) | `nearby-app/docker-compose.dev.yml` |
+| App CI/CD workflow | `.github/workflows/deploy-app.yml` |
+| Admin CI/CD workflow | `.github/workflows/deploy-admin.yml` |
+| App Dockerfile (ECS + local prod) | `nearby-app/Dockerfile` |
+| Admin backend Dockerfile (ECS) | `nearby-admin/backend/Dockerfile.ecs` |
+| Admin frontend Dockerfile (ECS) | `nearby-admin/frontend/Dockerfile.prod` |
+| Nginx template (ECS) | `nearby-admin/frontend/nginx.conf.template` |
+| Terraform root | `terraform/environments/prod/main.tf` |
+| Terraform modules | `terraform/modules/{networking,ecr,ecs,alb,secrets,monitoring}/` |
+| Integration tests | `tests/` (225 tests) |
+| Test containers | `tests/docker-compose.test.yml` |
+| Shared enums | `shared/models/enums.py` |
 
