@@ -7,6 +7,12 @@ on:
       - 'nearby-app/**'
       - 'shared/**'
   workflow_dispatch:
+    inputs:
+      skip_tests:
+        description: 'Skip integration tests'
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   id-token: write   # for GitHub OIDC to assume AWS role
@@ -24,6 +30,7 @@ env:
 
 jobs:
   test:
+    if: ${{ github.event_name == 'push' || !inputs.skip_tests }}
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -61,6 +68,7 @@ jobs:
 
   build-and-deploy:
     needs: test
+    if: ${{ always() && (needs.test.result == 'success' || needs.test.result == 'skipped') }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
