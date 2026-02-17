@@ -95,7 +95,7 @@ module "ecs" {
   project        = var.project
   environment    = var.environment
   aws_region     = var.aws_region
-  aws_account_id = local.aws_account_id
+  aws_account_id = var.aws_account_id
 
   # Networking
   private_subnet_ids    = module.networking.private_subnet_ids
@@ -124,6 +124,8 @@ module "ecs" {
   app_log_group_name   = module.monitoring.app_log_group_name
   admin_log_group_name = module.monitoring.admin_log_group_name
 
-  # GitHub Actions OIDC
-  ecr_repository_arns = values(module.ecr.repository_arns)
+  # GitHub Actions OIDC (provider already exists in this account)
+  create_github_oidc       = false
+  github_oidc_provider_arn = "arn:aws:iam::487615743990:oidc-provider/token.actions.githubusercontent.com"
+  ecr_repository_arns      = values(module.ecr.repository_arns)
 }
