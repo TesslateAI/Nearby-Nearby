@@ -12,7 +12,7 @@ Read, search, filter, and update the NearbyNearby project tracker spreadsheet fr
 
 | Sheet | Alias(es) | GID | Contents |
 |---|---|---|---|
-| `PLAN` | `plan` | `1764392651` | 112 tasks — priority, status, assignments, dependencies, dates |
+| `PLAN` | `plan` | `1764392651` | 186 tasks — priority, status, assignments, dependencies, dates, PR# |
 | `Feature Implementation List` | `features`, `impl`, `tests` | `0` | 500+ test cases by feature area |
 | `Edge Cases Causing Failures` | `edge`, `bugs`, `edgecases` | `2034527177` | Bug log with reproduction steps |
 
@@ -257,19 +257,20 @@ client.add_edge_case(
 
 | Col | Letter | Type | Description |
 |---|---|---|---|
-| Task # | A | int | Sequential ID (1-112) |
+| Task # | A | int | Sequential ID (1-186) |
 | Ticket | B | str | Jira ticket (e.g. NN-57, NN-46) |
 | Category | C | str | CRITICAL BLOCKER, Admin Backend, Business Free, Trails, Parks, Events Backend, etc. |
 | Task Title | D | str | Short task name |
 | Description | E | str | Full description |
 | Assigned To | F | str | Manav, Robert, or Rhonda |
 | Priority | G | str | P0 - Critical, P0, P1, P2, P3 |
-| Status | H | str | Not Started, In Progress, Complete, Blocked |
+| Status | H | str | Not Started, In Progress, Complete, Validation, Needs Rework, Blocked |
 | Start Date | I | date | Planned start (M/D/YYYY) |
 | Due Date | J | date | Planned due (M/D/YYYY) |
 | Week | K | str | Sprint grouping (e.g. "Week 1 (Feb 5-7)") |
 | Dependencies | L | str | Space-separated task numbers that must complete first |
 | Notes | M | str | Additional context |
+| PR# | N | int | Pull request number where work was completed |
 
 ## Edge Cases Sheet Column Reference
 

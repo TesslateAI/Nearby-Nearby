@@ -52,7 +52,7 @@ The project task list, test coverage matrix, and bug log live in a shared Google
 
 | Sheet | Alias | Contents |
 |---|---|---|
-| `PLAN` | `plan` | 112 tasks — priority, status, assignments, dependencies |
+| `PLAN` | `plan` | 186 tasks — priority, status, assignments, dependencies, PR# |
 | `Feature Implementation List` | `features` / `impl` | 500+ test cases by feature area |
 | `Edge Cases Causing Failures` | `bugs` / `edge` | Bug log with reproduction steps |
 
