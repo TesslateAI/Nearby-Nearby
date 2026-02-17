@@ -94,3 +94,11 @@ npm-debug.log*
 
 # mypy
 .mypy_cache/
+
+# Terraform
+*.tfstate
+*.tfstate.backup
+.terraform/
+.terraform.lock.hcl
+*.tfvars
+!terraform/environments/prod/terraform.tfvars

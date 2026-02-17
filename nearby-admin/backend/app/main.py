@@ -51,3 +51,18 @@ app.include_router(primary_types.router, prefix="/api/primary-types", tags=["Pri
 @app.get("/")
 def read_root():
     return {"message": "Nearby Nearby API"}
+
+
+@app.get("/api/health")
+def health_check():
+    from sqlalchemy import text
+    from fastapi.responses import JSONResponse
+    health = {"status": "healthy", "service": "nearby-admin"}
+    try:
+        with engine.connect() as connection:
+            connection.execute(text("SELECT 1"))
+            health["database"] = "connected"
+    except Exception as e:
+        health["status"] = "degraded"
+        health["database"] = str(e)
+    return JSONResponse(content=health, status_code=200 if health["status"] == "healthy" else 503)

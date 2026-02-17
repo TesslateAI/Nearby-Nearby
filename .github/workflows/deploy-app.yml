@@ -5,6 +5,7 @@ on:
     branches: [ "main" ]
     paths:
       - 'nearby-app/**'
+      - 'shared/**'
   workflow_dispatch:
 
 permissions:
@@ -15,16 +16,51 @@ concurrency:
   group: deploy-app-main
   cancel-in-progress: false
 
-jobs:
-  build-and-deploy:
-    runs-on: ubuntu-latest
-    env:
-      AWS_REGION: ${{ secrets.AWS_REGION }}
-      AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
-      ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
-      ECS_CLUSTER: ${{ secrets.ECS_CLUSTER }}
-      ECS_SERVICE: ${{ secrets.ECS_SERVICE }}
+env:
+  AWS_REGION: us-east-1
+  ECR_REPOSITORY: nearbynearby/nearby-app
+  ECS_CLUSTER: nearbynearby-prod
+  ECS_SERVICE: nearbynearby-prod-app
 
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgis/postgis:15-3.4
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: test_nearbynearby
+        ports:
+          - 5434:5432
+        options: >-
+          --health-cmd "pg_isready -U test -d test_nearbynearby"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install -r nearby-app/backend/requirements.txt
+          pip install pytest httpx
+
+      - name: Run tests
+        env:
+          DATABASE_URL: postgresql://test:test@localhost:5434/test_nearbynearby
+          PYTHONPATH: .
+        run: pytest tests/ -v --tb=short -x
+
+  build-and-deploy:
+    needs: test
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -45,7 +81,8 @@ jobs:
       - name: Build and push image to ECR
         uses: docker/build-push-action@v6
         with:
-          context: ./nearby-app
+          context: .
+          file: nearby-app/Dockerfile
           push: true
           tags: |
             ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest

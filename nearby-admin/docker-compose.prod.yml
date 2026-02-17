@@ -36,6 +36,8 @@ services:
       - "5175:5173"
     env_file:
       - .env
+    environment:
+      - BACKEND_HOST=backend
     depends_on:
       - backend
     restart: unless-stopped

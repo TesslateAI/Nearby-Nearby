@@ -188,19 +188,30 @@ Local Machine
 └── MinIO (local S3)
 ```
 
-### Production
+### Production (AWS ECS Fargate + Terraform IaC)
 
 ```
-AWS Infrastructure
-├── ECS Cluster
-│   ├── nearby-admin
-│   │   ├── frontend (nginx)
-│   │   └── backend (uvicorn)
-│   └── nearby-app (combined: frontend baked into backend container)
-├── RDS (PostgreSQL + PostGIS)
+Cloudflare (SSL, DNS, WAF)
+    │
+    ▼
+ALB (host-based routing, port 80)
+├── nearbynearby.com → ECS Fargate: nearby-app
+│   └── 1 container: FastAPI + React + ML model (1 vCPU / 3GB)
+├── admin.nearbynearby.com → ECS Fargate: nearby-admin
+│   └── 2 containers in 1 task (share localhost):
+│       ├── nginx (frontend, port 5173)
+│       └── backend (FastAPI, port 8000)
+│
+├── RDS PostgreSQL 15 + PostGIS (private subnets)
 │   ├── Main role: postgres_admin (full access)
 │   └── Forms role: nearby_forms (INSERT/SELECT on form tables only)
-└── S3 (image storage + feedback file uploads)
+├── S3 + CloudFront (image storage + feedback file uploads)
+├── SSM Parameter Store (secrets: DATABASE_URL, SECRET_KEY)
+├── ECR (3 repos: app, admin-backend, admin-frontend)
+└── CloudWatch (logs, alarms)
+
+CI/CD: GitHub Actions → OIDC → ECR push → ECS deploy
+IaC:   terraform/modules/ (networking, database, storage, ecr, ecs, alb, secrets, monitoring)
 ```
 
 ---

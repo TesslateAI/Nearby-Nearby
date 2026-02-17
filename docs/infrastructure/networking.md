@@ -309,12 +309,20 @@ docker network inspect nearby-admin_default --format '{{range .Containers}}{{.Na
 - Internal communication stays within Docker network
 - Database not exposed externally in production
 
-### Production Recommendations
+### Production (AWS ECS)
 
-1. **Use private subnets** for database
-2. **Security groups** to restrict access
-3. **TLS/SSL** for external connections
-4. **VPC** isolation for AWS deployments
+In production, networking is managed by Terraform (`terraform/modules/networking/`):
+
+- **VPC**: `10.0.0.0/16` with public, private, and database subnets across 2 AZs
+- **ALB**: In public subnets, routes traffic to ECS tasks in private subnets
+- **ECS tasks**: In private subnets, reach internet via NAT Gateway
+- **RDS**: In database subnets, only accessible from ECS security group on port 5432
+- **Security groups**:
+  - ALB SG: inbound 80 from `0.0.0.0/0`
+  - ECS SG: all traffic from ALB SG only
+  - RDS SG: inbound 5432 from ECS SG only
+
+**nearby-admin ECS networking**: The nginx and backend containers share the same task network namespace (awsvpc mode), so nginx reaches the backend via `localhost:8000`. This is controlled by `BACKEND_HOST=localhost` in the nginx template.
 
 ---
 

@@ -2,365 +2,426 @@
 
 ## Overview
 
-The platform uses different deployment strategies for each application:
-- **nearby-admin**: Docker Compose on EC2
-- **nearby-app**: GitHub Actions CI/CD to AWS ECS
+The platform runs on AWS ECS Fargate with all infrastructure managed by Terraform. Both applications deploy automatically via GitHub Actions CI/CD on pushes to `main`.
+
+```
+                    Internet
+                       |
+                  [Cloudflare]  (SSL termination, DNS, WAF)
+                       |
+              ┌────────┴────────┐
+     nearbynearby.com    admin.nearbynearby.com
+              └────────┬────────┘
+                  [ALB port 80]  (host-based routing)
+              ┌────────┴────────┐
+     ECS Fargate            ECS Fargate
+     nearby-app             nearby-admin
+     (1 container:          (2 containers in 1 task:
+      FastAPI+React+ML)      nginx + FastAPI backend)
+     1 vCPU / 3GB           0.5 vCPU / 1GB
+              └────────┬────────┘
+              [RDS PostgreSQL 15 + PostGIS]
+              [S3 + CloudFront for images]
+```
+
+**Estimated monthly cost: ~$165-175**
 
 ---
 
-## nearby-admin Deployment
+## Terraform Infrastructure
 
-### Production Docker Compose
+All AWS resources are defined in `terraform/` at the monorepo root. Terraform manages the complete infrastructure lifecycle.
 
-```bash
-# On production server
-cd /home/ubuntu/nearby-admin
+### Directory Structure
 
-# Full rebuild
-docker compose -f docker-compose.prod.yml down
-docker compose -f docker-compose.prod.yml up --build -d
-
-# Restart only (no code changes)
-docker compose -f docker-compose.prod.yml restart
-
-# View logs
-docker compose -f docker-compose.prod.yml logs -f
+```
+terraform/
+├── bootstrap/main.tf              # S3 state bucket + DynamoDB lock (apply first)
+├── environments/prod/
+│   ├── main.tf                    # Composes all modules
+│   ├── variables.tf               # Variable definitions
+│   ├── terraform.tfvars           # Non-sensitive defaults
+│   ├── backend.tf                 # S3 remote state config
+│   └── outputs.tf                 # ALB DNS, RDS endpoint, etc.
+└── modules/
+    ├── networking/                 # VPC, subnets, NAT, security groups
+    ├── database/                   # RDS PostgreSQL 15 + PostGIS
+    ├── storage/                    # S3 bucket, CloudFront, IAM policies
+    ├── ecr/                        # 3 ECR repositories
+    ├── ecs/                        # Cluster, task defs, services, auto-scaling, IAM
+    ├── alb/                        # ALB, target groups, listener rules
+    ├── secrets/                    # SSM Parameter Store entries
+    └── monitoring/                 # CloudWatch log groups, alarms
 ```
 
-### Production Environment
+### Modules
+
+#### Networking (`terraform/modules/networking/`)
+
+- **VPC**: `10.0.0.0/16` in us-east-1
+- **Public subnets**: `10.0.1.0/24` (1a), `10.0.2.0/24` (1b) — ALB
+- **Private subnets**: `10.0.10.0/24` (1a), `10.0.11.0/24` (1b) — ECS tasks
+- **Database subnets**: `10.0.20.0/24` (1a), `10.0.21.0/24` (1b) — RDS
+- **Single NAT Gateway** in 1a (cost savings vs per-AZ)
+- **Security groups**:
+  - ALB SG: inbound 80 from `0.0.0.0/0`
+  - ECS SG: all traffic from ALB SG only
+  - RDS SG: inbound 5432 from ECS SG only
+
+#### Database (`terraform/modules/database/`)
+
+- `db.t3.micro` (1 vCPU, 1GB RAM)
+- PostgreSQL 15, gp3 storage (20GB, auto-scale to 100GB)
+- Single AZ, 7-day backup retention
+- Deletion protection enabled
+- Private subnets only (no public access)
+- Extensions enabled via app startup SQL: `pg_trgm`, `pgvector`, `postgis`
+
+#### Storage (`terraform/modules/storage/`)
+
+- S3 bucket with all public access blocked
+- CloudFront distribution with Origin Access Control (OAC)
+- S3 bucket policy restricts access to CloudFront only
+- IAM policy for ECS task role: `s3:PutObject`, `s3:GetObject`, `s3:DeleteObject`
+
+#### ECR (`terraform/modules/ecr/`)
+
+Three repositories with lifecycle policy (keep last 5 images):
+- `nearbynearby/nearby-app`
+- `nearbynearby/nearby-admin-backend`
+- `nearbynearby/nearby-admin-frontend`
+
+#### ECS (`terraform/modules/ecs/`)
+
+**nearby-app service:**
+- 1 vCPU, 3072 MB memory (ML model needs ~1GB)
+- Single container: FastAPI serving API + pre-built React frontend
+- Health check: `/api/health` (120s start period for ML model loading)
+- Auto-scaling: 1-3 tasks (CPU 70%, memory 80%)
+- Secrets injected from SSM Parameter Store
+
+**nearby-admin service:**
+- 0.5 vCPU, 1024 MB memory
+- 2 containers in 1 task definition (share localhost via `awsvpc`):
+  - `nginx`: frontend image, port 5173, depends on backend healthy
+  - `backend`: backend image, port 8000, runs `alembic upgrade heads && uvicorn`
+- Health check: `/api/health` (60s start period)
+- Auto-scaling: 1-2 tasks
+
+**IAM roles:**
+- Task execution role: pull ECR, read SSM, write CloudWatch logs
+- Task role: S3 read/write for image management
+- GitHub Actions role: push ECR, update ECS (OIDC federation)
+
+#### ALB (`terraform/modules/alb/`)
+
+- HTTP listener on port 80 (Cloudflare terminates SSL)
+- Host-based routing:
+  - Default → nearby-app target group (port 8000)
+  - `admin.nearbynearby.com` → nearby-admin target group (port 5173)
+- Health checks: `/api/health` for both targets
+
+#### Secrets (`terraform/modules/secrets/`)
+
+SSM Parameter Store (SecureString):
+- `/nearbynearby/prod/database-url`
+- `/nearbynearby/prod/forms-database-url`
+- `/nearbynearby/prod/secret-key`
+
+Set values via AWS CLI or console — Terraform creates the parameters with placeholder values and ignores subsequent value changes.
+
+#### Monitoring (`terraform/modules/monitoring/`)
+
+- CloudWatch log groups: `/ecs/nearby-app`, `/ecs/nearby-admin` (14-day retention)
+- Optional ALB 5xx error alarm
+
+---
+
+## Initial Setup
+
+### Prerequisites
+
+- AWS account with admin access
+- Terraform >= 1.5 installed
+- AWS CLI configured with credentials
+- GitHub repository: `TesslateAI/NearbyNearby`
+
+### Step 1: Bootstrap State Backend
 
 ```bash
-# /home/ubuntu/nearby-admin/.env
-
-# Security
-SECRET_KEY=<32-character-secret>
-ENVIRONMENT=production
-ACCESS_TOKEN_EXPIRE_MINUTES=1440
-
-# Database (RDS)
-DATABASE_URL=postgresql://user:pass@rds-endpoint:5432/nearbynearby
-
-# CORS
-ALLOWED_ORIGINS=https://admin.nearbynearby.com
-ALLOWED_HOSTS=admin.nearbynearby.com
-
-# Storage
-STORAGE_PROVIDER=s3
-AWS_S3_BUCKET=nearby-images
-AWS_S3_ENDPOINT_URL=http://minio:9000
+cd terraform/bootstrap
+terraform init
+terraform apply
 ```
 
-### Nginx Reverse Proxy (Optional)
+This creates the S3 bucket and DynamoDB table for Terraform remote state.
 
-```nginx
-# /etc/nginx/sites-available/nearby-admin
+### Step 2: Set Sensitive Variables
 
-server {
-    listen 80;
-    server_name admin.nearbynearby.com;
+```bash
+# Set as environment variables (never commit these)
+export TF_VAR_db_username="postgres_admin"
+export TF_VAR_db_password="<strong-password>"
+export TF_VAR_database_url="postgresql://user:pass@<rds-endpoint>:5432/nearbynearby"
+export TF_VAR_forms_database_url="postgresql://nearby_forms:pass@<rds-endpoint>:5432/nearbynearby"
+export TF_VAR_secret_key="<32-char-secret>"
+```
 
-    location / {
-        proxy_pass http://localhost:5175;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_cache_bypass $http_upgrade;
-    }
-}
+### Step 3: Apply Infrastructure
+
+```bash
+cd terraform/environments/prod
+terraform init
+terraform plan    # Review changes
+terraform apply   # Create resources
+```
+
+### Step 4: Update SSM Parameter Values
+
+After RDS is created, update SSM parameters with real connection strings:
+
+```bash
+aws ssm put-parameter \
+  --name "/nearbynearby/prod/database-url" \
+  --value "postgresql://user:pass@<rds-endpoint>:5432/nearbynearby" \
+  --type SecureString \
+  --overwrite
+
+aws ssm put-parameter \
+  --name "/nearbynearby/prod/forms-database-url" \
+  --value "postgresql://nearby_forms:pass@<rds-endpoint>:5432/nearbynearby" \
+  --type SecureString \
+  --overwrite
+
+aws ssm put-parameter \
+  --name "/nearbynearby/prod/secret-key" \
+  --value "<32-char-secret>" \
+  --type SecureString \
+  --overwrite
+```
+
+### Step 5: Configure GitHub Secret
+
+Only one GitHub secret is needed:
+
+| Secret | Value |
+|--------|-------|
+| `AWS_ROLE_TO_ASSUME` | ARN of the GitHub Actions IAM role (from Terraform output: `github_actions_role_arn`) |
+
+### Step 6: Configure Cloudflare DNS
+
+1. Create CNAME records pointing to ALB DNS name (from Terraform output: `alb_dns_name`):
+   - `nearbynearby.com` → ALB DNS (proxied)
+   - `admin.nearbynearby.com` → ALB DNS (proxied)
+2. Set SSL mode to "Full" (Cloudflare encrypts to ALB on port 80)
+
+### Step 7: Initial Database Setup
+
+```bash
+# Run Alembic migrations (happens automatically on admin container start)
+# Create admin users
+aws ecs execute-command \
+  --cluster nearbynearby-prod \
+  --task <task-id> \
+  --container backend \
+  --interactive \
+  --command "python scripts/manage_users.py create admin@nearby.com password123 --role admin"
 ```
 
 ---
 
-## nearby-app Deployment
+## CI/CD Pipelines
 
-### CI/CD Pipeline
+### nearby-app (`deploy-app.yml`)
 
-The `.github/workflows/deploy-app.yml` (at the monorepo root) automates deployment to AWS ECS. It triggers only when files under `nearby-app/` are changed.
+**Trigger**: Push to `main` with changes in `nearby-app/**` or `shared/**`
 
-```yaml
-# .github/workflows/deploy-app.yml
-
-name: Deploy nearby-app to AWS ECR/ECS
-
-on:
-  push:
-    branches: [main]
-    paths:
-      - 'nearby-app/**'
-  workflow_dispatch:
-
-permissions:
-  id-token: write
-  contents: read
-
-concurrency:
-  group: deploy-app-main
-  cancel-in-progress: false
-
-jobs:
-  build-and-deploy:
-    runs-on: ubuntu-latest
-    env:
-      AWS_REGION: ${{ secrets.AWS_REGION }}
-      AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
-      ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
-      ECS_CLUSTER: ${{ secrets.ECS_CLUSTER }}
-      ECS_SERVICE: ${{ secrets.ECS_SERVICE }}
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Configure AWS credentials (OIDC)
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-          aws-region: ${{ env.AWS_REGION }}
-
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build and push image to ECR
-        uses: docker/build-push-action@v6
-        with:
-          context: ./nearby-app
-          push: true
-          tags: |
-            ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest
-            ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
-          cache-from: type=registry,ref=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:buildcache
-          cache-to: type=registry,ref=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:buildcache,mode=max
-
-      - name: Force new ECS deployment
-        run: |
-          aws ecs update-service \
-            --cluster "${{ env.ECS_CLUSTER }}" \
-            --service "${{ env.ECS_SERVICE }}" \
-            --force-new-deployment
+```
+Push to main → Run tests (PostGIS service) → Build Docker image → Push to ECR → Force ECS deployment
 ```
 
-### Required GitHub Secrets
+- Build context: monorepo root (`.`)
+- Dockerfile: `nearby-app/Dockerfile`
+- Test job runs `pytest tests/ -v --tb=short -x` against PostGIS service container
+- Uses GitHub OIDC for AWS authentication (no static credentials)
+
+### nearby-admin (`deploy-admin.yml`)
+
+**Trigger**: Push to `main` with changes in `nearby-admin/**` or `shared/**`
+
+```
+Push to main → Build backend image → Build frontend image → Push both to ECR → Force ECS deployment
+```
+
+- Backend build context: monorepo root (`.`), file: `nearby-admin/backend/Dockerfile.ecs`
+- Frontend build context: `nearby-admin/frontend`, file: `nearby-admin/frontend/Dockerfile.prod`
+- Uses Docker Buildx with registry-based layer caching
+
+### Required GitHub Secret
 
 | Secret | Description |
 |--------|-------------|
-| `AWS_REGION` | AWS region (e.g., us-east-1) |
-| `AWS_ACCOUNT_ID` | 12-digit AWS account ID |
-| `AWS_ROLE_TO_ASSUME` | IAM role ARN for OIDC auth |
-| `ECR_REPOSITORY` | ECR repository name |
-| `ECS_CLUSTER` | ECS cluster name |
-| `ECS_SERVICE` | ECS service name |
+| `AWS_ROLE_TO_ASSUME` | IAM role ARN for OIDC auth (Terraform creates this) |
+
+All other values (region, cluster name, service name, ECR repos) are hardcoded in the workflow files — they're not secrets.
 
 ### AWS OIDC Configuration
 
-1. Create IAM Identity Provider for GitHub
-2. Create IAM Role with trust policy:
-
-```json
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Principal": {
-        "Federated": "arn:aws:iam::ACCOUNT_ID:oidc-provider/token.actions.githubusercontent.com"
-      },
-      "Action": "sts:AssumeRoleWithWebIdentity",
-      "Condition": {
-        "StringEquals": {
-          "token.actions.githubusercontent.com:aud": "sts.amazonaws.com"
-        },
-        "StringLike": {
-          "token.actions.githubusercontent.com:sub": "repo:ORG/REPO:*"
-        }
-      }
-    }
-  ]
-}
-```
-
-3. Attach policies for ECR and ECS access
+Terraform automatically creates:
+1. IAM OIDC Identity Provider for `token.actions.githubusercontent.com`
+2. IAM Role with trust policy scoped to `repo:TesslateAI/NearbyNearby:*`
+3. Permissions: ECR push, ECS update-service
 
 ---
 
-## Manual Deployment (nearby-app)
+## Health Checks
 
-### Using rebuild.sh
+Both applications expose `/api/health` endpoints used by ECS and ALB for health monitoring.
 
-```bash
-# nearby-app/rebuild.sh
-
-#!/bin/bash
-
-# Stop existing container
-docker stop nearby-app 2>/dev/null
-docker rm nearby-app 2>/dev/null
-
-# Build new image
-docker build -t nearby-app:latest .
-
-# Create network if not exists
-docker network create nearby-admin_default 2>/dev/null
-
-# Run container
-docker run -d --name nearby-app \
-  -p 8002:8000 \
-  --network nearby-admin_default \
-  -e DATABASE_URL="postgresql://user:pass@rds-endpoint:5432/nearbynearby" \
-  -e SECRET_KEY="your-secret-key" \
-  -e ENVIRONMENT="production" \
-  -e ALLOWED_ORIGINS="https://nearbynearby.com" \
-  nearby-app:latest
-
-# Show status
-docker ps | grep nearby-app
-echo ""
-echo "Logs:"
-docker logs nearby-app --tail 20
-```
-
-### Usage
-
-```bash
-cd /home/ubuntu/nearby-app
-./rebuild.sh
-```
-
----
-
-## AWS Infrastructure
-
-### ECS Task Definition
+### nearby-app
 
 ```json
 {
-  "family": "nearby-app",
-  "networkMode": "awsvpc",
-  "requiresCompatibilities": ["FARGATE"],
-  "cpu": "512",
-  "memory": "1024",
-  "containerDefinitions": [
-    {
-      "name": "nearby-app",
-      "image": "ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/nearby-app:latest",
-      "portMappings": [
-        {
-          "containerPort": 8000,
-          "protocol": "tcp"
-        }
-      ],
-      "environment": [
-        {"name": "ENVIRONMENT", "value": "production"}
-      ],
-      "secrets": [
-        {"name": "DATABASE_URL", "valueFrom": "arn:aws:secretsmanager:..."},
-        {"name": "SECRET_KEY", "valueFrom": "arn:aws:secretsmanager:..."}
-      ],
-      "logConfiguration": {
-        "logDriver": "awslogs",
-        "options": {
-          "awslogs-group": "/ecs/nearby-app",
-          "awslogs-region": "us-east-1",
-          "awslogs-stream-prefix": "ecs"
-        }
-      }
-    }
-  ]
+  "status": "healthy",
+  "service": "nearby-app",
+  "database": "connected",
+  "ml_model": "loaded"
 }
 ```
 
-### RDS Configuration
+Returns 503 with `"status": "degraded"` if database connection fails.
 
-- Engine: PostgreSQL 15
-- Instance: db.t3.micro (development) / db.t3.small (production)
-- Storage: 20GB gp2
-- Extensions: PostGIS enabled
-- Security Group: Allow 5432 from ECS security group
+### nearby-admin
+
+```json
+{
+  "status": "healthy",
+  "service": "nearby-admin",
+  "database": "connected"
+}
+```
+
+Returns 503 with `"status": "degraded"` if database connection fails.
 
 ---
 
 ## Rollback Procedures
 
-### nearby-admin
-
-```bash
-# Rollback to previous image
-docker compose -f docker-compose.prod.yml down
-git checkout HEAD~1
-docker compose -f docker-compose.prod.yml up --build -d
-```
-
-### nearby-app (ECS)
+### ECS Rollback
 
 ```bash
 # List recent task definitions
-aws ecs list-task-definitions --family-prefix nearby-app --sort DESC
+aws ecs list-task-definitions --family-prefix nearbynearby-prod-app --sort DESC
 
 # Update service to previous revision
 aws ecs update-service \
-  --cluster nearby-cluster \
-  --service nearby-app \
-  --task-definition nearby-app:PREVIOUS_REVISION
+  --cluster nearbynearby-prod \
+  --service nearbynearby-prod-app \
+  --task-definition nearbynearby-prod-app:PREVIOUS_REVISION
+
+# Same for admin
+aws ecs update-service \
+  --cluster nearbynearby-prod \
+  --service nearbynearby-prod-admin \
+  --task-definition nearbynearby-prod-admin:PREVIOUS_REVISION
+```
+
+### Terraform Rollback
+
+```bash
+# Revert Terraform changes
+cd terraform/environments/prod
+git checkout HEAD~1 -- .
+terraform plan    # Review what will change
+terraform apply   # Apply previous state
 ```
 
 ---
 
 ## Monitoring
 
-### Docker Logs
+### CloudWatch Logs
 
 ```bash
-# nearby-admin
-docker compose -f docker-compose.prod.yml logs -f
+# View nearby-app logs
+aws logs tail /ecs/nearby-app --follow
 
-# nearby-app
-docker logs -f nearby-app
-```
+# View nearby-admin logs
+aws logs tail /ecs/nearby-admin --follow
 
-### AWS CloudWatch
-
-```bash
-# View ECS logs
-aws logs get-log-events \
+# Search for errors
+aws logs filter-log-events \
   --log-group-name /ecs/nearby-app \
-  --log-stream-name ecs/nearby-app/TASK_ID
+  --filter-pattern "ERROR"
 ```
 
-### Health Checks
+### ECS Service Status
 
 ```bash
-# Check nearby-admin
-curl http://localhost:8001/health
+# Check service status
+aws ecs describe-services \
+  --cluster nearbynearby-prod \
+  --services nearbynearby-prod-app nearbynearby-prod-admin
 
-# Check nearby-app
-curl http://localhost:8002/health
+# List running tasks
+aws ecs list-tasks \
+  --cluster nearbynearby-prod \
+  --service-name nearbynearby-prod-app
+```
+
+### Terraform Outputs
+
+```bash
+cd terraform/environments/prod
+terraform output
+
+# Key outputs:
+# alb_dns_name          - ALB endpoint for DNS configuration
+# rds_endpoint          - Database connection endpoint
+# cloudfront_domain     - CDN domain for images
+# ecr_app_url           - ECR repository URL for nearby-app
+# ecr_admin_backend_url - ECR repository URL for admin backend
+# ecr_admin_frontend_url - ECR repository URL for admin frontend
+# github_actions_role_arn - IAM role ARN for GitHub Actions
 ```
 
 ---
 
-## Environment-Specific Settings
+## Environment Variables
 
-### Development
+### ECS Task Environment (injected via Terraform)
 
-```bash
-ENVIRONMENT=development
-DEBUG=true
-DATABASE_URL=postgresql://nearby:nearby@db:5432/nearbynearby
-ALLOWED_ORIGINS=http://localhost:5175,http://localhost:8002
-```
+| Variable | Source | Service |
+|----------|--------|---------|
+| `DATABASE_URL` | SSM Parameter Store | Both |
+| `FORMS_DATABASE_URL` | SSM Parameter Store | nearby-app |
+| `SECRET_KEY` | SSM Parameter Store | Both |
+| `ENVIRONMENT` | Task definition | Both |
+| `PYTHONPATH` | Task definition | Both |
+| `AWS_S3_BUCKET` | Task definition | Both |
+| `AWS_REGION` | Task definition | Both |
+| `CLOUDFRONT_DOMAIN` | Task definition | Both |
+| `BACKEND_HOST` | Task definition | nearby-admin nginx |
 
-### Production
+S3 credentials are **not** needed — ECS tasks use IAM role-based authentication via the task role.
 
-```bash
-ENVIRONMENT=production
-DEBUG=false
-DATABASE_URL=postgresql://user:pass@rds-endpoint:5432/nearbynearby
-ALLOWED_ORIGINS=https://admin.nearbynearby.com,https://nearbynearby.com
-```
+### Local Development
+
+See [Docker Configuration](./docker.md) for local development environment setup.
+
+---
+
+## Data Migration (One-Time)
+
+When migrating from the old EC2 setup to ECS:
+
+1. **Database**: `pg_dump` from old RDS → `pg_restore` to new RDS
+2. **Create forms role**: `CREATE ROLE nearby_forms` with INSERT/SELECT on form tables
+3. **Run migrations**: Happens automatically on admin container startup (`alembic upgrade heads`)
+4. **Create admin users**: Via ECS exec (see Step 7 above)
+5. **Push initial images**: First CI/CD push builds and deploys both apps
+6. **Switch DNS**: Update Cloudflare CNAME records to new ALB
+7. **Decommission**: Stop old EC2 instance and old RDS
 
 ---
 
@@ -368,28 +429,25 @@ ALLOWED_ORIGINS=https://admin.nearbynearby.com,https://nearbynearby.com
 
 ### Before Deployment
 
-- [ ] All tests pass locally
-- [ ] Database migrations tested
-- [ ] Environment variables configured
-- [ ] Secrets stored securely
-- [ ] Backup created if modifying data
+- [ ] All tests pass (`pytest tests/ -v`)
+- [ ] Database migrations tested locally
+- [ ] SSM parameters set with correct values
+- [ ] Terraform plan shows expected changes
+- [ ] GitHub OIDC role configured
 
 ### After Deployment
 
-- [ ] Health check passes
-- [ ] Key features tested
-- [ ] Logs checked for errors
-- [ ] Performance verified
-- [ ] Rollback plan ready
+- [ ] Health check passes: `curl http://<ALB-DNS>/api/health`
+- [ ] Admin panel accessible at `admin.nearbynearby.com`
+- [ ] User app accessible at `nearbynearby.com`
+- [ ] Image uploads work (admin → S3 → CloudFront)
+- [ ] Search works (keyword + semantic)
+- [ ] CloudWatch logs show no errors
+- [ ] Auto-scaling policies active
 
----
+### After DNS Cutover
 
-## Best Practices
-
-1. **Use CI/CD** - Automate deployments
-2. **Zero-downtime deploys** - Use rolling updates
-3. **Store secrets securely** - Use AWS Secrets Manager
-4. **Monitor after deploy** - Watch logs for errors
-5. **Have rollback plan** - Know how to revert
-6. **Test in staging** - Deploy to staging first
-7. **Document changes** - Track what's deployed
+- [ ] Both domains resolve to ALB
+- [ ] Cloudflare SSL mode is "Full"
+- [ ] Old EC2 instance stopped
+- [ ] Old RDS instance stopped (if replaced)

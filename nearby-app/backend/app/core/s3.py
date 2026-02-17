@@ -28,7 +28,16 @@ class S3Config:
     def is_configured(self) -> bool:
         if not self.bucket_name:
             return False
-        return bool(self.access_key_id)
+        return bool(self.access_key_id or self._has_iam_role())
+
+    def _has_iam_role(self) -> bool:
+        """Check if running with IAM role credentials (ECS task role or EC2 instance profile)"""
+        try:
+            session = boto3.Session()
+            credentials = session.get_credentials()
+            return credentials is not None
+        except:
+            return False
 
     def get_s3_url(self, key: str) -> str:
         if self.cloudfront_domain:
@@ -51,11 +60,19 @@ class S3Client:
     def client(self):
         if self._client is None:
             try:
-                session = boto3.Session(
-                    region_name=self.config.region,
-                    aws_access_key_id=self.config.access_key_id,
-                    aws_secret_access_key=self.config.secret_access_key,
-                )
+                session_kwargs = {
+                    "region_name": self.config.region,
+                }
+
+                # Add credentials if provided (otherwise use IAM role)
+                if self.config.access_key_id and self.config.secret_access_key:
+                    session_kwargs.update({
+                        "aws_access_key_id": self.config.access_key_id,
+                        "aws_secret_access_key": self.config.secret_access_key,
+                    })
+
+                session = boto3.Session(**session_kwargs)
+
                 client_kwargs = {
                     "config": boto3.session.Config(
                         signature_version="s3v4",

@@ -28,6 +28,7 @@ RUN apt-get update && apt-get install -y \
     gcc \
     postgresql-client \
     libpq-dev \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy backend requirements
@@ -35,6 +36,9 @@ COPY nearby-app/backend/requirements.txt ./
 
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
+
+# Pre-download ML model during build (avoids slow cold-start)
+RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('michaelfeil/embeddinggemma-300m')"
 
 # Copy shared package first (for imports)
 COPY shared/ ./shared/
@@ -46,16 +50,15 @@ COPY nearby-app/backend/ ./
 # Vite is configured to emit to ../backend/static, so copy from that location
 COPY --from=frontend-builder /app/backend/static ./static
 
-# Create data directory for SQLite database
-RUN mkdir -p /app/data
-
 # Expose port
 EXPOSE 8000
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
-ENV WAITLIST_DB_DIR=/app/data
 ENV PYTHONPATH=/app
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=120s --retries=3 \
+    CMD curl -f http://localhost:8000/api/health || exit 1
 
 # Run the application
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

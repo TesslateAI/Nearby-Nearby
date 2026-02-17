@@ -245,6 +245,22 @@ def inject_meta_tags(html: str, meta_tags: str) -> str:
     return html
 
 
+# Health check endpoint for ECS/ALB
+@app.get("/api/health")
+async def health_check():
+    health = {"status": "healthy", "service": "nearby-app"}
+    try:
+        with engine.connect() as connection:
+            connection.execute(text("SELECT 1"))
+            health["database"] = "connected"
+    except Exception as e:
+        health["status"] = "degraded"
+        health["database"] = str(e)
+    health["ml_model"] = "loaded" if getattr(app.state, 'embedding_model', None) else "not loaded"
+    status_code = 200 if health["status"] == "healthy" else 503
+    return JSONResponse(content=health, status_code=status_code)
+
+
 # Catch-all route for SPA (must be last)
 @app.get("/{full_path:path}")
 async def serve_spa(full_path: str):
