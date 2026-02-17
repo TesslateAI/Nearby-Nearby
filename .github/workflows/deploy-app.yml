@@ -50,6 +50,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -r nearby-app/backend/requirements.txt
+          pip install -r nearby-admin/backend/requirements.txt
           pip install pytest httpx
 
       - name: Run tests
