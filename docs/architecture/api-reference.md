@@ -278,6 +278,7 @@ Query Parameters:
 - `limit` (int): Max results (default: 10)
 - `keyword_weight` (float): Weight for keyword score (default: 0.3)
 - `semantic_weight` (float): Weight for semantic score (default: 0.7)
+- `poi_type` (string, optional): Filter results by POI type (e.g., "BUSINESS", "PARK")
 
 ---
 
@@ -376,11 +377,10 @@ Response:
 
 ### Waitlist Endpoints
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/waitlist` | Add email to waitlist |
-| GET | `/api/waitlist/count` | Get waitlist count |
-| GET | `/api/waitlist/all` | Get all emails (admin) |
+| Method | Endpoint | Description | Rate Limit |
+|--------|----------|-------------|------------|
+| POST | `/api/waitlist` | Add email to waitlist | 5/min |
+| GET | `/api/waitlist/count` | Get waitlist count | - |
 
 #### POST /api/waitlist
 
@@ -391,12 +391,133 @@ Request:
 }
 ```
 
-Response:
+Response (201):
 ```json
 {
   "message": "Successfully added to waitlist"
 }
 ```
+
+Error (409 - duplicate):
+```json
+{
+  "detail": "Email already registered"
+}
+```
+
+---
+
+### Public Form Endpoints
+
+All form endpoints use the isolated `nearby_forms` database role and are rate-limited via `slowapi`.
+
+#### Community Interest
+
+| Method | Endpoint | Description | Rate Limit |
+|--------|----------|-------------|------------|
+| POST | `/api/community-interest` | Submit community interest form | 5/min |
+
+Request:
+```json
+{
+  "location": "Pittsboro, Chatham County, NC",
+  "name": "Jane Doe",
+  "email": "jane@example.com",
+  "role": ["Resident", "Business Owner"],
+  "why": "We need better local discovery.",
+  "how_heard": "Instagram"
+}
+```
+
+Response (201):
+```json
+{
+  "id": "uuid",
+  "location": "Pittsboro, Chatham County, NC",
+  "created_at": "2026-01-15T10:30:00Z",
+  "message": "Thank you for your interest!"
+}
+```
+
+Only `location` is required. All other fields are optional.
+
+#### Contact
+
+| Method | Endpoint | Description | Rate Limit |
+|--------|----------|-------------|------------|
+| POST | `/api/contact` | Submit contact form | 5/min |
+
+Request:
+```json
+{
+  "name": "John Doe",
+  "email": "john@example.com",
+  "message": "Hello, I have a question about the platform."
+}
+```
+
+Response (201):
+```json
+{
+  "id": "uuid",
+  "created_at": "2026-01-15T10:30:00Z",
+  "message": "Thank you for reaching out!"
+}
+```
+
+All fields required. Message must be 10-5000 characters.
+
+#### Feedback
+
+| Method | Endpoint | Description | Rate Limit |
+|--------|----------|-------------|------------|
+| POST | `/api/feedback` | Submit feedback with optional file uploads | 2/min |
+
+Request (multipart/form-data):
+- `feedback` (string, required): Feedback text (10-5000 chars)
+- `email` (string, optional): Contact email
+- `files` (UploadFile[], optional): Up to 10 image files, max 10MB each (JPEG, PNG, GIF, WebP)
+
+Response (201):
+```json
+{
+  "id": "uuid",
+  "file_urls": ["https://bucket.s3.amazonaws.com/feedback/uuid/screenshot.png"],
+  "created_at": "2026-01-15T10:30:00Z",
+  "message": "Thank you for your feedback!"
+}
+```
+
+#### Business Claims
+
+| Method | Endpoint | Description | Rate Limit |
+|--------|----------|-------------|------------|
+| POST | `/api/business-claims` | Submit business claim request | 5/min |
+
+Request:
+```json
+{
+  "business_name": "Joe's Coffee",
+  "contact_name": "Joe Smith",
+  "contact_phone": "919-555-0100",
+  "contact_email": "joe@coffee.com",
+  "business_address": "123 Main St, Pittsboro, NC 27312",
+  "how_heard": "Facebook ad",
+  "anything_else": "We also do catering!"
+}
+```
+
+Response (201):
+```json
+{
+  "id": "uuid",
+  "business_name": "Joe's Coffee",
+  "created_at": "2026-01-15T10:30:00Z",
+  "message": "Thank you for claiming your business!"
+}
+```
+
+Required: business_name, contact_name, contact_phone, contact_email, business_address. Optional: how_heard, anything_else.
 
 ---
 
@@ -453,6 +574,19 @@ All errors return JSON with `detail` field:
 
 ## Rate Limiting
 
-Currently no rate limiting implemented. Consider implementing for production:
-- Search endpoints: 60 requests/minute
-- Other endpoints: 120 requests/minute
+Public form endpoints are rate-limited using `slowapi` with `get_remote_address` as the key function:
+
+| Endpoint Group | Limit | Reason |
+|---------------|-------|--------|
+| `/api/waitlist` | 5/min | Spam prevention |
+| `/api/community-interest` | 5/min | Spam prevention |
+| `/api/contact` | 5/min | Spam prevention |
+| `/api/feedback` | 2/min | File upload resource protection |
+| `/api/business-claims` | 5/min | Spam prevention |
+
+When rate limit is exceeded, returns HTTP 429:
+```json
+{
+  "detail": "Rate limit exceeded: 5 per 1 minute"
+}
+```

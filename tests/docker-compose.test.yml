@@ -2,7 +2,9 @@ version: "3.8"
 
 services:
   test-db:
-    image: postgis/postgis:15-3.3
+    build:
+      context: .
+      dockerfile: Dockerfile.testdb
     environment:
       POSTGRES_USER: test
       POSTGRES_PASSWORD: test

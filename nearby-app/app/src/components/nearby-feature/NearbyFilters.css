@@ -46,19 +46,46 @@
 }
 
 .nearby-filter:focus-visible {
-  outline: 2px solid #F4C542;
+  outline: 2px solid var(--nn-gold);
   outline-offset: 2px;
 }
 
 .nearby-filter--active {
-  background: #F4C542;
-  color: var(--nn-ink, #33404E);
-  border-color: #F4C542;
+  background: var(--nn-gold);
+  color: var(--nn-dark);
+  border-color: var(--nn-gold);
 }
 
 .nearby-filter--active:hover {
   background: #e5b73d;
   border-color: #e5b73d;
+}
+
+/* Light variant (for homepage Hero & Explore page) */
+.nearby-filters--light .nearby-filter {
+  background: white;
+  color: var(--nn-dark);
+  border-color: var(--gray-d);
+}
+
+.nearby-filters--light .nearby-filter:hover {
+  background: var(--light-yellow1);
+  border-color: var(--nn-purple1);
+}
+
+.nearby-filters--light .nearby-filter--active {
+  background: var(--nn-purple1);
+  color: white;
+  border-color: var(--nn-purple1);
+}
+
+.nearby-filters--light .nearby-filter--active:hover {
+  background: var(--nn-purple2);
+  border-color: var(--nn-purple2);
+}
+
+.nearby-filters--light .nearby-filter:focus-visible {
+  outline-color: var(--nn-purple1);
 }
 
 /* Mobile */

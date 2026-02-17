@@ -1,0 +1,81 @@
+/* ==========================================================================
+   Accessibility foundation — AAA compliance
+   Ported from nn-templates/inc/stylez.scss + overlay.scss
+   ========================================================================== */
+
+/* ── Skip-to-main link ─────────────────────────────────────────── */
+.skip-main {
+  position: absolute;
+  left: -9999px;
+  z-index: 9999;
+  padding: 12px 24px;
+  background: var(--nn-purple1);
+  color: #fff;
+  font-family: var(--font-poppins);
+  font-weight: 600;
+  font-size: 1em;
+  text-decoration: none;
+  border-radius: 0 0 6px 0;
+}
+.skip-main:focus {
+  left: 0;
+  top: 0;
+}
+
+/* ── Visually hidden (screen-reader only) ──────────────────────── */
+.visually_hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ── Focus-visible (keyboard users only) ───────────────────────── */
+:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* ── Reduced motion ────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ── High contrast ─────────────────────────────────────────────── */
+@media (prefers-contrast: high) {
+  * {
+    border-color: currentColor !important;
+  }
+  :focus-visible {
+    outline-width: 4px;
+  }
+}
+
+/* ── Minimum touch targets (44 × 44 px) ───────────────────────── */
+@media (pointer: coarse) {
+  button,
+  a,
+  input[type="submit"],
+  input[type="button"],
+  [role="button"],
+  [role="menuitem"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}

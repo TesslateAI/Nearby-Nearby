@@ -1,7 +1,7 @@
 import React from 'react';
 import {
   Stack, SimpleGrid, Checkbox, Divider, Radio, Select, Card,
-  NumberInput, TextInput, Button, Switch
+  NumberInput, TextInput, Button, Switch, Text
 } from '@mantine/core';
 import { IconPlus } from '@tabler/icons-react';
 import RichTextEditor from '../../RichTextEditor';
@@ -31,8 +31,8 @@ export const FacilitiesSection = React.memo(function FacilitiesSection({
     <Stack>
       {/* Key Facilities moved to Core Information for all POI types */}
 
-      {/* Pay Phone Locations - Parks only */}
-      {isPark && (
+      {/* Pay Phone Locations - Parks and Trails */}
+      {(isPark || isTrail) && (
         <>
           <Divider my="md" label="Pay Phone Locations" />
           {(form.values.payphone_locations || []).map((phone, index) => (
@@ -151,16 +151,25 @@ export const FacilitiesSection = React.memo(function FacilitiesSection({
       </Radio.Group>
 
       {form.values.alcohol_available === 'yes' && (
-        <Checkbox.Group
-          label="Alcohol Options"
-          {...getCheckboxGroupProps(form, 'alcohol_options')}
-        >
-          <SimpleGrid cols={{ base: 2, sm: 3 }}>
-            {ALCOHOL_OPTIONS.filter(option => !['Yes', 'No Alcohol Allowed'].includes(option)).map(option => (
-              <Checkbox key={option} value={option} label={option} />
-            ))}
-          </SimpleGrid>
-        </Checkbox.Group>
+        <>
+          <Checkbox.Group
+            label="Alcohol Options"
+            {...getCheckboxGroupProps(form, 'alcohol_options')}
+          >
+            <SimpleGrid cols={{ base: 2, sm: 3 }}>
+              {ALCOHOL_OPTIONS.filter(option => !['Yes', 'No Alcohol Allowed'].includes(option)).map(option => (
+                <Checkbox key={option} value={option} label={option} />
+              ))}
+            </SimpleGrid>
+          </Checkbox.Group>
+          <RichTextEditor
+            label="Alcohol Policy Details"
+            placeholder="BYOB policy, concession details, restrictions, etc."
+            value={form.values.alcohol_policy_details || ''}
+            onChange={(html) => form.setFieldValue('alcohol_policy_details', html)}
+            error={form.errors.alcohol_policy_details}
+          />
+        </>
       )}
 
       <CheckboxGroupSection
@@ -228,6 +237,8 @@ export const FacilitiesSection = React.memo(function FacilitiesSection({
 export const PublicAmenitiesSection = React.memo(function PublicAmenitiesSection({
   form,
   isPark,
+  isTrail,
+  isEvent,
   id
 }) {
   return (
@@ -265,8 +276,8 @@ export const PublicAmenitiesSection = React.memo(function PublicAmenitiesSection
             </SimpleGrid>
           </Checkbox.Group>
 
-          {/* Enhanced toilet locations for Parks */}
-          {isPark ? (
+          {/* Enhanced toilet locations for Parks, Trails, and Events */}
+          {(isPark || isTrail || isEvent) ? (
             <>
               <Divider my="md" label="Restroom Locations" />
               {(form.values.toilet_locations || []).map((toilet, index) => (
@@ -410,39 +421,6 @@ export const PublicAmenitiesSection = React.memo(function PublicAmenitiesSection
         </>
       )}
 
-      {/* Rentals section - for non-Parks */}
-      {!isPark && (
-        <>
-          <Divider my="md" label="Rental Information" />
-          <Switch
-            label="Available for Rent"
-            {...form.getInputProps('available_for_rent', { type: 'checkbox' })}
-          />
-          {form.values.available_for_rent && (
-            <>
-              <RichTextEditor
-                label="Rental Information"
-                placeholder="What's available for rent?"
-                value={form.values.rental_info || ''}
-                onChange={(html) => form.setFieldValue('rental_info', html)}
-                error={form.errors.rental_info}
-              />
-              <SimpleGrid cols={{ base: 1, sm: 2 }}>
-                <TextInput
-                  label="Rental Pricing"
-                  placeholder="Pricing information"
-                  {...form.getInputProps('rental_pricing')}
-                />
-                <TextInput
-                  label="Rental Link"
-                  placeholder="Link to rental information"
-                  {...form.getInputProps('rental_link')}
-                />
-              </SimpleGrid>
-            </>
-          )}
-        </>
-      )}
     </Stack>
   );
 });
@@ -466,18 +444,11 @@ export const RentalsSection = React.memo(function RentalsSection({
             onChange={(html) => form.setFieldValue('rental_info', html)}
             error={form.errors.rental_info}
           />
-          <SimpleGrid cols={{ base: 1, sm: 2 }}>
-            <TextInput
-              label="Rental Pricing"
-              placeholder="Pricing information"
-              {...form.getInputProps('rental_pricing')}
-            />
-            <TextInput
-              label="Rental Link"
-              placeholder="Link to rental information"
-              {...form.getInputProps('rental_link')}
-            />
-          </SimpleGrid>
+          <TextInput
+            label="Rental Link"
+            placeholder="Link to rental information"
+            {...form.getInputProps('rental_link')}
+          />
           {shouldUseImageUpload(id) ? (
             <RentalPhotosUpload poiId={id} form={form} />
           ) : (

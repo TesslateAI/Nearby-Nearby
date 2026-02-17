@@ -1,7 +1,7 @@
 /* Existing styles */
 .poi-detail {
   min-height: 60vh;
-  background: var(--nn-bg, #F4EFF7);
+  background: var(--color-bg);
   padding: 40px 20px;
   width: 100%;
   max-width: 100%;
@@ -23,7 +23,7 @@
 
 .poi-detail__back-link {
   display: inline-block;
-  color: var(--nn-accent, #328170);
+  color: var(--nn-teal2);
   text-decoration: none;
   font-weight: 600;
   margin-bottom: 24px;
@@ -40,7 +40,7 @@
 
 /* New Header Styles */
 .poi-detail__new-header {
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--gray-d);
   padding-bottom: 24px;
   margin-bottom: 24px;
 }
@@ -54,11 +54,11 @@
 
 .poi-detail__status-text {
   font-size: 14px;
-  color: #6b7280;
+  color: var(--nn-gray);
 }
 
 .poi-detail__status-value {
-  color: #10b981;
+  color: var(--nn-green);
   font-weight: 600;
 }
 
@@ -67,19 +67,19 @@
   align-items: center;
   gap: 6px;
   background: white;
-  border: 2px solid #D4AF37;
+  border: 2px solid var(--nn-gold);
   padding: 6px 12px;
   border-radius: 20px;
   font-size: 14px;
   font-weight: 700;
-  color: var(--nn-ink, #33404E);
+  color: var(--nn-dark);
   cursor: help;
   position: relative;
 }
 
 .poi-detail__verified-help {
   margin-left: 4px;
-  color: var(--nn-ink-muted, #597199);
+  color: var(--nn-gray);
   font-size: 12px;
   font-weight: 500;
 }
@@ -88,7 +88,7 @@
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  border: 2px solid #10b981;
+  border: 2px solid var(--nn-green);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -97,35 +97,36 @@
 .poi-detail__verified-dot {
   width: 8px;
   height: 8px;
-  background: #10b981;
+  background: var(--nn-green);
   border-radius: 50%;
 }
 
 .poi-detail__main-title {
+  font-family: var(--font-poppins);
   font-size: 32px;
   font-weight: 800;
-  color: #111827;
+  color: var(--nn-dark);
   margin: 0 0 8px 0;
 }
 
 .poi-detail__location {
   font-size: 16px;
-  color: var(--nn-ink-muted, #597199);
+  color: var(--nn-gray);
   margin: 0 0 12px 0;
   font-weight: 500;
 }
 
 .poi-detail__category {
-  color: var(--nn-accent, #328170);
+  color: var(--nn-teal2);
   font-weight: 700;
 }
 
 .poi-detail__separator {
-  color: var(--nn-ink-muted, #597199);
+  color: var(--nn-gray);
 }
 
 .poi-detail__subtitle {
-  color: #6b7280;
+  color: var(--nn-gray);
   margin: 0 0 16px 0;
   font-size: 16px;
 }
@@ -150,20 +151,20 @@
 
 .poi-detail__sponsor-label {
   font-size: 14px;
-  color: #374151;
+  color: var(--nn-slate);
   display: block;
   margin-bottom: 4px;
 }
 
 .poi-detail__sponsor-text {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--nn-gray);
   margin: 4px 0;
 }
 
 .poi-detail__sponsor-link {
   font-size: 12px;
-  color: #7c3aed;
+  color: var(--nn-purple2);
   text-decoration: underline;
   background: none;
   border: none;
@@ -188,36 +189,36 @@
 }
 
 .poi-detail__icon {
-  color: #6b7280;
+  color: var(--nn-gray);
   flex-shrink: 0;
 }
 
 .poi-detail__icon--green {
-  color: #10b981;
+  color: var(--nn-green);
 }
 
 .poi-detail__info-primary {
-  color: #10b981;
+  color: var(--nn-green);
   font-weight: 600;
 }
 
 .poi-detail__info-secondary {
-  color: #6b7280;
+  color: var(--nn-gray);
 }
 
 .poi-detail__info-text {
-  color: #6b7280;
+  color: var(--nn-gray);
 }
 
 .poi-detail__info-link {
-  color: #7c3aed;
+  color: var(--nn-purple2);
   text-decoration: underline;
 }
 
 .poi-detail__hours-btn {
   font-size: 12px;
-  color: #7c3aed;
-  border: 1px solid #7c3aed;
+  color: var(--nn-purple2);
+  border: 1px solid var(--nn-purple2);
   padding: 2px 8px;
   border-radius: 4px;
   background: none;
@@ -234,14 +235,14 @@
 
 .poi-detail__latlong-info {
   font-size: 12px;
-  color: var(--nn-ink-muted, #597199);
+  color: var(--nn-gray);
   margin: 0 0 16px 0;
   font-style: italic;
   line-height: 1.4;
 }
 
 .poi-detail__copied-feedback {
-  background: var(--nn-accent, #328170);
+  background: var(--nn-teal2);
   color: white;
   padding: 12px 20px;
   border-radius: 8px;
@@ -269,22 +270,22 @@
   align-items: center;
   gap: 8px;
   padding: 8px 16px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--gray-d);
   border-radius: 6px;
   background: white;
   cursor: pointer;
   font-size: 14px;
-  color: #374151;
+  color: var(--nn-slate);
   transition: background-color 0.2s;
 }
 
 .poi-detail__action-btn:hover {
-  background: #f9fafb;
+  background: var(--gray-9);
 }
 
 .poi-detail__description-box {
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
+  background: var(--gray-9);
+  border: 1px solid var(--gray-d);
   padding: 16px;
   border-radius: 8px;
   margin-bottom: 16px;
@@ -293,7 +294,7 @@
 .poi-detail__description-text {
   white-space: pre-line;
   font-size: 14px;
-  color: #374151;
+  color: var(--nn-slate);
   line-height: 1.6;
 }
 
@@ -302,8 +303,9 @@
 }
 
 .poi-detail__amenities-title {
+  font-family: var(--font-poppins);
   font-weight: 600;
-  color: #111827;
+  color: var(--nn-dark);
   margin-bottom: 12px;
   font-size: 16px;
 }
@@ -318,10 +320,10 @@
   display: flex;
   align-items: center;
   font-size: 12px;
-  background: #f3f4f6;
+  background: var(--gray-3);
   padding: 6px 12px;
   border-radius: 20px;
-  color: #374151;
+  color: var(--nn-slate);
 }
 
 .poi-detail__amenity-dot {
@@ -331,7 +333,7 @@
 /* Photos Section */
 .poi-detail__photos-section {
   padding: 24px 0;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--gray-d);
 }
 
 .poi-detail__photos-header {
@@ -342,13 +344,14 @@
 }
 
 .poi-detail__photos-title {
+  font-family: var(--font-poppins);
   font-weight: 600;
-  color: #111827;
+  color: var(--nn-dark);
   font-size: 14px;
 }
 
 .poi-detail__photos-link {
-  color: #7c3aed;
+  color: var(--nn-purple2);
   font-size: 14px;
   background: none;
   border: none;
@@ -364,7 +367,7 @@
 
 .poi-detail__photo-placeholder {
   aspect-ratio: 1;
-  background: #e5e7eb;
+  background: var(--gray-d);
   border-radius: 8px;
 }
 
@@ -384,24 +387,25 @@
   justify-content: space-between;
   padding: 12px 16px;
   background: white;
-  color: var(--nn-primary, #562556);
+  color: var(--nn-purple1);
   font-weight: 600;
-  border: 2px solid var(--nn-primary, #562556);
+  border: 2px solid var(--nn-purple1);
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .collapsible-section__header:hover {
-  background: #f9fafb;
+  background: var(--gray-9);
 }
 
 /* When accordion is open - keep white background with purple text */
 .collapsible-section__header[aria-expanded="true"] {
   background: white;
-  color: var(--nn-primary, #562556);
+  color: var(--nn-purple1);
 }
 
 .collapsible-section__title {
+  font-family: var(--font-poppins);
   text-transform: uppercase;
   font-size: 14px;
   letter-spacing: 0.5px;
@@ -409,7 +413,7 @@
 
 .collapsible-section__content {
   background: white;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--gray-d);
   padding: 16px;
 }
 
@@ -421,7 +425,7 @@
 .info-row {
   display: flex;
   padding: 12px 0;
-  border-bottom: 1px solid #f3f4f6;
+  border-bottom: 1px solid var(--gray-3);
 }
 
 .info-row:last-child {
@@ -430,20 +434,20 @@
 
 .info-row__label {
   font-weight: 600;
-  color: #374151;
+  color: var(--nn-slate);
   width: 33.333%;
   font-size: 14px;
 }
 
 .info-row__value {
-  color: #6b7280;
+  color: var(--nn-gray);
   width: 66.666%;
   font-size: 14px;
 }
 
 /* Bottom Border */
 .poi-detail__bottom-border {
-  border-top: 4px solid #fbbf24;
+  border-top: 4px solid var(--nn-gold);
   margin: 24px 0;
 }
 
@@ -492,22 +496,23 @@
   align-items: center;
   justify-content: center;
   padding: 40px 20px;
-  background: var(--nn-bg, #F4EFF7);
+  background: var(--color-bg);
 }
 
 .poi-detail__loading {
   font-size: 18px;
-  color: var(--nn-ink-muted, #597199);
+  color: var(--nn-gray);
 }
 
 .poi-detail__error h2 {
+  font-family: var(--font-poppins);
   font-size: 24px;
-  color: var(--nn-ink, #33404E);
+  color: var(--nn-dark);
   margin-bottom: 16px;
 }
 
 .poi-detail__back-btn {
-  background: var(--nn-accent, #328170);
+  background: var(--nn-teal2);
   color: white;
   border: none;
   padding: 12px 24px;
@@ -518,7 +523,7 @@
 }
 
 .poi-detail__back-btn:hover {
-  background: var(--nn-accent-600, #286857);
+  background: var(--nn-teal1);
 }
 
 /* HTML Content Rendering */
@@ -547,6 +552,7 @@
 @media (max-width: 768px) {
   .poi-detail {
     padding: 20px 12px;
+    padding-bottom: calc(20px + var(--mobile-nav-height, 55px));
   }
 
   .poi-detail__container {
@@ -638,6 +644,7 @@
 @media (max-width: 480px) {
   .poi-detail {
     padding: 16px 8px;
+    padding-bottom: calc(16px + var(--mobile-nav-height, 55px));
   }
 
   .poi-detail__container {

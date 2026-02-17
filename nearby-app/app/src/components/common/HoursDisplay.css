@@ -18,10 +18,10 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #666;
+  color: var(--nn-gray);
   margin: 0;
   padding-bottom: 8px;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--gray-d);
 }
 
 /* Day-by-day hours */
@@ -54,11 +54,11 @@
 .hours-display__day-label {
   min-width: 45px;
   font-weight: 500;
-  color: #333;
+  color: var(--nn-dark);
 }
 
 .hours-display__day-hours {
-  color: #555;
+  color: var(--nn-slate);
   flex: 1;
 }
 
@@ -71,7 +71,7 @@
 /* General hour notes */
 .hours-display__notes {
   font-size: 0.9rem;
-  color: #555;
+  color: var(--nn-slate);
   line-height: 1.5;
 }
 
@@ -89,7 +89,7 @@
 }
 
 .hours-display__notes-text {
-  color: #666;
+  color: var(--nn-gray);
 }
 
 .hours-display__notes-text p {
@@ -114,7 +114,7 @@
   align-items: center;
   font-size: 0.875rem;
   padding: 6px 0;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--gray-3);
 }
 
 .hours-display__holiday-row:last-child {
@@ -130,12 +130,12 @@
 
 .hours-display__holiday-name {
   font-weight: 500;
-  color: #333;
+  color: var(--nn-dark);
 }
 
 .hours-display__holiday-date {
   font-size: 0.8rem;
-  color: #888;
+  color: var(--nn-gray);
   white-space: nowrap;
 }
 
@@ -143,8 +143,8 @@
   font-size: 0.8rem;
   padding: 2px 8px;
   border-radius: 12px;
-  background-color: #f0f0f0;
-  color: #555;
+  background-color: var(--gray-3);
+  color: var(--nn-slate);
   white-space: nowrap;
 }
 
@@ -157,7 +157,7 @@
   padding: 6px 0;
   background: none;
   border: none;
-  color: #0d9488;
+  color: var(--nn-teal2);
   font-size: 0.8rem;
   font-weight: 600;
   text-transform: uppercase;
@@ -167,7 +167,7 @@
 }
 
 .hours-display__see-more:hover {
-  color: #0f766e;
+  color: var(--nn-teal1);
 }
 
 .hours-display__see-more-icon {
@@ -196,7 +196,7 @@
   align-items: center;
   gap: 6px;
   padding: 10px 16px;
-  background-color: #0d9488;
+  background-color: var(--nn-teal2);
   color: white;
   border: none;
   border-radius: 6px;
@@ -208,7 +208,7 @@
 }
 
 .hours-display__service-btn:hover {
-  background-color: #0f766e;
+  background-color: var(--nn-teal1);
   transform: translateY(-1px);
 }
 

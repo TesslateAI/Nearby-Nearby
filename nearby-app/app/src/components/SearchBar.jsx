@@ -1,17 +1,20 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getApiUrl } from '../config';
 import { getPOIUrl } from '../utils/slugify';
 import './SearchBar.css';
 import SearchDropdown from './SearchDropdown';
 
-function SearchBar({
+const SearchBar = forwardRef(function SearchBar({
   placeholder = "What's nearby? Search for locations or interests...",
   openInNewTab = false,
-  nearbyPoiIds = null,  // Array of POI IDs to filter against (for nearby filtering mode)
-  onFilterNearby = null // Callback with filtered POI IDs when in nearby filtering mode
-}) {
-  const [searchQuery, setSearchQuery] = useState('');
+  nearbyPoiIds = null,
+  onFilterNearby = null,
+  onSearch = null,       // callback fired on Enter (no dropdown selection) or search button
+  selectedType = null,   // optional POI type filter (e.g. "BUSINESS")
+  initialQuery = '',     // pre-fill query
+}, ref) {
+  const [searchQuery, setSearchQuery] = useState(initialQuery);
   const [searchResults, setSearchResults] = useState([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -20,21 +23,31 @@ function SearchBar({
   const inputRef = useRef(null);
   const navigate = useNavigate();
 
+  // Expose query value and focus to parent via ref
+  useImperativeHandle(ref, () => ({
+    getQuery: () => searchQuery,
+    focus: () => inputRef.current?.focus(),
+  }));
+
+  // Sync initialQuery prop changes
+  useEffect(() => {
+    if (initialQuery !== undefined && initialQuery !== searchQuery) {
+      setSearchQuery(initialQuery);
+    }
+  }, [initialQuery]);
+
   // When in nearby filter mode and query is cleared, reset the filter
   useEffect(() => {
     if (nearbyPoiIds && onFilterNearby && searchQuery.trim().length === 0) {
-      onFilterNearby(null); // null means show all nearby
+      onFilterNearby(null);
     }
   }, [searchQuery, nearbyPoiIds, onFilterNearby]);
 
-  // Close dropdown when clicking outside (handled in dropdown portal as well)
+  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      // Ignore clicks inside the dropdown portal
       const portalEl = document.getElementById('search-dropdown-portal');
-      if (portalEl && portalEl.contains(event.target)) {
-        return;
-      }
+      if (portalEl && portalEl.contains(event.target)) return;
       if (searchRef.current && !searchRef.current.contains(event.target)) {
         setShowDropdown(false);
       }
@@ -55,28 +68,28 @@ function SearchBar({
     }, 300);
 
     return () => clearTimeout(delayDebounce);
-  }, [searchQuery]);
+  }, [searchQuery, selectedType]);
 
   const fetchSearchResults = async (query) => {
     setIsLoading(true);
     try {
-      // Use hybrid search (combines keyword + semantic understanding)
-      // Falls back to keyword search if semantic model isn't loaded
-      const response = await fetch(getApiUrl(`api/pois/hybrid-search?q=${encodeURIComponent(query)}&limit=50`)); // Get more results for filtering
+      let url = `api/pois/hybrid-search?q=${encodeURIComponent(query)}&limit=50`;
+      if (selectedType && selectedType !== 'All') {
+        url += `&poi_type=${encodeURIComponent(selectedType)}`;
+      }
+      const response = await fetch(getApiUrl(url));
       if (response.ok) {
         const data = await response.json();
 
-        // If in nearby filter mode, filter results to only include nearby POIs
         if (nearbyPoiIds && onFilterNearby) {
           const nearbyIdSet = new Set(nearbyPoiIds);
           const filteredResults = data.filter(poi => nearbyIdSet.has(poi.id));
           setSearchResults(filteredResults);
-          setShowDropdown(filteredResults.length > 0);
-          // Call the filter callback with matching POI IDs
+          setShowDropdown(filteredResults.length > 0 || query.trim().length > 0);
           onFilterNearby(filteredResults.map(poi => poi.id));
         } else {
-          setSearchResults(data.slice(0, 8)); // Limit to 8 for regular search
-          setShowDropdown(data.length > 0);
+          setSearchResults(data.slice(0, 8));
+          setShowDropdown(query.trim().length > 0);
         }
       }
     } catch (error) {
@@ -106,7 +119,25 @@ function SearchBar({
     setSearchQuery('');
   };
 
+  const handleSearchAll = (query) => {
+    setShowDropdown(false);
+    if (onSearch) {
+      onSearch(query);
+    }
+  };
+
   const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (selectedIndex >= 0 && selectedIndex < searchResults.length) {
+        handleResultClick(searchResults[selectedIndex]);
+      } else if (searchQuery.trim() && onSearch) {
+        setShowDropdown(false);
+        onSearch(searchQuery.trim());
+      }
+      return;
+    }
+
     if (!showDropdown || searchResults.length === 0) return;
 
     switch (e.key) {
@@ -119,12 +150,6 @@ function SearchBar({
       case 'ArrowUp':
         e.preventDefault();
         setSelectedIndex(prev => prev > 0 ? prev - 1 : -1);
-        break;
-      case 'Enter':
-        e.preventDefault();
-        if (selectedIndex >= 0 && selectedIndex < searchResults.length) {
-          handleResultClick(searchResults[selectedIndex]);
-        }
         break;
       case 'Escape':
         setShowDropdown(false);
@@ -162,9 +187,11 @@ function SearchBar({
         onItemClick={handleResultClick}
         onItemHover={setSelectedIndex}
         onClose={() => setShowDropdown(false)}
+        query={searchQuery}
+        onSearchAll={handleSearchAll}
       />
     </div>
   );
-}
+});
 
 export default SearchBar;

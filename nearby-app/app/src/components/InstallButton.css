@@ -2,7 +2,7 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  background: var(--nn-accent, #328170);
+  background: var(--nn-teal2);
   color: white;
   padding: 12px 20px;
   border-radius: 8px;
@@ -15,7 +15,7 @@
 }
 
 .install-button:hover {
-  background: var(--nn-accent-600, #286857);
+  background: var(--nn-teal1);
   transform: translateY(-1px);
 }
 
@@ -24,25 +24,25 @@
 }
 
 .install-button--installed {
-  background: #6b7280;
+  background: var(--nn-gray);
   cursor: default;
 }
 
 .install-button--installed:hover {
-  background: #6b7280;
+  background: var(--nn-gray);
   transform: none;
 }
 
 .install-button--footer {
   background: transparent;
-  border: 2px solid var(--nn-accent, #328170);
-  color: var(--nn-accent, #328170);
+  border: 2px solid var(--nn-teal2);
+  color: var(--nn-teal2);
   padding: 10px 18px;
   font-size: 13px;
 }
 
 .install-button--footer:hover {
-  background: var(--nn-accent, #328170);
+  background: var(--nn-teal2);
   color: white;
 }
 
@@ -82,26 +82,27 @@
   background: none;
   border: none;
   font-size: 28px;
-  color: #6b7280;
+  color: var(--nn-gray);
   cursor: pointer;
   line-height: 1;
   padding: 4px;
 }
 
 .install-modal__close:hover {
-  color: #374151;
+  color: var(--nn-slate);
 }
 
 .install-modal__title {
   font-size: 22px;
   font-weight: 700;
-  color: var(--nn-ink, #33404E);
+  font-family: var(--font-poppins);
+  color: var(--nn-dark);
   margin: 0 0 20px;
 }
 
 .install-modal__instructions p {
   font-size: 15px;
-  color: var(--nn-ink-muted, #597199);
+  color: var(--nn-gray);
   line-height: 1.6;
   margin: 0 0 16px;
 }
@@ -113,18 +114,18 @@
 
 .install-modal__instructions li {
   font-size: 15px;
-  color: var(--nn-ink-muted, #597199);
+  color: var(--nn-gray);
   line-height: 1.8;
   margin-bottom: 12px;
 }
 
 .install-modal__instructions strong {
-  color: var(--nn-ink, #33404E);
+  color: var(--nn-dark);
 }
 
 .install-modal__note {
   font-size: 13px;
-  background: var(--nn-bg, #F4EFF7);
+  background: var(--light-yellow1);
   padding: 12px 16px;
   border-radius: 8px;
   margin-top: 16px;

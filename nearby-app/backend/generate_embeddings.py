@@ -28,10 +28,21 @@ from app.core.config import settings
 # Model configuration
 MODEL_NAME = "michaelfeil/embeddinggemma-300m"
 
-def create_searchable_text(poi: dict) -> str:
+def _json_list(val) -> list:
+    """Safely extract a list from a JSONB value (may be list, dict, str, or None)."""
+    if isinstance(val, list):
+        return [str(v) for v in val if v]
+    if isinstance(val, dict):
+        return [str(v) for v in val.values() if v]
+    return []
+
+
+def create_searchable_text(poi: dict, categories: list = None,
+                           trail: dict = None, event: dict = None,
+                           business: dict = None, park: dict = None) -> str:
     """
-    Create searchable text from POI attributes.
-    Combines the most relevant fields for semantic search.
+    Create rich searchable text from POI attributes and related tables.
+    Includes categories, amenities, facilities, trail/park/event specifics, etc.
     """
     parts = []
 
@@ -43,34 +54,124 @@ def create_searchable_text(poi: dict) -> str:
     if poi.get('poi_type'):
         parts.append(f"Type: {poi['poi_type']}")
 
+    # Categories
+    if categories:
+        parts.append(f"Categories: {', '.join(categories)}")
+
     # Short description
     if poi.get('description_short'):
         parts.append(f"Description: {poi['description_short']}")
 
-    # Long description (limit to first 500 chars to avoid token limits)
+    # Long description (limit to first 500 chars)
     if poi.get('description_long'):
-        desc = poi['description_long'][:500]
-        parts.append(f"Details: {desc}")
+        parts.append(f"Details: {poi['description_long'][:500]}")
 
-    # Amenities
-    amenities = []
-    if poi.get('amenities'):
-        amenities.extend(poi['amenities'])
-    if poi.get('ideal_for'):
-        amenities.extend(poi['ideal_for'])
-    if amenities:
-        parts.append(f"Amenities: {', '.join(amenities)}")
+    # --- Business amenities ---
+    biz_amenities = _json_list(poi.get('business_amenities'))
+    if biz_amenities:
+        parts.append(f"Business amenities: {', '.join(biz_amenities)}")
 
-    # Accessibility features
-    accessibility = []
-    if poi.get('wheelchair_accessible'):
-        accessibility.append("wheelchair accessible")
-    if poi.get('wifi_options'):
-        accessibility.extend(poi['wifi_options'])
-    if poi.get('pet_options'):
-        accessibility.extend(poi['pet_options'])
-    if accessibility:
-        parts.append(f"Features: {', '.join(accessibility)}")
+    entertainment = _json_list(poi.get('entertainment_options'))
+    if entertainment:
+        parts.append(f"Entertainment: {', '.join(entertainment)}")
+
+    youth = _json_list(poi.get('youth_amenities'))
+    if youth:
+        parts.append(f"Youth amenities: {', '.join(youth)}")
+
+    # General amenities / ideal_for
+    amenities = _json_list(poi.get('amenities'))
+    ideal = _json_list(poi.get('ideal_for'))
+    ideal_key = _json_list(poi.get('ideal_for_key'))
+    all_amenities = amenities + ideal + ideal_key
+    if all_amenities:
+        parts.append(f"Amenities: {', '.join(all_amenities)}")
+
+    # Key facilities
+    key_fac = _json_list(poi.get('key_facilities'))
+    if key_fac:
+        parts.append(f"Key facilities: {', '.join(key_fac)}")
+
+    # --- Accessibility & features ---
+    features = []
+    wheelchair = _json_list(poi.get('wheelchair_accessible'))
+    if wheelchair and wheelchair != ['No'] and wheelchair != ['Unknown']:
+        features.append("wheelchair accessible")
+    wifi = _json_list(poi.get('wifi_options'))
+    if wifi:
+        features.extend(wifi)
+    pet = _json_list(poi.get('pet_options'))
+    if pet:
+        features.extend(pet)
+    public_toilets = _json_list(poi.get('public_toilets'))
+    if public_toilets:
+        features.extend(public_toilets)
+    if features:
+        parts.append(f"Features: {', '.join(features)}")
+
+    # --- Park specifics ---
+    facilities = _json_list(poi.get('facilities_options'))
+    if facilities:
+        parts.append(f"Park facilities: {', '.join(facilities)}")
+
+    things = _json_list(poi.get('things_to_do'))
+    if things:
+        parts.append(f"Things to do: {', '.join(things)}")
+
+    natural = _json_list(poi.get('natural_features'))
+    if natural:
+        parts.append(f"Natural features: {', '.join(natural)}")
+
+    outdoor = _json_list(poi.get('outdoor_types'))
+    if outdoor:
+        parts.append(f"Outdoor types: {', '.join(outdoor)}")
+
+    if poi.get('playground_available'):
+        parts.append("Playground available")
+
+    if poi.get('camping_lodging'):
+        parts.append(f"Camping/lodging: {str(poi['camping_lodging'])[:200]}")
+
+    # --- Trail specifics ---
+    if trail:
+        if trail.get('difficulty'):
+            parts.append(f"Trail difficulty: {trail['difficulty']}")
+        if trail.get('length_text'):
+            parts.append(f"Trail length: {trail['length_text']}")
+        if trail.get('route_type'):
+            parts.append(f"Route type: {trail['route_type']}")
+        surfaces = _json_list(trail.get('trail_surfaces'))
+        if surfaces:
+            parts.append(f"Trail surfaces: {', '.join(surfaces)}")
+        experiences = _json_list(trail.get('trail_experiences'))
+        if experiences:
+            parts.append(f"Trail experiences: {', '.join(experiences)}")
+
+    # --- Event specifics ---
+    if event:
+        venue_settings = _json_list(event.get('venue_settings'))
+        if venue_settings:
+            parts.append(f"Venue: {', '.join(venue_settings)}")
+
+    # --- Business specifics ---
+    if business and business.get('price_range'):
+        parts.append(f"Price range: {business['price_range']}")
+
+    # --- Pricing ---
+    if poi.get('cost'):
+        parts.append(f"Cost: {poi['cost']}")
+    if poi.get('price_range_per_person'):
+        parts.append(f"Price per person: {poi['price_range_per_person']}")
+
+    # Alcohol
+    alcohol = _json_list(poi.get('alcohol_options'))
+    if alcohol:
+        parts.append(f"Alcohol: {', '.join(alcohol)}")
+
+    # Discounts
+    discounts = _json_list(poi.get('discounts'))
+    if discounts:
+        parts.append(f"Discounts: {', '.join(discounts)}")
 
     # Location
     if poi.get('address_city'):
@@ -101,29 +202,75 @@ def load_model():
         sys.exit(1)
 
 def fetch_pois(engine, force: bool = False) -> List[Tuple[str, dict]]:
-    """Fetch POIs from database that need embeddings"""
+    """Fetch POIs from database with related table data for richer embeddings."""
     with engine.connect() as connection:
-        # Build query based on force flag
-        if force:
-            query = text("SELECT * FROM points_of_interest ORDER BY id")
-            print("[INFO] Force mode: regenerating all embeddings")
-        else:
-            query = text("""
-                SELECT * FROM points_of_interest
-                WHERE embedding IS NULL
-                ORDER BY id
-            """)
-            print("[INFO] Fetching POIs without embeddings")
+        # Build WHERE clause based on force flag
+        where_clause = "" if force else "WHERE p.embedding IS NULL"
+        mode = "Force mode: regenerating all" if force else "Fetching POIs without"
+        print(f"[INFO] {mode} embeddings")
+
+        query = text(f"""
+            SELECT p.*,
+                   t.difficulty AS trail_difficulty,
+                   t.length_text AS trail_length_text,
+                   t.route_type AS trail_route_type,
+                   t.trail_surfaces AS trail_surfaces,
+                   t.trail_experiences AS trail_experiences,
+                   e.venue_settings AS event_venue_settings,
+                   b.price_range AS biz_price_range,
+                   COALESCE(
+                       (SELECT string_agg(c.name, ', ')
+                        FROM categories c
+                        JOIN poi_categories pc ON c.id = pc.category_id
+                        WHERE pc.poi_id = p.id), ''
+                   ) AS category_names
+            FROM points_of_interest p
+            LEFT JOIN trails t ON t.poi_id = p.id
+            LEFT JOIN events e ON e.poi_id = p.id
+            LEFT JOIN businesses b ON b.poi_id = p.id
+            {where_clause}
+            ORDER BY p.id
+        """)
 
         result = connection.execute(query)
         rows = result.fetchall()
         columns = result.keys()
 
-        # Convert to list of (id, dict)
         pois = []
         for row in rows:
-            poi_dict = dict(zip(columns, row))
-            pois.append((str(poi_dict['id']), poi_dict))
+            row_dict = dict(zip(columns, row))
+            poi_id = str(row_dict['id'])
+
+            # Separate related table data from POI data
+            trail = None
+            if row_dict.get('trail_difficulty') or row_dict.get('trail_length_text'):
+                trail = {
+                    'difficulty': row_dict.get('trail_difficulty'),
+                    'length_text': row_dict.get('trail_length_text'),
+                    'route_type': row_dict.get('trail_route_type'),
+                    'trail_surfaces': row_dict.get('trail_surfaces'),
+                    'trail_experiences': row_dict.get('trail_experiences'),
+                }
+
+            event = None
+            if row_dict.get('event_venue_settings'):
+                event = {'venue_settings': row_dict.get('event_venue_settings')}
+
+            business = None
+            if row_dict.get('biz_price_range'):
+                business = {'price_range': row_dict.get('biz_price_range')}
+
+            categories = []
+            if row_dict.get('category_names'):
+                categories = [c.strip() for c in row_dict['category_names'].split(',') if c.strip()]
+
+            # Store enrichment data alongside the POI dict
+            row_dict['_trail'] = trail
+            row_dict['_event'] = event
+            row_dict['_business'] = business
+            row_dict['_categories'] = categories
+
+            pois.append((poi_id, row_dict))
 
         print(f"[INFO] Found {len(pois)} POIs to process")
         return pois
@@ -144,8 +291,17 @@ def generate_and_store_embeddings(engine, model, pois: List[Tuple[str, dict]], b
         batch = pois[i:i + batch_size]
         batch_size_actual = len(batch)
 
-        # Create searchable text for batch
-        texts = [create_searchable_text(poi_data) for poi_id, poi_data in batch]
+        # Create searchable text for batch (with enrichment data)
+        texts = [
+            create_searchable_text(
+                poi_data,
+                categories=poi_data.get('_categories'),
+                trail=poi_data.get('_trail'),
+                event=poi_data.get('_event'),
+                business=poi_data.get('_business'),
+            )
+            for poi_id, poi_data in batch
+        ]
         ids = [poi_id for poi_id, poi_data in batch]
 
         # Generate embeddings for batch

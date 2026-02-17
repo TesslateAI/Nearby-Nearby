@@ -10,6 +10,7 @@ export const emptyInitialValues = {
   status_message: '',
   is_verified: false,
   is_disaster_hub: false,
+  lat_long_most_accurate: false,
   publication_status: 'draft',
   dont_display_location: false,
   // Address fields
@@ -65,6 +66,7 @@ export const emptyInitialValues = {
   key_facilities: [],
   alcohol_available: 'no',
   alcohol_options: [],
+  alcohol_policy_details: '',
   wheelchair_accessible: [],
   wheelchair_details: '',
   smoking_options: [],

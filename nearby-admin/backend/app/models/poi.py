@@ -19,8 +19,8 @@ class PointOfInterest(Base):
     name = Column(String(255), nullable=False)
     slug = Column(String(300), unique=True, index=True)  # SEO-friendly URL slug (name-city)
     description_long = Column(Text)
-    description_short = Column(String(250))  # Business free listings only (200 char limit)
-    teaser_paragraph = Column(String(120))  # All POI types (120 char limit)
+    description_short = Column(Text)  # Business free listings only (250 visible char limit, validated in schema)
+    teaser_paragraph = Column(Text)  # All POI types (120 visible char limit, validated in schema)
     
     # Primary Type (e.g., Food Truck, Ghost Kitchen, Pop-up)
     primary_type_id = Column(UUID(as_uuid=True), ForeignKey("primary_types.id"), nullable=True, index=True)
@@ -46,6 +46,7 @@ class PointOfInterest(Base):
     status_message = Column(String(100))
     is_verified = Column(Boolean, default=False)
     is_disaster_hub = Column(Boolean, default=False)
+    lat_long_most_accurate = Column(Boolean, default=False)
 
     # Publication status (draft, published, archived)
     publication_status = Column(String(20), default='draft', nullable=False)
@@ -87,6 +88,7 @@ class PointOfInterest(Base):
     payment_methods = Column(JSONB)  # List of accepted payment methods
     key_facilities = Column(JSONB)  # For Events, Parks, Trails
     alcohol_options = Column(JSONB)  # List of alcohol availability options
+    alcohol_policy_details = Column(Text)  # Additional alcohol policy details
     wheelchair_accessible = Column(JSONB)  # List of accessibility options
     wheelchair_details = Column(Text)
     smoking_options = Column(JSONB)  # List of smoking options
