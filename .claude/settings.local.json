@@ -23,7 +23,9 @@
       "Bash(docker exec:*)",
       "Bash(git rebase:*)",
       "Bash(GIT_EDITOR=true git rebase:*)",
-      "Bash(GIT_EDITOR=\"cmd //c echo\" git rebase --continue)"
+      "Bash(GIT_EDITOR=\"cmd //c echo\" git rebase --continue)",
+      "Bash(gh run list:*)",
+      "Bash(git submodule update:*)"
     ],
     "deny": [],
     "ask": []

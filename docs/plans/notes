@@ -1,0 +1,72 @@
+Testing plan
+
+ Tasks Completed
+
+  Task 42: Set Default City/County/State
+
+  - initialValues.js: City defaults to "Pittsboro"
+  - LocationSection.jsx: City field replaced with searchable/creatable Select dropdown with 15 Chatham County
+   area cities
+  - 8 tests in test_admin_poi_defaults.py — all pass
+
+  Task 43: Improve Map Default Zoom Level
+
+  - LocationMap.jsx: Added MapRecenter component that calls map.setView() when coordinates change, so the map
+   re-centers automatically
+  - Tests in test_admin_poi_defaults.py cover coordinate persistence
+
+  Task 44: Address Entry Moves Map Pin — SKIPPED (per plan)
+
+  Task 45: Venue Data Inheritance
+
+  - Added venue_poi_id (FK to points_of_interest) and venue_inheritance (JSONB) to Event model + schemas     
+  - Mirrored in app models/schemas
+  - Alembic migration: e5f6g7h8i9j0
+  - 7 tests in test_event_venue_inheritance.py — all pass
+
+  Task 46: Remove Military Time from Events
+
+  - Backend returns ISO 8601 datetimes (frontend handles 12h display)
+  - Audit confirmed all time displays already use 12-hour format
+  - 3 tests in test_event_time_format.py — all pass
+
+  Task 47: Add Food and Drink Description Field
+
+  - Field already existed on Event model; expanded app Event schema to expose food_and_drink_info and all    
+  other event fields
+  - 3 tests in test_event_food_drink.py (including cross-app test) — all pass
+
+  Task 48: Add Map Download PDF Option to Events
+
+  - Existing downloadable_maps JSONB and downloadable_map ImageType work for events
+  - 4 tests in test_event_maps.py — all pass
+
+  Task 49: Add Payphone Lat/Long to Events
+
+  - Existing payphone_location and payphone_locations fields work for EVENT POIs
+  - 4 tests in test_event_payphone.py — all pass
+
+  Task 50: Recurring Events Support
+
+  - Added series_id, parent_event_id (FK), excluded_dates, recurrence_end_date, manual_dates to Event model +
+   schemas
+  - repeat_pattern JSONB now supports daily/weekly/monthly/yearly frequencies
+  - Mirrored in app models/schemas
+  - 10 tests in test_recurring_events.py — all pass
+
+  Task 51: Photo Tagging by Function
+
+  - Added function_tags JSONB column to Image model + schemas (admin + app)
+  - Upload endpoint accepts function_tags form field
+  - GET endpoint supports function_tag query parameter for filtering
+  - Update endpoint handles function_tags
+  - Added IMAGE_FUNCTION_TAGS (20 tags) to shared/constants/field_options.py
+  - Alembic migration: d4e5f6g7h8i9
+  - 5 tests in test_image_function_tags.py — all pass
+
+  ---
+  Total: 44 new tests, 269 total tests passing, 0 failures, 0 regressions.
+
+  Admin is running at:
+  - Frontend: http://localhost:5175
+  - Backend API docs: http://localhost:8001/docs
