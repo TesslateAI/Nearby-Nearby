@@ -17,7 +17,7 @@ Skip low-ROI tests: visual regression, snapshot tests, exhaustive unit tests for
 
 ## Current Test Suite
 
-The monorepo has **225 integration tests** in the root `tests/` directory covering admin CRUD, cross-app data flow, real S3 (MinIO) image uploads, and admin form features (Tasks 2-41).
+The monorepo has **286 integration tests** in the root `tests/` directory covering admin CRUD, cross-app data flow, real S3 (MinIO) image uploads, admin form features (Tasks 2-41), and event/image/auth features (Tasks 42-51).
 
 ### Running Tests
 
@@ -78,6 +78,16 @@ Ports are offset from production to avoid collisions (5434 instead of 5432, 9100
 | `test_fulltext_search.py` | 11 | tsvector column, stemming, description-only matches |
 | `test_form_endpoints.py` | 23 | All 5 public forms: happy path, validation, duplicates, file uploads |
 | `test_event_lifecycle.py` | varies | Event creation and lifecycle |
+| `test_login_redirect.py` | 6 | Login 401 behavior, no redirect loop, valid credentials |
+| `test_corporate_compliance.py` | 11 | JSONB compliance field round-trip |
+| `test_admin_poi_defaults.py` | 8 | City/county/state defaults, coordinates |
+| `test_event_venue_inheritance.py` | 7 | Venue FK, inheritance config, park-as-venue |
+| `test_recurring_events.py` | 10 | All frequency types, series linking, excluded dates |
+| `test_event_food_drink.py` | 3 | Food & drink field CRUD + cross-app |
+| `test_event_maps.py` | 4 | Event maps JSONB + image upload |
+| `test_event_payphone.py` | 4 | Payphone location fields |
+| `test_event_time_format.py` | 3 | ISO 8601 format, 12-hour time |
+| `test_image_function_tags.py` | 5 | Function tag upload, update, filter |
 
 ### How Tests Work
 
@@ -113,7 +123,7 @@ The test suite exposed and fixed these real bugs:
 
 ```
 NearbyNearby/
-├── tests/                               # Integration & cross-app tests (225 tests)
+├── tests/                               # Integration & cross-app tests (286 tests)
 │   ├── conftest.py                      # Shared fixtures, auth mocking, ORM helpers
 │   ├── docker-compose.test.yml          # PostGIS + MinIO test containers
 │   ├── test_admin_business.py
@@ -135,7 +145,17 @@ NearbyNearby/
 │   ├── test_query_processor.py          # Query processor extraction tests
 │   ├── test_fulltext_search.py          # tsvector / full-text search tests
 │   ├── test_form_endpoints.py           # Public form API tests (23 tests)
-│   └── test_event_lifecycle.py          # Event lifecycle tests
+│   ├── test_event_lifecycle.py          # Event lifecycle tests
+│   ├── test_login_redirect.py           # Login 401 behavior, redirect loop prevention
+│   ├── test_corporate_compliance.py     # JSONB compliance field round-trip
+│   ├── test_admin_poi_defaults.py       # City/county/state defaults, coordinates
+│   ├── test_event_venue_inheritance.py  # Venue FK, inheritance config, park-as-venue
+│   ├── test_recurring_events.py         # All frequency types, series linking, excluded dates
+│   ├── test_event_food_drink.py         # Food & drink field CRUD + cross-app
+│   ├── test_event_maps.py              # Event maps JSONB + image upload
+│   ├── test_event_payphone.py          # Payphone location fields
+│   ├── test_event_time_format.py       # ISO 8601 format, 12-hour time
+│   └── test_image_function_tags.py     # Function tag upload, update, filter
 │
 ├── nearby-admin/
 │   └── backend/
@@ -391,7 +411,7 @@ The admin workflow at `.github/workflows/deploy-admin.yml` has a single `build-a
 
 | Stage | Duration | Notes |
 |-------|----------|-------|
-| App test job | ~12 minutes | PostGIS container startup + 225 integration tests |
+| App test job | ~12 minutes | PostGIS container startup + 286 integration tests |
 | App build-and-deploy job | ~8 minutes | Multi-stage Docker build (~5.7GB image including ML model) |
 | **App total end-to-end** | **~20 minutes** | Test + build + ECS force deploy |
 | App with `skip_tests` | ~8 minutes | Manual dispatch only, skips test job |

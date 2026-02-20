@@ -54,6 +54,7 @@ Response:
 | GET | `/api/admin/pois/search` | Search all POIs | Yes |
 | GET | `/api/pois/search-by-location` | Location search | No |
 | GET | `/api/pois/{poi_id}/nearby` | Get nearby POIs | No |
+| GET | `/api/pois/{poi_id}/venue-data` | Get venue data for event | Yes (Admin/Editor) |
 
 #### POST /api/pois/
 
@@ -108,6 +109,64 @@ Response:
 ]
 ```
 
+#### GET /api/pois/{poi_id}/venue-data
+
+Returns venue-compatible data for an event. Only works for **BUSINESS** and **PARK** POI types. Used by the admin frontend to pull address, parking, accessibility, restroom data, and copyable image metadata from a venue into an event form.
+
+Response:
+```json
+{
+  "venue_id": "uuid",
+  "venue_name": "Jordan Lake Brewing",
+  "venue_type": "BUSINESS",
+  "address_full": "123 Main St, Pittsboro, NC 27312",
+  "address_street": "123 Main St",
+  "address_city": "Pittsboro",
+  "address_state": "NC",
+  "address_zip": "27312",
+  "location": {
+    "type": "Point",
+    "coordinates": [-79.1772, 35.7198]
+  },
+  "front_door_latitude": 35.7198,
+  "front_door_longitude": -79.1772,
+  "phone_number": "919-555-0123",
+  "parking_types": ["lot", "street"],
+  "parking_notes": "Free parking behind building",
+  "wheelchair_accessible": ["entrance", "restroom"],
+  "public_toilets": ["indoor"],
+  "hours": {...},
+  "amenities": {...},
+  "copyable_images": [
+    {
+      "id": "uuid",
+      "image_type": "entry",
+      "filename": "front-door.jpg",
+      "url": "https://bucket.s3.amazonaws.com/...",
+      "thumbnail_url": "https://bucket.s3.amazonaws.com/.../thumbnail_..."
+    }
+  ]
+}
+```
+
+Returns `400` if the POI type is not BUSINESS or PARK. Returns `404` if the POI does not exist.
+
+---
+
+#### Event Schema Fields
+
+Event create, update, and response schemas include the following fields for venue inheritance and recurring events:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `venue_poi_id` | UUID (optional) | Links the event to a venue (BUSINESS or PARK) POI |
+| `venue_inheritance` | object (optional) | Tracks which fields were inherited from the venue |
+| `series_id` | UUID (optional) | Groups recurring event instances into a series |
+| `parent_event_id` | UUID (optional) | Links to the parent/template event for a recurring series |
+| `excluded_dates` | list[string] (optional) | Dates excluded from a recurring series (ISO format) |
+| `recurrence_end_date` | datetime (optional) | End date for generating recurring instances |
+| `manual_dates` | list[string] (optional) | Manually specified dates for irregular recurring events |
+
 ---
 
 ### Category Endpoints
@@ -151,6 +210,7 @@ Response:
 |--------|----------|-------------|---------------|
 | POST | `/api/images/upload/{poi_id}` | Upload image | Yes |
 | POST | `/api/images/bulk-upload/{poi_id}` | Bulk upload | Yes |
+| POST | `/api/images/copy/{source_poi_id}/to/{target_poi_id}` | Copy images between POIs | Yes |
 | GET | `/api/images/{image_id}` | Get image | No |
 | GET | `/api/images/poi/{poi_id}` | Get POI images | No |
 | GET | `/api/images/poi/{poi_id}/{type}` | Get images by type | No |
@@ -165,6 +225,7 @@ Request (multipart/form-data):
 - `image_type`: main, gallery, entry, parking, rental, etc.
 - `alt_text`: Accessibility text
 - `caption`: Image caption
+- `function_tags` (optional): JSON string of tag array (e.g. `["storefront", "interior"]`). Falls back to wrapping a single string in an array.
 
 Response:
 ```json
@@ -175,12 +236,63 @@ Response:
   "storage_url": "https://bucket.s3.amazonaws.com/...",
   "thumbnail_url": "https://bucket.s3.amazonaws.com/.../thumbnail_...",
   "alt_text": "Coffee shop interior",
+  "function_tags": ["storefront", "interior"],
   "width": 1920,
   "height": 1080
 }
 ```
 
-**Note:** The `thumbnail_url` field provides a pre-generated thumbnail variant for faster loading in lists and grids.
+**Note:** The `thumbnail_url` field provides a pre-generated thumbnail variant for faster loading in lists and grids. The `function_tags` field is `null` when no tags have been set.
+
+#### GET /api/images/poi/{poi_id}
+
+Query Parameters:
+- `image_type` (string, optional): Filter by image type (e.g. `main`, `gallery`, `entry`)
+- `function_tag` (string, optional): Filter images by a specific function tag (e.g. `"storefront"`)
+
+Response: Array of image objects (see image response schema below).
+
+#### PUT /api/images/{image_id}
+
+Request:
+```json
+{
+  "alt_text": "Updated alt text",
+  "caption": "Updated caption",
+  "display_order": 2,
+  "function_tags": ["storefront", "exterior"]
+}
+```
+
+All fields are optional. Only provided fields are updated.
+
+#### POST /api/images/copy/{source_poi_id}/to/{target_poi_id}
+
+Copy image records from one POI to another. Creates new database records that reference the same S3 objects (no binary data is duplicated). Primarily used to copy venue images (entry, parking, restroom) to an event.
+
+Query Parameters:
+- `image_types` (list[string], required): Image types to copy (e.g. `entry`, `parking`, `restroom`)
+
+Constraints:
+- Source POI must be a **BUSINESS** or **PARK**
+- Target POI must be an **EVENT**
+
+Response:
+```json
+{
+  "uploaded": [
+    {
+      "id": "uuid",
+      "filename": "copy_original.jpg",
+      "url": "https://bucket.s3.amazonaws.com/...",
+      "thumbnail_url": "https://bucket.s3.amazonaws.com/.../thumbnail_...",
+      "message": "Copied entry image from venue"
+    }
+  ],
+  "failed": [],
+  "message": "Successfully copied 3 images"
+}
+```
 
 ---
 

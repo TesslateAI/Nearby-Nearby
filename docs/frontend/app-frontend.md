@@ -225,6 +225,28 @@ Each POI type has a specialized detail component in `components/details/`:
 
 All detail components now use the shared `HoursDisplay` component for consistent hours rendering.
 
+### Share & Clipboard Functionality
+
+All five detail components (BusinessDetail, EventDetail, GenericDetail, ParkDetail, TrailDetail) share a consistent set of share and clipboard features:
+
+**Native Share (navigator.share)**
+- On devices/browsers that support the Web Share API, the share button triggers `navigator.share()` with the POI title, teaser text, and current URL.
+- On unsupported browsers, clicking share opens a dropdown menu with social sharing options.
+
+**Share Menu (Fallback)**
+| Option | Behavior |
+|--------|----------|
+| Facebook | Opens Facebook share dialog with current URL |
+| Twitter | Opens Twitter intent with POI name and URL |
+| Email | Opens `mailto:` link with POI name as subject and `window.location.href` as body |
+| Copy Link | Copies current URL to clipboard with "Copied!" state-based feedback (2-second duration) |
+
+**Clipboard Fallback**
+- All detail pages use a `fallbackCopyToClipboard` helper for non-secure contexts (HTTP without HTTPS). This creates a temporary `<textarea>` element and uses `document.execCommand('copy')` when the modern `navigator.clipboard.writeText()` API is unavailable.
+
+**Copy Address Feedback**
+- The address copy button shows a "Copied!" label with a checkmark icon for 2 seconds, replacing the previous `alert()` call. Uses React state to toggle between the default and success states.
+
 ---
 
 ## Components

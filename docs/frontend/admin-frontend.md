@@ -95,22 +95,26 @@ components/POIForm/
 │   ├── usePOIHandlers.jsx   # CRUD operations
 │   └── useAutoSave.js       # Auto-save logic
 ├── constants/
-│   ├── initialValues.js     # Default values (includes playground_locations array)
+│   ├── initialValues.js     # Default values (includes playground_locations, primary_parking, mobility_access, recurring event fields)
 │   ├── validationRules.js   # Validation schema
 │   ├── fieldOptions.js      # Field configurations
 │   └── helpers.js           # Helper functions
+├── components/
+│   ├── VenueSelector.jsx    # Venue search & data copy for events (Task 45)
+│   ├── CheckboxGroupSection.jsx
+│   └── FormActions.jsx
 └── sections/
-    ├── CoreInformationSection.jsx   # Name, teaser, short desc, lat/long flag
+    ├── CoreInformationSection.jsx   # Name, teaser, short desc, lat/long flag, recurring event placeholder
     ├── CategoriesSection.jsx        # Category tree (1-cat limit for free biz)
     ├── ContactSection.jsx
-    ├── LocationSection.jsx          # Per-lot parking photos, parking/transit fields
+    ├── LocationSection.jsx          # Per-lot parking photos, primary parking location, parking/transit fields
     ├── BusinessDetailsSection.jsx
     ├── BusinessGallerySection.jsx
-    ├── FacilitiesSection.jsx        # Multi-restroom cards, pay phone, rentals
+    ├── FacilitiesSection.jsx        # Wheelchair & mobility access, multi-restroom cards, pay phone, rentals
     ├── OutdoorFeaturesSection.jsx   # Multiple playgrounds array
     ├── TrailSpecificSections.jsx    # Trail experience removed
     ├── MiscellaneousSections.jsx    # Membership pass removed from trails
-    ├── EventSpecificSections.jsx
+    ├── EventSpecificSections.jsx    # EventVendorsSection, EventVenueSection, EventMapsSection, EventAmenitiesSection
     └── FormActions.jsx
 ```
 
@@ -533,36 +537,75 @@ function RichTextEditorField({ value, onChange }) {
 }
 ```
 
+**Paste Truncation Fix**: The hard `CharacterCount` limit extension has been removed. Instead, a custom `handlePaste` handler truncates pasted content to fit within the remaining character budget rather than silently blocking the entire paste. This prevents the confusing behavior where paste operations appeared to do nothing when content exceeded the limit.
+
 ### Location Map
 
 ```jsx
 // components/LocationMap.jsx
 
-import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from 'react-leaflet';
 
-function LocationMap({ value, onChange }) {
-  return (
-    <MapContainer
-      center={value || [35.7198, -79.1772]}
-      zoom={13}
-      style={{ height: 400 }}
-    >
-      <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-      {value && <Marker position={value} />}
-      <MapClickHandler onChange={onChange} />
-    </MapContainer>
-  );
-}
-
-function MapClickHandler({ onChange }) {
-  useMapEvents({
-    click: (e) => {
-      onChange([e.latlng.lat, e.latlng.lng]);
-    }
-  });
+// Re-centers map when coordinates change (e.g., after venue selection)
+function MapRecenter({ center }) {
+  const map = useMap();
+  useEffect(() => {
+    map.setView(center, map.getZoom());
+  }, [center[0], center[1]]);
   return null;
 }
+
+const LocationMap = memo(({ latitude, longitude, onLocationChange }) => {
+  const currentPosition = [latitude || 35.720303, longitude || -79.177397];
+
+  return (
+    <MapContainer
+      center={currentPosition}
+      zoom={17}
+      style={{ height: '100%', width: '100%' }}
+      scrollWheelZoom={false}
+    >
+      <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+      <MapRecenter center={currentPosition} />
+      <DraggableMarker
+        position={currentPosition}
+        onPositionChange={(latlng) => onLocationChange(latlng.lat, latlng.lng)}
+      />
+    </MapContainer>
+  );
+});
 ```
+
+**Key features:**
+- **MapRecenter**: Child component that re-centers the map when coordinates change programmatically (e.g., after venue selection copies location data). Watches `center[0]` and `center[1]` to trigger `map.setView`.
+- **DraggableMarker**: Supports both click-to-place and drag-to-reposition. Does not recenter on click so the user keeps their current view.
+- **Memoized**: Uses `React.memo` with custom comparison to only re-render when latitude or longitude actually change.
+- **Event isolation**: Map interactions (click, mousedown, touch) are stopped from propagating to the parent form to prevent accidental form submissions.
+
+### VenueSelector
+
+```jsx
+// components/POIForm/components/VenueSelector.jsx
+
+function VenueSelector({ form, poiId }) {
+  // Fetches venues (BUSINESS or PARK) from /pois/venues/list
+  // Displays grouped Select with icons (IconBuilding for business, IconTree for park)
+  // On venue selection, fetches full venue data from /pois/{venueId}/venue-data
+  // Presents checkboxes to choose what data to copy:
+  //   Address & Location, Contact Info, Parking, Accessibility,
+  //   Restrooms, Hours, Amenities, Photos (Entry, Parking, Restroom)
+  // Copies selected data fields into the event form
+  // Copies images via POST /images/copy/{venueId}/to/{poiId}
+  // Stores venue reference: event.venue_poi_id, event.venue_name, event.venue_type
+}
+```
+
+**Key features:**
+- **Searchable grouped select**: Venues are grouped by POI type (BUSINESS / PARK) with type-specific icons.
+- **Selective data copy**: 8 checkbox categories let the admin choose which venue data to copy. All are enabled by default.
+- **Image copy via API**: When "Photos" is checked, relevant images (entry, parking, restroom) are copied server-side via `POST /images/copy/{venueId}/to/{poiId}`.
+- **One-time copy**: Data is copied once -- subsequent changes to the venue do not automatically propagate to the event.
+- **Venue reference display**: If an event already has a linked venue, a compact card shows the current venue name and type.
 
 ---
 
@@ -597,6 +640,8 @@ export async function apiRequest(url, options = {}) {
   return fetch(url, { ...options, headers });
 }
 ```
+
+**Login Redirect Fix**: The 401 handler now checks whether the failed request was the login endpoint itself (`/api/auth/login`). If so, it skips the redirect to `/login` and instead surfaces the error to the caller. This prevents a Safari redirect loop where a failed login attempt would immediately redirect back to the login page.
 
 ### Auth Context
 
@@ -681,7 +726,7 @@ The POI form dynamically shows/hides sections based on POI type and listing type
 | Core Information | Yes | Teaser paragraph hidden |
 | Categories | Yes | Limited to 1 category |
 | Location / Parking | Yes | All parking fields shown |
-| Facilities & Accessibility | Yes | Wheelchair, restrooms |
+| Facilities & Accessibility | Yes | Wheelchair & mobility access, restrooms (restroom photos hidden for free listings) |
 | Public Amenities | Yes | Restroom options |
 | Community Connections | No | Hidden entirely |
 
@@ -690,9 +735,27 @@ The POI form dynamically shows/hides sections based on POI type and listing type
 | Section | POI Types | Feature |
 |---------|-----------|---------|
 | Multiple Playgrounds | Parks | Array of playground cards with types, surfaces, lat/lng, notes, per-playground photos |
-| Multiple Restrooms | Parks, Trails, Events | Array of restroom cards with lat/lng, description, per-restroom photos |
+| Multiple Restrooms | Parks, Trails, Events | Array of restroom cards with lat/lng, description, toilet types per-location (checkbox group), per-restroom photos |
 | Per-Lot Parking Photos | All with parking | Each parking lot card includes its own photo upload |
+| Primary Parking Location | All with parking | Lat/lng, area name, and photos between general parking info and additional locations |
 | Pay Phone Locations | Parks, Trails | Array of pay phone locations with lat/lng |
+
+### Event-Specific Sections
+
+The EventSpecificSections accordion includes four sub-sections:
+
+| Sub-Section | Component | Description |
+|-------------|-----------|-------------|
+| Event Venue | `EventVenueSection` | Links event to a venue via `VenueSelector`; copies address, parking, accessibility, restroom, and image data |
+| Event Vendors | `EventVendorsSection` | Has-vendors toggle, vendor types (grouped checkboxes), application deadline, fee, requirements |
+| Event Maps & Food | `EventMapsSection` | Downloadable maps (file upload or URL), food & drink info (rich text) |
+| Event Amenities | `EventAmenitiesSection` | Coat check options, food & drink info |
+
+### FacilitiesSection Updates
+
+- **Wheelchair section renamed** to "Wheelchair and Mobility Access" with 5 new detail fields stored in `mobility_access` JSONB.
+- **Toilet types per-location**: Each restroom card in `toilet_locations` now includes a checkbox group for toilet types, rather than a single global toilet type field.
+- **Restroom photos hidden** for free business listings.
 
 ### Removed/Cleaned Sections
 
@@ -702,6 +765,22 @@ The POI form dynamically shows/hides sections based on POI type and listing type
 | Membership Pass | MiscellaneousSections (trails) | Duplicate |
 | Available to Rent toggle | FacilitiesSection restrooms | Duplicate of RentalsSection |
 | Rental Pricing box | FacilitiesSection | No longer used |
+
+### Initial Values Updates
+
+The `initialValues.js` file has been extended with:
+
+| New Field(s) | Purpose |
+|-------------|---------|
+| `primary_parking_lat`, `primary_parking_lng`, `primary_parking_name` | Primary parking location coordinates and area name |
+| `mobility_access` | JSONB object for wheelchair and mobility access detail fields |
+| `event.venue_poi_id`, `event.venue_inheritance` | Venue inheritance for events (Task 45) |
+| `event.series_id`, `event.parent_event_id`, `event.excluded_dates`, `event.recurrence_end_date`, `event.manual_dates` | Recurring event fields (Task 50) |
+| `event.has_vendors`, `event.vendor_types`, `event.vendor_application_deadline`, `event.vendor_application_info`, `event.vendor_fee`, `event.vendor_requirements`, `event.vendor_poi_links` | Event vendor management fields |
+
+### ImageUploadField Updates
+
+- **Trail head/exit photo limit**: Changed from 1 to 10, allowing multiple photos for trailhead entrance and exit locations.
 
 ---
 

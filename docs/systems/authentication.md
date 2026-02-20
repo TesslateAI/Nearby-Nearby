@@ -258,39 +258,58 @@ export function ProtectedRoute({ children }) {
 ```javascript
 // nearby-admin/frontend/src/utils/api.js
 
-import { getToken, isTokenExpired, removeToken } from './secureStorage';
+import { secureTokenStorage } from './secureStorage';
 
-export async function apiRequest(url, options = {}) {
-  const token = getToken();
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
-  if (token && isTokenExpired(token)) {
-    removeToken();
-    window.location.href = '/login';
-    return;
-  }
+export const api = {
+  getAuthHeaders: (contentType = 'application/json') => {
+    const token = secureTokenStorage.getToken();
+    const headers = {
+      ...(token && { 'Authorization': `Bearer ${token}` }),
+    };
+    if (contentType) {
+      headers['Content-Type'] = contentType;
+    }
+    return headers;
+  },
 
-  const headers = {
-    ...options.headers,
-  };
+  request: async (endpoint, options = {}) => {
+    const url = `${API_BASE_URL}${endpoint}`;
+    const isFormData = options.body instanceof FormData;
+    const headers = isFormData
+      ? api.getAuthHeaders(null)
+      : api.getAuthHeaders();
 
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
+    const config = {
+      headers: { ...headers, ...options.headers },
+      ...options,
+    };
 
-  if (!(options.body instanceof FormData)) {
-    headers['Content-Type'] = 'application/json';
-  }
+    const response = await fetch(url, config);
 
-  const response = await fetch(url, { ...options, headers });
+    // Guard: skip redirect for login endpoint to prevent redirect loop
+    if (response.status === 401 && !endpoint.includes('/auth/login')) {
+      secureTokenStorage.clearToken();
+      window.location.href = '/login';
+      return;
+    }
 
-  if (response.status === 401) {
-    removeToken();
-    window.location.href = '/login';
-  }
+    return response;
+  },
 
-  return response;
-}
+  get: (endpoint) => api.request(endpoint),
+  post: (endpoint, data) => api.request(endpoint, {
+    method: 'POST', body: JSON.stringify(data),
+  }),
+  put: (endpoint, data) => api.request(endpoint, {
+    method: 'PUT', body: JSON.stringify(data),
+  }),
+  delete: (endpoint) => api.request(endpoint, { method: 'DELETE' }),
+};
 ```
+
+**Login redirect loop guard**: The 401 handler includes `!endpoint.includes('/auth/login')` to prevent a redirect loop. Without this guard, a failed login attempt (which returns 401 from `/auth/login`) would clear the token and redirect back to `/login`, causing an infinite loop. This was particularly visible on Safari due to stricter cookie and fetch handling.
 
 ---
 
@@ -375,6 +394,12 @@ docker exec nearby-admin-backend-1 python scripts/manage_users.py test-user
 
 **Symptom**: "Incorrect email or password" error
 **Solution**: Verify email exists and password is correct
+
+### Login Redirect Loop
+
+**Symptom**: After entering wrong credentials, the browser redirects to `/login` repeatedly instead of showing an error message. Most noticeable on Safari due to stricter cookie/fetch handling.
+**Root Cause**: The API utility's 401 handler was clearing the token and redirecting to `/login` for ALL 401 responses, including the one returned by `/auth/login` itself on bad credentials.
+**Solution**: The 401 handler in `nearby-admin/frontend/src/utils/api.js` now checks `!endpoint.includes('/auth/login')` before redirecting. A failed login returns the 401 response to the caller so the UI can display the error message normally.
 
 ### CORS Errors
 
