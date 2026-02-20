@@ -40,16 +40,18 @@ The platform uses PostgreSQL 15 with PostGIS 3.4 for geospatial support. Both ap
          │                    │                    │                    │
          │ 1:1               │ 1:1               │ 1:1               │ 1:1
          ▼                    ▼                    ▼                    ▼
-┌─────────────┐      ┌─────────────┐      ┌─────────────┐      ┌─────────────┐
-│  businesses │      │    parks    │      │   trails    │      │   events    │
-├─────────────┤      ├─────────────┤      ├─────────────┤      ├─────────────┤
-│ id (UUID)   │      │ id (UUID)   │      │ id (UUID)   │      │ id (UUID)   │
-│ poi_id FK   │      │ poi_id FK   │      │ poi_id FK   │      │ poi_id FK   │
-│ price_range │      │ drones_     │      │ length_mi   │      │ start_      │
-│             │      │   allowed   │      │ difficulty  │      │   datetime  │
-└─────────────┘      └─────────────┘      │ route_type  │      │ end_datetime│
-                                          │ ...         │      │ ...         │
-                                          └─────────────┘      └─────────────┘
+┌─────────────┐      ┌─────────────┐      ┌─────────────┐      ┌─────────────────┐
+│  businesses │      │    parks    │      │   trails    │      │     events      │
+├─────────────┤      ├─────────────┤      ├─────────────┤      ├─────────────────┤
+│ id (UUID)   │      │ id (UUID)   │      │ id (UUID)   │      │ id (UUID)       │
+│ poi_id FK   │      │ poi_id FK   │      │ poi_id FK   │      │ poi_id FK       │
+│ price_range │      │ drones_     │      │ length_mi   │      │ start_datetime  │
+│             │      │   allowed   │      │ difficulty  │      │ end_datetime    │
+└─────────────┘      └─────────────┘      │ route_type  │      │ venue_poi_id FK │
+                                          │ ...         │      │ series_id       │
+                                          └─────────────┘      │ parent_event FK │
+                                                               │ ...             │
+                                                               └─────────────────┘
 
 ┌─────────────────────┐       ┌─────────────────────┐
 │       images        │       │   poi_relationships │
@@ -61,14 +63,15 @@ The platform uses PostgreSQL 15 with PostGIS 3.4 for geospatial support. Both ap
 │ alt_text            │       └─────────────────────┘
 │ caption             │
 │ display_order       │       ┌─────────────────────┐
-│ width, height       │       │     attributes      │
-│ parent_image_id FK  │       ├─────────────────────┤
-└─────────────────────┘       │ id (UUID) PK        │
-                              │ name                │
-┌─────────────────────┐       │ attribute_type      │
-│      waitlist       │       │ applicable_poi_types│
-├─────────────────────┤       │ options (JSONB)     │
-│ id (UUID) PK        │       └─────────────────────┘
+│ function_tags (JSONB)│      │     attributes      │
+│ width, height       │       ├─────────────────────┤
+│ parent_image_id FK  │       │ id (UUID) PK        │
+└─────────────────────┘       │ name                │
+                              │ attribute_type      │
+┌─────────────────────┐       │ applicable_poi_types│
+│      waitlist       │       │ options (JSONB)     │
+├─────────────────────┤
+│ id (UUID) PK        │
 │ email (unique)      │
 │ created_at          │       ┌─────────────────────┐
 └─────────────────────┘       │    primary_types    │
@@ -163,6 +166,12 @@ Main POI table with all shared fields.
 | parking_locations | JSONB | | Array of {name, lat, lng} parking lots |
 | toilet_locations | JSONB | | Array of {lat, lng, description} restrooms |
 | playground_location | JSONB | | Array of {lat, lng, types, surfaces, notes} playgrounds |
+| **Primary Parking** |
+| primary_parking_lat | FLOAT | | Primary parking lot latitude |
+| primary_parking_lng | FLOAT | | Primary parking lot longitude |
+| primary_parking_name | VARCHAR | | Primary parking lot name |
+| **Mobility Access** |
+| mobility_access | JSONB | | Structured accessibility info: `step_free_entry`, `main_area_accessible`, `ground_level_service`, `accessible_restroom`, `accessible_parking` |
 | **Timestamps** |
 | created_at | TIMESTAMP | DEFAULT NOW() | Creation time |
 | updated_at | TIMESTAMP | | Last update |
@@ -219,6 +228,7 @@ Image storage with variants. All POI photos are now stored in this table (consol
 | alt_text | VARCHAR(255) | | Accessibility text |
 | caption | TEXT | | Image caption |
 | display_order | INTEGER | DEFAULT 0 | Sort order |
+| function_tags | JSONB | | Array of string tags describing image purpose (e.g., "storefront", "interior", "menu"). See predefined tags below |
 | width | INTEGER | | Image width |
 | height | INTEGER | | Image height |
 | parent_image_id | UUID | FK → images.id | Original image (for variants) |
@@ -239,6 +249,11 @@ Image storage with variants. All POI photos are now stored in this table (consol
 - `trail_exit` - Trail exit photos
 - `map` - Map images
 - `downloadable_map` - Downloadable PDF maps
+
+**Function Tags** (predefined in `shared/constants/field_options.py` `IMAGE_FUNCTION_TAGS`):
+`storefront`, `entrance`, `interior`, `exterior`, `signage`, `parking`, `restrooms`, `playground`, `aerial`, `food_drink`, `menu`, `staff`, `product`, `trail_marker`, `scenic`, `map`, `floorplan`, `event_setup`, `stage`, `vendor_area`
+
+Migration: `d4e5f6g7h8i9_add_function_tags_to_images`
 
 ### poi_relationships
 
@@ -307,6 +322,17 @@ POI-to-POI relationships.
 | organizer_email | VARCHAR | Organizer contact |
 | ticket_url | VARCHAR | Ticket purchase URL |
 | is_free | BOOLEAN | Free event flag |
+| **Venue Inheritance** |
+| venue_poi_id | UUID | FK → points_of_interest.id. Links event to a venue (business or park) for inheriting location, hours, amenities, etc. |
+| venue_inheritance | JSONB | Per-section config controlling which fields are inherited from the venue (e.g., `{"location": true, "hours": true, "amenities": false}`) |
+| **Recurring Events** |
+| series_id | UUID | Groups recurring event instances into a series. Indexed for fast lookups |
+| parent_event_id | UUID | FK → events.poi_id. Links a child event instance to its parent/template event |
+| excluded_dates | JSONB | Array of ISO date strings excluded from recurrence (e.g., `["2026-07-04", "2026-12-25"]`) |
+| recurrence_end_date | TIMESTAMP WITH TIMEZONE | When the recurrence pattern ends |
+| manual_dates | JSONB | Array of ISO datetime strings for irregular/manually specified occurrences (e.g., `["2026-03-01T18:00:00Z"]`) |
+
+Migration: `e5f6g7h8i9j0_add_venue_inheritance_and_recurring`
 
 ---
 
@@ -440,6 +466,14 @@ CREATE INDEX idx_poi_tsvector ON points_of_interest
 ```
 
 The `tsvector_col` is a GENERATED ALWAYS column using `to_tsvector('english', ...)` for full-text search with English stemming.
+
+### Event Indexes
+
+```sql
+CREATE INDEX ix_events_series_id ON events (series_id);
+```
+
+Groups recurring event instances for fast series lookups.
 
 ---
 

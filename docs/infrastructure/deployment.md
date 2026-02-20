@@ -2,91 +2,111 @@
 
 ## Overview
 
-The platform runs on AWS ECS Fargate with all infrastructure managed by Terraform. Both applications deploy automatically via GitHub Actions CI/CD on pushes to `main`.
+The NearbyNearby platform runs on **AWS ECS Fargate** with all new infrastructure managed by **Terraform**. Both applications deploy automatically via GitHub Actions CI/CD on pushes to `main`.
+
+### Architecture Diagram
 
 ```
                     Internet
                        |
                   [Cloudflare]  (SSL termination, DNS, WAF)
-                       |
+                       |         SSL mode: Flexible
               ┌────────┴────────┐
      nearbynearby.com    admin.nearbynearby.com
+     (CNAME → ALB DNS,   (CNAME → ALB DNS,
+      proxied)            proxied)
               └────────┬────────┘
                   [ALB port 80]  (host-based routing)
               ┌────────┴────────┐
      ECS Fargate            ECS Fargate
      nearby-app             nearby-admin
      (1 container:          (2 containers in 1 task:
-      FastAPI+React+ML)      nginx + FastAPI backend)
-     1 vCPU / 3GB           0.5 vCPU / 1GB
+      FastAPI+React+ML)      nginx + FastAPI backend
+     1 vCPU / 3GB           sharing localhost)
+     Auto-scale: 1-3       0.5 vCPU / 1GB
+                            Auto-scale: 1-2
               └────────┬────────┘
-              [RDS PostgreSQL 15 + PostGIS]
-              [S3 + CloudFront for images]
+                       |
+              [VPC Peering: 10.0.0.0/16 ↔ 172.31.0.0/16]
+                       |
+              [RDS PostgreSQL 15 + PostGIS]  (existing, in default VPC)
+              [S3 + CloudFront for images]   (existing)
 ```
 
-**Estimated monthly cost: ~$165-175**
+### Key Design Decisions
+
+- **Cloudflare SSL mode is Flexible**: Cloudflare handles HTTPS termination. ALB listens on HTTP port 80 only. No ACM certificates needed.
+- **VPC peering**: ECS tasks run in a new VPC (`10.0.0.0/16`). The existing RDS lives in the default VPC (`172.31.0.0/16`). A VPC peering connection bridges them.
+- **S3 auth is IAM role-based**: ECS tasks use their IAM task role to access S3. No access keys are needed or injected.
+- **Single NAT Gateway**: Cost savings over per-AZ NAT. Acceptable for this workload.
+
+---
+
+## Existing Resources (NOT Managed by Terraform)
+
+These resources pre-date the Terraform infrastructure and are **not** created or managed by Terraform:
+
+| Resource | Details |
+|----------|---------|
+| **RDS PostgreSQL** | Existing instance in the default VPC (`172.31.0.0/16`) |
+| **S3 Bucket** | `nearbynearby-prod-images` |
+| **CloudFront Distribution** | `d24ow80agebvkk.cloudfront.net` |
+
+The prod `main.tf` contains VPC peering, route table entries, RDS security group rules, and S3 IAM policies to integrate these existing resources with the new ECS infrastructure.
 
 ---
 
 ## Terraform Infrastructure
 
-All AWS resources are defined in `terraform/` at the monorepo root. Terraform manages the complete infrastructure lifecycle.
+All AWS resources are defined in `terraform/` at the monorepo root.
 
 ### Directory Structure
 
 ```
 terraform/
-├── bootstrap/main.tf              # S3 state bucket + DynamoDB lock (apply first)
+├── bootstrap/main.tf              # S3 state bucket + DynamoDB lock
 ├── environments/prod/
-│   ├── main.tf                    # Composes all modules
-│   ├── variables.tf               # Variable definitions
-│   ├── terraform.tfvars           # Non-sensitive defaults
-│   ├── backend.tf                 # S3 remote state config
-│   └── outputs.tf                 # ALB DNS, RDS endpoint, etc.
+│   ├── main.tf                    # Modules + VPC peering + S3 IAM policy
+│   ├── variables.tf
+│   ├── terraform.tfvars           # Non-sensitive values only
+│   ├── backend.tf                 # S3 remote state
+│   └── outputs.tf
 └── modules/
     ├── networking/                 # VPC, subnets, NAT, security groups
-    ├── database/                   # RDS PostgreSQL 15 + PostGIS
-    ├── storage/                    # S3 bucket, CloudFront, IAM policies
-    ├── ecr/                        # 3 ECR repositories
-    ├── ecs/                        # Cluster, task defs, services, auto-scaling, IAM
-    ├── alb/                        # ALB, target groups, listener rules
-    ├── secrets/                    # SSM Parameter Store entries
-    └── monitoring/                 # CloudWatch log groups, alarms
+    ├── ecr/                        # 3 ECR repos with lifecycle (keep 5)
+    ├── ecs/                        # Cluster, task defs, services, auto-scaling, IAM, OIDC
+    ├── alb/                        # ALB, target groups, host-based routing
+    ├── secrets/                    # SSM Parameter Store (SecureString)
+    └── monitoring/                 # CloudWatch log groups (14-day retention)
 ```
+
+> **NOTE:** `database/` and `storage/` modules exist in the codebase but are **NOT used** in the prod `main.tf`. We use the existing RDS and S3 resources instead.
+
+### Prod Environment main.tf
+
+In addition to composing the modules listed above, the prod `main.tf` also contains:
+
+- **VPC peering connection** (`ecs_to_default`) with DNS resolution enabled
+- **Routes** in both VPC route tables + RDS subnet route table to enable cross-VPC traffic
+- **Security group rule** allowing inbound port `5432` from `10.0.0.0/16` on the existing RDS security group
+- **S3 IAM policy** granting the ECS task role access to the existing `nearbynearby-prod-images` bucket
 
 ### Modules
 
 #### Networking (`terraform/modules/networking/`)
 
-- **VPC**: `10.0.0.0/16` in us-east-1
-- **Public subnets**: `10.0.1.0/24` (1a), `10.0.2.0/24` (1b) — ALB
-- **Private subnets**: `10.0.10.0/24` (1a), `10.0.11.0/24` (1b) — ECS tasks
-- **Database subnets**: `10.0.20.0/24` (1a), `10.0.21.0/24` (1b) — RDS
+- **VPC**: `10.0.0.0/16` in `us-east-1`
+- **Public subnets**: `10.0.1.0/24` (1a), `10.0.2.0/24` (1b) -- ALB
+- **Private subnets**: `10.0.10.0/24` (1a), `10.0.11.0/24` (1b) -- ECS tasks
 - **Single NAT Gateway** in 1a (cost savings vs per-AZ)
 - **Security groups**:
   - ALB SG: inbound 80 from `0.0.0.0/0`
   - ECS SG: all traffic from ALB SG only
-  - RDS SG: inbound 5432 from ECS SG only
-
-#### Database (`terraform/modules/database/`)
-
-- `db.t3.micro` (1 vCPU, 1GB RAM)
-- PostgreSQL 15, gp3 storage (20GB, auto-scale to 100GB)
-- Single AZ, 7-day backup retention
-- Deletion protection enabled
-- Private subnets only (no public access)
-- Extensions enabled via app startup SQL: `pg_trgm`, `pgvector`, `postgis`
-
-#### Storage (`terraform/modules/storage/`)
-
-- S3 bucket with all public access blocked
-- CloudFront distribution with Origin Access Control (OAC)
-- S3 bucket policy restricts access to CloudFront only
-- IAM policy for ECS task role: `s3:PutObject`, `s3:GetObject`, `s3:DeleteObject`
 
 #### ECR (`terraform/modules/ecr/`)
 
 Three repositories with lifecycle policy (keep last 5 images):
+
 - `nearbynearby/nearby-app`
 - `nearbynearby/nearby-admin-backend`
 - `nearbynearby/nearby-admin-frontend`
@@ -94,46 +114,76 @@ Three repositories with lifecycle policy (keep last 5 images):
 #### ECS (`terraform/modules/ecs/`)
 
 **nearby-app service:**
-- 1 vCPU, 3072 MB memory (ML model needs ~1GB)
-- Single container: FastAPI serving API + pre-built React frontend
-- Health check: `/api/health` (120s start period for ML model loading)
-- Auto-scaling: 1-3 tasks (CPU 70%, memory 80%)
-- Secrets injected from SSM Parameter Store
+
+| Setting | Value |
+|---------|-------|
+| CPU | 1 vCPU |
+| Memory | 3072 MB (3 GB) |
+| Containers | 1 (FastAPI serving API + pre-built React frontend + ML model) |
+| Health check | `/api/health` with 120s start period (ML model loading) |
+| Auto-scaling | 1-3 tasks (CPU 70%, memory 80%) |
 
 **nearby-admin service:**
-- 0.5 vCPU, 1024 MB memory
-- 2 containers in 1 task definition (share localhost via `awsvpc`):
-  - `nginx`: frontend image, port 5173, depends on backend healthy
-  - `backend`: backend image, port 8000, runs `alembic upgrade heads && uvicorn`
-- Health check: `/api/health` (60s start period)
-- Auto-scaling: 1-2 tasks
+
+| Setting | Value |
+|---------|-------|
+| CPU | 0.5 vCPU |
+| Memory | 1024 MB (1 GB) |
+| Containers | 2 in 1 task (nginx + backend sharing localhost via `awsvpc`) |
+| Health check | `/api/health` with 60s start period |
+| Auto-scaling | 1-2 tasks |
+
+The admin task definition runs two containers:
+- `nginx`: frontend image, port 5173, depends on backend being healthy
+- `backend`: backend image, port 8000, runs `alembic upgrade heads && uvicorn`
 
 **IAM roles:**
-- Task execution role: pull ECR, read SSM, write CloudWatch logs
-- Task role: S3 read/write for image management
-- GitHub Actions role: push ECR, update ECS (OIDC federation)
+- **Task execution role**: Pull ECR images, read SSM parameters, write CloudWatch logs
+- **Task role**: S3 read/write for image management (no access keys needed)
+- **GitHub Actions role**: Push to ECR, update ECS services (OIDC federation)
 
 #### ALB (`terraform/modules/alb/`)
 
-- HTTP listener on port 80 (Cloudflare terminates SSL)
+- HTTP listener on port 80 (Cloudflare terminates SSL upstream)
 - Host-based routing:
-  - Default → nearby-app target group (port 8000)
-  - `admin.nearbynearby.com` → nearby-admin target group (port 5173)
-- Health checks: `/api/health` for both targets
+  - Default rule --> nearby-app target group (port 8000)
+  - `admin.nearbynearby.com` --> nearby-admin target group (port 5173)
+- Health checks: `/api/health` for both target groups
 
 #### Secrets (`terraform/modules/secrets/`)
 
 SSM Parameter Store (SecureString):
-- `/nearbynearby/prod/database-url`
-- `/nearbynearby/prod/forms-database-url`
-- `/nearbynearby/prod/secret-key`
 
-Set values via AWS CLI or console — Terraform creates the parameters with placeholder values and ignores subsequent value changes.
+| Parameter | Description |
+|-----------|-------------|
+| `/nearbynearby/prod/database-url` | Primary database connection string |
+| `/nearbynearby/prod/forms-database-url` | Forms-only database connection string |
+| `/nearbynearby/prod/secret-key` | JWT/session secret key |
+
+Terraform creates the parameters with placeholder values and ignores subsequent value changes. Set real values via AWS CLI (see Initial Setup below).
 
 #### Monitoring (`terraform/modules/monitoring/`)
 
-- CloudWatch log groups: `/ecs/nearby-app`, `/ecs/nearby-admin` (14-day retention)
-- Optional ALB 5xx error alarm
+CloudWatch log groups with 14-day retention:
+
+- `/ecs/nearbynearby-prod/app`
+- `/ecs/nearbynearby-prod/admin`
+
+### Terraform Outputs
+
+```bash
+cd terraform/environments/prod
+terraform output
+```
+
+| Output | Description |
+|--------|-------------|
+| `alb_dns_name` | ALB endpoint for Cloudflare CNAME records |
+| `ecr_repository_urls` | Map of 3 ECR repository URLs |
+| `ecs_cluster_name` | ECS cluster name |
+| `app_service_name` | nearby-app ECS service name |
+| `admin_service_name` | nearby-admin ECS service name |
+| `github_actions_role_arn` | IAM role ARN for GitHub Actions OIDC |
 
 ---
 
@@ -144,7 +194,7 @@ Set values via AWS CLI or console — Terraform creates the parameters with plac
 - AWS account with admin access
 - Terraform >= 1.5 installed
 - AWS CLI configured with credentials
-- GitHub repository: `TesslateAI/NearbyNearby`
+- GitHub repository: `TesslateAI/Nearby-Nearby`
 
 ### Step 1: Bootstrap State Backend
 
@@ -178,7 +228,7 @@ terraform apply   # Create resources
 
 ### Step 4: Update SSM Parameter Values
 
-After RDS is created, update SSM parameters with real connection strings:
+After infrastructure is created, update SSM parameters with real connection strings:
 
 ```bash
 aws ssm put-parameter \
@@ -202,24 +252,30 @@ aws ssm put-parameter \
 
 ### Step 5: Configure GitHub Secret
 
-Only one GitHub secret is needed:
+Only **one** GitHub secret is needed:
 
 | Secret | Value |
 |--------|-------|
 | `AWS_ROLE_TO_ASSUME` | ARN of the GitHub Actions IAM role (from Terraform output: `github_actions_role_arn`) |
 
+All other values (region, cluster name, service name, ECR repos) are hardcoded in the workflow files -- they are not secrets.
+
 ### Step 6: Configure Cloudflare DNS
 
-1. Create CNAME records pointing to ALB DNS name (from Terraform output: `alb_dns_name`):
-   - `nearbynearby.com` → ALB DNS (proxied)
-   - `admin.nearbynearby.com` → ALB DNS (proxied)
-2. Set SSL mode to "Full" (Cloudflare encrypts to ALB on port 80)
+1. Create CNAME records pointing to the ALB DNS name (from Terraform output: `alb_dns_name`):
+
+| Record | Type | Target | Proxy |
+|--------|------|--------|-------|
+| `nearbynearby.com` | CNAME | ALB DNS name | Proxied (orange cloud) |
+| `admin.nearbynearby.com` | CNAME | ALB DNS name | Proxied (orange cloud) |
+
+2. Set SSL/TLS mode to **Flexible** (Cloudflare handles HTTPS, ALB listens on HTTP 80).
 
 ### Step 7: Initial Database Setup
 
 ```bash
-# Run Alembic migrations (happens automatically on admin container start)
-# Create admin users
+# Alembic migrations run automatically on admin container start.
+# Create admin users via ECS exec:
 aws ecs execute-command \
   --cluster nearbynearby-prod \
   --task <task-id> \
@@ -237,46 +293,88 @@ aws ecs execute-command \
 **Trigger**: Push to `main` with changes in `nearby-app/**` or `shared/**`
 
 ```
-Push to main → Run tests (PostGIS service) → Build Docker image → Push to ECR → Force ECS deployment
+Push to main
+    |
+    v
+Run integration tests (~12 min)
+  - PostGIS service container
+  - pytest tests/ -v --tb=short -x
+    |
+    v
+Build Docker image (~8 min)
+  - Build context: monorepo root (.)
+  - Dockerfile: nearby-app/Dockerfile
+    |
+    v
+Push to ECR → Force new ECS deployment
 ```
 
-- Build context: monorepo root (`.`)
-- Dockerfile: `nearby-app/Dockerfile`
-- Test job runs `pytest tests/ -v --tb=short -x` against PostGIS service container
-- Uses GitHub OIDC for AWS authentication (no static credentials)
+**Total time: ~20 minutes**
+
+**Manual dispatch option:** The workflow supports `workflow_dispatch` with a checkbox **"Skip integration tests"** (`skip_tests`). This is intended for hotfixes only. Push-triggered deploys always run tests.
 
 ### nearby-admin (`deploy-admin.yml`)
 
 **Trigger**: Push to `main` with changes in `nearby-admin/**` or `shared/**`
 
 ```
-Push to main → Build backend image → Build frontend image → Push both to ECR → Force ECS deployment
+Push to main
+    |
+    v
+Build backend image + Build frontend image (parallel)
+  - Backend context: monorepo root (.), file: nearby-admin/backend/Dockerfile.ecs
+  - Frontend context: nearby-admin/frontend, file: nearby-admin/frontend/Dockerfile.prod
+    |
+    v
+Push both to ECR → Force new ECS deployment
 ```
 
-- Backend build context: monorepo root (`.`), file: `nearby-admin/backend/Dockerfile.ecs`
-- Frontend build context: `nearby-admin/frontend`, file: `nearby-admin/frontend/Dockerfile.prod`
-- Uses Docker Buildx with registry-based layer caching
+**Total time: ~2 minutes** (no test job)
 
-### Required GitHub Secret
+Both workflows use Docker Buildx with registry-based layer caching.
 
-| Secret | Description |
-|--------|-------------|
-| `AWS_ROLE_TO_ASSUME` | IAM role ARN for OIDC auth (Terraform creates this) |
+### CI/CD Timing Summary
 
-All other values (region, cluster name, service name, ECR repos) are hardcoded in the workflow files — they're not secrets.
+| Pipeline | Tests | Build + Deploy | Total |
+|----------|-------|----------------|-------|
+| nearby-app | ~12 min | ~8 min | ~20 min |
+| nearby-admin | None | ~2 min | ~2 min |
 
 ### AWS OIDC Configuration
 
 Terraform automatically creates:
-1. IAM OIDC Identity Provider for `token.actions.githubusercontent.com`
-2. IAM Role with trust policy scoped to `repo:TesslateAI/NearbyNearby:*`
-3. Permissions: ECR push, ECS update-service
+
+1. **IAM OIDC Identity Provider** for `token.actions.githubusercontent.com`
+2. **IAM Role** with trust policy scoped to `repo:TesslateAI/Nearby-Nearby:*`
+3. **Permissions**: ECR push, ECS update-service
+
+GitHub Actions authenticates via OIDC federation -- no static AWS credentials are stored in GitHub.
+
+---
+
+## Environment Variables
+
+### ECS Task Environment (Injected via Terraform)
+
+| Variable | Source | Service |
+|----------|--------|---------|
+| `DATABASE_URL` | SSM Parameter Store | Both |
+| `FORMS_DATABASE_URL` | SSM Parameter Store | nearby-app |
+| `SECRET_KEY` | SSM Parameter Store | Both |
+| `ENVIRONMENT` | Task definition | Both |
+| `PYTHONPATH` | Task definition | Both |
+| `AWS_S3_BUCKET` | Task definition | Both |
+| `AWS_REGION` | Task definition | Both |
+| `CLOUDFRONT_DOMAIN` | Task definition | Both |
+| `BACKEND_HOST` | Task definition | nearby-admin (nginx) |
+
+S3 credentials are **not** needed -- ECS tasks use IAM role-based authentication via the task role.
 
 ---
 
 ## Health Checks
 
-Both applications expose `/api/health` endpoints used by ECS and ALB for health monitoring.
+Both applications expose `/api/health` endpoints used by ECS and ALB for health monitoring. HTTP 200 means healthy; HTTP 503 means degraded.
 
 ### nearby-app
 
@@ -303,6 +401,31 @@ Returns 503 with `"status": "degraded"` if database connection fails.
 
 Returns 503 with `"status": "degraded"` if database connection fails.
 
+### ECS Health Check Configuration
+
+| Service | Path | Start Period | Interval | Retries |
+|---------|------|-------------|----------|---------|
+| nearby-app | `/api/health` | 120s | 30s | 3 |
+| nearby-admin | `/api/health` | 60s | 30s | 3 |
+
+The start period gives containers time to initialize before health checks begin. The app needs 120s because the ML embedding model (~1GB) takes time to load.
+
+---
+
+## Deployment Flow
+
+### How ECS Rolling Deployment Works
+
+1. CI/CD pushes a new Docker image to ECR
+2. CI/CD forces a new ECS deployment
+3. ECS launches a new task with the new image
+4. New task starts and begins its health check start period
+5. Once the health check passes, ALB begins routing traffic to the new task
+6. Old task enters draining mode (existing connections finish)
+7. Old task is stopped
+
+Traffic is never interrupted -- the new task must be healthy before the old one is removed.
+
 ---
 
 ## Rollback Procedures
@@ -311,7 +434,9 @@ Returns 503 with `"status": "degraded"` if database connection fails.
 
 ```bash
 # List recent task definitions
-aws ecs list-task-definitions --family-prefix nearbynearby-prod-app --sort DESC
+aws ecs list-task-definitions \
+  --family-prefix nearbynearby-prod-app \
+  --sort DESC
 
 # Update service to previous revision
 aws ecs update-service \
@@ -343,22 +468,22 @@ terraform apply   # Apply previous state
 ### CloudWatch Logs
 
 ```bash
-# View nearby-app logs
-aws logs tail /ecs/nearby-app --follow
+# View nearby-app logs (follow mode)
+aws logs tail /ecs/nearbynearby-prod/app --follow
 
-# View nearby-admin logs
-aws logs tail /ecs/nearby-admin --follow
+# View nearby-admin logs (follow mode)
+aws logs tail /ecs/nearbynearby-prod/admin --follow
 
 # Search for errors
 aws logs filter-log-events \
-  --log-group-name /ecs/nearby-app \
+  --log-group-name /ecs/nearbynearby-prod/app \
   --filter-pattern "ERROR"
 ```
 
 ### ECS Service Status
 
 ```bash
-# Check service status
+# Check service status (running count, desired count, deployments, events)
 aws ecs describe-services \
   --cluster nearbynearby-prod \
   --services nearbynearby-prod-app nearbynearby-prod-admin
@@ -369,45 +494,29 @@ aws ecs list-tasks \
   --service-name nearbynearby-prod-app
 ```
 
-### Terraform Outputs
-
-```bash
-cd terraform/environments/prod
-terraform output
-
-# Key outputs:
-# alb_dns_name          - ALB endpoint for DNS configuration
-# rds_endpoint          - Database connection endpoint
-# cloudfront_domain     - CDN domain for images
-# ecr_app_url           - ECR repository URL for nearby-app
-# ecr_admin_backend_url - ECR repository URL for admin backend
-# ecr_admin_frontend_url - ECR repository URL for admin frontend
-# github_actions_role_arn - IAM role ARN for GitHub Actions
-```
-
 ---
 
-## Environment Variables
+## Cost Estimate
 
-### ECS Task Environment (injected via Terraform)
+### Monthly Costs (New Infrastructure)
 
-| Variable | Source | Service |
-|----------|--------|---------|
-| `DATABASE_URL` | SSM Parameter Store | Both |
-| `FORMS_DATABASE_URL` | SSM Parameter Store | nearby-app |
-| `SECRET_KEY` | SSM Parameter Store | Both |
-| `ENVIRONMENT` | Task definition | Both |
-| `PYTHONPATH` | Task definition | Both |
-| `AWS_S3_BUCKET` | Task definition | Both |
-| `AWS_REGION` | Task definition | Both |
-| `CLOUDFRONT_DOMAIN` | Task definition | Both |
-| `BACKEND_HOST` | Task definition | nearby-admin nginx |
+| Resource | Monthly Cost |
+|----------|-------------|
+| ECS Fargate (nearby-app: 1 vCPU / 3GB) | ~$73 |
+| ECS Fargate (nearby-admin: 0.5 vCPU / 1GB) | ~$18 |
+| NAT Gateway | ~$32 |
+| Application Load Balancer | ~$16 |
+| ECR Storage | ~$3 |
+| CloudWatch Logs | ~$1 |
+| **New infra subtotal** | **~$143/mo** |
 
-S3 credentials are **not** needed — ECS tasks use IAM role-based authentication via the task role.
+### Total with Existing Resources
 
-### Local Development
-
-See [Docker Configuration](./docker.md) for local development environment setup.
+| Resource | Monthly Cost |
+|----------|-------------|
+| New infrastructure (above) | ~$143 |
+| Existing RDS PostgreSQL | ~$13 |
+| **Total** | **~$156/mo** |
 
 ---
 
@@ -415,13 +524,26 @@ See [Docker Configuration](./docker.md) for local development environment setup.
 
 When migrating from the old EC2 setup to ECS:
 
-1. **Database**: `pg_dump` from old RDS → `pg_restore` to new RDS
+1. **Database**: `pg_dump` from old RDS --> `pg_restore` to new RDS (if replacing)
 2. **Create forms role**: `CREATE ROLE nearby_forms` with INSERT/SELECT on form tables
 3. **Run migrations**: Happens automatically on admin container startup (`alembic upgrade heads`)
 4. **Create admin users**: Via ECS exec (see Step 7 above)
 5. **Push initial images**: First CI/CD push builds and deploys both apps
 6. **Switch DNS**: Update Cloudflare CNAME records to new ALB
-7. **Decommission**: Stop old EC2 instance and old RDS
+7. **Decommission**: Stop old EC2 instance
+
+---
+
+## Best Practices
+
+- **Always push to `main` for deployment** -- CI/CD is automatic
+- **Use `skip_tests` for hotfixes only** -- push-triggered deploys always run tests
+- **Check CloudWatch logs after deployment** -- catch errors early
+- **Health checks must pass** before ALB routes traffic to new tasks
+- **ECS rolling deployment** ensures zero-downtime updates
+- **Never commit secrets** -- use SSM Parameter Store for sensitive values
+- **Test database migrations locally** before they run in production
+- **Monitor resource usage** -- especially ML model memory in nearby-app
 
 ---
 
@@ -429,10 +551,10 @@ When migrating from the old EC2 setup to ECS:
 
 ### Before Deployment
 
-- [ ] All tests pass (`pytest tests/ -v`)
+- [ ] All tests pass locally (`pytest tests/ -v`)
 - [ ] Database migrations tested locally
 - [ ] SSM parameters set with correct values
-- [ ] Terraform plan shows expected changes
+- [ ] Terraform plan shows expected changes (if infra changed)
 - [ ] GitHub OIDC role configured
 
 ### After Deployment
@@ -440,14 +562,7 @@ When migrating from the old EC2 setup to ECS:
 - [ ] Health check passes: `curl http://<ALB-DNS>/api/health`
 - [ ] Admin panel accessible at `admin.nearbynearby.com`
 - [ ] User app accessible at `nearbynearby.com`
-- [ ] Image uploads work (admin → S3 → CloudFront)
+- [ ] Image uploads work (admin --> S3 --> CloudFront)
 - [ ] Search works (keyword + semantic)
 - [ ] CloudWatch logs show no errors
 - [ ] Auto-scaling policies active
-
-### After DNS Cutover
-
-- [ ] Both domains resolve to ALB
-- [ ] Cloudflare SSL mode is "Full"
-- [ ] Old EC2 instance stopped
-- [ ] Old RDS instance stopped (if replaced)

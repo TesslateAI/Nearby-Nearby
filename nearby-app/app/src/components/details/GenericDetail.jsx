@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { MapPin, Clock, Phone, Globe, Share2, Navigation, ChevronDown, ChevronUp } from 'lucide-react';
+import { MapPin, Clock, Phone, Globe, Share2, Navigation, ChevronDown, ChevronUp, Copy, Check, ExternalLink } from 'lucide-react';
 import NearbySection from '../nearby-feature/NearbySection';
 import HoursDisplay from '../common/HoursDisplay';
 import SEO from '../SEO';
@@ -16,6 +16,8 @@ function GenericDetail({ poi }) {
   const location = useLocation();
   const [expandedSections, setExpandedSections] = useState({});
   const [showCopiedFeedback, setShowCopiedFeedback] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
+  const [showShareMenu, setShowShareMenu] = useState(false);
 
   const toggleSection = (section) => {
     setExpandedSections(prev => {
@@ -99,6 +101,45 @@ function GenericDetail({ poi }) {
     } else {
       alert(`Share this link: ${url}`);
     }
+  };
+
+  const handleShare = async (platform) => {
+    const url = window.location.href;
+    const title = poi?.name || 'Check this out';
+    const description = poi?.teaser_paragraph || poi?.description_short || '';
+
+    switch (platform) {
+      case 'native':
+        if (navigator.share) {
+          try {
+            await navigator.share({ title, text: description, url });
+          } catch (err) {
+            if (err.name !== 'AbortError') console.error('Share failed:', err);
+          }
+        }
+        break;
+      case 'facebook':
+        window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}&quote=${encodeURIComponent(title)}`, '_blank', 'width=600,height=400');
+        break;
+      case 'twitter':
+        window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(title)}&url=${encodeURIComponent(url)}`, '_blank', 'width=600,height=400');
+        break;
+      case 'email':
+        window.location.href = `mailto:?subject=${encodeURIComponent(title)}&body=${encodeURIComponent(description + '\n\n' + url)}`;
+        break;
+      case 'copy':
+        try {
+          const success = await copyToClipboard(url);
+          if (success) {
+            setCopiedLink(true);
+            setTimeout(() => setCopiedLink(false), 2000);
+          }
+        } catch (err) {
+          console.error('Failed to copy:', err);
+        }
+        break;
+    }
+    setShowShareMenu(false);
   };
 
   const handleDirections = () => {
@@ -293,10 +334,33 @@ function GenericDetail({ poi }) {
                 <MapPin size={16} />
                 View Nearby
               </button>
-              <button className="poi-detail__action-btn" onClick={copyShareLink} type="button">
-                <Share2 size={16} />
-                Share
-              </button>
+              <div className="poi-detail__share-wrapper">
+                <button
+                  className="poi-detail__action-btn"
+                  onClick={() => navigator.share ? handleShare('native') : setShowShareMenu(!showShareMenu)}
+                  type="button"
+                >
+                  <Share2 size={16} />
+                  Share
+                </button>
+                {showShareMenu && (
+                  <div className="poi-detail__share-menu">
+                    <button type="button" onClick={() => handleShare('facebook')}>
+                      <ExternalLink size={14} /> Facebook
+                    </button>
+                    <button type="button" onClick={() => handleShare('twitter')}>
+                      <ExternalLink size={14} /> Twitter/X
+                    </button>
+                    <button type="button" onClick={() => handleShare('email')}>
+                      <ExternalLink size={14} /> Email
+                    </button>
+                    <button type="button" onClick={() => handleShare('copy')}>
+                      {copiedLink ? <Check size={14} /> : <Copy size={14} />}
+                      {copiedLink ? 'Copied!' : 'Copy Link'}
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Lat/Long Info Text */}

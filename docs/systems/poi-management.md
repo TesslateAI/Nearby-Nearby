@@ -148,15 +148,44 @@ class Trail(Base):
 class Event(Base):
     __tablename__ = "events"
 
-    id = Column(UUID, primary_key=True)
-    poi_id = Column(UUID, ForeignKey("points_of_interest.id"))
-    start_datetime = Column(DateTime)
-    end_datetime = Column(DateTime)
-    repeat_pattern = Column(String)
+    poi_id = Column(UUID, ForeignKey("points_of_interest.id"), primary_key=True)
+    start_datetime = Column(TIMESTAMP(timezone=True), nullable=False)
+    end_datetime = Column(TIMESTAMP(timezone=True))
+
+    # Repeating event fields
+    is_repeating = Column(Boolean, default=False)
+    repeat_pattern = Column(JSONB)  # {"frequency": "weekly|daily|monthly|yearly", "interval": 1, "days": [...]}
+
+    # Venue inheritance (see "Venue Data Inheritance" section)
+    venue_poi_id = Column(UUID, ForeignKey("points_of_interest.id"), nullable=True)
+    venue_inheritance = Column(JSONB, nullable=True)  # Per-section inheritance config
+
+    # Recurring events (see "Recurring Events" section)
+    series_id = Column(UUID, nullable=True, index=True)
+    parent_event_id = Column(UUID, ForeignKey("events.poi_id"), nullable=True)
+    excluded_dates = Column(JSONB, nullable=True)    # ["2026-07-04", "2026-12-25"]
+    recurrence_end_date = Column(TIMESTAMP(timezone=True), nullable=True)
+    manual_dates = Column(JSONB, nullable=True)       # ["2026-03-01T18:00:00Z", ...]
+
+    # Event-specific fields
     organizer_name = Column(String)
-    organizer_email = Column(String)
-    ticket_url = Column(String)
-    is_free = Column(Boolean)
+    venue_settings = Column(JSONB)  # Indoor, Outdoor, Hybrid, Online Only
+    event_entry_notes = Column(Text)
+    food_and_drink_info = Column(Text)
+    coat_check_options = Column(JSONB)
+
+    # Vendor information
+    has_vendors = Column(Boolean, default=False)
+    vendor_types = Column(JSONB)
+    vendor_application_deadline = Column(TIMESTAMP(timezone=True))
+    vendor_application_info = Column(Text)
+    vendor_fee = Column(String)
+    vendor_requirements = Column(Text)
+    vendor_poi_links = Column(JSONB)  # List of POI IDs for vendors at this event
+
+    poi = relationship("PointOfInterest", back_populates="event", foreign_keys=[poi_id])
+    venue_poi = relationship("PointOfInterest", foreign_keys=[venue_poi_id])
+    parent_event = relationship("Event", remote_side=[poi_id], foreign_keys=[parent_event_id])
 ```
 
 ---
@@ -398,6 +427,172 @@ def unpublish_poi(db: Session, poi_id: UUID):
 | PUT | `/api/pois/{id}` | Update POI | Admin/Editor |
 | DELETE | `/api/pois/{id}` | Delete POI | Admin |
 | GET | `/api/pois/search` | Search POIs | Public |
+| GET | `/api/pois/{id}/venue-data` | Get venue data for event inheritance | Admin/Editor |
+
+---
+
+## Venue Data Inheritance
+
+Events can link to a **venue** (a Business or Park POI) via the `venue_poi_id` field on the Event model. When linked, the event can inherit data from the venue instead of requiring manual re-entry.
+
+### How It Works
+
+1. The admin selects a venue (Business or Park) in the Event form via the **VenueSelector** component.
+2. The frontend calls `GET /api/pois/{venue_poi_id}/venue-data` to fetch copyable data.
+3. The `venue_inheritance` JSONB field stores per-section inheritance configuration, indicating which data sections are inherited from the venue.
+
+### Inheritance Configuration
+
+The `venue_inheritance` field is a JSONB object with boolean flags per section:
+
+```json
+{
+  "parking": true,
+  "restrooms": true,
+  "accessibility": true,
+  "address": false
+}
+```
+
+When a flag is `true`, the event inherits that section's data from the linked venue rather than storing its own values.
+
+### Venue Data Endpoint
+
+```
+GET /api/pois/{poi_id}/venue-data
+```
+
+**Auth**: Admin/Editor required.
+
+**Validation**: Only `BUSINESS` and `PARK` POI types can be used as venues. Returns `400` for other types.
+
+**Response** (`VenueDataForEvent` schema):
+
+| Field Group | Fields Included |
+|-------------|----------------|
+| Identity | `venue_id`, `venue_name`, `venue_type` |
+| Address | `address_full`, `address_street`, `address_city`, `address_state`, `address_zip`, `address_county` |
+| Location | `location`, `front_door_latitude`, `front_door_longitude` |
+| Contact | `phone_number`, `email`, `website_url` |
+| Parking | `parking_types`, `parking_notes`, `parking_locations`, `expect_to_pay_parking`, `public_transit_info` |
+| Accessibility | `wheelchair_accessible`, `wheelchair_details` |
+| Restrooms | `public_toilets`, `toilet_description`, `toilet_locations` |
+| Hours | `hours` |
+| Amenities | `amenities` |
+| Photos | `copyable_images` (entry, parking, restroom image metadata) |
+
+---
+
+## Recurring Events
+
+Events support recurrence through a set of fields on the Event model that enable grouping, parent-child relationships, and flexible scheduling patterns.
+
+### Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `is_repeating` | `Boolean` | Flag indicating this is a recurring event |
+| `repeat_pattern` | `JSONB` | Recurrence pattern: `{"frequency": "weekly", "interval": 1, "days_of_week": ["Monday", "Wednesday"]}` |
+| `series_id` | `UUID` | Groups related event instances into a series (shared across all instances) |
+| `parent_event_id` | `FK → events.poi_id` | Links child event instances back to the parent/template event |
+| `excluded_dates` | `JSONB array` | Dates to skip in the recurrence pattern (e.g., `["2026-07-04", "2026-12-25"]`) |
+| `recurrence_end_date` | `TIMESTAMP` | When the recurrence pattern stops generating new instances |
+| `manual_dates` | `JSONB array` | Manually specified dates for irregular patterns (e.g., `["2026-03-01T18:00:00Z"]`) |
+
+### Recurrence Pattern Structure
+
+```json
+{
+  "frequency": "weekly",   // "daily", "weekly", "monthly", "yearly"
+  "interval": 1,           // Every N periods (e.g., every 2 weeks)
+  "days_of_week": ["Monday", "Wednesday"]  // Applicable for weekly frequency
+}
+```
+
+### Parent-Child Relationship
+
+- The **parent event** serves as the template, storing the recurrence configuration.
+- **Child events** are individual instances linked via `parent_event_id`.
+- All events in a series share the same `series_id` for easy querying.
+- The `excluded_dates` array on the parent tracks cancelled individual occurrences.
+
+---
+
+## Primary Parking
+
+POIs support a **primary parking location** with dedicated fields, separate from the `parking_locations` JSONB array that stores additional parking areas.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `primary_parking_lat` | `Float` | Latitude of the main parking area |
+| `primary_parking_lng` | `Float` | Longitude of the main parking area |
+| `primary_parking_name` | `String` | Name/label for the primary parking area (e.g., "Main Lot") |
+
+The `parking_locations` JSONB array continues to store additional parking areas as `[{"lat": 0, "lng": 0, "name": "Overflow Lot"}]`.
+
+**Note**: These fields are currently managed on the frontend form (`initialValues.js`, `LocationSection.jsx`, `usePOIHandlers.jsx`) and are not yet added to the backend SQLAlchemy model or schema.
+
+---
+
+## Wheelchair and Mobility Access
+
+Renamed from "Wheelchair Accessibility" to **"Wheelchair and Mobility Access"**. In addition to the existing `wheelchair_accessible` (JSONB list) and `wheelchair_details` (Text) fields, a new `mobility_access` JSONB field provides structured granular data.
+
+### `mobility_access` Field Structure
+
+```json
+{
+  "step_free_entry": "Yes",           // "Yes", "No", "Partial"
+  "main_area_accessible": "Yes",      // "Yes", "No", "Partial"
+  "ground_level_service": "Partial",  // "Yes", "No", "Partial"
+  "accessible_restroom": "Yes",       // "Yes", "No", "Partial"
+  "accessible_parking": "No"          // "Yes", "No", "Partial"
+}
+```
+
+Each sub-field accepts `"Yes"`, `"No"`, or `"Partial"`. The frontend renders these as select inputs in the Facilities section of the POI form.
+
+---
+
+## Restroom Toilet Types Per Location
+
+Each entry in the `toilet_locations` JSONB array now supports a `toilet_types` array field, allowing per-location specification of toilet types available.
+
+### Updated Structure
+
+```json
+[
+  {
+    "lat": 35.720303,
+    "lng": -79.177397,
+    "description": "Near main entrance",
+    "photos": "",
+    "toilet_types": ["Standard", "Family", "Porta Potty"]
+  }
+]
+```
+
+Available toilet type options include: `"Standard"`, `"Family"`, `"Porta Potty"`, and others as configured in the frontend.
+
+---
+
+## Default Values
+
+New POIs are initialized with the following default values (defined in `nearby-admin/frontend/src/components/POIForm/constants/initialValues.js`):
+
+| Field | Default Value |
+|-------|---------------|
+| `address_city` | `Pittsboro` |
+| `address_county` | `Chatham` |
+| `address_state` | `NC` |
+| `longitude` | `-79.177397` (Pittsboro center) |
+| `latitude` | `35.720303` (Pittsboro center) |
+| `poi_type` | `BUSINESS` |
+| `listing_type` | `free` |
+| `publication_status` | `draft` |
+| `status` | `Fully Open` |
+
+These defaults reflect the platform's focus on Chatham County, North Carolina.
 
 ---
 
@@ -508,6 +703,7 @@ Free business listings (`listing_type == 'free'` and `poi_type == 'BUSINESS'`) h
 | No teaser paragraph | Frontend: field hidden for free business |
 | No Community Connections | Frontend: entire section hidden (community_impact, article_links) |
 | Has public restrooms | Frontend: Facilities & Public Amenities sections always visible |
+| No restroom photo uploads | Frontend: restroom photo upload hidden for free business listings (`!(isBusiness && isFreeListing)` guard) |
 | Has wheelchair accessibility | Frontend: Facilities section always visible |
 | Has parking fields | Frontend: parking_notes, public_transit_info, expect_to_pay_parking always visible |
 
@@ -517,7 +713,7 @@ The `playground_location` field accepts either a single dict `{lat, lng}` or an 
 
 ### Multiple Restrooms (JSONB)
 
-The `toilet_locations` field stores an array of restroom objects `[{lat, lng, description}, ...]`. Parks, trails, and events all use the multi-restroom card UI with add/remove buttons.
+The `toilet_locations` field stores an array of restroom objects `[{lat, lng, description, photos, toilet_types}, ...]`. Parks, trails, and events all use the multi-restroom card UI with add/remove buttons. Each restroom location can specify its own `toilet_types` array (e.g., `["Standard", "Family", "Porta Potty"]`). See the "Restroom Toilet Types Per Location" section above for details.
 
 ---
 

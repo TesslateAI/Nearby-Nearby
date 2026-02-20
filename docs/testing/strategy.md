@@ -17,7 +17,7 @@ Skip low-ROI tests: visual regression, snapshot tests, exhaustive unit tests for
 
 ## Current Test Suite
 
-The monorepo has **225 integration tests** in the root `tests/` directory covering admin CRUD, cross-app data flow, real S3 (MinIO) image uploads, and admin form features (Tasks 2-41).
+The monorepo has **286 integration tests** in the root `tests/` directory covering admin CRUD, cross-app data flow, real S3 (MinIO) image uploads, admin form features (Tasks 2-41), and event/image/auth features (Tasks 42-51).
 
 ### Running Tests
 
@@ -78,6 +78,16 @@ Ports are offset from production to avoid collisions (5434 instead of 5432, 9100
 | `test_fulltext_search.py` | 11 | tsvector column, stemming, description-only matches |
 | `test_form_endpoints.py` | 23 | All 5 public forms: happy path, validation, duplicates, file uploads |
 | `test_event_lifecycle.py` | varies | Event creation and lifecycle |
+| `test_login_redirect.py` | 6 | Login 401 behavior, no redirect loop, valid credentials |
+| `test_corporate_compliance.py` | 11 | JSONB compliance field round-trip |
+| `test_admin_poi_defaults.py` | 8 | City/county/state defaults, coordinates |
+| `test_event_venue_inheritance.py` | 7 | Venue FK, inheritance config, park-as-venue |
+| `test_recurring_events.py` | 10 | All frequency types, series linking, excluded dates |
+| `test_event_food_drink.py` | 3 | Food & drink field CRUD + cross-app |
+| `test_event_maps.py` | 4 | Event maps JSONB + image upload |
+| `test_event_payphone.py` | 4 | Payphone location fields |
+| `test_event_time_format.py` | 3 | ISO 8601 format, 12-hour time |
+| `test_image_function_tags.py` | 5 | Function tag upload, update, filter |
 
 ### How Tests Work
 
@@ -113,7 +123,7 @@ The test suite exposed and fixed these real bugs:
 
 ```
 NearbyNearby/
-├── tests/                               # Integration & cross-app tests (225 tests)
+├── tests/                               # Integration & cross-app tests (286 tests)
 │   ├── conftest.py                      # Shared fixtures, auth mocking, ORM helpers
 │   ├── docker-compose.test.yml          # PostGIS + MinIO test containers
 │   ├── test_admin_business.py
@@ -135,7 +145,17 @@ NearbyNearby/
 │   ├── test_query_processor.py          # Query processor extraction tests
 │   ├── test_fulltext_search.py          # tsvector / full-text search tests
 │   ├── test_form_endpoints.py           # Public form API tests (23 tests)
-│   └── test_event_lifecycle.py          # Event lifecycle tests
+│   ├── test_event_lifecycle.py          # Event lifecycle tests
+│   ├── test_login_redirect.py           # Login 401 behavior, redirect loop prevention
+│   ├── test_corporate_compliance.py     # JSONB compliance field round-trip
+│   ├── test_admin_poi_defaults.py       # City/county/state defaults, coordinates
+│   ├── test_event_venue_inheritance.py  # Venue FK, inheritance config, park-as-venue
+│   ├── test_recurring_events.py         # All frequency types, series linking, excluded dates
+│   ├── test_event_food_drink.py         # Food & drink field CRUD + cross-app
+│   ├── test_event_maps.py              # Event maps JSONB + image upload
+│   ├── test_event_payphone.py          # Payphone location fields
+│   ├── test_event_time_format.py       # ISO 8601 format, 12-hour time
+│   └── test_image_function_tags.py     # Function tag upload, update, filter
 │
 ├── nearby-admin/
 │   └── backend/
@@ -282,57 +302,126 @@ Keep it minimal. For a small team, frontend tests have the worst ROI unless you 
 
 ## CI/CD Integration
 
-Add a test job that runs before deployment. Tests gate the deploy.
+Tests are integrated directly into the **nearby-app deployment workflow** at `.github/workflows/deploy-app.yml`. There is no separate test workflow file. The `test` job gates the `build-and-deploy` job -- if tests fail, the deploy does not proceed.
+
+The **nearby-admin deployment workflow** (`.github/workflows/deploy-admin.yml`) has **no test job** -- it builds and deploys immediately on push.
+
+### How Tests Gate Deployment (nearby-app)
+
+```
+push to main (nearby-app/** or shared/**)
+    |
+    v
+  [test job]  ──failed──>  deploy blocked
+    |
+  passed / skipped
+    |
+    v
+  [build-and-deploy job]  ──>  ECR push + ECS force deploy
+```
+
+- **Push-triggered deploys** always run the test job (no way to skip).
+- **Manual dispatches** (`workflow_dispatch`) offer a `skip_tests` checkbox. When checked, the test job is skipped and deploy proceeds directly.
+- The `build-and-deploy` job uses `if: always() && (needs.test.result == 'success' || needs.test.result == 'skipped')` so it runs when tests pass OR when the test job was skipped via the input flag.
+
+### Actual Workflow Configuration
 
 ```yaml
-# .github/workflows/test.yml
-name: Run Tests
+# .github/workflows/deploy-app.yml (simplified — secrets/ECR/ECS details omitted)
+name: Deploy nearby-app to AWS ECR/ECS
 
 on:
   push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+    branches: [ "main" ]
+    paths:
+      - 'nearby-app/**'
+      - 'shared/**'
+  workflow_dispatch:
+    inputs:
+      skip_tests:
+        description: 'Skip integration tests'
+        required: false
+        type: boolean
+        default: false
 
 jobs:
-  integration-tests:
+  test:
+    if: ${{ github.event_name == 'push' || !inputs.skip_tests }}
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: postgis/postgis:15-3.3
+        image: postgis/postgis:15-3.4
         env:
           POSTGRES_USER: test
           POSTGRES_PASSWORD: test
-          POSTGRES_DB: test_nearby
+          POSTGRES_DB: test_nearbynearby
         ports:
           - 5434:5432
         options: >-
-          --health-cmd "pg_isready -U test"
+          --health-cmd "pg_isready -U test -d test_nearbynearby"
           --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-      minio:
-        image: minio/minio:latest
-        env:
-          MINIO_ROOT_USER: testminio
-          MINIO_ROOT_PASSWORD: testminio123
-        ports:
-          - 9100:9000
-        options: >-
-          --health-cmd "mc ready local || exit 0"
-          --health-interval 5s
           --health-timeout 5s
           --health-retries 5
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - run: pip install -r nearby-admin/backend/requirements.txt && pip install slowapi
-      - run: pytest tests/ -v --tb=short
+
+      - name: Install dependencies
+        run: |
+          pip install -r nearby-app/backend/requirements.txt
+          pip install -r nearby-admin/backend/requirements.txt
+          pip install pytest httpx
+
+      - name: Run tests
         env:
-          DATABASE_URL: postgresql://test:test@localhost:5434/test_nearby
+          DATABASE_URL: postgresql://test:test@localhost:5434/test_nearbynearby
+          PYTHONPATH: .
+        run: pytest tests/ -v --tb=short -x
+
+  build-and-deploy:
+    needs: test
+    if: ${{ always() && (needs.test.result == 'success' || needs.test.result == 'skipped') }}
+    runs-on: ubuntu-latest
+    steps:
+      # ... AWS OIDC auth, ECR login, Docker Buildx, build+push, ECS force deploy
 ```
+
+### Key Details
+
+| Detail | Value |
+|--------|-------|
+| PostGIS service image | `postgis/postgis:15-3.4` |
+| PostGIS port mapping | `5434:5432` (offset to avoid collisions) |
+| Test database name | `test_nearbynearby` |
+| Python version | 3.11 |
+| Dependencies installed | Both `nearby-app/backend/requirements.txt` AND `nearby-admin/backend/requirements.txt`, plus `pytest httpx` |
+| Environment variables | `DATABASE_URL`, `PYTHONPATH=.` |
+| Test command | `pytest tests/ -v --tb=short -x` (`-x` = stop on first failure) |
+| MinIO service | Not included in CI (image tests skipped; only PostGIS-dependent tests run) |
+
+### nearby-admin Workflow (No Tests)
+
+The admin workflow at `.github/workflows/deploy-admin.yml` has a single `build-and-deploy` job with no test gate. It triggers on pushes to `main` that touch `nearby-admin/**` or `shared/**`, and also supports manual `workflow_dispatch` (without a `skip_tests` option since there are no tests to skip).
+
+### Pipeline Timing
+
+| Stage | Duration | Notes |
+|-------|----------|-------|
+| App test job | ~12 minutes | PostGIS container startup + 286 integration tests |
+| App build-and-deploy job | ~8 minutes | Multi-stage Docker build (~5.7GB image including ML model) |
+| **App total end-to-end** | **~20 minutes** | Test + build + ECS force deploy |
+| App with `skip_tests` | ~8 minutes | Manual dispatch only, skips test job |
+| Admin build-and-deploy | ~2 minutes | No tests, lighter images (separate backend + frontend) |
+
+### Runner Infrastructure
+
+All CI/CD jobs run on **GitHub-hosted Ubuntu runners** (`runs-on: ubuntu-latest`). Nothing runs on AWS infrastructure, local machines, or self-hosted runners. The PostGIS service container is spun up ephemerally by GitHub Actions alongside the runner.
+
+GitHub Actions free tier provides **2,000 minutes/month for private repos** and **unlimited minutes for public repos**. At ~20 minutes per app deploy, the free tier supports ~100 deployments/month.
 
 ---
 
