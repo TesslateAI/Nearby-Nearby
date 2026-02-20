@@ -285,3 +285,10 @@ EVENT_STATUS_OPTIONS = [
     "Moved Online",
     "Unofficial Proposed Date",
 ]
+
+IMAGE_FUNCTION_TAGS = [
+    "storefront", "entrance", "interior", "exterior", "signage",
+    "parking", "restrooms", "playground", "aerial", "food_drink",
+    "menu", "staff", "product", "trail_marker", "scenic",
+    "map", "floorplan", "event_setup", "stage", "vendor_area",
+]

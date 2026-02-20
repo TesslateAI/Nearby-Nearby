@@ -173,7 +173,7 @@ export const FacilitiesSection = React.memo(function FacilitiesSection({
       )}
 
       <CheckboxGroupSection
-        label="Wheelchair Accessibility"
+        label="Wheelchair and Mobility Access"
         fieldName="wheelchair_accessible"
         options={WHEELCHAIR_OPTIONS}
         cols={{ base: 2, sm: 3 }}
@@ -186,6 +186,69 @@ export const FacilitiesSection = React.memo(function FacilitiesSection({
         onChange={(html) => form.setFieldValue('wheelchair_details', html)}
         error={form.errors.wheelchair_details}
       />
+
+      <Divider my="md" label="Wheelchair and Mobility Access Details" />
+      <Text size="sm" c="dimmed" mb="md">
+        These fields help users with mobility needs find accessible locations
+      </Text>
+      <SimpleGrid cols={{ base: 1, sm: 2 }}>
+        <Select
+          label="Step-Free Entry"
+          placeholder="Select..."
+          data={[
+            { value: 'yes', label: 'Yes' },
+            { value: 'no', label: 'No' },
+            { value: 'unknown', label: 'Unknown' }
+          ]}
+          value={form.values.mobility_access?.step_free_entry || ''}
+          onChange={(value) => form.setFieldValue('mobility_access.step_free_entry', value)}
+        />
+        <Select
+          label="Main Service Area Reachable Without Stairs"
+          placeholder="Select..."
+          data={[
+            { value: 'yes', label: 'Yes' },
+            { value: 'no', label: 'No' },
+            { value: 'unknown', label: 'Unknown' }
+          ]}
+          value={form.values.mobility_access?.main_area_accessible || ''}
+          onChange={(value) => form.setFieldValue('mobility_access.main_area_accessible', value)}
+        />
+        <Select
+          label="Primary Service on Ground Level"
+          placeholder="Select..."
+          data={[
+            { value: 'yes', label: 'Yes' },
+            { value: 'no', label: 'No' },
+            { value: 'unknown', label: 'Unknown' }
+          ]}
+          value={form.values.mobility_access?.ground_level_service || ''}
+          onChange={(value) => form.setFieldValue('mobility_access.ground_level_service', value)}
+        />
+        <Select
+          label="Accessible Restroom Available"
+          placeholder="Select..."
+          data={[
+            { value: 'yes', label: 'Yes' },
+            { value: 'no', label: 'No' },
+            { value: 'unknown', label: 'Unknown' }
+          ]}
+          value={form.values.mobility_access?.accessible_restroom || ''}
+          onChange={(value) => form.setFieldValue('mobility_access.accessible_restroom', value)}
+        />
+        <Select
+          label="Accessible Parking"
+          placeholder="Select..."
+          data={[
+            { value: 'dedicated_ada', label: 'Dedicated ADA Spots' },
+            { value: 'street_level', label: 'Street Level' },
+            { value: 'none', label: 'None' },
+            { value: 'unknown', label: 'Unknown' }
+          ]}
+          value={form.values.mobility_access?.accessible_parking || ''}
+          onChange={(value) => form.setFieldValue('mobility_access.accessible_parking', value)}
+        />
+      </SimpleGrid>
 
       <CheckboxGroupSection
         label="Smoking Policy"
@@ -239,6 +302,8 @@ export const PublicAmenitiesSection = React.memo(function PublicAmenitiesSection
   isPark,
   isTrail,
   isEvent,
+  isBusiness,
+  isFreeListing,
   id
 }) {
   return (
@@ -317,6 +382,21 @@ export const PublicAmenitiesSection = React.memo(function PublicAmenitiesSection
                         form.setFieldValue('toilet_locations', toilets);
                       }}
                     />
+                    <Checkbox.Group
+                      label="Restroom Features at This Location"
+                      value={toilet.toilet_types || []}
+                      onChange={(value) => {
+                        const toilets = [...(form.values.toilet_locations || [])];
+                        toilets[index] = { ...toilets[index], toilet_types: value };
+                        form.setFieldValue('toilet_locations', toilets);
+                      }}
+                    >
+                      <SimpleGrid cols={{ base: 2, sm: 3 }}>
+                        {PUBLIC_TOILET_OPTIONS.filter(option => !['Yes', 'No'].includes(option)).map(option => (
+                          <Checkbox key={option} value={option} label={option} />
+                        ))}
+                      </SimpleGrid>
+                    </Checkbox.Group>
                     {shouldUseImageUpload(id) ? (
                       <RestroomPhotosUpload
                         poiId={id}
@@ -363,7 +443,7 @@ export const PublicAmenitiesSection = React.memo(function PublicAmenitiesSection
                 leftSection={<IconPlus size={16} />}
                 onClick={() => {
                   const toilets = [...(form.values.toilet_locations || [])];
-                  toilets.push({ lat: null, lng: null, description: '', photos: '' });
+                  toilets.push({ lat: null, lng: null, description: '', photos: '', toilet_types: [] });
                   form.setFieldValue('toilet_locations', toilets);
                 }}
               >
@@ -395,26 +475,28 @@ export const PublicAmenitiesSection = React.memo(function PublicAmenitiesSection
                 />
               </SimpleGrid>
 
-              {shouldUseImageUpload(id) ? (
-                <RestroomPhotosUpload
-                  poiId={id}
-                  restroomIndex={0}
-                  form={{
-                    values: { toilets: [{ photos: form.values.toilet_photos }] },
-                    setFieldValue: (field, value) => {
-                      if (field === 'toilets' && value[0]) {
-                        form.setFieldValue('toilet_photos', value[0].photos);
+              {!(isBusiness && isFreeListing) && (
+                shouldUseImageUpload(id) ? (
+                  <RestroomPhotosUpload
+                    poiId={id}
+                    restroomIndex={0}
+                    form={{
+                      values: { toilets: [{ photos: form.values.toilet_photos }] },
+                      setFieldValue: (field, value) => {
+                        if (field === 'toilets' && value[0]) {
+                          form.setFieldValue('toilet_photos', value[0].photos);
+                        }
                       }
-                    }
-                  }}
-                />
-              ) : (
-                <TextInput
-                  label="Toilet Photos"
-                  placeholder="URLs to toilet photos (comma-separated)"
-                  {...form.getInputProps('toilet_photos')}
-                  description="Image upload will be available shortly..."
-                />
+                    }}
+                  />
+                ) : (
+                  <TextInput
+                    label="Toilet Photos"
+                    placeholder="URLs to toilet photos (comma-separated)"
+                    {...form.getInputProps('toilet_photos')}
+                    description="Image upload will be available shortly..."
+                  />
+                )
               )}
             </>
           )}

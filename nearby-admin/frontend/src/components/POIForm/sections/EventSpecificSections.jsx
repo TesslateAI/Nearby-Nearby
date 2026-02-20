@@ -58,7 +58,9 @@ export const EventVendorsSection = React.memo(function EventVendorsSection({ for
           <DateTimePicker
             label="Vendor Application Deadline"
             placeholder="Select deadline"
-            {...form.getInputProps('event.vendor_application_deadline')}
+            value={form.values.event?.vendor_application_deadline instanceof Date ? form.values.event.vendor_application_deadline : (form.values.event?.vendor_application_deadline ? new Date(form.values.event.vendor_application_deadline) : null)}
+            onChange={(val) => form.setFieldValue('event.vendor_application_deadline', val)}
+            error={form.errors['event.vendor_application_deadline']}
           />
 
           <RichTextEditor

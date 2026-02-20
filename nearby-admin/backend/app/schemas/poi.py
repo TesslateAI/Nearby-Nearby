@@ -120,11 +120,20 @@ class EventBase(BaseModel):
     start_datetime: datetime
     end_datetime: Optional[datetime] = None
     is_repeating: bool = False
-    repeat_pattern: Optional[Dict[str, Any]] = None  # {"frequency": "weekly", "days": ["thursday"]}
+    repeat_pattern: Optional[Dict[str, Any]] = None  # {"frequency": "weekly|daily|monthly|yearly", ...}
+    # Venue inheritance (Task 45)
+    venue_poi_id: Optional[uuid.UUID] = None
+    venue_inheritance: Optional[Dict[str, Any]] = None
+    # Recurring events (Task 50)
+    series_id: Optional[uuid.UUID] = None
+    parent_event_id: Optional[uuid.UUID] = None
+    excluded_dates: Optional[List[str]] = None
+    recurrence_end_date: Optional[datetime] = None
+    manual_dates: Optional[List[str]] = None
+    # Event-specific fields
     organizer_name: Optional[str] = None
     venue_settings: Optional[List[str]] = None
     event_entry_notes: Optional[str] = None
-    # event_entry_photo - DEPRECATED: moved to Images table (image_type='entry')
     food_and_drink_info: Optional[str] = None
     coat_check_options: Optional[List[str]] = None
     has_vendors: bool = False
@@ -141,6 +150,16 @@ class EventUpdate(BaseModel):
     end_datetime: Optional[datetime] = None
     is_repeating: Optional[bool] = None
     repeat_pattern: Optional[Dict[str, Any]] = None
+    # Venue inheritance (Task 45)
+    venue_poi_id: Optional[uuid.UUID] = None
+    venue_inheritance: Optional[Dict[str, Any]] = None
+    # Recurring events (Task 50)
+    series_id: Optional[uuid.UUID] = None
+    parent_event_id: Optional[uuid.UUID] = None
+    excluded_dates: Optional[List[str]] = None
+    recurrence_end_date: Optional[datetime] = None
+    manual_dates: Optional[List[str]] = None
+    # Event-specific fields
     organizer_name: Optional[str] = None
     venue_settings: Optional[List[str]] = None
     event_entry_notes: Optional[str] = None

@@ -41,7 +41,7 @@ export const api = {
 
     const response = await fetch(url, config);
     
-    if (response.status === 401) {
+    if (response.status === 401 && !endpoint.includes('/auth/login')) {
       // Token expired or invalid, redirect to login
       secureTokenStorage.clearToken();
       window.location.href = '/login';

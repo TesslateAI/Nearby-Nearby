@@ -15,6 +15,7 @@ function TrailDetail({ poi }) {
   const [expandedSections, setExpandedSections] = useState({});
   const [showHours, setShowHours] = useState(false);
   const [copiedCoords, setCopiedCoords] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
   const [showShareMenu, setShowShareMenu] = useState(false);
 
   // Get coordinates - prefer trailhead, then front_door, fallback to location
@@ -41,15 +42,50 @@ function TrailDetail({ poi }) {
     }
   };
 
+  const fallbackCopyToClipboard = (text) => {
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    textArea.style.position = 'fixed';
+    textArea.style.left = '-999999px';
+    textArea.style.top = '-999999px';
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    try {
+      document.execCommand('copy');
+      return true;
+    } catch (err) {
+      console.error('Fallback: Could not copy text:', err);
+      return false;
+    } finally {
+      document.body.removeChild(textArea);
+    }
+  };
+
+  const copyToClipboard = async (text) => {
+    if (navigator.clipboard && window.isSecureContext) {
+      try {
+        await navigator.clipboard.writeText(text);
+        return true;
+      } catch (err) {
+        console.error('Clipboard API failed:', err);
+        return fallbackCopyToClipboard(text);
+      }
+    } else {
+      return fallbackCopyToClipboard(text);
+    }
+  };
+
   const handleCopyCoords = async () => {
     const coords = getCoordinates();
     if (coords) {
-      try {
-        await navigator.clipboard.writeText(`${coords.lat}, ${coords.lng}`);
+      const text = `${coords.lat}, ${coords.lng}`;
+      const success = await copyToClipboard(text);
+      if (success) {
         setCopiedCoords(true);
         setTimeout(() => setCopiedCoords(false), 2000);
-      } catch (err) {
-        console.error('Failed to copy coordinates:', err);
+      } else {
+        alert(`Lat/Long: ${text}`);
       }
     }
   };
@@ -66,9 +102,23 @@ function TrailDetail({ poi }) {
     };
 
     if (platform === 'copy') {
-      await navigator.clipboard.writeText(url);
+      try {
+        const success = await copyToClipboard(url);
+        if (success) {
+          setCopiedLink(true);
+          setTimeout(() => setCopiedLink(false), 2000);
+        }
+      } catch (err) {
+        console.error('Failed to copy URL:', err);
+      }
     } else if (platform === 'native' && navigator.share) {
-      try { await navigator.share({ title, text: description, url }); } catch {}
+      try {
+        await navigator.share({ title, text: description, url });
+      } catch (err) {
+        if (err.name !== 'AbortError') console.error('Share failed:', err);
+      }
+    } else if (platform === 'email') {
+      window.location.href = shareUrls.email;
     } else if (shareUrls[platform]) {
       window.open(shareUrls[platform], '_blank', 'width=600,height=400');
     }
@@ -300,7 +350,10 @@ function TrailDetail({ poi }) {
                   <button onClick={() => handleShare('facebook')}><ExternalLink size={14} /> Facebook</button>
                   <button onClick={() => handleShare('twitter')}><ExternalLink size={14} /> Twitter/X</button>
                   <button onClick={() => handleShare('email')}><ExternalLink size={14} /> Email</button>
-                  <button onClick={() => handleShare('copy')}><Copy size={14} /> Copy Link</button>
+                  <button onClick={() => handleShare('copy')}>
+                    {copiedLink ? <Check size={14} /> : <Copy size={14} />}
+                    {copiedLink ? 'Copied!' : 'Copy Link'}
+                  </button>
                 </div>
               )}
             </div>

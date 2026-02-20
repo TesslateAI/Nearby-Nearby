@@ -39,6 +39,29 @@ class Trail(BaseModel):
 class Event(BaseModel):
     start_datetime: datetime
     end_datetime: Optional[datetime] = None
+    is_repeating: Optional[bool] = None
+    repeat_pattern: Optional[dict] = None
+    organizer_name: Optional[str] = None
+    venue_settings: Optional[list] = None
+    event_entry_notes: Optional[str] = None
+    food_and_drink_info: Optional[str] = None
+    coat_check_options: Optional[list] = None
+    has_vendors: Optional[bool] = None
+    vendor_types: Optional[list] = None
+    vendor_application_deadline: Optional[datetime] = None
+    vendor_application_info: Optional[str] = None
+    vendor_fee: Optional[str] = None
+    vendor_requirements: Optional[str] = None
+    vendor_poi_links: Optional[list] = None
+    # Venue inheritance (Task 45)
+    venue_poi_id: Optional[str] = None
+    venue_inheritance: Optional[dict] = None
+    # Recurring events expansion (Task 50)
+    series_id: Optional[str] = None
+    parent_event_id: Optional[str] = None
+    excluded_dates: Optional[list] = None
+    recurrence_end_date: Optional[datetime] = None
+    manual_dates: Optional[list] = None
     model_config = ConfigDict(from_attributes=True)
 
 

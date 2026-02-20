@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from 'react-leaflet';
 import { Box, Skeleton, Paper, Text, Group } from '@mantine/core';
 
@@ -26,6 +26,15 @@ function DraggableMarker({ position, onPositionChange }) {
       position={position}
     />
   );
+}
+
+// Re-centers map when coordinates change (e.g., from venue selection)
+function MapRecenter({ center }) {
+  const map = useMap();
+  useEffect(() => {
+    map.setView(center, map.getZoom());
+  }, [center[0], center[1]]);
+  return null;
 }
 
 // Main map component - memoized to prevent unnecessary re-renders
@@ -76,6 +85,7 @@ const LocationMap = memo(({ latitude, longitude, onLocationChange }) => {
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           />
+          <MapRecenter center={currentPosition} />
           <DraggableMarker
             position={currentPosition}
             onPositionChange={(latlng) => {

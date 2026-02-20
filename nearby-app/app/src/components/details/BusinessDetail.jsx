@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  MapPin, Phone, Globe, Navigation, Copy, Check,
+  MapPin, Phone, Globe, Navigation, Copy, Check, Share2,
   ChevronDown, BadgeCheck, Users, Mail, ExternalLink,
   Wifi, Car, TreePine, Bath, Bike, Droplets, Dog, UtensilsCrossed, CirclePlus, Info
 } from 'lucide-react';
@@ -20,6 +20,9 @@ function BusinessDetail({ poi }) {
   const navigate = useNavigate();
   const [expandedSections, setExpandedSections] = useState({});
   const [copiedCoords, setCopiedCoords] = useState(false);
+  const [copiedAddress, setCopiedAddress] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
+  const [showShareMenu, setShowShareMenu] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
 
@@ -89,6 +92,57 @@ function BusinessDetail({ poi }) {
         alert(`Lat/Long: ${text}`);
       }
     }
+  };
+
+  const handleCopyAddress = async () => {
+    const address = [poi.address_street, poi.address_city, poi.address_state, poi.address_zip]
+      .filter(Boolean).join(', ');
+    if (address) {
+      const success = await copyToClipboard(address);
+      if (success) {
+        setCopiedAddress(true);
+        setTimeout(() => setCopiedAddress(false), 2000);
+      }
+    }
+  };
+
+  const handleShare = async (platform) => {
+    const url = window.location.href;
+    const title = poi?.name || 'Check out this place';
+    const description = poi?.teaser_paragraph || poi?.description_short || '';
+
+    switch (platform) {
+      case 'native':
+        if (navigator.share) {
+          try {
+            await navigator.share({ title, text: description, url });
+          } catch (err) {
+            if (err.name !== 'AbortError') console.error('Share failed:', err);
+          }
+        }
+        break;
+      case 'facebook':
+        window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}&quote=${encodeURIComponent(title)}`, '_blank', 'width=600,height=400');
+        break;
+      case 'twitter':
+        window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(title)}&url=${encodeURIComponent(url)}`, '_blank', 'width=600,height=400');
+        break;
+      case 'email':
+        window.location.href = `mailto:?subject=${encodeURIComponent(title)}&body=${encodeURIComponent(description + '\n\n' + url)}`;
+        break;
+      case 'copy':
+        try {
+          const success = await copyToClipboard(url);
+          if (success) {
+            setCopiedLink(true);
+            setTimeout(() => setCopiedLink(false), 2000);
+          }
+        } catch (err) {
+          console.error('Failed to copy:', err);
+        }
+        break;
+    }
+    setShowShareMenu(false);
   };
 
   const handleCall = () => {
@@ -362,6 +416,32 @@ function BusinessDetail({ poi }) {
               <Globe size={16} /> WEBSITE
             </button>
           )}
+          <div className="bd-share-wrapper">
+            <button
+              type="button"
+              className="bd-action-btn"
+              onClick={() => navigator.share ? handleShare('native') : setShowShareMenu(!showShareMenu)}
+            >
+              <Share2 size={16} /> SHARE
+            </button>
+            {showShareMenu && (
+              <div className="bd-share-menu">
+                <button type="button" onClick={() => handleShare('facebook')}>
+                  <ExternalLink size={14} /> Facebook
+                </button>
+                <button type="button" onClick={() => handleShare('twitter')}>
+                  <ExternalLink size={14} /> Twitter/X
+                </button>
+                <button type="button" onClick={() => handleShare('email')}>
+                  <ExternalLink size={14} /> Email
+                </button>
+                <button type="button" onClick={() => handleShare('copy')}>
+                  {copiedLink ? <Check size={14} /> : <Copy size={14} />}
+                  {copiedLink ? 'Copied!' : 'Copy Link'}
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Two Cards Row: Info Card + Photo Card */}
@@ -558,12 +638,10 @@ function BusinessDetail({ poi }) {
                     <button
                       type="button"
                       className="bd-address-btn bd-address-btn--small"
-                      onClick={() => {
-                        const addr = [poi.address_street, poi.address_city, poi.address_state, poi.address_zip].filter(Boolean).join(', ');
-                        copyToClipboard(addr);
-                      }}
+                      onClick={handleCopyAddress}
                     >
-                      <Copy size={12} /> Copy
+                      {copiedAddress ? <Check size={12} /> : <Copy size={12} />}
+                      {copiedAddress ? 'Copied!' : 'Copy'}
                     </button>
                   </div>
                 )}

@@ -244,7 +244,7 @@ class PointOfInterest(Base):
     business = relationship("Business", back_populates="poi", uselist=False, cascade="all, delete-orphan")
     park = relationship("Park", back_populates="poi", uselist=False, cascade="all, delete-orphan")
     trail = relationship("Trail", back_populates="poi", uselist=False, cascade="all, delete-orphan")
-    event = relationship("Event", back_populates="poi", uselist=False, cascade="all, delete-orphan")
+    event = relationship("Event", back_populates="poi", uselist=False, cascade="all, delete-orphan", foreign_keys="[Event.poi_id]")
 
     # Images relationship
     images = relationship("Image", back_populates="poi", cascade="all, delete-orphan")
@@ -350,14 +350,25 @@ class Trail(Base):
 
 class Event(Base):
     __tablename__ = "events"
-    
+
     poi_id = Column(UUID(as_uuid=True), ForeignKey("points_of_interest.id"), primary_key=True)
     start_datetime = Column(TIMESTAMP(timezone=True), nullable=False)
     end_datetime = Column(TIMESTAMP(timezone=True))
     # Repeating event fields
     is_repeating = Column(Boolean, default=False)
-    repeat_pattern = Column(JSONB)  # {"frequency": "weekly", "days": ["thursday"], "exceptions": []}
-    
+    repeat_pattern = Column(JSONB)  # {"frequency": "weekly|daily|monthly|yearly", "interval": 1, "days": [...]}
+
+    # Venue inheritance (Task 45)
+    venue_poi_id = Column(UUID(as_uuid=True), ForeignKey("points_of_interest.id"), nullable=True)
+    venue_inheritance = Column(JSONB, nullable=True)  # Per-section inheritance config
+
+    # Recurring events expansion (Task 50)
+    series_id = Column(UUID(as_uuid=True), nullable=True, index=True)
+    parent_event_id = Column(UUID(as_uuid=True), ForeignKey("events.poi_id"), nullable=True)
+    excluded_dates = Column(JSONB, nullable=True)  # ["2026-07-04", "2026-12-25"]
+    recurrence_end_date = Column(TIMESTAMP(timezone=True), nullable=True)
+    manual_dates = Column(JSONB, nullable=True)  # ["2026-03-01T18:00:00Z", ...]
+
     # Event-specific fields
     organizer_name = Column(String)
     venue_settings = Column(JSONB)  # List of venue settings: Indoor, Outdoor, Hybrid, Online Only
@@ -365,7 +376,7 @@ class Event(Base):
     # event_entry_photo moved to Images table (image_type='entry')
     food_and_drink_info = Column(Text)
     coat_check_options = Column(JSONB)  # List of coat check options
-    
+
     # Vendor information
     has_vendors = Column(Boolean, default=False)
     vendor_types = Column(JSONB)  # List of vendor types present
@@ -374,5 +385,7 @@ class Event(Base):
     vendor_fee = Column(String)
     vendor_requirements = Column(Text)
     vendor_poi_links = Column(JSONB)  # List of POI IDs for vendors at this event
-    
-    poi = relationship("PointOfInterest", back_populates="event")
+
+    poi = relationship("PointOfInterest", back_populates="event", foreign_keys=[poi_id])
+    venue_poi = relationship("PointOfInterest", foreign_keys=[venue_poi_id])
+    parent_event = relationship("Event", remote_side=[poi_id], foreign_keys=[parent_event_id])

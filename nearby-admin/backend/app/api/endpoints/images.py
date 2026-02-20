@@ -1,6 +1,7 @@
 from typing import List, Optional
 from uuid import UUID
 from pathlib import Path
+import json
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Query
 from fastapi.responses import RedirectResponse
@@ -33,6 +34,7 @@ async def upload_image(
     alt_text: Optional[str] = Form(None),
     caption: Optional[str] = Form(None),
     display_order: Optional[int] = Form(0),
+    function_tags: Optional[str] = Form(None),
     db: Session = Depends(get_db),
     current_user: str = Depends(get_current_user)
 ) -> ImageUploadResponse:
@@ -71,6 +73,15 @@ async def upload_image(
             caption=caption,
             display_order=display_order
         )
+
+        # Set function_tags if provided
+        if function_tags:
+            try:
+                db_image.function_tags = json.loads(function_tags)
+            except (json.JSONDecodeError, TypeError):
+                db_image.function_tags = [function_tags]
+            db.commit()
+            db.refresh(db_image)
 
         # Get URLs for the image
         urls = image_service.get_image_urls(db_image)
@@ -162,13 +173,15 @@ async def upload_multiple_images(
 async def get_poi_images(
     poi_id: UUID,
     image_type: Optional[ImageTypeEnum] = None,
+    function_tag: Optional[str] = None,
     db: Session = Depends(get_db)
 ) -> List[ImageResponse]:
     """
-    Get all images for a POI, optionally filtered by type.
+    Get all images for a POI, optionally filtered by type or function tag.
 
     - **poi_id**: UUID of the POI
     - **image_type**: Optional filter by image type
+    - **function_tag**: Optional filter by function tag (e.g., "storefront")
     """
     query = db.query(Image).filter(Image.poi_id == poi_id)
 
@@ -178,6 +191,9 @@ async def get_poi_images(
             query = query.filter(Image.image_type == image_type_enum)
         except ValueError:
             raise HTTPException(status_code=400, detail=f"Invalid image type: {image_type}")
+
+    if function_tag:
+        query = query.filter(Image.function_tags.contains([function_tag]))
 
     images = query.order_by(Image.display_order, Image.created_at).all()
 
@@ -202,6 +218,7 @@ async def get_poi_images(
             "uploaded_by": image.uploaded_by,
             "created_at": image.created_at,
             "updated_at": image.updated_at,
+            "function_tags": image.function_tags,
             **urls
         }
         response.append(ImageResponse(**image_dict))
@@ -237,6 +254,7 @@ async def get_image(
         "uploaded_by": image.uploaded_by,
         "created_at": image.created_at,
         "updated_at": image.updated_at,
+        "function_tags": image.function_tags,
         **urls
     }
 
@@ -262,6 +280,8 @@ async def update_image(
         image.caption = update_data.caption
     if update_data.display_order is not None:
         image.display_order = update_data.display_order
+    if update_data.function_tags is not None:
+        image.function_tags = update_data.function_tags
 
     db.commit()
     db.refresh(image)
@@ -284,6 +304,7 @@ async def update_image(
         "uploaded_by": image.uploaded_by,
         "created_at": image.created_at,
         "updated_at": image.updated_at,
+        "function_tags": image.function_tags,
         **urls
     }
 
@@ -352,6 +373,7 @@ async def reorder_images(
             "uploaded_by": image.uploaded_by,
             "created_at": image.created_at,
             "updated_at": image.updated_at,
+            "function_tags": image.function_tags,
             **urls
         }
         response.append(ImageResponse(**image_dict))

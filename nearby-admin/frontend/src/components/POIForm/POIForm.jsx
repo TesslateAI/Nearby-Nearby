@@ -401,7 +401,7 @@ export default function POIForm() {
                   <Text fw={600}>{(isPark || isTrail) ? 'Public Restrooms' : 'Public Amenities'}</Text>
                 </Accordion.Control>
                 <Accordion.Panel>
-                  <PublicAmenitiesSection form={form} isPark={isPark} isTrail={isTrail} isEvent={isEvent} id={poiId} />
+                  <PublicAmenitiesSection form={form} isPark={isPark} isTrail={isTrail} isEvent={isEvent} isBusiness={isBusiness} isFreeListing={isFreeListing} id={poiId} />
                 </Accordion.Panel>
               </Accordion.Item>
 

@@ -56,3 +56,39 @@
   border-radius: 16px;
   white-space: nowrap;
 }
+
+/* Share Menu */
+.poi-detail__share-wrapper {
+  position: relative;
+}
+
+.poi-detail__share-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+  min-width: 150px;
+  overflow: hidden;
+}
+
+.poi-detail__share-menu button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 14px;
+  border: none;
+  background: none;
+  font-size: 14px;
+  color: var(--nn-slate);
+  cursor: pointer;
+  text-align: left;
+}
+
+.poi-detail__share-menu button:hover {
+  background: #f8fafc;
+}

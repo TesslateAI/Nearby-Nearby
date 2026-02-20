@@ -178,7 +178,7 @@ export function VenueSelector({ form, poiId }) {
       }
 
       // Store venue reference
-      form.setFieldValue('event.venue_id', venueData.venue_id);
+      form.setFieldValue('event.venue_poi_id', venueData.venue_id);
       form.setFieldValue('event.venue_name', venueData.venue_name);
       form.setFieldValue('event.venue_type', venueData.venue_type);
 
@@ -200,12 +200,15 @@ export function VenueSelector({ form, poiId }) {
     }
   };
 
-  // Format venues for Select component
-  const venueOptions = venues.map(venue => ({
-    value: venue.id,
-    label: `${venue.name} (${venue.poi_type})`,
-    group: venue.poi_type
-  }));
+  // Format venues for Select component — use Mantine v8 grouped format
+  const venueOptions = Object.entries(
+    venues.reduce((groups, venue) => {
+      const group = venue.poi_type || 'Other';
+      if (!groups[group]) groups[group] = [];
+      groups[group].push({ value: venue.id, label: venue.name });
+      return groups;
+    }, {})
+  ).map(([group, items]) => ({ group, items }));
 
   return (
     <Stack>
@@ -227,16 +230,19 @@ export function VenueSelector({ form, poiId }) {
         clearable
         leftSection={loading ? <Loader size="xs" /> : null}
         disabled={loading}
-        renderOption={({ option }) => (
-          <Group gap="sm">
-            {option.group === 'BUSINESS' ? (
-              <IconBuilding size={16} style={{ color: '#6366f1' }} />
-            ) : (
-              <IconTree size={16} style={{ color: '#22c55e' }} />
-            )}
-            <span>{option.label}</span>
-          </Group>
-        )}
+        renderOption={({ option }) => {
+          const isBusiness = option.label?.includes('BUSINESS') || venues.find(v => v.id === option.value)?.poi_type === 'BUSINESS';
+          return (
+            <Group gap="sm">
+              {isBusiness ? (
+                <IconBuilding size={16} style={{ color: '#6366f1' }} />
+              ) : (
+                <IconTree size={16} style={{ color: '#22c55e' }} />
+              )}
+              <span>{option.label}</span>
+            </Group>
+          );
+        }}
       />
 
       {venueLoading && (
@@ -344,7 +350,7 @@ export function VenueSelector({ form, poiId }) {
       )}
 
       {/* Show current venue link if set */}
-      {form.values.event?.venue_id && !selectedVenueId && (
+      {form.values.event?.venue_poi_id && !selectedVenueId && (
         <Card withBorder p="md" bg="gray.0">
           <Group gap="sm">
             <Text size="sm" c="dimmed">Current venue:</Text>

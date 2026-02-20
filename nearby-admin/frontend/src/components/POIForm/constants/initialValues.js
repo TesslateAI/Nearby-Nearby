@@ -16,7 +16,7 @@ export const emptyInitialValues = {
   // Address fields
   address_full: '',
   address_street: '',
-  address_city: '',
+  address_city: 'Pittsboro',
   address_state: 'NC',
   address_zip: '',
   address_county: 'Chatham',
@@ -57,6 +57,9 @@ export const emptyInitialValues = {
   parking_types: [],
   parking_locations: [],
   parking_notes: '',
+  primary_parking_lat: null,
+  primary_parking_lng: null,
+  primary_parking_name: '',
   // parking_photos removed - use Images table with image_type='parking'
   public_transit_info: '',
   expect_to_pay_parking: 'no',
@@ -185,14 +188,23 @@ export const emptyInitialValues = {
   camping_lodging: '',
   // Event specific
   event: {
-    start_datetime: '',
+    start_datetime: null,
     end_datetime: null,
     is_repeating: false,
     repeat_pattern: null,
+    // Venue inheritance (Task 45)
+    venue_poi_id: null,
+    venue_inheritance: null,
+    // Recurring events (Task 50)
+    series_id: null,
+    parent_event_id: null,
+    excluded_dates: [],
+    recurrence_end_date: null,
+    manual_dates: [],
+    // Event-specific fields
     organizer_name: '',
     venue_settings: [],
     event_entry_notes: '',
-    // event_entry_photo removed - use Images table with image_type='entry'
     food_and_drink_info: '',
     coat_check_options: [],
     has_vendors: false,
@@ -211,6 +223,7 @@ export const emptyInitialValues = {
   ideal_for: [],
   contact_info: {},
   compliance: {},
+  mobility_access: {},
   custom_fields: {},
   main_category_id: null,
   // Primary Type linkage (unidirectional)
