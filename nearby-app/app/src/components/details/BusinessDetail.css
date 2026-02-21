@@ -246,23 +246,27 @@
   align-items: center;
   gap: 6px;
   padding: 10px 16px;
-  border: 1px solid var(--gray-d);
+  border: 2px solid var(--nn-teal-btn);
   border-radius: 20px;
   background: white;
   cursor: pointer;
   font-size: 13px;
-  font-weight: 500;
-  color: var(--nn-slate);
+  font-weight: 600;
+  color: var(--nn-teal-btn);
   transition: all 0.2s;
 }
 
 .bd-action-btn:hover {
-  background: var(--gray-3);
-  border-color: var(--gray-a);
+  background: var(--nn-teal-btn);
+  color: white;
+}
+
+.bd-action-btn:hover svg {
+  color: white;
 }
 
 .bd-action-btn svg {
-  color: var(--nn-gray);
+  color: var(--nn-teal-btn);
 }
 
 /* Two Cards Row */
