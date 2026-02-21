@@ -270,17 +270,19 @@
   align-items: center;
   gap: 8px;
   padding: 8px 16px;
-  border: 1px solid var(--gray-d);
+  border: 2px solid var(--nn-teal-btn);
   border-radius: 6px;
   background: white;
   cursor: pointer;
   font-size: 14px;
-  color: var(--nn-slate);
-  transition: background-color 0.2s;
+  font-weight: 600;
+  color: var(--nn-teal-btn);
+  transition: all 0.2s;
 }
 
 .poi-detail__action-btn:hover {
-  background: var(--gray-9);
+  background: var(--nn-teal-btn);
+  color: white;
 }
 
 .poi-detail__description-box {

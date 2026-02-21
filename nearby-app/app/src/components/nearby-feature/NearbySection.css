@@ -428,8 +428,9 @@
 }
 
 .directions-modal__btn {
-  color: white;
-  border: none;
+  background: white;
+  color: var(--nn-teal-btn);
+  border: 2px solid var(--nn-teal-btn);
   padding: 14px 16px;
   border-radius: 10px;
   font-size: 15px;
@@ -443,28 +444,9 @@
   min-height: 48px;
 }
 
-.directions-modal__btn--google {
-  background: #4285f4;
-}
-
-.directions-modal__btn--google:hover {
-  background: #3367d6;
-}
-
-.directions-modal__btn--apple {
-  background: var(--nn-dark);
-}
-
-.directions-modal__btn--apple:hover {
-  background: var(--nn-slate);
-}
-
-.directions-modal__btn--waze {
-  background: #33ccff;
-}
-
-.directions-modal__btn--waze:hover {
-  background: #00b8f0;
+.directions-modal__btn:hover {
+  background: var(--nn-teal-btn);
+  color: white;
 }
 
 /* ============================================
