@@ -573,6 +573,9 @@ function Explore() {
       <div className="explore__container">
         <div className="explore__header">
           <h1 className="explore__title">Explore categories</h1>
+          <Link to="/events-calendar" className="explore__calendar-link">
+            View Calendar
+          </Link>
         </div>
 
         <div className="explore__categories">

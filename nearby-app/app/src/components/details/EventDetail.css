@@ -418,6 +418,13 @@
   font-size: 14px;
 }
 
+.info-row__link {
+  color: #7c3aed;
+  text-decoration: underline;
+  font-size: 14px;
+  width: 66.666%;
+}
+
 /* Today highlighting */
 .info-row--today {
   background: #fae8ff;

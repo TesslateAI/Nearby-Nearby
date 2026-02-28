@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import DOMPurify from 'dompurify';
 import { MapPin, Clock, Phone, Globe, Heart, Share2, Navigation, Plus, Calendar, AlertCircle, Copy, Check, ExternalLink, Info, CalendarCheck, Truck, ShoppingCart } from 'lucide-react';
 import Accordion, { AccordionSection } from '../Accordion';
 import NearbySection from '../nearby-feature/NearbySection';
 import HoursDisplay from '../common/HoursDisplay';
 import { EventJsonLd } from '../seo/index';
+import EventStatusBanner from './EventStatusBanner';
 import './EventDetail.css';
 
 const EVENT_DISCLAIMER =
@@ -166,6 +168,9 @@ function EventDetail({ poi }) {
 
   // POIDetail handles loading/error states, so poi is guaranteed to exist here
 
+  const eventStatus = poi.event?.event_status || 'Scheduled';
+  const isCanceled = eventStatus === 'Canceled';
+
   return (
     <div className="poi-detail">
       {/* Schema.org Event structured data for SEO */}
@@ -178,10 +183,20 @@ function EventDetail({ poi }) {
 
         {/* Header Section */}
         <div className="poi-detail__new-header">
+          {/* Event Status Banner - shown for non-Scheduled statuses */}
+          <EventStatusBanner
+            eventStatus={eventStatus}
+            statusExplanation={poi.event?.status_explanation}
+            cancellationParagraph={poi.event?.cancellation_paragraph}
+            contactOrganizerToggle={poi.event?.contact_organizer_toggle}
+            newEventLink={poi.event?.new_event_link}
+            onlineEventUrl={poi.event?.online_event_url}
+          />
+
           {/* Status Badge */}
           <div className="poi-detail__status-row">
             <span className="poi-detail__status-text">
-              STATUS: <span className="poi-detail__status-value">{poi.status || 'Upcoming'}</span>
+              STATUS: <span className="poi-detail__status-value">{eventStatus}</span>
             </span>
             {poi.is_verified && (
               <div className="poi-detail__verified-wrapper">
@@ -207,8 +222,8 @@ function EventDetail({ poi }) {
             <p className="poi-detail__subtitle">{poi.description_short}</p>
           )}
 
-          {/* Event Date Badge */}
-          {poi.event && poi.event.start_datetime && (
+          {/* Event Date Badge - hidden when canceled */}
+          {poi.event && poi.event.start_datetime && !isCanceled && (
             <div className="poi-detail__sponsor">
               <span className="poi-detail__sponsor-badge">
                 {new Date(poi.event.start_datetime).toLocaleDateString('en-US', {
@@ -222,7 +237,7 @@ function EventDetail({ poi }) {
 
           {/* Quick Info */}
           <div className="poi-detail__quick-info">
-            {poi.event && poi.event.start_datetime && (
+            {poi.event && poi.event.start_datetime && !isCanceled && (
               <div className="poi-detail__info-item">
                 <Calendar size={16} className="poi-detail__icon poi-detail__icon--green" />
                 <span className="poi-detail__info-primary">
@@ -352,9 +367,10 @@ function EventDetail({ poi }) {
           {/* Description Box */}
           {poi.description_long && (
             <div className="poi-detail__description-box">
-              <div className="poi-detail__description-text">
-                {poi.description_long}
-              </div>
+              <div
+                className="poi-detail__description-text"
+                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(poi.description_long) }}
+              />
             </div>
           )}
 
@@ -395,6 +411,45 @@ function EventDetail({ poi }) {
               <InfoRow label="Start Date" value={poi.event?.start_datetime ? new Date(poi.event.start_datetime).toLocaleString() : null} />
               <InfoRow label="End Date" value={poi.event?.end_datetime ? new Date(poi.event.end_datetime).toLocaleString() : null} />
               <InfoRow label="Organizer" value={poi.event?.organizer_name} />
+              <InfoRow label="Email" value={poi.event?.organizer_email} />
+              <InfoRow label="Phone" value={poi.event?.organizer_phone} />
+              {poi.event?.venue_name && (
+                <div className="info-row">
+                  <span className="info-row__label">Venue</span>
+                  {poi.event.venue_poi_id ? (
+                    <a
+                      href={`/poi/${poi.event.venue_poi_id}`}
+                      className="info-row__link"
+                    >
+                      {poi.event.venue_name}
+                    </a>
+                  ) : (
+                    <span className="info-row__value">{poi.event.venue_name}</span>
+                  )}
+                </div>
+              )}
+            </div>
+          </AccordionSection>
+
+          <AccordionSection title="COST & TICKETS" show={!!(poi.event?.cost_type || poi.cost || poi.ticket_link)}>
+            <div className="collapsible-section__info">
+              {poi.event?.cost_type === 'free' && <InfoRow label="Cost" value="Free" />}
+              {poi.event?.cost_type === 'single_price' && <InfoRow label="Cost" value={poi.cost} />}
+              {poi.event?.cost_type === 'range' && <InfoRow label="Cost" value={poi.cost} />}
+              {poi.ticket_link && (
+                <div className="info-row">
+                  <span className="info-row__label">Tickets</span>
+                  <a
+                    href={poi.ticket_link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="info-row__link"
+                  >
+                    Buy Tickets
+                  </a>
+                </div>
+              )}
+              {poi.pricing_details && <InfoRow label="Details" value={poi.pricing_details} />}
             </div>
           </AccordionSection>
 

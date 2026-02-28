@@ -7,11 +7,12 @@
     "dev": "vite --host",
     "build": "vite build",
     "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest",
+    "test:run": "vitest run"
   },
   "dependencies": {
     "@hello-pangea/dnd": "^17.0.0",
-    "@sentry/react": "^8.0.0",
     "@mantine/core": "^8.3.1",
     "@mantine/dates": "^8.3.1",
     "@mantine/dropzone": "^8.3.1",
@@ -20,6 +21,8 @@
     "@mantine/modals": "^8.3.1",
     "@mantine/notifications": "^8.3.1",
     "@mantine/tiptap": "^8.3.1",
+    "@rollup/rollup-win32-x64-msvc": "^4.59.0",
+    "@sentry/react": "^8.0.0",
     "@tabler/icons-react": "^3.34.0",
     "@tiptap/extension-character-count": "^3.4.3",
     "@tiptap/extension-link": "^3.4.3",
@@ -36,16 +39,22 @@
     "react-router-dom": "^6.22.3"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.1.0",
+    "@testing-library/user-event": "^14.5.2",
     "@types/react": "^18.2.66",
     "@types/react-dom": "^18.2.22",
     "@vitejs/plugin-react": "^4.2.1",
+    "@vitest/ui": "^2.1.8",
     "eslint": "^8.57.0",
     "eslint-plugin-react": "^7.34.1",
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.6",
+    "jsdom": "^25.0.1",
     "postcss": "^8.4.38",
     "postcss-preset-mantine": "^1.15.0",
     "postcss-simple-vars": "^7.0.1",
-    "vite": "^6.3.5"
+    "vite": "^6.3.5",
+    "vitest": "^2.1.8"
   }
 }

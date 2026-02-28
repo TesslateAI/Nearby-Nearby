@@ -142,10 +142,18 @@ class EventBase(BaseModel):
     vendor_application_info: Optional[str] = None
     vendor_fee: Optional[str] = None
     vendor_requirements: Optional[str] = None
-    vendor_poi_links: Optional[List[uuid.UUID]] = None
+    vendor_poi_links: Optional[List[Dict[str, Any]]] = None  # [{"poi_id": "...", "vendor_type": "Food"}]
     # Task 134-136: Event Status
     event_status: Optional[str] = 'Scheduled'
+    status_explanation: Optional[str] = None
     cancellation_paragraph: Optional[str] = None
+
+    @field_validator('status_explanation', mode='before')
+    @classmethod
+    def validate_status_explanation_length(cls, v):
+        if v is not None and isinstance(v, str) and len(v) > 80:
+            raise ValueError('status_explanation must be 80 characters or fewer')
+        return v
     contact_organizer_toggle: bool = False
     new_event_link: Optional[str] = None
     rescheduled_from_event_id: Optional[uuid.UUID] = None
@@ -190,9 +198,10 @@ class EventUpdate(BaseModel):
     vendor_application_info: Optional[str] = None
     vendor_fee: Optional[str] = None
     vendor_requirements: Optional[str] = None
-    vendor_poi_links: Optional[List[uuid.UUID]] = None
+    vendor_poi_links: Optional[List[Dict[str, Any]]] = None  # [{"poi_id": "...", "vendor_type": "Food"}]
     # Task 134-136: Event Status
     event_status: Optional[str] = None
+    status_explanation: Optional[str] = None
     cancellation_paragraph: Optional[str] = None
     contact_organizer_toggle: Optional[bool] = None
     new_event_link: Optional[str] = None

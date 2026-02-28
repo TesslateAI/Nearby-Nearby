@@ -40,18 +40,23 @@ The platform uses PostgreSQL 15 with PostGIS 3.4 for geospatial support. Both ap
          │                    │                    │                    │
          │ 1:1               │ 1:1               │ 1:1               │ 1:1
          ▼                    ▼                    ▼                    ▼
-┌─────────────┐      ┌─────────────┐      ┌─────────────┐      ┌─────────────────┐
-│  businesses │      │    parks    │      │   trails    │      │     events      │
-├─────────────┤      ├─────────────┤      ├─────────────┤      ├─────────────────┤
-│ id (UUID)   │      │ id (UUID)   │      │ id (UUID)   │      │ id (UUID)       │
-│ poi_id FK   │      │ poi_id FK   │      │ poi_id FK   │      │ poi_id FK       │
-│ price_range │      │ drones_     │      │ length_mi   │      │ start_datetime  │
-│             │      │   allowed   │      │ difficulty  │      │ end_datetime    │
-└─────────────┘      └─────────────┘      │ route_type  │      │ venue_poi_id FK │
-                                          │ ...         │      │ series_id       │
-                                          └─────────────┘      │ parent_event FK │
-                                                               │ ...             │
-                                                               └─────────────────┘
+┌─────────────┐      ┌─────────────┐      ┌─────────────┐      ┌─────────────────────┐
+│  businesses │      │    parks    │      │   trails    │      │       events        │
+├─────────────┤      ├─────────────┤      ├─────────────┤      ├─────────────────────┤
+│ poi_id FK   │      │ poi_id FK   │      │ poi_id FK   │      │ poi_id FK (PK)      │
+│ price_range │      │ drone_usage │      │ length_text │      │ start_datetime      │
+│             │      │   _policy   │      │ difficulty  │      │ end_datetime        │
+└─────────────┘      └─────────────┘      │ route_type  │      │ is_repeating        │
+                                          │ ...         │      │ repeat_pattern      │
+                                          └─────────────┘      │ venue_poi_id FK     │
+                                                               │ event_status        │
+                                                               │ status_explanation  │
+                                                               │ organizer_poi_id FK │
+                                                               │ cost_type           │
+                                                               │ vendor_poi_links    │
+                                                               │ sponsors            │
+                                                               │ ...                 │
+                                                               └─────────────────────┘
 
 ┌─────────────────────┐       ┌─────────────────────┐
 │       images        │       │   poi_relationships │
@@ -124,7 +129,7 @@ Main POI table with all shared fields.
 | name | VARCHAR(255) | NOT NULL | POI name |
 | slug | VARCHAR(255) | UNIQUE | SEO-friendly URL slug |
 | publication_status | VARCHAR | DEFAULT 'draft' | draft or published |
-| listing_type | VARCHAR | DEFAULT 'free' | Listing tier: free, paid, sponsor_platform, sponsor_state, sponsor_county, sponsor_town, community_comped |
+| listing_type | VARCHAR | DEFAULT 'free' | Listing tier: free, paid, sponsor_platform, sponsor_state, sponsor_county, sponsor_town, community_comped. Legacy values `paid_founding` and `sponsor` were migrated (see migration `g7h8i9j0k1l2`) |
 | location | GEOMETRY(Point, 4326) | | PostGIS point |
 | **Address Fields** |
 | address_street | VARCHAR(255) | | Street address |
@@ -283,49 +288,66 @@ POI-to-POI relationships.
 
 | Column | Type | Description |
 |--------|------|-------------|
-| id | UUID | PK |
-| poi_id | UUID | FK → points_of_interest.id |
+| poi_id | UUID | PK, FK → points_of_interest.id |
 | price_range | VARCHAR | $, $$, $$$, $$$$ |
 
 ### parks
 
 | Column | Type | Description |
 |--------|------|-------------|
-| id | UUID | PK |
-| poi_id | UUID | FK → points_of_interest.id |
-| drones_allowed | BOOLEAN | Drone policy |
+| poi_id | UUID | PK, FK → points_of_interest.id |
+| drone_usage_policy | VARCHAR | Drone policy |
 
 ### trails
 
 | Column | Type | Description |
 |--------|------|-------------|
-| id | UUID | PK |
-| poi_id | UUID | FK → points_of_interest.id |
-| length_miles | FLOAT | Trail length |
-| difficulty | VARCHAR | easy, moderate, hard |
-| route_type | VARCHAR | loop, out-and-back, point-to-point |
-| trailhead_latitude | FLOAT | Start point lat |
-| trailhead_longitude | FLOAT | Start point lng |
-| trail_exit_latitude | FLOAT | End point lat |
-| trail_exit_longitude | FLOAT | End point lng |
-| trail_surfaces | ARRAY | Surface types |
+| poi_id | UUID | PK, FK → points_of_interest.id |
+| length_text | VARCHAR | Trail length as text (e.g., "2.5 miles", "1.2 km") |
+| length_segments | JSONB | For multiple loops: `[{"name": "Top Loop", "length": "0.25 miles"}]` |
+| difficulty | VARCHAR | easy, moderate, challenging, difficult, very_difficult, extreme |
+| difficulty_description | TEXT | Auto-populated based on difficulty |
+| route_type | VARCHAR | loop, out_and_back, point_to_point, connecting_network |
+| trailhead_location | JSONB | `{"lat": 0, "lng": 0}` |
+| trailhead_latitude | NUMERIC(10,7) | Start point lat |
+| trailhead_longitude | NUMERIC(10,7) | Start point lng |
+| trailhead_entrance_photo | VARCHAR | Trailhead photo URL |
+| trailhead_exit_location | JSONB | `{"lat": 0, "lng": 0}` |
+| trail_exit_latitude | NUMERIC(10,7) | End point lat |
+| trail_exit_longitude | NUMERIC(10,7) | End point lng |
+| trailhead_exit_photo | VARCHAR | Trail exit photo URL |
+| trail_markings | TEXT | Trail marking information |
+| trailhead_access_details | TEXT | Access details for trailhead |
+| downloadable_trail_map | VARCHAR | URL to downloadable map file |
+| trail_surfaces | JSONB | List of surface types |
+| trail_conditions | JSONB | List of condition warnings |
+| trail_experiences | JSONB | List of experience types |
 
 ### events
 
 | Column | Type | Description |
 |--------|------|-------------|
-| id | UUID | PK |
-| poi_id | UUID | FK → points_of_interest.id |
-| start_datetime | TIMESTAMP | Event start |
-| end_datetime | TIMESTAMP | Event end |
-| repeat_pattern | VARCHAR | Recurrence pattern |
+| poi_id | UUID | PK, FK → points_of_interest.id |
+| start_datetime | TIMESTAMP WITH TIMEZONE | NOT NULL. Event start |
+| end_datetime | TIMESTAMP WITH TIMEZONE | Event end |
+| is_repeating | BOOLEAN | Whether this is a repeating event (default: false) |
+| repeat_pattern | JSONB | Recurrence rule: `{"frequency": "weekly\|daily\|monthly\|yearly", "interval": 1, "days": ["MO","WE"]}` |
 | organizer_name | VARCHAR | Organizer name |
-| organizer_email | VARCHAR | Organizer contact |
-| ticket_url | VARCHAR | Ticket purchase URL |
-| is_free | BOOLEAN | Free event flag |
+| venue_settings | JSONB | List of venue settings: Indoor, Outdoor, Hybrid (In-Person and Online), Online Only |
+| event_entry_notes | TEXT | Event entry description/notes |
+| food_and_drink_info | TEXT | Food and drink information |
+| coat_check_options | JSONB | List of coat check options |
+| **Vendor Information** |
+| has_vendors | BOOLEAN | Whether event has vendors (default: false) |
+| vendor_types | JSONB | List of vendor types present |
+| vendor_application_deadline | TIMESTAMP WITH TIMEZONE | Vendor application deadline |
+| vendor_application_info | TEXT | Vendor application instructions |
+| vendor_fee | VARCHAR | Vendor participation fee |
+| vendor_requirements | TEXT | Requirements for vendors |
+| vendor_poi_links | JSONB | List of dicts linking vendor POIs: `[{"poi_id": "uuid", ...}]` |
 | **Venue Inheritance** |
 | venue_poi_id | UUID | FK → points_of_interest.id. Links event to a venue (business or park) for inheriting location, hours, amenities, etc. |
-| venue_inheritance | JSONB | Per-section config controlling which fields are inherited from the venue (e.g., `{"location": true, "hours": true, "amenities": false}`) |
+| venue_inheritance | JSONB | Per-section config controlling which fields are inherited from the venue. Values: `"as_is"`, `"use_and_add"`, `"do_not_use"` (e.g., `{"parking": "as_is", "hours": "use_and_add", "amenities": "do_not_use"}`) |
 | **Recurring Events** |
 | series_id | UUID | Groups recurring event instances into a series. Indexed for fast lookups |
 | parent_event_id | UUID | FK → events.poi_id. Links a child event instance to its parent/template event |
@@ -333,8 +355,9 @@ POI-to-POI relationships.
 | recurrence_end_date | TIMESTAMP WITH TIMEZONE | When the recurrence pattern ends |
 | manual_dates | JSONB | Array of ISO datetime strings for irregular/manually specified occurrences (e.g., `["2026-03-01T18:00:00Z"]`) |
 | **Event Status & Rescheduling (Tasks 134-136)** |
-| event_status | VARCHAR(100) | Event status: Scheduled, Cancelled, Postponed, Rescheduled, Updated Date and/or Time, Sold Out, On Sale (default: Scheduled) |
-| cancellation_paragraph | TEXT | Explanation shown when event is cancelled or postponed |
+| event_status | VARCHAR(100) | Event status from `EventStatus` enum: Scheduled, Canceled, Postponed, Updated Date and/or Time, Rescheduled, Moved Online, Unofficial Proposed Date (default: Scheduled) |
+| status_explanation | VARCHAR(80) | Short explanation text for status changes (required for: Updated Date and/or Time, Postponed, Moved Online) |
+| cancellation_paragraph | TEXT | Longer explanation shown when event is cancelled or postponed |
 | contact_organizer_toggle | BOOLEAN | Show "Contact Organizer" button on cancelled/postponed events (default: false) |
 | new_event_link | VARCHAR | UUID string of the replacement event POI (not a FK for flexibility) |
 | rescheduled_from_event_id | UUID | FK → events.poi_id. Links to the original event this was rescheduled from |
@@ -344,18 +367,19 @@ POI-to-POI relationships.
 | organizer_email | VARCHAR | Organizer contact email |
 | organizer_phone | VARCHAR | Organizer contact phone |
 | organizer_website | VARCHAR | Organizer website URL |
-| organizer_social_media | JSONB | Organizer social media links |
+| organizer_social_media | JSONB | Organizer social media links (key-value pairs) |
 | organizer_poi_id | UUID | FK → points_of_interest.id. Links organizer to an existing POI |
 | **Cost & Ticketing (Task 139)** |
-| cost_type | VARCHAR(50) | Cost classification: Free, Paid, Donation-based, Varies |
+| cost_type | VARCHAR(50) | Cost classification: free, single_price, range |
 | ticket_links | JSONB | Array of ticket purchase links `[{"url": "...", "title": "..."}]` |
 | **Sponsors (Task 140)** |
 | sponsors | JSONB | Array of sponsor objects `[{"name": "...", "url": "...", "level": "..."}]` |
 
 Migrations:
 - `e5f6g7h8i9j0_add_venue_inheritance_and_recurring`
-- `f6g7h8i9j0k1_event_backend_tasks_134_149`
+- `f6g7h8i9j0k1_event_backend_tasks_134_149` (event status, extended organizer, cost/ticketing, sponsors, event_suggestions table)
 - `g7h8i9j0k1l2_listing_type_changes_171_172` (data migration: paid_founding → paid, sponsor → sponsor_platform)
+- `h8i9j0k1l2m3_add_event_status_explanation` (adds status_explanation column to events)
 
 ---
 
@@ -457,6 +481,8 @@ Business owner registration/claim requests.
 
 Public form for users to suggest new events. Uses isolated `nearby_forms` DB role.
 
+Created by migration `f6g7h8i9j0k1_event_backend_tasks_134_149` (Task 153).
+
 | Column | Type | Constraints | Description |
 |--------|------|-------------|-------------|
 | id | UUID | PK, DEFAULT gen_random_uuid() | Primary key |
@@ -468,6 +494,7 @@ Public form for users to suggest new events. Uses isolated `nearby_forms` DB rol
 | organizer_email | VARCHAR(255) | NOT NULL | Contact email |
 | organizer_phone | VARCHAR(50) | | Contact phone |
 | additional_info | TEXT | | Additional details |
+| status | VARCHAR(50) | DEFAULT 'pending' | Suggestion review status |
 | created_at | TIMESTAMPTZ | DEFAULT NOW() | Submission time |
 
 ---
@@ -533,6 +560,97 @@ A restricted PostgreSQL role used by the nearby-app for public form submissions.
 **Connection:** Via `FORMS_DATABASE_URL` env var (separate SQLAlchemy engine in nearby-app). Falls back to `DATABASE_URL` if not set.
 
 Migration: `nearby-admin/backend/alembic/versions/c3f4g5h6i7j8_create_form_tables.py`
+
+---
+
+## Enums
+
+Canonical enum definitions live in `shared/models/enums.py` and are imported by both backends.
+
+### POIType
+
+```python
+class POIType(enum.Enum):
+    BUSINESS = "BUSINESS"
+    SERVICES = "SERVICES"
+    PARK = "PARK"
+    TRAIL = "TRAIL"
+    EVENT = "EVENT"
+    YOUTH_ACTIVITIES = "YOUTH_ACTIVITIES"
+    JOBS = "JOBS"
+    VOLUNTEER_OPPORTUNITIES = "VOLUNTEER_OPPORTUNITIES"
+    DISASTER_HUBS = "DISASTER_HUBS"
+```
+
+### EventStatus
+
+Defines valid event lifecycle states. Used by the `events.event_status` column.
+
+```python
+class EventStatus(enum.Enum):
+    SCHEDULED = "Scheduled"
+    CANCELED = "Canceled"
+    POSTPONED = "Postponed"
+    UPDATED_DATE_TIME = "Updated Date and/or Time"
+    RESCHEDULED = "Rescheduled"
+    MOVED_ONLINE = "Moved Online"
+    UNOFFICIAL_PROPOSED = "Unofficial Proposed Date"
+```
+
+**Status transition rules** are defined in `shared/utils/event_status.py`:
+- "Scheduled" can transition to any other status
+- "Canceled" and "Rescheduled" can only return to "Scheduled"
+- "Postponed" can go to Canceled, Rescheduled, or Updated Date and/or Time
+- "Moved Online" can go to Canceled, Postponed, or Rescheduled
+- "Unofficial Proposed Date" can go to Canceled or Postponed
+- Any status can always return to "Scheduled"
+
+**Status explanation** (`status_explanation` VARCHAR(80)) is required for: Updated Date and/or Time, Postponed, Moved Online.
+
+### ImageType
+
+```python
+class ImageType(enum.Enum):
+    main = "main"
+    gallery = "gallery"
+    entry = "entry"
+    parking = "parking"
+    restroom = "restroom"
+    rental = "rental"
+    playground = "playground"
+    menu = "menu"
+    trail_head = "trail_head"
+    trail_exit = "trail_exit"
+    map = "map"
+    downloadable_map = "downloadable_map"
+```
+
+---
+
+## Shared Constants & Utilities
+
+### Field Options (`shared/constants/field_options.py`)
+
+Python source of truth for field option lists used by backend validation. Key additions:
+
+| Constant | Description |
+|----------|-------------|
+| `LISTING_TYPES` | Valid listing type values: free, paid, sponsor_platform, sponsor_state, sponsor_county, sponsor_town, community_comped |
+| `EVENT_STATUS_OPTIONS` | Valid event status strings matching `EventStatus` enum values |
+| `EVENT_STATUS_HELPER_TEXT` | Human-readable description for each event status |
+| `EVENT_STATUS_EXPLANATION_REQUIRED` | Statuses requiring a `status_explanation`: Updated Date and/or Time, Postponed, Moved Online |
+| `EVENT_COST_TYPES` | Valid cost type values: free, single_price, range |
+| `VENUE_SETTINGS` | Valid venue setting values: Indoor, Outdoor, Hybrid (In-Person and Online), Online Only |
+| `BUSINESS_STATUS_OPTIONS` | Valid business status values (Fully Open, Partly Open, etc.) |
+
+### Utility Modules (`shared/utils/`)
+
+| Module | Purpose |
+|--------|---------|
+| `shared/utils/event_status.py` | Event status transition validation. Defines `EVENT_STATUS_TRANSITIONS` dict and `validate_status_transition(current, new)` function |
+| `shared/utils/recurring_events.py` | Recurring event date expansion. Uses `dateutil.rrule` to expand `repeat_pattern` JSONB into concrete datetimes within a date range, respecting `excluded_dates`, `manual_dates`, and `recurrence_end_date`. Max horizon: 60 months |
+| `shared/utils/venue_inheritance.py` | Venue inheritance resolution. Merges venue POI data into event data based on `venue_inheritance` config. Modes: `"as_is"` (use venue data), `"use_and_add"` (merge venue + event), `"do_not_use"` (keep event data). Controlled sections: parking, restrooms, accessibility, hours, amenities, pet_policy, drone_policy |
+| `shared/utils/hours_resolution.py` | Hours resolution engine (Python port of `hoursUtils.js`). Resolves effective hours for a date with override precedence: (1) Exception hours, (2) Holiday hours (US holidays computed by formula), (3) Seasonal hours, (4) Regular hours. Public API: `get_effective_hours_for_date(hours_data, date)` |
 
 ---
 

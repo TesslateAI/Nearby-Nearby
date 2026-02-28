@@ -54,7 +54,9 @@ Response:
 | GET | `/api/admin/pois/search` | Search all POIs | Yes |
 | GET | `/api/pois/search-by-location` | Location search | No |
 | GET | `/api/pois/{poi_id}/nearby` | Get nearby POIs | No |
+| GET | `/api/pois/venues/list` | List available venues (BUSINESS/PARK) | Yes (Admin/Editor) |
 | GET | `/api/pois/{poi_id}/venue-data` | Get venue data for event | Yes (Admin/Editor) |
+| GET | `/api/event-statuses` | Get event statuses with transitions | Yes (Admin/Editor) |
 
 #### POST /api/pois/
 
@@ -155,20 +157,41 @@ Returns `400` if the POI type is not BUSINESS or PARK. Returns `404` if the POI 
 
 #### Event Schema Fields
 
-Event create, update, and response schemas include the following fields for venue inheritance and recurring events:
+Event create, update, and response schemas include the following fields for venue inheritance, recurring events, vendors, and event status:
 
 | Field | Type | Description |
 |-------|------|-------------|
+| **Core Event Fields** |
+| `start_datetime` | datetime | Event start (required on create, optional on update) |
+| `end_datetime` | datetime (optional) | Event end |
+| `is_repeating` | boolean | Whether the event recurs (default: false) |
+| `repeat_pattern` | object (optional) | `{"frequency": "weekly\|daily\|monthly\|yearly", ...}` |
+| `organizer_name` | string (optional) | Organizer display name |
+| `venue_settings` | list[string] (optional) | Indoor, Outdoor, Hybrid, Online Only |
+| `event_entry_notes` | string (optional) | Notes about event entry |
+| `food_and_drink_info` | string (optional) | Food and drink details |
+| `coat_check_options` | list[string] (optional) | Yes, No, Private Lockers |
+| **Venue Inheritance** |
 | `venue_poi_id` | UUID (optional) | Links the event to a venue (BUSINESS or PARK) POI |
 | `venue_inheritance` | object (optional) | Tracks which fields were inherited from the venue |
+| **Recurring Events** |
 | `series_id` | UUID (optional) | Groups recurring event instances into a series |
 | `parent_event_id` | UUID (optional) | Links to the parent/template event for a recurring series |
 | `excluded_dates` | list[string] (optional) | Dates excluded from a recurring series (ISO format) |
 | `recurrence_end_date` | datetime (optional) | End date for generating recurring instances |
 | `manual_dates` | list[string] (optional) | Manually specified dates for irregular recurring events |
+| **Vendors** |
+| `has_vendors` | boolean | Whether the event has vendors (default: false) |
+| `vendor_types` | list[string] (optional) | Types of vendors |
+| `vendor_application_deadline` | datetime (optional) | Deadline for vendor applications |
+| `vendor_application_info` | string (optional) | Vendor application details |
+| `vendor_fee` | string (optional) | Vendor participation fee |
+| `vendor_requirements` | string (optional) | Requirements for vendors |
+| `vendor_poi_links` | list[object] (optional) | `[{"poi_id": "uuid", "vendor_type": "Food"}]` — links to vendor POIs |
 | **Event Status (Tasks 134-136)** |
-| `event_status` | string (optional) | Status: Scheduled, Cancelled, Postponed, Rescheduled, Updated Date and/or Time, Sold Out, On Sale |
-| `cancellation_paragraph` | string (optional) | Explanation for cancelled/postponed events |
+| `event_status` | string (optional) | Scheduled, Canceled, Postponed, Updated Date and/or Time, Rescheduled, Moved Online, Unofficial Proposed Date (default: Scheduled) |
+| `status_explanation` | string (optional) | Short explanation for status changes (max 80 chars). Required for: Updated Date and/or Time, Postponed, Moved Online |
+| `cancellation_paragraph` | string (optional) | Detailed explanation for cancelled/postponed events |
 | `contact_organizer_toggle` | boolean (optional) | Show "Contact Organizer" button (default: false) |
 | `new_event_link` | string (optional) | UUID string of replacement event POI |
 | `rescheduled_from_event_id` | UUID (optional) | Original event this was rescheduled from |
@@ -178,13 +201,66 @@ Event create, update, and response schemas include the following fields for venu
 | `organizer_email` | string (optional) | Organizer contact email |
 | `organizer_phone` | string (optional) | Organizer contact phone |
 | `organizer_website` | string (optional) | Organizer website URL |
-| `organizer_social_media` | object (optional) | Organizer social media links |
+| `organizer_social_media` | object (optional) | Organizer social media links `{"instagram": "...", "facebook": "..."}` |
 | `organizer_poi_id` | UUID (optional) | Links organizer to an existing POI |
 | **Cost & Ticketing (Task 139)** |
-| `cost_type` | string (optional) | Free, Paid, Donation-based, Varies |
+| `cost_type` | string (optional) | free, single_price, range |
 | `ticket_links` | list[object] (optional) | `[{"url": "...", "title": "..."}]` |
 | **Sponsors (Task 140)** |
-| `sponsors` | list[object] (optional) | `[{"name": "...", "url": "...", "level": "..."}]` |
+| `sponsors` | list[object] (optional) | `[{"name": "...", "poi_id": "...", "tier": "...", "website": "...", "logo_url": "..."}]` — supports both linked POI sponsors and manual entries |
+
+#### GET /api/pois/venues/list
+
+List all POIs that can be used as venues (BUSINESS and PARK types). Used for venue selection when creating events.
+
+**Auth**: Admin/Editor required.
+
+Query Parameters:
+- `skip` (int): Pagination offset (default: 0)
+- `limit` (int): Max results (default: 500)
+- `search` (string, optional): Filter venues by name
+
+Response: Array of POI objects (BUSINESS and PARK types only), sorted by name.
+
+---
+
+#### GET /api/event-statuses
+
+Returns all event statuses with their helper text and valid status transitions. Used by the admin frontend to populate status dropdowns and enforce transition rules.
+
+**Auth**: Admin/Editor required.
+
+Response:
+```json
+[
+  {
+    "status": "Scheduled",
+    "helper_text": "Event is confirmed and happening as planned.",
+    "valid_transitions": [
+      "Canceled", "Postponed", "Updated Date and/or Time",
+      "Rescheduled", "Moved Online", "Unofficial Proposed Date"
+    ]
+  },
+  {
+    "status": "Canceled",
+    "helper_text": "Event has been permanently canceled and will not be rescheduled.",
+    "valid_transitions": ["Scheduled"]
+  },
+  {
+    "status": "Postponed",
+    "helper_text": "Event is temporarily on hold. A new date has not been set yet.",
+    "valid_transitions": ["Scheduled", "Canceled", "Rescheduled", "Updated Date and/or Time"]
+  }
+]
+```
+
+**Status Transition Rules:**
+- "Scheduled" can transition to any other status
+- "Canceled" and "Rescheduled" can only return to "Scheduled"
+- "Return to Scheduled" is always allowed from any status
+- See `shared/utils/event_status.py` for the full transition matrix
+
+---
 
 #### POST /api/pois/{poi_id}/reschedule
 
@@ -393,15 +469,20 @@ Request:
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/api/pois/search` | Keyword search (pg_trgm) |
-| GET | `/api/pois/semantic-search` | ML-powered semantic search |
-| GET | `/api/pois/hybrid-search` | Combined keyword + semantic |
+| GET | `/api/pois/search` | Multi-signal search (keyword + trigram + full-text + semantic) |
+| GET | `/api/pois/semantic-search` | ML-powered semantic search (routed through multi-signal engine) |
+| GET | `/api/pois/hybrid-search` | Combined multi-signal hybrid search |
+
+All search endpoints automatically exclude past events and events with Canceled or Rescheduled status from results.
 
 #### GET /api/pois/search
 
 Query Parameters:
-- `q` (string): Search query
-- `limit` (int): Max results (default: 10)
+- `q` (string, required): Search query (min 1 char)
+- `poi_type` (string, optional): Filter by POI type (BUSINESS, PARK, TRAIL, EVENT)
+- `date_from` (string, optional): Filter events starting after this date (YYYY-MM-DD)
+- `date_to` (string, optional): Filter events starting before this date (YYYY-MM-DD)
+- `event_status` (string, optional): Filter by event status
 
 Response:
 ```json
@@ -412,8 +493,7 @@ Response:
     "slug": "joes-coffee-pittsboro",
     "poi_type": "BUSINESS",
     "address_city": "Pittsboro",
-    "main_category": "Coffee Shops",
-    "similarity": 0.72
+    "main_category": {"id": "uuid", "name": "Coffee Shops"}
   }
 ]
 ```
@@ -421,19 +501,24 @@ Response:
 #### GET /api/pois/semantic-search
 
 Query Parameters:
-- `q` (string): Natural language query
-- `limit` (int): Max results (default: 10)
+- `q` (string, required): Natural language query (min 1 char)
+- `limit` (int): Max results (default: 10, max: 50)
+- `poi_type` (string, optional): Filter by POI type
+- `date_from` (string, optional): Filter events starting after (YYYY-MM-DD)
+- `date_to` (string, optional): Filter events starting before (YYYY-MM-DD)
+- `event_status` (string, optional): Filter by event status
 
 Example: `?q=place to get coffee and work on laptop`
 
 #### GET /api/pois/hybrid-search
 
 Query Parameters:
-- `q` (string): Search query
-- `limit` (int): Max results (default: 10)
-- `keyword_weight` (float): Weight for keyword score (default: 0.3)
-- `semantic_weight` (float): Weight for semantic score (default: 0.7)
-- `poi_type` (string, optional): Filter results by POI type (e.g., "BUSINESS", "PARK")
+- `q` (string, required): Search query (min 1 char)
+- `limit` (int): Max results (default: 10, max: 50)
+- `poi_type` (string, optional): Filter by POI type (BUSINESS, PARK, TRAIL, EVENT)
+- `date_from` (string, optional): Filter events starting after (YYYY-MM-DD)
+- `date_to` (string, optional): Filter events starting before (YYYY-MM-DD)
+- `event_status` (string, optional): Filter by event status
 
 ---
 
@@ -441,13 +526,18 @@ Query Parameters:
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/api/pois/{poi_id}` | Get POI by UUID |
-| GET | `/api/pois/by-slug/{slug}` | Get POI by slug |
+| GET | `/api/pois/{poi_id}` | Get POI by UUID (with venue inheritance) |
+| GET | `/api/pois/by-slug/{slug}` | Get POI by slug (with venue inheritance) |
 | GET | `/api/pois/by-type/{type}` | List POIs by type |
 | GET | `/api/pois/by-category/{slug}` | List POIs in category |
 | GET | `/api/pois/{poi_id}/effective-hours` | Get resolved hours for a date |
+| GET | `/api/events/in-range` | Get events (incl. recurring) in date range |
+| GET | `/api/pois/{poi_id}/vendors` | Resolve vendor POI links for an event |
+| GET | `/api/pois/{poi_id}/sponsors` | Resolve sponsor POI links for an event |
 
 #### GET /api/pois/by-slug/{slug}
+
+Returns a full POI detail. For EVENT POIs with a `venue_poi_id`, venue inheritance is automatically applied -- inheritable fields (parking, accessibility, restrooms, hours, amenities, pets, drone policy) are resolved from the linked venue when not set on the event itself.
 
 Response:
 ```json
@@ -456,12 +546,12 @@ Response:
   "poi_type": "BUSINESS",
   "name": "Joe's Coffee",
   "slug": "joes-coffee-pittsboro",
-  "teaser_description": "Best coffee in town",
-  "long_description": "...",
+  "teaser_paragraph": "Best coffee in town",
+  "description_long": "...",
   "address_street": "123 Main St",
   "address_city": "Pittsboro",
-  "phone": "919-555-0123",
-  "website": "https://joescoffee.com",
+  "phone_number": "919-555-0123",
+  "website_url": "https://joescoffee.com",
   "hours": {...},
   "location": {
     "type": "Point",
@@ -474,6 +564,20 @@ Response:
   }
 }
 ```
+
+#### GET /api/pois/by-type/{type}
+
+Query Parameters:
+- `include_past_events` (bool, optional): Include past events in results (default: false)
+
+Automatically excludes Canceled and Rescheduled events. Valid types: BUSINESS, PARK, TRAIL, EVENT.
+
+#### GET /api/pois/by-category/{slug}
+
+Query Parameters:
+- `include_past_events` (bool, optional): Include past events in results (default: false)
+
+Automatically excludes Canceled and Rescheduled events. Returns the category metadata along with matching POIs. Event POIs include event-specific data (start/end dates, status, organizer, venue, cost_type).
 
 #### GET /api/pois/{poi_id}/effective-hours
 
@@ -500,6 +604,108 @@ When a holiday or exception applies, `label` contains the name (e.g., `"Christma
 
 Returns `404` if the POI does not exist. Returns `400` if the date format is invalid.
 
+#### GET /api/events/in-range
+
+Get all events (including expanded recurring event instances) within a date range. Non-repeating events are included if their `start_datetime` falls within the range. Recurring events are expanded using their `repeat_pattern` with `excluded_dates` and `manual_dates` applied.
+
+Automatically excludes Canceled and Rescheduled events.
+
+Query Parameters:
+- `date_from` (string, required): Start date (YYYY-MM-DD)
+- `date_to` (string, required): End date (YYYY-MM-DD)
+
+Response:
+```json
+[
+  {
+    "id": "uuid",
+    "name": "Farmers Market",
+    "slug": "farmers-market-pittsboro",
+    "occurrence_datetime": "2026-03-07T09:00:00+00:00",
+    "address_city": "Pittsboro",
+    "event_status": "Scheduled"
+  }
+]
+```
+
+Results are sorted by `occurrence_datetime`. A single recurring event may produce multiple entries (one per occurrence in range).
+
+Returns `400` if the date format is invalid.
+
+#### GET /api/pois/{poi_id}/vendors
+
+Resolve the `vendor_poi_links` JSONB field on an event into published POI summaries. Returns enriched vendor data by looking up each linked POI.
+
+Response:
+```json
+[
+  {
+    "id": "uuid",
+    "name": "Joe's BBQ",
+    "slug": "joes-bbq-pittsboro",
+    "poi_type": "BUSINESS",
+    "address_city": "Pittsboro",
+    "featured_image": "https://...",
+    "vendor_type": "Food"
+  }
+]
+```
+
+Returns `404` if the POI is not found or not published. Returns an empty array if the event has no vendors or no vendor POI links.
+
+#### GET /api/pois/{poi_id}/sponsors
+
+Resolve the `sponsors` JSONB field on an event. Linked sponsors (those with a `poi_id`) are enriched with POI data. Manual sponsors (those without a `poi_id`) are passed through as-is.
+
+Response:
+```json
+[
+  {
+    "poi_id": "uuid",
+    "name": "Local Bank",
+    "slug": "local-bank-pittsboro",
+    "poi_type": "BUSINESS",
+    "address_city": "Pittsboro",
+    "featured_image": "https://...",
+    "tier": "Gold"
+  },
+  {
+    "name": "Community Foundation",
+    "tier": "Silver",
+    "website": "https://example.com",
+    "logo_url": "https://..."
+  }
+]
+```
+
+Returns `404` if the POI is not found or not published. Returns an empty array if the event has no sponsors.
+
+---
+
+### Sitemap Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/sitemap-events.xml` | XML sitemap for published events |
+
+**Note:** Sitemap endpoints are served at the root level (no `/api` prefix).
+
+#### GET /sitemap-events.xml
+
+Generates an XML sitemap for published event POIs. Excludes Canceled and Rescheduled events. Upcoming events receive higher priority (0.8) and daily change frequency; past events receive lower priority (0.4) and monthly change frequency.
+
+Response (application/xml):
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://nearbynearby.com/events/farmers-market-pittsboro</loc>
+    <priority>0.8</priority>
+    <changefreq>daily</changefreq>
+  </url>
+</urlset>
+```
+
 ---
 
 ### Geospatial Endpoints
@@ -512,8 +718,11 @@ Returns `404` if the POI does not exist. Returns `400` if the date format is inv
 #### GET /api/nearby
 
 Query Parameters:
-- `lat` (float): Latitude
-- `lng` (float): Longitude
+- `latitude` (float, required): Latitude (-90 to 90)
+- `longitude` (float, required): Longitude (-180 to 180)
+- `include_past_events` (bool, optional): Include past events in results (default: false)
+
+Automatically excludes Canceled and Rescheduled events unless `include_past_events` is true.
 
 Response:
 ```json
@@ -523,7 +732,7 @@ Response:
     "name": "Joe's Coffee",
     "slug": "joes-coffee-pittsboro",
     "poi_type": "BUSINESS",
-    "distance_miles": 0.3,
+    "distance_meters": 483.0,
     "location": {...}
   }
 ]
@@ -532,7 +741,10 @@ Response:
 #### GET /api/pois/{poi_id}/nearby
 
 Query Parameters:
-- `radius_miles` (float): Search radius (default: 5)
+- `radius_miles` (float): Search radius in miles (default: 5)
+- `include_past_events` (bool, optional): Include past events in results (default: false)
+
+Automatically excludes Canceled and Rescheduled events.
 
 ---
 

@@ -16,6 +16,7 @@ import Contact from './pages/Contact';
 import Feedback from './pages/Feedback';
 import ClaimBusiness from './pages/ClaimBusiness';
 import SuggestEvent from './pages/SuggestEvent';
+import EventsCalendar from './pages/EventsCalendar';
 
 function App() {
   const navOverlay = useOverlay('nav_overlay', { skipDesktop: true });
@@ -53,6 +54,7 @@ function App() {
           <Route path="/claim-business" element={<ClaimBusiness />} />
           <Route path="/suggest-event" element={<SuggestEvent />} />
           <Route path="/suggest-place" element={<Navigate to="/claim-business" replace />} />
+          <Route path="/events-calendar" element={<EventsCalendar />} />
         </Routes>
       </main>
 

@@ -6,9 +6,9 @@ The SEO System handles search engine optimization and social media sharing for t
 
 **Key Files:**
 - `nearby-app/backend/app/main.py` - Meta tag injection
-- `nearby-app/app/src/components/seo/SEO.jsx` - React SEO component
-- `nearby-app/app/src/components/seo/LocalBusinessJsonLd.jsx` - Business schema
-- `nearby-app/app/src/components/seo/EventJsonLd.jsx` - Event schema
+- `nearby-app/app/src/components/seo/LocalBusinessJsonLd.jsx` - Business JSON-LD schema
+- `nearby-app/app/src/components/seo/EventJsonLd.jsx` - Event JSON-LD schema
+- `nearby-app/backend/app/api/endpoints/sitemap.py` - Event sitemap endpoint
 - `nearby-app/app/src/utils/slugify.js` - URL utilities
 
 ---
@@ -227,33 +227,92 @@ function formatOpeningHours(hours) {
 // nearby-app/app/src/components/seo/EventJsonLd.jsx
 
 function EventJsonLd({ poi }) {
-  // Full schema.org/Event implementation with:
-  // - eventStatus mapping from event_status field to schema.org URLs
-  // - eventAttendanceMode (Offline/Online/Mixed)
-  // - location with address and geo coordinates
-  // - organizer with name, email, phone, website
-  // - offers/pricing based on cost fields
-  // - images, performers, door time, age range, accessibility
-
+  // Full schema.org/Event implementation
   // Renders using native React <script> tag, not react-helmet-async
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(eventSchema) }}
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(eventSchema, null, 2) }}
     />
   );
 }
 ```
 
-**Event Status → schema.org Mapping:**
+**Event Status --> schema.org Mapping:**
 
 | `event_status` value | schema.org `eventStatus` |
 |---------------------|--------------------------|
-| Cancelled / Canceled | `EventCancelled` |
-| Postponed | `EventPostponed` |
-| Rescheduled | `EventRescheduled` |
-| Moved Online / Virtual | `EventMovedOnline` |
-| All others (Scheduled, Sold Out, On Sale, etc.) | `EventScheduled` |
+| `Canceled` | `https://schema.org/EventCancelled` |
+| `Postponed` | `https://schema.org/EventPostponed` |
+| `Rescheduled` | `https://schema.org/EventRescheduled` |
+| `Moved Online` | `https://schema.org/EventMovedOnline` |
+| `Scheduled` | `https://schema.org/EventScheduled` |
+| `Updated Date and/or Time` | `https://schema.org/EventScheduled` |
+| `Unofficial Proposed Date` | `https://schema.org/EventScheduled` |
+
+**Event Attendance Mode:**
+
+| Condition | schema.org `eventAttendanceMode` |
+|-----------|----------------------------------|
+| `is_virtual` and `is_in_person` both true | `MixedEventAttendanceMode` |
+| `is_virtual` only | `OnlineEventAttendanceMode` |
+| Default (in-person) | `OfflineEventAttendanceMode` |
+| Status is `Moved Online` with `online_event_url` | Overridden to `OnlineEventAttendanceMode` |
+
+**VirtualLocation:**
+
+When `event_status === 'Moved Online'` and `online_event_url` is present, the `location` field becomes an array containing both the physical `Place` and a `VirtualLocation`:
+
+```json
+{
+  "location": [
+    { "@type": "Place", "name": "...", "address": {...}, "geo": {...} },
+    { "@type": "VirtualLocation", "url": "https://zoom.us/j/..." }
+  ]
+}
+```
+
+**Organizer:**
+
+Built as a `schema.org/Organization` when `organizer_name` is present:
+
+```json
+{
+  "organizer": {
+    "@type": "Organization",
+    "name": "Event Organizer Name",
+    "url": "https://organizer-website.com",
+    "email": "contact@organizer.com",
+    "telephone": "555-0100"
+  }
+}
+```
+
+The `url`, `email`, and `telephone` fields are sourced from `organizer_website`, `organizer_email`, and `organizer_phone` respectively. URLs without a protocol are automatically prefixed with `https://`.
+
+**Offers (Pricing):**
+
+Structured from `cost_type` and `cost` fields:
+
+| `cost_type` | Offers Output |
+|-------------|---------------|
+| `free` | `[{"@type": "Offer", "price": 0, "priceCurrency": "USD", "availability": "InStock"}]` |
+| `single_price` or `range` | `[{"@type": "Offer", "price": <cost>, "priceCurrency": "USD", "availability": "InStock"}]` |
+| Not set | `offers` field omitted |
+
+**Additional Schema Fields:**
+
+| Schema Field | Source | Description |
+|-------------|--------|-------------|
+| `startDate` | `event.start_datetime` | ISO 8601 datetime |
+| `endDate` | `event.end_datetime` | ISO 8601 datetime |
+| `description` | `description_short` or stripped `description_long` | Max 500 chars |
+| `performer` | `event.performers` | Array of `PerformingGroup` objects |
+| `image` | `main_image_url` + `images[]` | Array of image URLs |
+| `doorTime` | `event.doors_open` | When doors open |
+| `typicalAgeRange` | Derived from `ideal_for` | Age-related groups joined |
+| `accessibilityFeature` | `wheelchair_accessible` | Accessibility features array |
+| `maximumAttendeeCapacity` | `event.max_capacity` | Max attendees |
 
 ### Usage Based on POI Type
 
@@ -368,6 +427,8 @@ function ShareLinks({ poi }) {
 
 ## Sitemap Generation
 
+### Main Sitemap
+
 ```python
 # Script to generate sitemap.xml
 
@@ -418,6 +479,23 @@ def generate_sitemap(db: Session) -> str:
 
     return xml
 ```
+
+### Event Sitemap
+
+A dedicated event sitemap endpoint filters events by status and adjusts priority based on whether the event is upcoming or past:
+
+```
+GET /api/sitemap-events.xml
+```
+
+**Key file**: `nearby-app/backend/app/api/endpoints/sitemap.py`
+
+**Behavior:**
+- Only includes published EVENT POIs
+- **Excludes** events with status `Canceled` or `Rescheduled` (they should not be indexed)
+- Upcoming events (end date in the future) get **priority 0.8** and **daily** change frequency
+- Past events get **priority 0.4** and **monthly** change frequency
+- URLs follow the pattern `https://nearbynearby.com/events/{slug}`
 
 ---
 

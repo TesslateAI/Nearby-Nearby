@@ -154,11 +154,11 @@ class Event(Base):
 
     # Repeating event fields
     is_repeating = Column(Boolean, default=False)
-    repeat_pattern = Column(JSONB)  # {"frequency": "weekly|daily|monthly|yearly", "interval": 1, "days": [...]}
+    repeat_pattern = Column(JSONB)  # {"frequency": "weekly|daily|monthly|yearly", "interval": 1, "days": ["MO","WE"], "end_date": "...", "excluded_dates": [...], "manual_dates": [...]}
 
     # Venue inheritance (see "Venue Data Inheritance" section)
     venue_poi_id = Column(UUID, ForeignKey("points_of_interest.id"), nullable=True)
-    venue_inheritance = Column(JSONB, nullable=True)  # Per-section inheritance config
+    venue_inheritance = Column(JSONB, nullable=True)  # Per-section modes: as_is, use_and_add, do_not_use
 
     # Recurring events (see "Recurring Events" section)
     series_id = Column(UUID, nullable=True, index=True)
@@ -181,12 +181,14 @@ class Event(Base):
     vendor_application_info = Column(Text)
     vendor_fee = Column(String)
     vendor_requirements = Column(Text)
-    vendor_poi_links = Column(JSONB)  # List of POI IDs for vendors at this event
+    vendor_poi_links = Column(JSONB)  # [{poi_id, vendor_type}] - vendor POIs at this event
 
     # Event Status (Tasks 134-136)
     event_status = Column(String(100), default='Scheduled')
+    status_explanation = Column(Text)  # Required for Postponed, Updated Date, Moved Online
     cancellation_paragraph = Column(Text)
     contact_organizer_toggle = Column(Boolean, default=False)
+    online_event_url = Column(String)  # URL for virtual/online events
     new_event_link = Column(String)  # UUID string of replacement event (not a FK)
     rescheduled_from_event_id = Column(UUID, ForeignKey("events.poi_id"), nullable=True)
 
@@ -201,11 +203,11 @@ class Event(Base):
     organizer_poi_id = Column(UUID, ForeignKey("points_of_interest.id"), nullable=True)
 
     # Cost & Ticketing (Task 139)
-    cost_type = Column(String(50))  # Free, Paid, Donation-based, Varies
+    cost_type = Column(String(50))  # free, single_price, range
     ticket_links = Column(JSONB)    # [{"url": "...", "title": "..."}]
 
     # Sponsors (Task 140)
-    sponsors = Column(JSONB)  # [{"name": "...", "url": "...", "level": "..."}]
+    sponsors = Column(JSONB)  # [{poi_id, tier} | {name, url, logo_url, tier}]
 
     poi = relationship("PointOfInterest", back_populates="event", foreign_keys=[poi_id])
     venue_poi = relationship("PointOfInterest", foreign_keys=[venue_poi_id])
@@ -470,18 +472,57 @@ Events can link to a **venue** (a Business or Park POI) via the `venue_poi_id` f
 
 ### Inheritance Configuration
 
-The `venue_inheritance` field is a JSONB object with boolean flags per section:
+The `venue_inheritance` field is a JSONB object with per-section modes:
 
 ```json
 {
-  "parking": true,
-  "restrooms": true,
-  "accessibility": true,
-  "address": false
+  "parking": "as_is",
+  "restrooms": "use_and_add",
+  "accessibility": "as_is",
+  "hours": "do_not_use",
+  "amenities": "use_and_add",
+  "address": "as_is",
+  "contact": "do_not_use"
 }
 ```
 
-When a flag is `true`, the event inherits that section's data from the linked venue rather than storing its own values.
+Each section supports three modes:
+
+| Mode | Description |
+|------|-------------|
+| `as_is` | Use venue data directly, replacing event's own data |
+| `use_and_add` | Merge venue base data with event additions (lists are concatenated, dicts are merged with event values taking precedence) |
+| `do_not_use` | Skip venue data entirely, keep event's own data |
+
+### Venue Inheritance Resolution
+
+The resolution engine at `shared/utils/venue_inheritance.py` handles merging:
+
+```python
+from shared.utils.venue_inheritance import resolve_venue_inheritance
+
+result = resolve_venue_inheritance(
+    event_data={"parking_types": ["Street"]},
+    venue_data={"parking_types": ["Dedicated Parking Lot", "Free Parking"]},
+    inheritance_config={"parking": "use_and_add"}
+)
+# result["parking_types"] == ["Dedicated Parking Lot", "Free Parking", "Street"]
+# result["_venue_source"] == {"parking": "use_and_add"}
+```
+
+**Section-to-field mapping** (defined in `_SECTION_FIELDS`):
+
+| Section | Fields Controlled |
+|---------|------------------|
+| `parking` | `parking_types`, `parking_locations`, `parking_notes`, `expect_to_pay_parking`, `public_transit_info` |
+| `restrooms` | `public_toilets`, `toilet_locations`, `toilet_description` |
+| `accessibility` | `wheelchair_accessible`, `wheelchair_details` |
+| `hours` | `hours` |
+| `amenities` | `amenities` |
+| `pet_policy` | `pet_options`, `pet_policy` |
+| `drone_policy` | `drone_usage`, `drone_policy` |
+
+The returned dict includes a `_venue_source` key indicating which sections were inherited and their modes.
 
 ### Venue Data Endpoint
 
@@ -528,13 +569,45 @@ Events support recurrence through a set of fields on the Event model that enable
 
 ### Recurrence Pattern Structure
 
+The `repeat_pattern` JSONB field supports:
+
 ```json
 {
   "frequency": "weekly",   // "daily", "weekly", "monthly", "yearly"
   "interval": 1,           // Every N periods (e.g., every 2 weeks)
-  "days_of_week": ["Monday", "Wednesday"]  // Applicable for weekly frequency
+  "days": ["MO", "WE"],   // Two-letter day codes for weekly frequency
+  "end_date": "2026-12-31",         // Optional: when the pattern stops
+  "excluded_dates": ["2026-07-04"], // Optional: dates to skip
+  "manual_dates": ["2026-03-01T18:00:00Z"] // Optional: force-included dates
 }
 ```
+
+Day codes use two-letter abbreviations: `MO`, `TU`, `WE`, `TH`, `FR`, `SA`, `SU`.
+
+### Recurring Event Expansion
+
+The expansion engine at `shared/utils/recurring_events.py` generates concrete datetime instances from a repeat pattern within a query window:
+
+```python
+from shared.utils.recurring_events import expand_recurring_dates
+
+dates = expand_recurring_dates(
+    start_datetime=event.start_datetime,
+    repeat_pattern=event.repeat_pattern,
+    date_from=window_start,
+    date_to=window_end,
+    excluded_dates=event.excluded_dates,
+    manual_dates=event.manual_dates,
+    recurrence_end_date=event.recurrence_end_date,
+)
+```
+
+**Key behaviors:**
+- Uses `python-dateutil` `rrule` for generation
+- Respects `excluded_dates` (ISO date strings like `"2026-07-04"`)
+- Force-includes `manual_dates` (ISO datetime strings) even if they fall outside the pattern
+- Hard-caps at 60 months from `start_datetime` to prevent unbounded expansion
+- Returns a sorted list of `datetime` objects within the requested range
 
 ### Parent-Child Relationship
 
@@ -552,16 +625,61 @@ Events have a 7-value status field that controls display and behavior:
 | Status | Description |
 |--------|-------------|
 | `Scheduled` | Default. Event is confirmed and upcoming |
-| `Cancelled` | Event is cancelled. Shows `cancellation_paragraph` if provided |
+| `Canceled` | Event is permanently canceled. Shows `cancellation_paragraph` if provided |
 | `Postponed` | Event is postponed. Shows `cancellation_paragraph` if provided |
-| `Rescheduled` | Event has been rescheduled. `new_event_link` points to the replacement event |
 | `Updated Date and/or Time` | Dates changed without full reschedule |
-| `Sold Out` | Event is sold out |
-| `On Sale` | Tickets are currently on sale |
+| `Rescheduled` | Event has been rescheduled. `new_event_link` points to the replacement event |
+| `Moved Online` | Event has moved from in-person to an online/virtual format |
+| `Unofficial Proposed Date` | A date has been suggested but is not yet confirmed by the organizer |
+
+**Canonical source**: `shared/constants/field_options.py` `EVENT_STATUS_OPTIONS`
+
+### Event Status Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `event_status` | `String(100)` | Current status (default: `"Scheduled"`) |
+| `status_explanation` | `Text` | Required when transitioning to `Updated Date and/or Time`, `Postponed`, or `Moved Online` |
+| `cancellation_paragraph` | `Text` | Explanation displayed to users when canceled or postponed |
+| `contact_organizer_toggle` | `Boolean` | Controls whether a "Contact Organizer" button appears |
+| `online_event_url` | `String` | URL for virtual events (used when status is `Moved Online`) |
+| `new_event_link` | `String` | UUID string of replacement event (not a FK) |
+| `rescheduled_from_event_id` | `FK -> events.poi_id` | Links back to the original event that was rescheduled |
+
+### Status Transitions
+
+Not all status changes are allowed. The transition rules are defined in `shared/utils/event_status.py`:
+
+- **"Scheduled" is always a valid target** from any status (return to normal).
+- Same-status transitions (no-op) are always allowed.
+
+| Current Status | Allowed Next Statuses |
+|----------------|----------------------|
+| `Scheduled` | Canceled, Postponed, Updated Date and/or Time, Rescheduled, Moved Online, Unofficial Proposed Date |
+| `Canceled` | Scheduled only |
+| `Postponed` | Scheduled, Canceled, Rescheduled, Updated Date and/or Time |
+| `Updated Date and/or Time` | Scheduled, Canceled, Postponed, Rescheduled, Moved Online |
+| `Rescheduled` | Scheduled only |
+| `Moved Online` | Scheduled, Canceled, Postponed, Rescheduled |
+| `Unofficial Proposed Date` | Scheduled, Canceled, Postponed |
+
+Invalid transitions return HTTP 400 with a message listing the allowed targets.
+
+### Status Explanation Requirement
+
+Certain status transitions require a `status_explanation` field to be provided:
+
+- `Updated Date and/or Time`
+- `Postponed`
+- `Moved Online`
+
+If `status_explanation` is missing for these statuses, the update returns HTTP 400.
+
+**Canonical source**: `shared/constants/field_options.py` `EVENT_STATUS_EXPLANATION_REQUIRED`
 
 ### Cancel/Postpone Behavior
 
-When an event is cancelled or postponed:
+When an event is canceled or postponed:
 - `cancellation_paragraph` (optional) provides an explanation displayed to users
 - `contact_organizer_toggle` (boolean) controls whether a "Contact Organizer" button appears
 
@@ -577,16 +695,27 @@ Clones the POI and Event with new dates. The original event is automatically mar
 
 When updating an event via PUT, if the event's current status is "Updated Date and/or Time" and dates are being changed, the request must also set `event_status` to "Rescheduled". Otherwise the update returns HTTP 400.
 
+### Duplicate Event Prevention
+
+When creating a new event, the CRUD layer checks for duplicates by matching:
+- Same name (case-insensitive)
+- Same `venue_poi_id`
+- Same `start_datetime`
+
+If a duplicate is found, the endpoint returns HTTP 409 with the existing event's ID.
+
 ---
 
 ## Event Cost & Ticketing (Task 139)
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `cost_type` | String | Free, Paid, Donation-based, Varies |
+| `cost_type` | String(50) | `free`, `single_price`, `range` |
 | `ticket_links` | JSONB | Array of `{"url": "...", "title": "..."}` objects |
 
-The `cost_type` field replaces the older `is_free` boolean approach with a richer classification. `ticket_links` supports multiple ticketing platforms per event.
+The `cost_type` field uses three values: `free` (no cost), `single_price` (one fixed price), and `range` (variable pricing). The POI's `cost` field stores the actual dollar amount. `ticket_links` supports multiple ticketing platforms per event.
+
+**Canonical source**: `shared/constants/field_options.py` `EVENT_COST_TYPES`
 
 ---
 
@@ -594,9 +723,53 @@ The `cost_type` field replaces the older `is_free` boolean approach with a riche
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `sponsors` | JSONB | Array of `{"name": "...", "url": "...", "level": "..."}` objects |
+| `sponsors` | JSONB | Array of sponsor objects (see below) |
 
-Sponsors are stored as a flexible JSONB array. Each entry can have a name, URL, and sponsorship level.
+Sponsors are stored as a flexible JSONB array. Each entry can be either a **POI-linked sponsor** or a **freeform sponsor**:
+
+**POI-linked sponsor** (references an existing POI):
+```json
+{"poi_id": "uuid-string", "tier": "Gold"}
+```
+
+**Freeform sponsor** (external organization):
+```json
+{"name": "Acme Corp", "url": "https://acme.com", "logo_url": "https://...", "tier": "Silver"}
+```
+
+The `tier` field is freeform text (e.g., "Title", "Gold", "Silver", "Bronze", "Community").
+
+---
+
+## Extended Organizer (Task 138)
+
+Events have extended organizer fields beyond the basic `organizer_name`:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `organizer_name` | `String` | Organizer display name |
+| `organizer_email` | `String` | Organizer contact email |
+| `organizer_phone` | `String` | Organizer contact phone |
+| `organizer_website` | `String` | Organizer website URL |
+| `organizer_social_media` | `JSONB` | Social media links (e.g., `{"facebook": "...", "instagram": "..."}`) |
+| `organizer_poi_id` | `FK -> points_of_interest.id` | Links to an existing POI as the organizer (e.g., a Business that hosts events) |
+
+When `organizer_poi_id` is set, the event's organizer is an existing POI in the system. The `organizer_poi` relationship provides direct access to the linked POI.
+
+---
+
+## Vendor POI Linking
+
+Events can link to vendor POIs through the `vendor_poi_links` JSONB field:
+
+```json
+[
+  {"poi_id": "uuid-string", "vendor_type": "Food Vendor"},
+  {"poi_id": "uuid-string", "vendor_type": "Craft Vendor"}
+]
+```
+
+Each entry links to an existing POI that is a vendor at the event, along with a `vendor_type` classification. This complements the freeform vendor fields (`vendor_types`, `vendor_application_info`, etc.) with concrete POI references.
 
 ---
 
@@ -660,6 +833,10 @@ Returns:
 | File | Purpose |
 |------|---------|
 | `shared/utils/hours_resolution.py` | Python resolution engine (backend) |
+| `shared/utils/event_status.py` | Event status transition validation |
+| `shared/utils/recurring_events.py` | Recurring event date expansion |
+| `shared/utils/venue_inheritance.py` | Venue data inheritance resolution |
+| `shared/constants/field_options.py` | Canonical field option lists (statuses, cost types, etc.) |
 | `nearby-app/app/src/utils/hoursUtils.js` | JavaScript resolution engine (frontend) |
 | `nearby-app/app/src/components/common/HoursDisplay.jsx` | User-facing hours display |
 | `nearby-admin/frontend/src/components/HoursSelector.jsx` | Admin hours editor UI |

@@ -5,10 +5,15 @@
 The user-facing frontend is a React application built with Vite. It provides search, discovery, and POI detail viewing for public users.
 
 **Tech Stack:**
-- React 18
+- React 19
 - Vite (build tool)
-- React Router (navigation)
+- React Router v7 (navigation)
 - React-Leaflet (maps)
+- FullCalendar (events calendar views)
+- DOMPurify (HTML sanitization for rich descriptions)
+- @sentry/react (error tracking)
+- lucide-react (icons)
+- Vitest + React Testing Library (frontend tests)
 - Custom CSS (no UI framework)
 
 **Key Directories:**
@@ -30,6 +35,7 @@ nearby-app/app/src/
 │   ├── Home.jsx
 │   ├── Explore.jsx       # Browse + map/list layout with search and controls
 │   ├── POIDetail.jsx     # Smart router to type-specific detail
+│   ├── EventsCalendar.jsx # FullCalendar month/week/day/list view
 │   ├── CommunityInterest.jsx  # Community interest form
 │   ├── Contact.jsx       # Contact form
 │   ├── Feedback.jsx      # Feedback with file uploads
@@ -85,6 +91,7 @@ function App() {
           <Route path="/claim-business" element={<ClaimBusiness />} />
           <Route path="/suggest-event" element={<SuggestEvent />} />
           <Route path="/suggest-place" element={<Navigate to="/claim-business" replace />} />
+          <Route path="/events-calendar" element={<EventsCalendar />} />
         </Routes>
       </main>
 
@@ -109,6 +116,7 @@ function App() {
 | `/claim-business` | ClaimBusiness | Business claim form |
 | `/suggest-event` | SuggestEvent | Event suggestion form |
 | `/suggest-place` | Redirect | Redirects to `/claim-business` |
+| `/events-calendar` | EventsCalendar | FullCalendar month/week/day/list views |
 | `/services` | Services | Services page |
 
 ---
@@ -132,6 +140,7 @@ The Explore page has two modes:
 - Search bar with hybrid AI search integration
 - Pagination for large result sets
 - Responsive: map hides on mobile, full-width result cards
+- "View Calendar" link in the header navigates to `/events-calendar`
 
 ### POI Detail Page (Smart Router)
 
@@ -180,6 +189,63 @@ Each POI type has a specialized detail component in `components/details/`:
 | GenericDetail | `GenericDetail.jsx` | Fallback for all other types |
 
 All detail components use the shared `Accordion` component for collapsible sections and the `HoursDisplay` component for consistent hours rendering.
+
+#### EventDetail Enhancements
+
+`EventDetail.jsx` has extensive event-status-aware rendering and several supporting sub-components:
+
+**Status-Based Conditional Rendering:**
+- Reads `poi.event.event_status` (default: `"Scheduled"`)
+- When canceled: hides date badge, hides start time in quick info, applies `--canceled` CSS class (strikethrough on name)
+- Renders `EventStatusBanner` for any non-Scheduled status (Canceled, Postponed, Rescheduled, Updated Date and/or Time, Moved Online, Unofficial Proposed Date)
+
+**Rich Description (DOMPurify):**
+- `description_long` is rendered as sanitized HTML via `DOMPurify.sanitize()` and `dangerouslySetInnerHTML`
+
+**COST & TICKETS Accordion Section:**
+- Displays cost info based on `poi.event.cost_type` (`free`, `single_price`, `range`)
+- Links to `poi.ticket_link` with "Buy Tickets" action
+- Shows `poi.pricing_details` when available
+
+**Venue Linking:**
+- If `poi.event.venue_poi_id` is set, the venue name in EVENT DETAILS becomes a link to `/poi/{venue_poi_id}`
+- Falls back to plain text when no linked venue POI exists
+
+**Sub-Components (loaded within EventDetail or its accordion sections):**
+
+| Component | File | Purpose |
+|-----------|------|---------|
+| `EventStatusBanner` | `EventStatusBanner.jsx` | Colored alert banner for non-Scheduled statuses with status-specific actions |
+| `EventVendors` | `EventVendors.jsx` | Fetches and displays participating vendors from `GET /api/pois/{id}/vendors` |
+| `EventSponsors` | `EventSponsors.jsx` | Fetches and displays sponsors with tier badges (Platinum/Gold/Silver/Bronze/Community) |
+| `ContactOrganizerModal` | `ContactOrganizerModal.jsx` | Overlay modal showing organizer contact info (email, phone, website, link to organizer POI) |
+
+**EventStatusBanner** supports these statuses with distinct color schemes:
+| Status | Color | Border | Actions |
+|--------|-------|--------|---------|
+| Canceled | Red (#dc2626) | Red | Shows `cancellationParagraph`, optional Contact Organizer button |
+| Postponed | Amber (#d97706) | Yellow | Shows `statusExplanation` |
+| Rescheduled | Blue (#2563eb) | Blue | Shows `statusExplanation`, "View New Event Details" link |
+| Updated Date and/or Time | Orange (#ea580c) | Orange | Shows `statusExplanation` |
+| Moved Online | Purple (#7c3aed) | Purple | Shows `statusExplanation`, "Join Online Event" link |
+| Unofficial Proposed Date | Gray (#6b7280) | Gray | Shows `statusExplanation` |
+
+### Events Calendar Page
+
+A full-page calendar view at `/events-calendar` powered by FullCalendar.
+
+**File:** `pages/EventsCalendar.jsx`
+
+**Features:**
+- Fetches all published events via `GET /api/pois?poi_type=EVENT&publication_status=published&limit=250`
+- Four view modes: Month (`dayGridMonth`), Week (`timeGridWeek`), Day (`timeGridDay`), List (`listMonth`)
+- View toggle buttons with `aria-pressed` state
+- Color-coded by event status: Scheduled (indigo), Canceled (red), Postponed (amber), Rescheduled (blue)
+- Canceled events prefixed with `[CANCELED]` in title
+- Clicking an event navigates to its detail page (`/events/{slug}`)
+- Loading and error states with `role="status"` and `role="alert"` for accessibility
+
+**Dependencies:** `@fullcalendar/react`, `@fullcalendar/daygrid`, `@fullcalendar/timegrid`, `@fullcalendar/list`
 
 ### Accordion Component
 
@@ -512,32 +578,22 @@ function NearbySection({ poi, nearbyPois: initialNearby }) {
 
 ### Nearby Card
 
-```jsx
-// components/nearby-feature/NearbyCard.jsx
+The NearbyCard component (`components/nearby-feature/NearbyCard.jsx`) renders a card for each nearby POI with type-specific information, amenity icons, and action buttons.
 
-function NearbyCard({ poi, index }) {
-  return (
-    <Link to={getPOIUrl(poi)} className="nearby-card">
-      <div className="nearby-card-index">{index + 1}</div>
+**Event Status Badges:**
+- Events with a non-`Scheduled` status display a colored badge (e.g., `Canceled`, `Postponed`, `Rescheduled`)
+- Canceled events render the name with strikethrough text (`nearby-card__name--canceled` CSS class)
+- Scheduled events whose `start_datetime` is in the past display a `Past` badge
+- Badge CSS classes follow the pattern `nearby-card__status-badge--{status}` (lowercase, spaces replaced with hyphens)
 
-      <div className="nearby-card-content">
-        <h3>{poi.name}</h3>
-
-        <div className="nearby-card-meta">
-          <span className="type-badge">{poi.poi_type}</span>
-          <span className="distance">
-            {poi.distance_miles?.toFixed(1)} miles
-          </span>
-        </div>
-
-        {poi.address_city && (
-          <p className="address">{poi.address_city}, {poi.address_state}</p>
-        )}
-      </div>
-    </Link>
-  );
-}
-```
+**Other Features:**
+- Distance display in miles or feet (meters-to-miles conversion)
+- Hours display for non-event POIs based on selected date or current day
+- Primary category label
+- Amenity icons: Restrooms, Wheelchair Accessible, Free WiFi, Pet Friendly (custom SVG icons from nn-templates)
+- Trail-specific info: length in miles, difficulty badge
+- Park-specific info: park type
+- Action buttons: Directions and Details
 
 ---
 
@@ -568,7 +624,7 @@ Five form pages following a consistent pattern (card layout, success state, erro
 | `Contact.jsx` | `/contact` | `POST /api/contact` | Simple 3-field form |
 | `Feedback.jsx` | `/feedback` | `POST /api/feedback` | Drag-and-drop file upload with preview |
 | `ClaimBusiness.jsx` | `/claim-business` | `POST /api/business-claims` | Chatham County gate (Yes/No) |
-| `SuggestEvent.jsx` | `/suggest-event` | `POST /api/event-suggestions` | Event name + organizer email required |
+| `SuggestEvent.jsx` | `/suggest-event` | `POST /api/event-suggestions` | Event name + organizer email required; fields for date, location, description, details link, organizer name/phone |
 
 See [Forms System](../systems/forms.md) for full backend documentation.
 
@@ -582,6 +638,28 @@ The app uses JSON-LD structured data components for search engine optimization. 
 | `LocalBusinessJsonLd` | `components/seo/LocalBusinessJsonLd.jsx` | schema.org/LocalBusiness structured data |
 
 Each type-specific detail page includes the appropriate JSON-LD component. Server-side meta tag injection handles Open Graph and Twitter Card tags.
+
+**EventJsonLd Details:**
+
+The `EventJsonLd` component outputs a comprehensive schema.org/Event object including:
+
+- **Event status mapping** (`eventStatus`):
+  | App Status | Schema.org Value |
+  |------------|------------------|
+  | Scheduled | `EventScheduled` |
+  | Canceled | `EventCancelled` |
+  | Postponed | `EventPostponed` |
+  | Rescheduled | `EventRescheduled` |
+  | Moved Online | `EventMovedOnline` |
+  | Updated Date and/or Time | `EventScheduled` |
+  | Unofficial Proposed Date | `EventScheduled` |
+
+- **Attendance mode** (`eventAttendanceMode`): Offline, Online, or Mixed based on `is_virtual` and `is_in_person` flags
+- **VirtualLocation**: When status is "Moved Online" and `online_event_url` is set, `location` becomes an array with both `Place` and `VirtualLocation`
+- **Offers**: Free events emit `price: 0`; paid events include cost from `poi.cost`
+- **Organizer**: Built from `organizer_name`, `organizer_website`, `organizer_email`, `organizer_phone`
+- **Performers**: Array of `PerformingGroup` from `poi.event.performers`
+- **Additional fields**: `doorTime`, `typicalAgeRange` (from `ideal_for`), `accessibilityFeature`, `maximumAttendeeCapacity`
 
 ### Event Disclaimer
 
@@ -878,7 +956,66 @@ src/
 
 ## Error Tracking (Sentry)
 
-The user-facing frontend initializes `@sentry/react` in `main.jsx` if `VITE_SENTRY_DSN` is set. An `ErrorBoundary` component at `components/ErrorBoundary.jsx` wraps the app to catch and report uncaught React errors. Hidden source maps are generated in production builds (`build.sourcemap: 'hidden'` in `vite.config.js`).
+The user-facing frontend initializes `@sentry/react` in `main.jsx` if the `VITE_SENTRY_DSN` environment variable is set.
+
+**Initialization (`main.jsx`):**
+```jsx
+import * as Sentry from '@sentry/react';
+
+const SENTRY_DSN = import.meta.env.VITE_SENTRY_DSN;
+if (SENTRY_DSN) {
+  Sentry.init({
+    dsn: SENTRY_DSN,
+    environment: import.meta.env.MODE,
+    tracesSampleRate: 0.1,
+  });
+}
+```
+
+**ErrorBoundary (`components/ErrorBoundary.jsx`):**
+- Wraps the app with `Sentry.ErrorBoundary` to catch and report uncaught React errors
+- Renders a fallback UI with a "Something went wrong" message and a refresh button
+- Reports errors automatically to Sentry when they occur
+
+Hidden source maps are generated in production builds (`build.sourcemap: 'hidden'` in `vite.config.js`) so Sentry can provide meaningful stack traces without exposing source maps to end users.
+
+---
+
+## Frontend Testing (Vitest + React Testing Library)
+
+The frontend has a test suite using Vitest and React Testing Library (RTL).
+
+**Configuration:**
+- `vitest.config.js` at `nearby-app/app/` root
+- Environment: `jsdom`
+- Setup file: `src/test/setup.js` (imports `@testing-library/jest-dom` matchers)
+- CSS processing disabled (`css: false`) for faster tests
+- Globals enabled (no need to import `describe`, `it`, `expect`)
+
+**Running Tests:**
+```bash
+cd nearby-app/app
+npm test           # Watch mode
+npm run test:run   # Single run (CI-friendly)
+```
+
+**Test Files (8 suites):**
+
+| Test File | Component Under Test | Key Scenarios |
+|-----------|---------------------|---------------|
+| `components/details/__tests__/EventStatusBanner.test.jsx` | EventStatusBanner | Renders nothing for Scheduled, shows correct colors/labels for each status, conditional links and Contact Organizer button |
+| `components/details/__tests__/EventDetail.test.jsx` | EventDetail | Status banner integration, canceled event conditional hiding, DOMPurify sanitization, COST & TICKETS section, venue linking |
+| `components/details/__tests__/EventVendors.test.jsx` | EventVendors | Loading/error/empty states, vendor list rendering, links to vendor POI pages |
+| `components/details/__tests__/EventSponsors.test.jsx` | EventSponsors | Loading/error/empty states, tier badge rendering, sponsor links (POI, external URL, plain text) |
+| `components/details/__tests__/ContactOrganizerModal.test.jsx` | ContactOrganizerModal | Open/close behavior, displays organizer info, mailto/tel links, link to organizer POI |
+| `pages/__tests__/EventsCalendar.test.jsx` | EventsCalendar | Loading state, error handling, FullCalendar rendering, event click navigation |
+| `components/nearby-feature/__tests__/NearbyCard.test.jsx` | NearbyCard | Event status badges, canceled strikethrough, past event badge, amenity icons |
+| `components/seo/__tests__/EventJsonLd.test.jsx` | EventJsonLd | Status mapping to schema.org values, VirtualLocation for Moved Online, offers, organizer, attendance mode |
+
+**Dev Dependencies:**
+- `vitest` + `@vitest/ui` (test runner)
+- `@testing-library/react` + `@testing-library/jest-dom` + `@testing-library/user-event` (React testing utilities)
+- `jsdom` (browser environment simulation)
 
 ---
 

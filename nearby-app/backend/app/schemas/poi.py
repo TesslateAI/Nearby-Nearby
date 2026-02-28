@@ -64,6 +64,7 @@ class Event(BaseModel):
     manual_dates: Optional[list] = None
     # Task 134-136: Event Status
     event_status: Optional[str] = None
+    status_explanation: Optional[str] = None
     cancellation_paragraph: Optional[str] = None
     contact_organizer_toggle: Optional[bool] = None
     new_event_link: Optional[str] = None

@@ -425,6 +425,15 @@ The start period gives containers time to initialize before health checks begin.
 
 Both backends and both frontends support Sentry error tracking.
 
+### Dependencies
+
+| Surface | Package | Install Location |
+|---------|---------|-----------------|
+| nearby-app backend | `sentry-sdk[fastapi]` | `nearby-app/backend/requirements.txt` |
+| nearby-admin backend | `sentry-sdk[fastapi]` | `nearby-admin/backend/requirements.txt` |
+| nearby-app frontend | `@sentry/react` | `nearby-app/app/package.json` |
+| nearby-admin frontend | `@sentry/react` | `nearby-admin/frontend/package.json` |
+
 ### Backend (Python)
 
 Both `nearby-app` and `nearby-admin` backends have `app/core/sentry.py` that calls `sentry_sdk.init()` if the `SENTRY_DSN` environment variable is a valid `https://` URL. Non-URL values like `"disabled"` are ignored.

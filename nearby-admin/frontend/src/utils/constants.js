@@ -494,6 +494,42 @@ export const getStatusOptions = (poiType) => {
   return BUSINESS_STATUS_OPTIONS;
 };
 
+// Venue Inheritance Sections — which venue fields an event can inherit
+export const VENUE_INHERITANCE_SECTIONS = [
+  { value: 'address', label: 'Address & Location' },
+  { value: 'parking', label: 'Parking' },
+  { value: 'accessibility', label: 'Accessibility' },
+  { value: 'restrooms', label: 'Restrooms' },
+  { value: 'contact', label: 'Contact Info' },
+  { value: 'hours', label: 'Hours' },
+  { value: 'amenities', label: 'Amenities' },
+];
+
+// Venue Inheritance Modes — how each inherited section is used
+export const VENUE_INHERITANCE_MODES = [
+  { value: 'as_is', label: 'Use As Is' },
+  { value: 'use_and_add', label: 'Use & Add' },
+  { value: 'do_not_use', label: "Don't Use" },
+];
+
+// Recurrence frequency options for recurring events
+export const REPEAT_FREQUENCY_OPTIONS = [
+  { value: 'daily', label: 'Daily' },
+  { value: 'weekly', label: 'Weekly' },
+  { value: 'biweekly', label: 'Every 2 Weeks' },
+  { value: 'monthly', label: 'Monthly' },
+  { value: 'yearly', label: 'Yearly' },
+];
+
+// Sponsor tier options for event sponsors
+export const SPONSOR_TIERS = [
+  { value: 'Platinum', label: 'Platinum' },
+  { value: 'Gold', label: 'Gold' },
+  { value: 'Silver', label: 'Silver' },
+  { value: 'Bronze', label: 'Bronze' },
+  { value: 'Community', label: 'Community' },
+];
+
 // Helper function to determine which fields to show based on listing type
 export const getFieldsForListingType = (listingType, poiType) => {
   const isPaid = ['paid', 'sponsor_platform', 'sponsor_state', 'sponsor_county', 'sponsor_town', 'community_comped'].includes(listingType);

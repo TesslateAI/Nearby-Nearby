@@ -123,6 +123,78 @@ The test suite exposed and fixed these real bugs:
 
 ---
 
+## Frontend Test Suites
+
+Both frontends now have Vitest + React Testing Library test infrastructure: **83 tests across 9 files** in the admin frontend and **93 tests across 8 files** in the app frontend.
+
+### Running Frontend Tests
+
+```bash
+# nearby-admin frontend (83 tests)
+cd nearby-admin/frontend
+npm test              # watch mode
+npx vitest run        # single run (CI-friendly)
+
+# nearby-app frontend (93 tests)
+cd nearby-app/app
+npm test              # watch mode
+npx vitest run        # single run (CI-friendly)
+```
+
+### Configuration
+
+Both frontends share the same Vitest configuration pattern:
+
+| File | Purpose |
+|------|---------|
+| `vitest.config.js` | Vitest config: jsdom environment, setup file, globals enabled, CSS disabled |
+| `src/test/setup.js` | Test setup: imports `@testing-library/jest-dom` matchers |
+
+```javascript
+// vitest.config.js (identical in both frontends)
+import { defineConfig } from 'vitest/config';
+import react from '@vitejs/plugin-react';
+
+export default defineConfig({
+  plugins: [react()],
+  test: {
+    environment: 'jsdom',
+    setupFiles: ['./src/test/setup.js'],
+    globals: true,
+    css: false,
+  },
+});
+```
+
+### Admin Frontend Tests (83 tests, 9 files)
+
+| File | Tests | What it covers |
+|------|-------|----------------|
+| `src/components/common/__tests__/POISearchSelect.test.jsx` | 7 | POI search select component rendering and interaction |
+| `src/hooks/__tests__/useEventStatuses.test.jsx` | 7 | Event status hook logic and state transitions |
+| `src/components/POIForm/components/__tests__/RescheduleModal.test.jsx` | 6 | Reschedule modal form validation and submission |
+| `src/components/POIForm/sections/__tests__/EventStatusSection.test.jsx` | 9 | Event status section rendering and status changes |
+| `src/components/POIForm/sections/__tests__/VenueInheritanceControls.test.jsx` | 9 | Venue inheritance toggle and field population |
+| `src/components/POIForm/sections/__tests__/RecurringEventSection.test.jsx` | 16 | Recurring event frequency, excluded dates, series config |
+| `src/components/POIForm/sections/__tests__/EventSponsorsSection.test.jsx` | 10 | Sponsor management: add, remove, tier selection |
+| `src/components/POIForm/sections/__tests__/EventVendorsSection.test.jsx` | 9 | Vendor management: add, remove, type selection |
+| `src/components/POIForm/sections/__tests__/EventOrganizerSection.test.jsx` | 10 | Organizer fields: name, email, phone, website |
+
+### App Frontend Tests (93 tests, 8 files)
+
+| File | Tests | What it covers |
+|------|-------|----------------|
+| `src/components/details/__tests__/EventStatusBanner.test.jsx` | 12 | Status banner rendering for all event states |
+| `src/components/details/__tests__/EventDetail.test.jsx` | 21 | Full event detail page rendering and interactions |
+| `src/components/details/__tests__/EventVendors.test.jsx` | 5 | Vendor list display on event detail |
+| `src/components/details/__tests__/EventSponsors.test.jsx` | 6 | Sponsor list display with tier badges |
+| `src/components/details/__tests__/ContactOrganizerModal.test.jsx` | 7 | Contact organizer modal form and validation |
+| `src/pages/__tests__/EventsCalendar.test.jsx` | 11 | Events calendar page rendering and date navigation |
+| `src/components/seo/__tests__/EventJsonLd.test.jsx` | 25 | JSON-LD structured data for event SEO |
+| `src/components/nearby-feature/__tests__/NearbyCard.test.jsx` | 6 | Nearby card component rendering for all POI types |
+
+---
+
 ## Test Folder Structure
 
 ```
@@ -166,18 +238,52 @@ NearbyNearby/
 │   └── test_sentry_integration.py     # Sentry init tests (Tasks 169-170)
 │
 ├── nearby-admin/
-│   └── backend/
-│       └── tests/                       # Original admin-only tests (pytest + httpx)
-│           ├── conftest.py
-│           ├── test_auth.py
-│           ├── test_pois_api.py
-│           ├── test_crud_poi.py
-│           ├── test_image_upload.py
-│           └── test_attributes.py
+│   ├── backend/
+│   │   └── tests/                       # Original admin-only tests (pytest + httpx)
+│   │       ├── conftest.py
+│   │       ├── test_auth.py
+│   │       ├── test_pois_api.py
+│   │       ├── test_crud_poi.py
+│   │       ├── test_image_upload.py
+│   │       └── test_attributes.py
+│   └── frontend/
+│       ├── vitest.config.js             # Vitest config (jsdom, setup file)
+│       └── src/
+│           ├── test/setup.js            # @testing-library/jest-dom setup
+│           ├── components/
+│           │   ├── common/__tests__/
+│           │   │   └── POISearchSelect.test.jsx
+│           │   └── POIForm/
+│           │       ├── components/__tests__/
+│           │       │   └── RescheduleModal.test.jsx
+│           │       └── sections/__tests__/
+│           │           ├── EventStatusSection.test.jsx
+│           │           ├── VenueInheritanceControls.test.jsx
+│           │           ├── RecurringEventSection.test.jsx
+│           │           ├── EventSponsorsSection.test.jsx
+│           │           ├── EventVendorsSection.test.jsx
+│           │           └── EventOrganizerSection.test.jsx
+│           └── hooks/__tests__/
+│               └── useEventStatuses.test.jsx
 │
 ├── nearby-app/
-│   ├── backend/tests/                   # Not yet created
-│   └── app/tests/                       # Not yet created
+│   └── app/
+│       ├── vitest.config.js             # Vitest config (jsdom, setup file)
+│       └── src/
+│           ├── test/setup.js            # @testing-library/jest-dom setup
+│           ├── components/
+│           │   ├── details/__tests__/
+│           │   │   ├── EventStatusBanner.test.jsx
+│           │   │   ├── EventDetail.test.jsx
+│           │   │   ├── EventVendors.test.jsx
+│           │   │   ├── EventSponsors.test.jsx
+│           │   │   └── ContactOrganizerModal.test.jsx
+│           │   ├── seo/__tests__/
+│           │   │   └── EventJsonLd.test.jsx
+│           │   └── nearby-feature/__tests__/
+│           │       └── NearbyCard.test.jsx
+│           └── pages/__tests__/
+│               └── EventsCalendar.test.jsx
 ```
 
 ---
@@ -205,24 +311,24 @@ NearbyNearby/
 | 9 | Venue list + venue data | Done | `test_admin_venues.py` |
 | 10 | Delete + cascade | Done | `test_admin_delete.py` |
 
-### Tier 3 - "Nice to have" (TODO)
+### Tier 3 - "Nice to have" (PARTIAL)
 
-| # | What to Test | App | Type |
-|---|-------------|-----|------|
-| 11 | Auth & RBAC (login, roles, permissions) | nearby-admin | Integration |
-| 12 | Frontend smoke tests (NearbySection, NearbyCard) | nearby-app | Component |
-| 13 | POI form validation | nearby-admin | Component |
-| 14 | Search result ranking quality | nearby-app | Unit |
+| # | What to Test | App | Type | Status |
+|---|-------------|-----|------|--------|
+| 11 | Auth & RBAC (login, roles, permissions) | nearby-admin | Integration | TODO |
+| 12 | Frontend component tests (NearbyCard, EventDetail, etc.) | nearby-app | Component | Done (93 tests) |
+| 13 | POI form section tests (events, venues, recurring) | nearby-admin | Component | Done (83 tests) |
+| 14 | Search result ranking quality | nearby-app | Unit | TODO |
 
 ---
 
-## Recommended Frameworks
+## Frameworks
 
-| Layer | Tool | Why |
-|-------|------|-----|
-| Backend (both apps) | **pytest** + **httpx** | Already used in nearby-admin, FastAPI's recommended stack |
-| Frontend (both apps) | **Vitest** + **React Testing Library** | Same ecosystem as Vite (already used for builds), fast |
-| E2E (future) | **Playwright** | Cross-browser, reliable, good API |
+| Layer | Tool | Status | Why |
+|-------|------|--------|-----|
+| Backend (both apps) | **pytest** + **httpx** | In use | FastAPI's recommended stack |
+| Frontend (both apps) | **Vitest** + **React Testing Library** | In use | Same ecosystem as Vite, fast, 176 tests |
+| E2E (future) | **Playwright** | TODO | Cross-browser, reliable, good API |
 
 ### Backend Dependencies
 
@@ -239,9 +345,9 @@ httpx
 pytest-asyncio  # if using async endpoints
 ```
 
-### Frontend Dependencies (when ready)
+### Frontend Dependencies (installed)
 
-Add to `devDependencies` in both `nearby-admin/frontend/package.json` and `nearby-app/app/package.json`:
+Both `nearby-admin/frontend/package.json` and `nearby-app/app/package.json` include these in `devDependencies`:
 ```json
 {
   "vitest": "latest",
@@ -294,17 +400,20 @@ Cross-app tests use **ORM helpers** (not `admin_client`) to create test data. Th
 
 ### Frontend Testing Approach
 
-Keep it minimal. For a small team, frontend tests have the worst ROI unless you have complex client-side logic.
+Focus on components with complex logic and user-facing behavior. Both frontends now have Vitest + React Testing Library infrastructure with **176 total tests** (83 admin + 93 app).
 
-**What to test:**
-- Critical components render without crashing (smoke tests)
-- The NearbySection component with mocked API data
-- Form validation logic (if complex)
+**What is tested:**
+- Event management components (status, scheduling, vendors, sponsors, organizer)
+- Venue inheritance and recurring event configuration
+- Event detail page rendering with all sub-components
+- SEO structured data (JSON-LD) generation
+- Nearby feature card rendering for all POI types
+- Calendar page rendering and date navigation
 
 **What NOT to test:**
 - Every component in isolation
 - Visual regression / snapshots (high maintenance)
-- Simple presentational components
+- Simple presentational components without logic
 
 ---
 

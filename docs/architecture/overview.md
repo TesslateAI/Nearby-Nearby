@@ -105,7 +105,9 @@ Form Submit → React Frontend → FastAPI Backend → Forms Database (isolated)
 1. **Search**: Query → Query Processor extracts filters/hints → 6 signals scored independently → Weighted merge → Dynamic threshold → Ranked results
 2. **Nearby**: Location → PostGIS distance query → Sorted by distance
 3. **SEO**: Request for POI → Inject meta tags → Return HTML with Open Graph data
-4. **Form Submit**: Input → Rate limit → Validate → Insert to forms DB → Success response
+4. **Sitemap**: `/sitemap.xml` → Query all published POIs → Generate XML sitemap for search engines
+5. **Form Submit**: Input → Rate limit → Validate → Insert to forms DB → Success response
+6. **Event Suggest**: Public event suggestion form → Insert to `event_suggestions` table → Admin review
 
 ---
 
@@ -123,6 +125,7 @@ Form Submit → React Frontend → FastAPI Backend → Forms Database (isolated)
 | ML Model | N/A | embeddinggemma-300m |
 | Rate Limiting | N/A | slowapi (5/min forms, 2/min file uploads) |
 | S3 Client | boto3 | boto3 (feedback file uploads) |
+| Error Tracking | sentry-sdk[fastapi] | sentry-sdk[fastapi] |
 
 ### Frontend Technologies
 
@@ -135,6 +138,8 @@ Form Submit → React Frontend → FastAPI Backend → Forms Database (isolated)
 | Rich Text | TipTap | N/A |
 | DnD | @hello-pangea/dnd | N/A |
 | Icons | N/A | lucide-react |
+| Error Tracking | @sentry/react | @sentry/react |
+| Testing | Vitest + React Testing Library (83 tests) | Vitest + React Testing Library (93 tests) |
 
 ### Database Extensions
 
@@ -232,6 +237,7 @@ IaC:   terraform/modules/ (networking, database, storage, ecr, ecs, alb, secrets
 | Auth | `backend/app/core/security.py`, `permissions.py` |
 | Migrations | `backend/alembic/versions/*.py` |
 | Frontend | `frontend/src/App.jsx`, `components/` |
+| Frontend Tests | `frontend/src/**/__tests__/*.test.jsx` (83 tests across 9 files) |
 
 ### nearby-app
 
@@ -240,11 +246,13 @@ IaC:   terraform/modules/ (networking, database, storage, ecr, ecs, alb, secrets
 | Entry Point | `backend/app/main.py` |
 | Models | `backend/app/models/*.py` (POI + form models) |
 | API Routes | `backend/app/api/endpoints/*.py` |
+| Sitemap | `backend/app/api/endpoints/sitemap.py` (XML sitemap generation for SEO) |
 | Search Engine | `backend/app/search/search_engine.py`, `query_processor.py`, `constants.py` |
 | S3 Client | `backend/app/core/s3.py` |
 | Sentry | `backend/app/core/sentry.py` |
 | Database | `backend/app/database.py` (main engine + forms engine) |
 | Frontend | `app/src/App.jsx`, `components/`, `pages/` |
+| Frontend Tests | `app/src/**/__tests__/*.test.jsx` (93 tests across 8 files) |
 
 ### Shared
 
@@ -253,6 +261,9 @@ IaC:   terraform/modules/ (networking, database, storage, ecr, ecs, alb, secrets
 | Enums | `shared/models/enums.py` (POIType, ImageType) |
 | Constants | `shared/constants/field_options.py` (amenity patterns, listing types, image function tags) |
 | Utils | `shared/utils/hours_resolution.py` (Hours precedence resolution engine) |
+| Utils | `shared/utils/event_status.py` (Event status transitions and display logic) |
+| Utils | `shared/utils/recurring_events.py` (Recurring event expansion and series management) |
+| Utils | `shared/utils/venue_inheritance.py` (Venue-to-event field inheritance resolution) |
 
 ---
 

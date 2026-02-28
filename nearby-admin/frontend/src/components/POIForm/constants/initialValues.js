@@ -220,6 +220,10 @@ export const emptyInitialValues = {
     contact_organizer_toggle: false,
     new_event_link: '',
     rescheduled_from_event_id: null,
+    status_explanation: '',
+    online_event_url: '',
+    rescheduled_start_datetime: null,
+    rescheduled_end_datetime: null,
     // Task 137: Primary Display Category
     primary_display_category: '',
     // Task 138: Extended Organizer
