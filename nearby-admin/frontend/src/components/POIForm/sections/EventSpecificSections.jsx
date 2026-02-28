@@ -1,14 +1,14 @@
 import React from 'react';
 import {
   Stack, SimpleGrid, Switch, Divider, Text, Checkbox, Button,
-  TextInput, NumberInput, Card
+  TextInput, NumberInput, Card, Select, Alert
 } from '@mantine/core';
 import { DateTimePicker } from '@mantine/dates';
-import { IconPlus } from '@tabler/icons-react';
+import { IconPlus, IconTrash } from '@tabler/icons-react';
 import RichTextEditor from '../../RichTextEditor';
 import { getCheckboxGroupProps } from '../constants/helpers';
 import {
-  VENDOR_TYPES, COAT_CHECK_OPTIONS
+  VENDOR_TYPES, COAT_CHECK_OPTIONS, EVENT_STATUS_OPTIONS, EVENT_COST_TYPES
 } from '../../../utils/constants';
 import {
   DownloadableMapsUpload,
@@ -201,6 +201,267 @@ export const EventVenueSection = React.memo(function EventVenueSection({ form, i
         accessibility, and restroom information to pre-fill the event details.
       </Text>
       <VenueSelector form={form} poiId={id} />
+    </Stack>
+  );
+});
+
+// Task 134-136: Event Status Section
+export const EventStatusSection = React.memo(function EventStatusSection({ form }) {
+  const eventStatus = form.values.event?.event_status || 'Scheduled';
+  const isCanceledOrPostponed = eventStatus === 'Canceled' || eventStatus === 'Postponed';
+  const isRescheduled = eventStatus === 'Rescheduled';
+  const isUpdatedDateTime = eventStatus === 'Updated Date and/or Time';
+
+  return (
+    <Stack>
+      <Select
+        label="Event Status"
+        placeholder="Select event status"
+        data={EVENT_STATUS_OPTIONS}
+        value={eventStatus}
+        onChange={(val) => form.setFieldValue('event.event_status', val)}
+        error={form.errors['event.event_status']}
+      />
+
+      {isUpdatedDateTime && (
+        <Alert color="yellow" variant="light">
+          <Text size="sm">
+            Changing the event date will require switching to &quot;Rescheduled&quot; status.
+          </Text>
+        </Alert>
+      )}
+
+      {isCanceledOrPostponed && (
+        <>
+          <RichTextEditor
+            label="Cancellation / Postponement Message"
+            placeholder="Explain why this event was canceled or postponed"
+            value={form.values.event?.cancellation_paragraph || ''}
+            onChange={(html) => form.setFieldValue('event.cancellation_paragraph', html)}
+            error={form.errors['event.cancellation_paragraph']}
+            minRows={3}
+          />
+          <Switch
+            label="Show 'Contact Organizer' button"
+            description="Display a link for attendees to contact the organizer"
+            checked={form.values.event?.contact_organizer_toggle || false}
+            onChange={(e) => form.setFieldValue('event.contact_organizer_toggle', e.currentTarget.checked)}
+          />
+        </>
+      )}
+
+      {isRescheduled && form.values.event?.new_event_link && (
+        <Alert color="blue" variant="light">
+          <Text size="sm">
+            This event has been rescheduled. New event ID: {form.values.event.new_event_link}
+          </Text>
+        </Alert>
+      )}
+    </Stack>
+  );
+});
+
+// Task 138: Event Organizer Section
+export const EventOrganizerSection = React.memo(function EventOrganizerSection({ form }) {
+  return (
+    <Stack>
+      <SimpleGrid cols={{ base: 1, sm: 2 }}>
+        <TextInput
+          label="Organizer Name"
+          placeholder="Organization or person name"
+          {...form.getInputProps('event.organizer_name')}
+        />
+        <TextInput
+          label="Organizer Email"
+          placeholder="contact@organization.org"
+          {...form.getInputProps('event.organizer_email')}
+        />
+      </SimpleGrid>
+      <SimpleGrid cols={{ base: 1, sm: 2 }}>
+        <TextInput
+          label="Organizer Phone"
+          placeholder="919-555-0100"
+          {...form.getInputProps('event.organizer_phone')}
+        />
+        <TextInput
+          label="Organizer Website"
+          placeholder="https://organization.org"
+          {...form.getInputProps('event.organizer_website')}
+        />
+      </SimpleGrid>
+
+      <Divider my="sm" label="Organizer Social Media" />
+      <SimpleGrid cols={{ base: 1, sm: 2 }}>
+        <TextInput
+          label="Instagram"
+          placeholder="@handle"
+          value={form.values.event?.organizer_social_media?.instagram || ''}
+          onChange={(e) => {
+            const current = form.values.event?.organizer_social_media || {};
+            form.setFieldValue('event.organizer_social_media', { ...current, instagram: e.target.value });
+          }}
+        />
+        <TextInput
+          label="Facebook"
+          placeholder="page name or URL"
+          value={form.values.event?.organizer_social_media?.facebook || ''}
+          onChange={(e) => {
+            const current = form.values.event?.organizer_social_media || {};
+            form.setFieldValue('event.organizer_social_media', { ...current, facebook: e.target.value });
+          }}
+        />
+      </SimpleGrid>
+    </Stack>
+  );
+});
+
+// Task 139: Event Cost & Ticketing Section
+export const EventCostSection = React.memo(function EventCostSection({ form }) {
+  const ticketLinks = form.values.event?.ticket_links || [];
+
+  return (
+    <Stack>
+      <Select
+        label="Cost Type"
+        placeholder="Select cost type"
+        data={EVENT_COST_TYPES}
+        value={form.values.event?.cost_type || ''}
+        onChange={(val) => form.setFieldValue('event.cost_type', val)}
+        clearable
+      />
+
+      <SimpleGrid cols={{ base: 1, sm: 2 }}>
+        <TextInput
+          label="Cost"
+          placeholder="e.g., $10 or $0-$50 or 0 (for free)"
+          {...form.getInputProps('cost')}
+        />
+        <TextInput
+          label="Single Ticket Link"
+          placeholder="URL to purchase tickets"
+          {...form.getInputProps('ticket_link')}
+        />
+      </SimpleGrid>
+
+      <RichTextEditor
+        label="Pricing Details"
+        placeholder="Additional pricing info (e.g., Kids under 2 are free)"
+        value={form.values.pricing_details || ''}
+        onChange={(html) => form.setFieldValue('pricing_details', html)}
+        error={form.errors.pricing_details}
+        minRows={3}
+      />
+
+      <Divider my="sm" label="Multiple Ticket Links" />
+      {ticketLinks.map((link, index) => (
+        <Card key={index} withBorder p="sm" mb="xs">
+          <SimpleGrid cols={{ base: 1, sm: 2 }}>
+            <TextInput
+              label="Ticket Name"
+              placeholder="e.g., General Admission, VIP"
+              value={link.name || ''}
+              onChange={(e) => {
+                const updated = [...ticketLinks];
+                updated[index] = { ...updated[index], name: e.target.value };
+                form.setFieldValue('event.ticket_links', updated);
+              }}
+            />
+            <TextInput
+              label="Ticket URL"
+              placeholder="https://tickets.example.com"
+              value={link.url || ''}
+              onChange={(e) => {
+                const updated = [...ticketLinks];
+                updated[index] = { ...updated[index], url: e.target.value };
+                form.setFieldValue('event.ticket_links', updated);
+              }}
+            />
+          </SimpleGrid>
+          <Button
+            color="red"
+            variant="light"
+            size="xs"
+            mt="xs"
+            leftSection={<IconTrash size={14} />}
+            onClick={() => {
+              const updated = ticketLinks.filter((_, i) => i !== index);
+              form.setFieldValue('event.ticket_links', updated);
+            }}
+          >
+            Remove
+          </Button>
+        </Card>
+      ))}
+      <Button
+        variant="light"
+        leftSection={<IconPlus size={16} />}
+        onClick={() => {
+          form.setFieldValue('event.ticket_links', [...ticketLinks, { name: '', url: '' }]);
+        }}
+      >
+        Add Ticket Link
+      </Button>
+    </Stack>
+  );
+});
+
+// Task 140: Event Sponsors Section
+export const EventSponsorsSection = React.memo(function EventSponsorsSection({ form }) {
+  const sponsors = form.values.event?.sponsors || [];
+
+  return (
+    <Stack>
+      <Text size="sm" c="dimmed" mb="md">
+        Add sponsors for this event. Each sponsor can have a name and optional website URL.
+      </Text>
+      {sponsors.map((sponsor, index) => (
+        <Card key={index} withBorder p="sm" mb="xs">
+          <SimpleGrid cols={{ base: 1, sm: 2 }}>
+            <TextInput
+              label="Sponsor Name"
+              placeholder="e.g., Acme Corp"
+              value={sponsor.name || ''}
+              onChange={(e) => {
+                const updated = [...sponsors];
+                updated[index] = { ...updated[index], name: e.target.value };
+                form.setFieldValue('event.sponsors', updated);
+              }}
+            />
+            <TextInput
+              label="Sponsor URL"
+              placeholder="https://sponsor.com"
+              value={sponsor.url || ''}
+              onChange={(e) => {
+                const updated = [...sponsors];
+                updated[index] = { ...updated[index], url: e.target.value };
+                form.setFieldValue('event.sponsors', updated);
+              }}
+            />
+          </SimpleGrid>
+          <Button
+            color="red"
+            variant="light"
+            size="xs"
+            mt="xs"
+            leftSection={<IconTrash size={14} />}
+            onClick={() => {
+              const updated = sponsors.filter((_, i) => i !== index);
+              form.setFieldValue('event.sponsors', updated);
+            }}
+          >
+            Remove
+          </Button>
+        </Card>
+      ))}
+      <Button
+        variant="light"
+        leftSection={<IconPlus size={16} />}
+        onClick={() => {
+          form.setFieldValue('event.sponsors', [...sponsors, { name: '', url: '' }]);
+        }}
+      >
+        Add Sponsor
+      </Button>
     </Stack>
   );
 });

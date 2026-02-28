@@ -179,33 +179,9 @@ export const CoreInformationSection = React.memo(function CoreInformationSection
         </>
       )}
 
-      {isEvent && (
-        <>
-          <Divider my="md" label="Cost Information" />
-          <SimpleGrid cols={{ base: 1, sm: 2 }}>
-            <DebouncedTextInput
-              label="Cost"
-              placeholder="e.g., $10 or $0-$50 or 0 (for free)"
-              {...getDebouncedInputProps(form, 'cost')}
-            />
-            <DebouncedTextInput
-              label="Ticket Link"
-              placeholder="URL to purchase tickets"
-              {...getDebouncedInputProps(form, 'ticket_link')}
-            />
-          </SimpleGrid>
-          <RichTextEditor
-            label="Pricing Details"
-            placeholder="Additional pricing info (e.g., Kids under 2 are free)"
-            value={form.values.pricing_details || ''}
-            onChange={(html) => form.setFieldValue('pricing_details', html)}
-            error={form.errors.pricing_details}
-            minRows={3}
-          />
-        </>
-      )}
+      {/* Event cost moved to EventCostSection (Task 139) */}
 
-      {(isPaidListing || isPark || isTrail) && (
+      {(isPaidListing || isPark || isTrail || isEvent) && (
         <>
           <Divider my="md" label="History" />
           <RichTextEditor

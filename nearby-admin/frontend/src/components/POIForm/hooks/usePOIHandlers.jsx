@@ -160,8 +160,15 @@ export const usePOIHandlers = (id, isEditing, form, setPoiId) => {
             const eventStringFields = [
               'organizer_name', 'food_and_drink_info', 'vendor_fee',
               'vendor_application_info', 'vendor_requirements',
-              'event_entry_notes'
-              // Removed deprecated photo field: event_entry_photo
+              'event_entry_notes',
+              // Task 134-136
+              'event_status', 'cancellation_paragraph', 'new_event_link',
+              // Task 137
+              'primary_display_category',
+              // Task 138
+              'organizer_email', 'organizer_phone', 'organizer_website',
+              // Task 139
+              'cost_type',
             ];
             eventStringFields.forEach(field => {
               if (formData.event[field] === null || formData.event[field] === undefined) {
@@ -178,7 +185,7 @@ export const usePOIHandlers = (id, isEditing, form, setPoiId) => {
             });
 
             // Ensure event array fields are arrays
-            const eventArrayFields = ['venue_settings', 'coat_check_options', 'vendor_types', 'vendor_poi_links', 'excluded_dates', 'manual_dates'];
+            const eventArrayFields = ['venue_settings', 'coat_check_options', 'vendor_types', 'vendor_poi_links', 'excluded_dates', 'manual_dates', 'ticket_links', 'sponsors'];
             eventArrayFields.forEach(field => {
               if (!Array.isArray(formData.event[field])) {
                 formData.event[field] = [];

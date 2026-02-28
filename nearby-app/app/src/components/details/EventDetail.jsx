@@ -6,6 +6,9 @@ import HoursDisplay from '../common/HoursDisplay';
 import { EventJsonLd } from '../seo/index';
 import './EventDetail.css';
 
+const EVENT_DISCLAIMER =
+  'While we work to keep event information current and accurate, details may change. We recommend confirming directly with event organizers before making plans.';
+
 /**
  * EventDetail - Specialized detail view for event POIs
  * Receives poi data as a prop from POIDetail (smart router)
@@ -522,6 +525,20 @@ function EventDetail({ poi }) {
               )}
             </div>
           </CollapsibleSection>
+        </div>
+
+        {/* Event Disclaimer (Task 149) */}
+        <div className="event-disclaimer" style={{
+          margin: '1.5rem 0',
+          padding: '1rem',
+          backgroundColor: '#f8f9fa',
+          borderLeft: '3px solid #868e96',
+          borderRadius: '4px',
+          fontSize: '0.85rem',
+          color: '#495057',
+          lineHeight: '1.5',
+        }}>
+          {EVENT_DISCLAIMER}
         </div>
 
         {/* Bottom Border */}

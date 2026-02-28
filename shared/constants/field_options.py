@@ -286,6 +286,8 @@ EVENT_STATUS_OPTIONS = [
     "Unofficial Proposed Date",
 ]
 
+EVENT_COST_TYPES = ["free", "single_price", "range"]
+
 IMAGE_FUNCTION_TAGS = [
     "storefront", "entrance", "interior", "exterior", "signage",
     "parking", "restrooms", "playground", "aerial", "food_drink",

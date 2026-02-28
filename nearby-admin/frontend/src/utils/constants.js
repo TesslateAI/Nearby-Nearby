@@ -474,6 +474,16 @@ export const IDEAL_FOR_OPTIONS = [
   { value: 'Youth WITHOUT Adult - Visually Impaired', label: 'Visually Impaired', group: 'Youth WITHOUT Adult' }
 ];
 
+// Event Cost Types (Task 139)
+export const EVENT_COST_TYPES = [
+  { value: 'free', label: 'Free' },
+  { value: 'single_price', label: 'Single Price' },
+  { value: 'range', label: 'Price Range' },
+];
+
+// Event Disclaimer (Task 149)
+export const EVENT_DISCLAIMER = "While we work to keep event information current and accurate, details may change. We recommend confirming directly with event organizers before making plans.";
+
 // Helper function to get status options based on POI type
 export const getStatusOptions = (poiType) => {
   if (poiType === 'EVENT') {

@@ -321,6 +321,15 @@ def update_poi(db: Session, *, db_obj: models.PointOfInterest, obj_in: schemas.P
 
     if 'event' in update_data and poi_type_str == 'EVENT':
         event_data = update_data.pop('event')
+        # Task 157: Date Change Guard
+        date_changing = event_data.get('start_datetime') or event_data.get('end_datetime')
+        current_status = getattr(db_obj.event, 'event_status', None) if db_obj.event else None
+        new_status = event_data.get('event_status', current_status)
+        if date_changing and current_status == 'Updated Date and/or Time' and new_status != 'Rescheduled':
+            raise HTTPException(
+                400,
+                "Changing event dates when status is 'Updated Date and/or Time' requires selecting 'Rescheduled' status first."
+            )
         if db_obj.event:
             for key, value in event_data.items():
                 setattr(db_obj.event, key, value)

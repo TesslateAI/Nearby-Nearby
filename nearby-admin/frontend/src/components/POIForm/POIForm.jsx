@@ -40,7 +40,11 @@ import {
   EventVendorsSection,
   EventAmenitiesSection,
   EventMapsSection,
-  EventVenueSection
+  EventVenueSection,
+  EventStatusSection,
+  EventOrganizerSection,
+  EventCostSection,
+  EventSponsorsSection
 } from './sections/EventSpecificSections';
 import { TrailDetailsSection } from './sections/TrailSpecificSections';
 import {
@@ -256,6 +260,57 @@ export default function POIForm() {
                   </Accordion.Control>
                   <Accordion.Panel>
                     <EventVenueSection form={form} id={poiId} />
+                  </Accordion.Panel>
+                </Accordion.Item>
+              )}
+
+              {/* Event Status Section (Task 134-136) */}
+              {isEvent && (
+                <Accordion.Item value="event-status">
+                  <Accordion.Control>
+                    <Group>
+                      <Text fw={600}>Event Status</Text>
+                      <Badge size="sm" variant="light" color="blue">Optional</Badge>
+                    </Group>
+                  </Accordion.Control>
+                  <Accordion.Panel>
+                    <EventStatusSection form={form} />
+                  </Accordion.Panel>
+                </Accordion.Item>
+              )}
+
+              {/* Event Organizer Section (Task 138) */}
+              {isEvent && (
+                <Accordion.Item value="event-organizer">
+                  <Accordion.Control>
+                    <Text fw={600}>Event Organizer</Text>
+                  </Accordion.Control>
+                  <Accordion.Panel>
+                    <EventOrganizerSection form={form} />
+                  </Accordion.Panel>
+                </Accordion.Item>
+              )}
+
+              {/* Event Cost & Ticketing Section (Task 139) */}
+              {isEvent && (
+                <Accordion.Item value="event-cost">
+                  <Accordion.Control>
+                    <Text fw={600}>Event Cost & Ticketing</Text>
+                  </Accordion.Control>
+                  <Accordion.Panel>
+                    <EventCostSection form={form} />
+                  </Accordion.Panel>
+                </Accordion.Item>
+              )}
+
+              {/* Event Sponsors Section (Task 140) */}
+              {isEvent && (
+                <Accordion.Item value="event-sponsors">
+                  <Accordion.Control>
+                    <Text fw={600}>Event Sponsors</Text>
+                  </Accordion.Control>
+                  <Accordion.Panel>
+                    <EventSponsorsSection form={form} />
                   </Accordion.Panel>
                 </Accordion.Item>
               )}
@@ -500,7 +555,7 @@ export default function POIForm() {
               )}
 
               {/* Community Connections Section */}
-              {((isBusiness && !isFreeListing) || isPark || isTrail) && (
+              {((isBusiness && !isFreeListing) || isPark || isTrail || isEvent) && (
                 <Accordion.Item value="community">
                   <Accordion.Control>
                     <Text fw={600}>Community Connections</Text>

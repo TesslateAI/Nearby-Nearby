@@ -143,6 +143,25 @@ class EventBase(BaseModel):
     vendor_fee: Optional[str] = None
     vendor_requirements: Optional[str] = None
     vendor_poi_links: Optional[List[uuid.UUID]] = None
+    # Task 134-136: Event Status
+    event_status: Optional[str] = 'Scheduled'
+    cancellation_paragraph: Optional[str] = None
+    contact_organizer_toggle: bool = False
+    new_event_link: Optional[str] = None
+    rescheduled_from_event_id: Optional[uuid.UUID] = None
+    # Task 137: Primary Display Category
+    primary_display_category: Optional[str] = None
+    # Task 138: Extended Organizer
+    organizer_email: Optional[str] = None
+    organizer_phone: Optional[str] = None
+    organizer_website: Optional[str] = None
+    organizer_social_media: Optional[Dict[str, str]] = None
+    organizer_poi_id: Optional[uuid.UUID] = None
+    # Task 139: Cost & Ticketing
+    cost_type: Optional[str] = None
+    ticket_links: Optional[List[Dict[str, str]]] = None
+    # Task 140: Sponsors
+    sponsors: Optional[List[Dict[str, Any]]] = None
 
 class EventCreate(EventBase): pass
 class EventUpdate(BaseModel):
@@ -172,6 +191,25 @@ class EventUpdate(BaseModel):
     vendor_fee: Optional[str] = None
     vendor_requirements: Optional[str] = None
     vendor_poi_links: Optional[List[uuid.UUID]] = None
+    # Task 134-136: Event Status
+    event_status: Optional[str] = None
+    cancellation_paragraph: Optional[str] = None
+    contact_organizer_toggle: Optional[bool] = None
+    new_event_link: Optional[str] = None
+    rescheduled_from_event_id: Optional[uuid.UUID] = None
+    # Task 137: Primary Display Category
+    primary_display_category: Optional[str] = None
+    # Task 138: Extended Organizer
+    organizer_email: Optional[str] = None
+    organizer_phone: Optional[str] = None
+    organizer_website: Optional[str] = None
+    organizer_social_media: Optional[Dict[str, str]] = None
+    organizer_poi_id: Optional[uuid.UUID] = None
+    # Task 139: Cost & Ticketing
+    cost_type: Optional[str] = None
+    ticket_links: Optional[List[Dict[str, str]]] = None
+    # Task 140: Sponsors
+    sponsors: Optional[List[Dict[str, Any]]] = None
 class Event(EventBase):
     poi_id: uuid.UUID
     model_config = ConfigDict(from_attributes=True)

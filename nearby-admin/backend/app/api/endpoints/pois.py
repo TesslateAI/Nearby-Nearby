@@ -1,10 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
+from pydantic import BaseModel
+from datetime import datetime
 import uuid
 
 # The __init__.py files now allow these cleaner imports
-from app import crud, schemas
+from app import crud, schemas, models
 from app.database import get_db
 from app.core.security import get_current_user
 from app.core.permissions import require_admin_or_editor
@@ -232,3 +234,81 @@ def get_venue_data_for_event(
         amenities=db_poi.amenities,
         copyable_images=copyable_images
     )
+
+
+# Task 136: Reschedule endpoint
+class RescheduleRequest(BaseModel):
+    new_start_datetime: datetime
+    new_end_datetime: Optional[datetime] = None
+
+
+@router.post("/pois/{poi_id}/reschedule", response_model=schemas.PointOfInterest, status_code=201)
+def reschedule_event(
+    poi_id: uuid.UUID,
+    body: RescheduleRequest,
+    db: Session = Depends(get_db),
+    current_user=Depends(require_admin_or_editor())
+):
+    """
+    Reschedule an event: clone the POI+Event with new dates, mark original as Rescheduled.
+    """
+    from app.crud.crud_poi import generate_slug, ensure_unique_slug
+    from geoalchemy2.shape import to_shape
+
+    db_poi = crud.get_poi(db, poi_id=poi_id)
+    if not db_poi:
+        raise HTTPException(status_code=404, detail="POI not found")
+
+    poi_type = db_poi.poi_type.value if hasattr(db_poi.poi_type, 'value') else str(db_poi.poi_type)
+    if poi_type != 'EVENT' or not db_poi.event:
+        raise HTTPException(status_code=400, detail="Only EVENT POIs can be rescheduled")
+
+    # Clone base POI fields
+    new_poi_id = uuid.uuid4()
+    base_slug = generate_slug(db_poi.name, db_poi.address_city)
+    new_slug = ensure_unique_slug(db, base_slug, exclude_id=None)
+
+    # Get columns to copy from POI (exclude id, slug, timestamps, relationships)
+    skip_cols = {'id', 'slug', 'created_at', 'last_updated', 'location'}
+    poi_data = {}
+    for col in models.PointOfInterest.__table__.columns:
+        if col.name not in skip_cols:
+            poi_data[col.name] = getattr(db_poi, col.name)
+
+    new_poi = models.PointOfInterest(id=new_poi_id, slug=new_slug, **poi_data)
+
+    # Copy location geometry
+    if db_poi.location:
+        point = to_shape(db_poi.location)
+        coords = list(point.coords)[0]
+        new_poi.location = f'POINT({coords[0]} {coords[1]})'
+
+    db.add(new_poi)
+    db.flush()
+
+    # Clone event fields
+    event_skip = {'poi_id'}
+    event_data = {}
+    for col in models.Event.__table__.columns:
+        if col.name not in event_skip:
+            event_data[col.name] = getattr(db_poi.event, col.name)
+
+    # Override with new dates and status
+    event_data['start_datetime'] = body.new_start_datetime
+    event_data['end_datetime'] = body.new_end_datetime
+    event_data['event_status'] = 'Scheduled'
+    event_data['rescheduled_from_event_id'] = poi_id
+    event_data['new_event_link'] = None
+    event_data['cancellation_paragraph'] = None
+    event_data['contact_organizer_toggle'] = False
+
+    new_event = models.Event(poi_id=new_poi_id, **event_data)
+    db.add(new_event)
+
+    # Update original event status
+    db_poi.event.event_status = 'Rescheduled'
+    db_poi.event.new_event_link = str(new_poi_id)
+
+    db.commit()
+    db.refresh(new_poi)
+    return new_poi
