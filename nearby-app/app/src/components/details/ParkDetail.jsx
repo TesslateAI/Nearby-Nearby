@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { MapPin, Clock, Phone, Globe, Heart, Share2, Navigation, Plus, ChevronDown, ChevronUp, Trees, AlertCircle, Copy, Check, ExternalLink, Info, CalendarCheck, Truck, ShoppingCart } from 'lucide-react';
 import NearbySection from '../nearby-feature/NearbySection';
 import HoursDisplay from '../common/HoursDisplay';
+import Accordion, { AccordionSection } from '../Accordion';
 import { isCurrentlyOpen, getWeekHours } from '../../utils/hoursUtils';
 import './ParkDetail.css';
 
@@ -12,7 +13,6 @@ import './ParkDetail.css';
  */
 function ParkDetail({ poi }) {
   const navigate = useNavigate();
-  const [expandedSections, setExpandedSections] = useState({});
   const [showHours, setShowHours] = useState(false);
   const [copiedCoords, setCopiedCoords] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
@@ -128,13 +128,6 @@ function ParkDetail({ poi }) {
     setShowShareMenu(false);
   };
 
-  const toggleSection = (section) => {
-    setExpandedSections(prev => ({
-      ...prev,
-      [section]: !prev[section]
-    }));
-  };
-
   // Get photos by type from the images array (for typed sections like parking, restroom, etc.)
   const getPhotosByType = (type) => {
     if (!poi.images) return [];
@@ -158,29 +151,6 @@ function ParkDetail({ poi }) {
         caption: img.caption
       }))
       .filter(img => img.url);
-  };
-
-  const CollapsibleSection = ({ title, children, show = true }) => {
-    if (!show) return null;
-
-    const isOpen = expandedSections[title];
-
-    return (
-      <div className="collapsible-section">
-        <button
-          onClick={() => toggleSection(title)}
-          className="collapsible-section__header"
-        >
-          <span className="collapsible-section__title">{title}</span>
-          {isOpen ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-        </button>
-        {isOpen && (
-          <div className="collapsible-section__content">
-            {children}
-          </div>
-        )}
-      </div>
-    );
   };
 
   const InfoRow = ({ label, value }) => {
@@ -461,7 +431,8 @@ function ParkDetail({ poi }) {
 
         {/* Park-Specific Collapsible Sections */}
         <div className="poi-detail__collapsible-sections">
-          <CollapsibleSection title="ABOUT + HOURS" show={poi.description_long || poi.hours}>
+          <Accordion closeOther closeAble scrollOffset={120}>
+          <AccordionSection title="ABOUT + HOURS" show={!!(poi.description_long || poi.hours)}>
             <div className="collapsible-section__info">
               {poi.description_long && (
                 <InfoRow label="Description" value={poi.description_long} />
@@ -475,9 +446,9 @@ function ParkDetail({ poi }) {
                 hoursNotes={poi.hours_notes}
               />
             </div>
-          </CollapsibleSection>
+          </AccordionSection>
 
-          <CollapsibleSection title="ADDRESS + PARKING" show={poi.address_street || poi.parking_types}>
+          <AccordionSection title="ADDRESS + PARKING" show={!!(poi.address_street || poi.parking_types)}>
             <div className="collapsible-section__info">
               <InfoRow label="Street" value={poi.address_street} />
               <InfoRow label="City" value={poi.address_city} />
@@ -488,12 +459,12 @@ function ParkDetail({ poi }) {
               )}
               {poi.parking_notes && <InfoRow label="Parking Notes" value={poi.parking_notes} />}
             </div>
-          </CollapsibleSection>
+          </AccordionSection>
 
           {(() => {
             const playgroundPhotos = getPhotosByType('playground');
             return (
-              <CollapsibleSection title="PLAYGROUND" show={poi.playground_available || playgroundPhotos.length > 0}>
+              <AccordionSection title="PLAYGROUND" show={!!(poi.playground_available || playgroundPhotos.length > 0)}>
                 <div className="collapsible-section__info">
                   <InfoRow label="Available" value={poi.playground_available ? "Yes" : "No"} />
                   {poi.playground_types && Array.isArray(poi.playground_types) && (
@@ -515,11 +486,11 @@ function ParkDetail({ poi }) {
                     </div>
                   )}
                 </div>
-              </CollapsibleSection>
+              </AccordionSection>
             );
           })()}
 
-          <CollapsibleSection title="WHAT TO EXPECT" show={poi.wheelchair_accessible || poi.wifi_options || poi.ideal_for}>
+          <AccordionSection title="WHAT TO EXPECT" show={!!(poi.wheelchair_accessible || poi.wifi_options || poi.ideal_for)}>
             <div className="collapsible-section__info">
               {poi.wheelchair_accessible && Array.isArray(poi.wheelchair_accessible) && (
                 <InfoRow label="Accessibility" value={poi.wheelchair_accessible.join(", ")} />
@@ -531,12 +502,12 @@ function ParkDetail({ poi }) {
                 <InfoRow label="Ideal For" value={poi.ideal_for.join(", ")} />
               )}
             </div>
-          </CollapsibleSection>
+          </AccordionSection>
 
           {(() => {
             const restroomPhotos = getPhotosByType('restroom');
             return (
-              <CollapsibleSection title="PUBLIC RESTROOMS" show={poi.public_toilets || restroomPhotos.length > 0}>
+              <AccordionSection title="PUBLIC RESTROOMS" show={!!(poi.public_toilets || restroomPhotos.length > 0)}>
                 <div className="collapsible-section__info">
                   {poi.public_toilets && Array.isArray(poi.public_toilets) && (
                     <InfoRow label="Available" value={poi.public_toilets.join(", ")} />
@@ -557,11 +528,11 @@ function ParkDetail({ poi }) {
                     </div>
                   )}
                 </div>
-              </CollapsibleSection>
+              </AccordionSection>
             );
           })()}
 
-          <CollapsibleSection title="ACCESSIBILITY" show={poi.wheelchair_accessible || poi.wheelchair_details}>
+          <AccordionSection title="ACCESSIBILITY" show={!!(poi.wheelchair_accessible || poi.wheelchair_details)}>
             <div className="collapsible-section__info">
               {poi.wheelchair_accessible && Array.isArray(poi.wheelchair_accessible) && (
                 <InfoRow label="Wheelchair" value={poi.wheelchair_accessible.join(", ")} />
@@ -570,9 +541,9 @@ function ParkDetail({ poi }) {
                 <InfoRow label="Details" value={poi.wheelchair_details} />
               )}
             </div>
-          </CollapsibleSection>
+          </AccordionSection>
 
-          <CollapsibleSection title="PET POLICY" show={poi.pet_options || poi.pet_policy}>
+          <AccordionSection title="PET POLICY" show={!!(poi.pet_options || poi.pet_policy)}>
             <div className="collapsible-section__info">
               {poi.pet_options && Array.isArray(poi.pet_options) && (
                 <InfoRow label="Pets Allowed" value={poi.pet_options.join(", ")} />
@@ -581,9 +552,9 @@ function ParkDetail({ poi }) {
                 <InfoRow label="Policy" value={poi.pet_policy} />
               )}
             </div>
-          </CollapsibleSection>
+          </AccordionSection>
 
-          <CollapsibleSection title="TIPS + TRICKS" show={poi.community_impact || poi.history_paragraph}>
+          <AccordionSection title="TIPS + TRICKS" show={!!(poi.community_impact || poi.history_paragraph)}>
             <div className="collapsible-section__info">
               {poi.history_paragraph && (
                 <InfoRow label="History" value={poi.history_paragraph} />
@@ -592,9 +563,9 @@ function ParkDetail({ poi }) {
                 <InfoRow label="Community Impact" value={poi.community_impact} />
               )}
             </div>
-          </CollapsibleSection>
+          </AccordionSection>
 
-          <CollapsibleSection title="CONTACT" show={poi.phone_number || poi.email || poi.website_url}>
+          <AccordionSection title="CONTACT" show={!!(poi.phone_number || poi.email || poi.website_url)}>
             <div className="collapsible-section__info">
               <InfoRow label="Phone" value={poi.phone_number} />
               <InfoRow label="Email" value={poi.email} />
@@ -606,7 +577,8 @@ function ParkDetail({ poi }) {
                 <InfoRow label="Facebook" value={poi.facebook_username} />
               )}
             </div>
-          </CollapsibleSection>
+          </AccordionSection>
+          </Accordion>
         </div>
 
         {/* Bottom Border */}

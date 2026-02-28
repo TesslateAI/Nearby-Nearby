@@ -64,11 +64,11 @@ export default function Footer() {
           <p>Tell us if you want us in your community. If you're outside North Carolina, don't worry, we're coming nationwide soon, including rural towns and urban communities!</p>
           <p>
             <Link
-              className="button"
+              className="button btn_community"
               to="/community-interest"
               title="link to community interest page"
             >
-              Let's Bring it Home
+              Let&apos;s Bring it Home
             </Link>
           </p>
         </div>
@@ -127,17 +127,17 @@ export default function Footer() {
             <ul className="list_footer">
               <li><Link to="/">Home</Link></li>
               <li><Link to="/explore">Explore</Link></li>
-              <li><a href="/disaster-network/" title="link to Disaster Network page">Disaster Response</a></li>
-              <li><Link to="/terms-of-service">Terms &amp; Conditions</Link></li>
-              <li><Link to="/privacy-policy">Privacy Policy</Link></li>
+              <li><Link to="/suggest-event">Suggest an Event</Link></li>
+              <li><Link to="/disaster-network">Disaster Network</Link></li>
             </ul>
           </div>
         </div>
 
         <div id="footer_end">
-          <div className="end_item copyright_date">&copy; {new Date().getFullYear()} Nearby Nearby</div>
+          <div className="end_item copyright_date">&copy; {new Date().getFullYear()} Nearby Nearby. Patent Pending.</div>
           <div className="end_item"><Link to="/privacy-policy">Privacy Policy</Link></div>
           <div className="end_item"><Link to="/terms-of-service">Terms &amp; Conditions</Link></div>
+          <div className="end_item"><Link to="/sitemap">Sitemap</Link></div>
         </div>
       </footer>
     </>

@@ -5,17 +5,26 @@
 
 /* ── Header shell ──────────────────────────────────────────────── */
 #header_primary_parent {
-  display: none;         /* Hidden on mobile — MobileNavBar handles it */
-  align-items: center;
-  padding: 10px 4%;
-  background: #fff;
   position: relative;
-  z-index: 50;
-  border-bottom: 3px solid #FEC153;
+  display: block;
+  padding: 10px 0;
+  background: #fff;
+  border-bottom: 3px solid var(--nn-gold);
+  width: 100%;
+  overflow: visible;
+  z-index: 9;
 }
 
-#logo1 { flex-shrink: 0; }
-#logo1 a { display: block; text-decoration: none; }
+/* Logo bar on mobile — full-width, centered */
+#logo1 {
+  background: white;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  display: block;
+  text-align: center;
+}
+#logo1 a { display: inline-block; text-decoration: none; }
 
 .navbar-logo-img {
   height: 40px;
@@ -23,87 +32,165 @@
   display: block;
 }
 
+/* Wrapper holds nav overlay + account box; block on mobile */
 #wrapper_header_primary {
-  flex: 1;
-  display: flex;
-  justify-content: flex-end;
-  min-width: 0;
+  width: 100%;
+  display: block;
 }
 
-/* Navigation container — stacks on mobile, horizontal on desktop */
+/* Navigation container */
 #navigation_primary1 {
-  display: flex;
-  flex-direction: column;
+  margin: 0;
+  padding: 25px;
+  background-color: transparent;
+  z-index: 1;
+  overflow-y: visible;
 }
 
-/* Logo in mobile overlay */
-#logo2 { display: block; margin-bottom: 20px; }
+/* Logo2 — hidden on mobile, visible on desktop (inside nav overlay) */
+#logo2 {
+  background: transparent;
+  width: 160px;
+  margin: 0;
+  padding: 0;
+  display: none !important;
+}
 #logo2 a { display: inline-block; text-decoration: none; }
 
 /* Account box — login / sign up */
 #account_box { display: none; }
+
+/* ── Menu wrapper inner ───────────────────────────────────────── */
+.aaa_menu_wrapper_inner1 {
+  position: relative;
+}
 
 /* ── Accessible menu — mobile (default) ────────────────────────── */
 .aaa_menu_1 {
   list-style: none;
   margin: 0;
   padding: 0;
+  background: white;
+  overflow: visible;
+  font-family: var(--font-poppins);
+  font-weight: 600;
+  text-transform: uppercase;
   display: flex;
   flex-direction: column;
 }
 
 .aaa_menu_1_list_item {
   position: relative;
+  margin: 0;
+  padding: 0;
+  border-bottom: 1px solid #e0e0e0;
+}
+.aaa_menu_1_list_item:last-child {
+  border-bottom: none;
 }
 
 .aaa_menu_1_link {
   display: block;
   padding: 15px 20px;
-  font-family: var(--font-poppins);
-  font-weight: 600;
-  font-size: 18px;
-  color: var(--nn-teal1);
+  color: var(--nn-dark);
   text-decoration: none;
-  transition: background 0.2s, color 0.2s;
+  background: white;
+  transition: background 0.3s ease-in-out;
+  white-space: nowrap;
+  font-size: 18px;
 }
 .aaa_menu_1_link:hover {
   background: var(--nn-teal1);
   color: #fff;
 }
-.aaa_menu_1_link:focus-visible {
-  outline: 3px solid var(--color-focus);
+.aaa_menu_1_link:active {
+  background: #1d4d42;
+  color: var(--nn-gold);
+}
+
+/* Button variant reset (for "More" toggle rendered as <button>) */
+.aaa_menu_1_link--btn {
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+  text-align: left;
+  width: 100%;
+}
+
+/* Items with submenus need extra right padding for button */
+.aaa_menu_1_has_sub_menu > .aaa_menu_1_link {
+  padding-right: 50px;
+}
+
+/* Focus indicators — keyboard only */
+.aaa_menu_1_link:focus { outline: none; }
+.aaa_menu_1_dd_button:focus { outline: none; }
+.aaa_menu_1_link:focus-visible,
+.aaa_menu_1_dd_button:focus-visible {
+  outline: 3px solid #0066cc;
   outline-offset: -3px;
   background: #e3f2fd;
+  position: relative;
+  z-index: 100;
 }
 
 /* Dropdown button */
 .aaa_menu_1_dd_button {
   position: absolute;
-  right: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  background: none;
+  right: 0;
+  top: 0;
+  height: auto;
+  background: transparent;
   border: none;
-  font-size: 16px;
-  color: var(--nn-teal1);
+  color: var(--nn-dark);
+  font-size: 20px;
   cursor: pointer;
-  padding: 8px;
-  line-height: 1;
+  padding: 15px 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.3s ease-in-out;
+  z-index: 10;
 }
-.aaa_menu_1_dd_button:focus-visible {
-  outline: 3px solid var(--color-focus);
-  outline-offset: -3px;
+.aaa_menu_1_dd_button:hover {
+  background: rgba(0, 0, 0, 0.05);
 }
 
-/* Submenu (mobile: vertical slide-down) */
+/* Dropdown button inherits parent hover color on mobile */
+.aaa_menu_1_has_sub_menu:hover .aaa_menu_1_dd_button {
+  background: var(--nn-teal1);
+  color: white;
+}
+
+/* Submenu — always in DOM, hidden by default */
 .aaa_menu_1_sub_menu {
   list-style: none;
   margin: 0;
-  padding: 0 0 0 15px;
+  padding: 0;
+  font-family: var(--font-roboto);
+  text-transform: none;
+  display: none;
+  padding-left: 10px;
+}
+.aaa_menu_1_sub_menu.aaa_menu_open {
+  display: block;
+}
+.aaa_menu_1_sub_menu .aaa_menu_1_list_item {
+  border-bottom: 1px solid #e8e8e8;
+}
+.aaa_menu_1_sub_menu .aaa_menu_1_list_item:last-child {
+  border-bottom: none;
 }
 .aaa_menu_1_sub_menu .aaa_menu_1_link {
-  font-size: 16px;
-  padding: 12px 20px;
+  padding: 14px 20px;
+  font-size: 18px;
+  font-weight: 500;
+  background: transparent;
+}
+.aaa_menu_1_sub_menu .aaa_menu_1_link:hover {
+  background: var(--gray-7);
+  color: var(--nn-teal1);
 }
 
 /* Search link — hidden in mobile overlay, shown in desktop */
@@ -113,9 +200,10 @@
 
 /* Search button text + icon styling */
 .btn_nav_icon_style_2 {
-  display: inline-flex;
+  display: flex;
+  justify-content: center;
   align-items: center;
-  gap: 6px;
+  gap: 11px;
   background: none;
   border: none;
   cursor: pointer;
@@ -125,6 +213,7 @@
   font-size: 15px;
   color: var(--nn-purple1);
   text-decoration: none;
+  text-transform: uppercase;
   transition: color 0.2s;
 }
 .btn_nav_icon_style_2:hover {
@@ -155,7 +244,6 @@
 .account_link:hover {
   color: var(--nn-purple1);
 }
-
 .account_link--signup {
   background: var(--nn-purple1);
   color: #fff;
@@ -170,25 +258,22 @@
   #header_primary_parent {
     display: flex;
     justify-content: center;
-    padding: 0 4%;
+    align-items: center;
+    padding: 10px 30px;
   }
 
-  /* Logo pinned to the left */
+  /* Mobile logo hidden on desktop */
   #logo1 {
-    position: absolute;
-    left: 4%;
-    top: 50%;
-    transform: translateY(-50%);
-    padding: 0;
+    display: none !important;
   }
 
   .navbar-logo-img {
     height: 44px;
   }
 
-  /* Wrapper just centers the nav */
+  /* Wrapper centers the nav on desktop */
   #wrapper_header_primary {
-    flex: 0;
+    display: flex;
     justify-content: center;
   }
 
@@ -199,13 +284,35 @@
 
   /* Navigation container — centered row on desktop */
   #navigation_primary1 {
-    flex-direction: row;
-    align-items: center;
-    justify-content: center;
+    padding: 0;
+    width: 100%;
+    display: flex;
+    position: relative;
+    top: auto;
+    left: auto;
+    bottom: auto;
+    background-color: transparent;
+    z-index: 55;
+    overflow: visible;
   }
 
-  /* Logo in overlay hidden on desktop */
-  #logo2 { display: none; }
+  .aaa_menu_wrapper_inner1 {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+  }
+
+  /* Logo2 visible on desktop — positioned left */
+  #logo2 {
+    width: 160px;
+    display: block !important;
+    position: absolute;
+    left: 4%;
+    top: 50%;
+    transform: translateY(-50%);
+  }
 
   /* Show search button in desktop header */
   .search_link_parent_header { display: block; }
@@ -223,82 +330,144 @@
 
   .aaa_menu_1 {
     flex-direction: row;
-    align-items: center;
-    gap: 0;
+    align-items: stretch;
+    width: auto;
+  }
+
+  .aaa_menu_1_list_item {
+    border-bottom: none;
   }
 
   .aaa_menu_1_link {
     padding: 15px 17px;
-    font-size: 14px;
+    font-size: 18px;
     color: var(--nn-dark);
-    white-space: nowrap;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
+    background: transparent;
   }
   .aaa_menu_1_link:hover {
     background: var(--nn-gold);
     color: var(--nn-dark);
   }
 
-  /* Dropdown parent — flex keeps "More" + arrow on one line */
+  /* Items with submenus — smaller right padding on desktop */
+  .aaa_menu_1_has_sub_menu > .aaa_menu_1_link {
+    padding-right: 35px;
+  }
+
+  /* Dropdown parent */
   .aaa_menu_1_has_sub_menu {
     position: relative;
     display: flex;
     align-items: center;
   }
-  .aaa_menu_1_has_sub_menu .aaa_menu_1_dd_button {
+  .aaa_menu_1_dd_button {
     position: static;
     transform: none;
-    padding: 15px 4px 15px 0;
+    padding: 15px 10px;
+    font-size: 16px;
+    color: var(--nn-dark);
+  }
+  .aaa_menu_1_dd_button:hover {
+    background: transparent;
+  }
+  .aaa_menu_1_has_sub_menu:hover .aaa_menu_1_dd_button {
+    background: transparent;
     color: var(--nn-dark);
   }
 
   /* Submenu (desktop: absolute dropdown) */
   .aaa_menu_1_sub_menu {
+    padding-left: 0;
+    display: none;
     position: absolute;
     top: 100%;
     left: 0;
     min-width: 220px;
     background: var(--nn-gold);
-    padding: 0;
-    border-radius: 0 0 6px 6px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    z-index: 100;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.11);
+    border-radius: 0;
+    z-index: 1000;
+  }
+  .aaa_menu_1_sub_menu.aaa_menu_open {
+    display: block;
+    animation: slideDown 0.3s ease-in-out;
+  }
+  .aaa_menu_1_sub_menu .aaa_menu_1_list_item {
+    border-bottom: 0;
   }
   .aaa_menu_1_sub_menu .aaa_menu_1_link {
     padding: 12px 20px;
-    font-size: 13px;
+    white-space: nowrap;
     color: var(--nn-dark);
-    text-transform: none;
-    letter-spacing: normal;
+    font-size: 17px;
   }
   .aaa_menu_1_sub_menu .aaa_menu_1_link:hover {
     background: #FEB42F;
+    color: var(--nn-purple1);
   }
 
-  /* Desktop hover to open (mimics accessible-menu.js setupDesktopHover) */
-  .aaa_menu_1_has_sub_menu:hover > .aaa_menu_1_sub_menu,
-  .aaa_menu_1_has_sub_menu.aaa_menu_open > .aaa_menu_1_sub_menu {
-    display: block;
+  /* Active/Open trail — parent link gets gold bg when submenu open */
+  .aaa_menu_1_has_sub_menu.aaa_menu_open > .aaa_menu_1_link {
+    background: #FEB42F;
+    color: var(--nn-dark);
+  }
+
+  @keyframes slideDown {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 }
 
 @media (min-width: 1400px) {
+  #header_primary_parent {
+    padding: 10px 40px;
+    border-bottom-width: 4px;
+  }
   .aaa_menu_1 { gap: 5px; }
-  .aaa_menu_1_link { font-size: 15px; }
+  .aaa_menu_1_link { font-size: 19px; }
+  .aaa_menu_1_dd_button { font-size: 17px; }
   .navbar-logo-img { height: 48px; }
 }
 
+@media (min-width: 1600px) {
+  #header_primary_parent {
+    padding: 10px 55px;
+  }
+  .aaa_menu_1 { gap: 11px; }
+  .aaa_menu_1_link { font-size: 20px; }
+  .aaa_menu_1_sub_menu .aaa_menu_1_link { font-size: 18px; }
+}
+
 @media (min-width: 1900px) {
-  .aaa_menu_1 { gap: 10px; }
+  #header_primary_parent {
+    border-bottom-width: 5px;
+  }
+  .aaa_menu_1 { gap: 15px; }
+  .aaa_menu_1_link { font-size: 21px; }
+  .aaa_menu_1_dd_button { font-size: 18px; }
 }
 
 @media (min-width: 2400px) {
   .aaa_menu_1 { gap: 20px; }
   .aaa_menu_1_link { font-size: 22px; }
+  .aaa_menu_1_sub_menu .aaa_menu_1_link { font-size: 19px; }
 }
 
 /* ── Nav overlay content area specifics ────────────────────────── */
 .nav_overlay_box .overlay_content {
   padding-top: 20px;
+}
+
+/* ── High contrast mode ────────────────────────────────────────── */
+@media (prefers-contrast: high) {
+  .aaa_menu_1_link:focus-visible,
+  .aaa_menu_1_dd_button:focus-visible {
+    outline-width: 4px;
+  }
 }

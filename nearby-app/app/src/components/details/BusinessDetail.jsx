@@ -2,12 +2,13 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   MapPin, Phone, Globe, Navigation, Copy, Check, Share2,
-  ChevronDown, BadgeCheck, Users, Mail, ExternalLink,
+  BadgeCheck, Users, Mail, ExternalLink,
   Wifi, Car, TreePine, Bath, Bike, Droplets, Dog, UtensilsCrossed, CirclePlus, Info
 } from 'lucide-react';
 import NearbySection from '../nearby-feature/NearbySection';
 import PhotoLightbox from './PhotoLightbox';
 import HoursDisplay from '../common/HoursDisplay';
+import Accordion, { AccordionSection } from '../Accordion';
 import { LocalBusinessJsonLd } from '../seo/index';
 import { isCurrentlyOpen } from '../../utils/hoursUtils';
 import './BusinessDetail.css';
@@ -18,7 +19,6 @@ import './BusinessDetail.css';
  */
 function BusinessDetail({ poi }) {
   const navigate = useNavigate();
-  const [expandedSections, setExpandedSections] = useState({});
   const [copiedCoords, setCopiedCoords] = useState(false);
   const [copiedAddress, setCopiedAddress] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
@@ -165,12 +165,7 @@ function BusinessDetail({ poi }) {
     }
   };
 
-  const toggleSection = (section) => {
-    setExpandedSections(prev => ({
-      ...prev,
-      [section]: !prev[section]
-    }));
-  };
+  // toggleSection removed — using Accordion component instead
 
   const hasContent = (value) => {
     if (value === null || value === undefined || value === '') return false;
@@ -185,29 +180,7 @@ function BusinessDetail({ poi }) {
     setLightboxOpen(true);
   };
 
-  // Accordion component with two-column layout support
-  const AccordionSection = ({ title, children, show = true }) => {
-    if (!show) return null;
-    const isOpen = expandedSections[title];
-
-    return (
-      <div className="bd-accordion">
-        <button
-          onClick={() => toggleSection(title)}
-          className="bd-accordion__header"
-          type="button"
-        >
-          <span className="bd-accordion__title">{title}</span>
-          <ChevronDown size={20} className={`bd-accordion__icon ${isOpen ? 'bd-accordion__icon--open' : ''}`} />
-        </button>
-        {isOpen && (
-          <div className="bd-accordion__content">
-            {children}
-          </div>
-        )}
-      </div>
-    );
-  };
+  // AccordionSection imported from Accordion component
 
   // Two-column info row for accordion content
   const InfoItem = ({ label, value, isHTML = false }) => {
@@ -477,7 +450,7 @@ function BusinessDetail({ poi }) {
                   >
                     <img
                       src={img.thumbnail_url}
-                      alt={img.alt_text}
+                      alt={img.alt_text || `${poi.name} photo`}
                       loading="lazy"
                       onError={(e) => { e.target.style.display = 'none'; }}
                     />
@@ -556,6 +529,7 @@ function BusinessDetail({ poi }) {
 
         {/* Accordion Sections */}
         <div className="bd-accordions">
+          <Accordion closeOther closeAble scrollOffset={120}>
           {/* 1. About + Hours - Two Column Layout */}
           <AccordionSection
             title="About + Hours"
@@ -1248,6 +1222,7 @@ function BusinessDetail({ poi }) {
               )}
             </div>
           </AccordionSection>
+          </Accordion>
         </div>
       </div>
 

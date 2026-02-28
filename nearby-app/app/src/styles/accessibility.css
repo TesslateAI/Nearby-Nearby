@@ -3,6 +3,11 @@
    Ported from nn-templates/inc/stylez.scss + overlay.scss
    ========================================================================== */
 
+/* ── Remove blue tap highlight on mobile ──────────────────────── */
+*, *::before, *::after {
+  -webkit-tap-highlight-color: transparent;
+}
+
 /* ── Skip-to-main link ─────────────────────────────────────────── */
 .skip-main {
   position: absolute;

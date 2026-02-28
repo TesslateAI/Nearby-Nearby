@@ -104,6 +104,7 @@ function CommunityInterest() {
               placeholder="e.g. Pittsboro, Chatham County, NC"
               maxLength={200}
               required
+              aria-required="true"
             />
           </div>
 
@@ -196,7 +197,7 @@ function CommunityInterest() {
             />
           </div>
 
-          {error && <p className="ci-page__error">{error}</p>}
+          {error && <p className="ci-page__error" role="alert">{error}</p>}
 
           <button
             type="submit"

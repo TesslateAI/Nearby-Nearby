@@ -113,6 +113,7 @@ function ClaimBusiness() {
                 placeholder="e.g. Joe's Coffee Shop"
                 maxLength={200}
                 required
+                aria-required="true"
               />
             </div>
 
@@ -126,6 +127,7 @@ function ClaimBusiness() {
                 placeholder="Street address, city, state, zip"
                 maxLength={500}
                 required
+                aria-required="true"
               />
             </div>
 
@@ -139,6 +141,7 @@ function ClaimBusiness() {
                 placeholder="First and last name"
                 maxLength={100}
                 required
+                aria-required="true"
               />
             </div>
 
@@ -153,6 +156,7 @@ function ClaimBusiness() {
                   placeholder="(919) 555-0123"
                   maxLength={20}
                   required
+                  aria-required="true"
                 />
               </div>
               <div className="claim-page__field">
@@ -165,6 +169,7 @@ function ClaimBusiness() {
                   placeholder="you@business.com"
                   maxLength={255}
                   required
+                  aria-required="true"
                 />
               </div>
             </div>
@@ -192,7 +197,7 @@ function ClaimBusiness() {
               />
             </div>
 
-            {error && <p className="claim-page__error">{error}</p>}
+            {error && <p className="claim-page__error" role="alert">{error}</p>}
 
             <button
               type="submit"

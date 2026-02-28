@@ -1,4 +1,4 @@
-import { LayoutGrid, Store, Calendar, Trees, Mountain, Users } from 'lucide-react';
+import { LayoutGrid, Store, Calendar, Trees, Mountain } from 'lucide-react';
 import './NearbyFilters.css';
 
 // Map filter types to lucide icons
@@ -7,11 +7,10 @@ const filterIcons = {
   'Businesses': Store,
   'Events': Calendar,
   'Parks': Trees,
-  'Trails': Mountain,
-  'Youth Events': Users
+  'Trails': Mountain
 };
 
-const DEFAULT_FILTERS = ['All', 'Businesses', 'Events', 'Parks', 'Trails', 'Youth Events'];
+const DEFAULT_FILTERS = ['All', 'Businesses', 'Events', 'Parks', 'Trails'];
 
 function NearbyFilters({ selectedFilter, onFilterChange, variant = 'dark', filters = null }) {
   const filterList = filters || DEFAULT_FILTERS;

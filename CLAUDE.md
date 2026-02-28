@@ -1,3 +1,5 @@
+nn-templates submodule is Barry's designs / templates. 
+
 # Claude Code Guidelines - Nearby Nearby Projects
 
 This file provides guidance to Claude Code (claude.ai/code) when working with the Nearby Nearby platform.

@@ -15,6 +15,10 @@ export default defineConfig({
     watch: {
       usePolling: true,  // Required for Docker file watching on Windows/Mac
     },
+    hmr: {
+      host: 'localhost',
+      port: 8003,        // Client-facing port (mapped from 5173 in docker-compose)
+    },
     proxy: {
       '/api': {
         target: 'http://nearby-app-backend-1:8000',  // Use explicit container name to avoid DNS collision

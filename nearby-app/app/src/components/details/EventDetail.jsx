@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Clock, Phone, Globe, Heart, Share2, Navigation, Plus, ChevronDown, ChevronUp, Calendar, AlertCircle, Copy, Check, ExternalLink, Info, CalendarCheck, Truck, ShoppingCart } from 'lucide-react';
+import { MapPin, Clock, Phone, Globe, Heart, Share2, Navigation, Plus, Calendar, AlertCircle, Copy, Check, ExternalLink, Info, CalendarCheck, Truck, ShoppingCart } from 'lucide-react';
+import Accordion, { AccordionSection } from '../Accordion';
 import NearbySection from '../nearby-feature/NearbySection';
 import HoursDisplay from '../common/HoursDisplay';
 import { EventJsonLd } from '../seo/index';
@@ -15,17 +16,9 @@ const EVENT_DISCLAIMER =
  */
 function EventDetail({ poi }) {
   const navigate = useNavigate();
-  const [expandedSections, setExpandedSections] = useState({});
   const [copiedCoords, setCopiedCoords] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
   const [showShareMenu, setShowShareMenu] = useState(false);
-
-  const toggleSection = (section) => {
-    setExpandedSections(prev => ({
-      ...prev,
-      [section]: !prev[section]
-    }));
-  };
 
   // Get coordinates - prefer front_door, fallback to location
   const getCoordinates = () => {
@@ -159,29 +152,6 @@ function EventDetail({ poi }) {
         caption: img.caption
       }))
       .filter(img => img.url);
-  };
-
-  const CollapsibleSection = ({ title, children, show = true }) => {
-    if (!show) return null;
-
-    const isOpen = expandedSections[title];
-
-    return (
-      <div className="collapsible-section">
-        <button
-          onClick={() => toggleSection(title)}
-          className="collapsible-section__header"
-        >
-          <span className="collapsible-section__title">{title}</span>
-          {isOpen ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-        </button>
-        {isOpen && (
-          <div className="collapsible-section__content">
-            {children}
-          </div>
-        )}
-      </div>
-    );
   };
 
   const InfoRow = ({ label, value }) => {
@@ -418,17 +388,17 @@ function EventDetail({ poi }) {
           </div>
         )}
 
-        {/* Event-Specific Collapsible Sections */}
-        <div className="poi-detail__collapsible-sections">
-          <CollapsibleSection title="EVENT DETAILS" show={poi.event}>
+        {/* Event-Specific Accordion Sections */}
+        <Accordion closeOther closeAble scrollOffset={120}>
+          <AccordionSection title="EVENT DETAILS" show={!!poi.event}>
             <div className="collapsible-section__info">
               <InfoRow label="Start Date" value={poi.event?.start_datetime ? new Date(poi.event.start_datetime).toLocaleString() : null} />
               <InfoRow label="End Date" value={poi.event?.end_datetime ? new Date(poi.event.end_datetime).toLocaleString() : null} />
               <InfoRow label="Organizer" value={poi.event?.organizer_name} />
             </div>
-          </CollapsibleSection>
+          </AccordionSection>
 
-          <CollapsibleSection title="ABOUT + HOURS" show={poi.description_long || poi.hours}>
+          <AccordionSection title="ABOUT + HOURS" show={!!(poi.description_long || poi.hours)}>
             <div className="collapsible-section__info">
               {poi.description_long && (
                 <InfoRow label="Description" value={poi.description_long} />
@@ -442,9 +412,9 @@ function EventDetail({ poi }) {
                 hoursNotes={poi.hours_notes}
               />
             </div>
-          </CollapsibleSection>
+          </AccordionSection>
 
-          <CollapsibleSection title="ADDRESS + PARKING" show={poi.address_street || poi.parking_types}>
+          <AccordionSection title="ADDRESS + PARKING" show={!!(poi.address_street || poi.parking_types)}>
             <div className="collapsible-section__info">
               <InfoRow label="Street" value={poi.address_street} />
               <InfoRow label="City" value={poi.address_city} />
@@ -455,9 +425,9 @@ function EventDetail({ poi }) {
               )}
               {poi.parking_notes && <InfoRow label="Parking Notes" value={poi.parking_notes} />}
             </div>
-          </CollapsibleSection>
+          </AccordionSection>
 
-          <CollapsibleSection title="WHAT TO EXPECT" show={poi.wheelchair_accessible || poi.ideal_for}>
+          <AccordionSection title="WHAT TO EXPECT" show={!!(poi.wheelchair_accessible || poi.ideal_for)}>
             <div className="collapsible-section__info">
               {poi.wheelchair_accessible && Array.isArray(poi.wheelchair_accessible) && (
                 <InfoRow label="Accessibility" value={poi.wheelchair_accessible.join(", ")} />
@@ -466,9 +436,9 @@ function EventDetail({ poi }) {
                 <InfoRow label="Ideal For" value={poi.ideal_for.join(", ")} />
               )}
             </div>
-          </CollapsibleSection>
+          </AccordionSection>
 
-          <CollapsibleSection title="PUBLIC RESTROOMS" show={poi.public_toilets}>
+          <AccordionSection title="PUBLIC RESTROOMS" show={!!poi.public_toilets}>
             <div className="collapsible-section__info">
               {poi.public_toilets && Array.isArray(poi.public_toilets) && (
                 <InfoRow label="Available" value={poi.public_toilets.join(", ")} />
@@ -477,9 +447,9 @@ function EventDetail({ poi }) {
                 <InfoRow label="Details" value={poi.toilet_description} />
               )}
             </div>
-          </CollapsibleSection>
+          </AccordionSection>
 
-          <CollapsibleSection title="ACCESSIBILITY" show={poi.wheelchair_accessible || poi.wheelchair_details}>
+          <AccordionSection title="ACCESSIBILITY" show={!!(poi.wheelchair_accessible || poi.wheelchair_details)}>
             <div className="collapsible-section__info">
               {poi.wheelchair_accessible && Array.isArray(poi.wheelchair_accessible) && (
                 <InfoRow label="Wheelchair" value={poi.wheelchair_accessible.join(", ")} />
@@ -488,9 +458,9 @@ function EventDetail({ poi }) {
                 <InfoRow label="Details" value={poi.wheelchair_details} />
               )}
             </div>
-          </CollapsibleSection>
+          </AccordionSection>
 
-          <CollapsibleSection title="PET POLICY" show={poi.pet_options || poi.pet_policy}>
+          <AccordionSection title="PET POLICY" show={!!(poi.pet_options || poi.pet_policy)}>
             <div className="collapsible-section__info">
               {poi.pet_options && Array.isArray(poi.pet_options) && (
                 <InfoRow label="Pets Allowed" value={poi.pet_options.join(", ")} />
@@ -499,9 +469,9 @@ function EventDetail({ poi }) {
                 <InfoRow label="Policy" value={poi.pet_policy} />
               )}
             </div>
-          </CollapsibleSection>
+          </AccordionSection>
 
-          <CollapsibleSection title="TIPS + TRICKS" show={poi.community_impact || poi.history_paragraph}>
+          <AccordionSection title="TIPS + TRICKS" show={!!(poi.community_impact || poi.history_paragraph)}>
             <div className="collapsible-section__info">
               {poi.history_paragraph && (
                 <InfoRow label="History" value={poi.history_paragraph} />
@@ -510,9 +480,9 @@ function EventDetail({ poi }) {
                 <InfoRow label="Community Impact" value={poi.community_impact} />
               )}
             </div>
-          </CollapsibleSection>
+          </AccordionSection>
 
-          <CollapsibleSection title="CONTACT" show={poi.phone_number || poi.email || poi.website_url}>
+          <AccordionSection title="CONTACT" show={!!(poi.phone_number || poi.email || poi.website_url)}>
             <div className="collapsible-section__info">
               <InfoRow label="Phone" value={poi.phone_number} />
               <InfoRow label="Email" value={poi.email} />
@@ -524,8 +494,8 @@ function EventDetail({ poi }) {
                 <InfoRow label="Facebook" value={poi.facebook_username} />
               )}
             </div>
-          </CollapsibleSection>
-        </div>
+          </AccordionSection>
+        </Accordion>
 
         {/* Event Disclaimer (Task 149) */}
         <div className="event-disclaimer" style={{

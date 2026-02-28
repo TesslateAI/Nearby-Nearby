@@ -410,47 +410,13 @@ def update_poi(db: Session, *, db_obj: models.PointOfInterest, obj_in: schemas.P
                 ))
         db.flush()
 
-    # Update remaining fields
+    # Update remaining fields (subtype dicts already popped above when type matches)
+    # Skip any subtype relationship fields that weren't popped (e.g. type mismatch)
+    subtype_fields = {"event", "business", "park", "trail"}
     for field, value in update_data.items():
-        # For relationship fields, ensure we assign model instances, not dicts
-        if field == "event" and poi_type_str == "EVENT":
-            if isinstance(value, dict):
-                if db_obj.event:
-                    for k, v in value.items():
-                        setattr(db_obj.event, k, v)
-                else:
-                    db_obj.event = models.Event(**value)
-            else:
-                db_obj.event = value
-        elif field == "business" and poi_type_str == "BUSINESS":
-            if isinstance(value, dict):
-                if db_obj.business:
-                    for k, v in value.items():
-                        setattr(db_obj.business, k, v)
-                else:
-                    db_obj.business = models.Business(**value)
-            else:
-                db_obj.business = value
-        elif field == "park" and poi_type_str == "PARK":
-            if isinstance(value, dict):
-                if db_obj.park:
-                    for k, v in value.items():
-                        setattr(db_obj.park, k, v)
-                else:
-                    db_obj.park = models.Park(**value)
-            else:
-                db_obj.park = value
-        elif field == "trail" and poi_type_str == "TRAIL":
-            if isinstance(value, dict):
-                if db_obj.trail:
-                    for k, v in value.items():
-                        setattr(db_obj.trail, k, v)
-                else:
-                    db_obj.trail = models.Trail(**value)
-            else:
-                db_obj.trail = value
-        else:
-            setattr(db_obj, field, value)
+        if field in subtype_fields:
+            continue
+        setattr(db_obj, field, value)
 
     try:
         db.add(db_obj)

@@ -1,5 +1,5 @@
 # app/schemas/poi.py
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, field_validator
 from typing import Optional, List, Any
 import uuid
 from datetime import datetime
@@ -104,8 +104,23 @@ class POISearchResult(BaseModel):
     poi_type: Optional[str] = None  # For generating SEO URLs
     address_city: Optional[str] = None
     address_state: Optional[str] = None
+    address_street: Optional[str] = None
+    description_short: Optional[str] = None
+    location: Optional[Any] = None
     main_category: Optional[Category] = None  # Primary display category
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, arbitrary_types_allowed=True)
+
+    @field_validator('location', mode='before')
+    @classmethod
+    def convert_wkb_location(cls, v):
+        if v is None:
+            return None
+        if isinstance(v, dict):
+            return v
+        try:
+            return PointGeometry.from_wkb(v)
+        except Exception:
+            return None
 
 class POINearbyResult(POISearchResult):
     distance_meters: Optional[float] = None
