@@ -17,7 +17,7 @@ Skip low-ROI tests: visual regression, snapshot tests, exhaustive unit tests for
 
 ## Current Test Suite
 
-The monorepo has **351+ integration tests** in the root `tests/` directory covering admin CRUD, cross-app data flow, real S3 (MinIO) image uploads, admin form features (Tasks 2-41), event/image/auth features (Tasks 42-51), listing type changes (Tasks 171-172), hours system (Tasks 173-176), and Sentry integration (Tasks 169-170).
+The monorepo has **352+ integration tests** in the root `tests/` directory covering admin CRUD, cross-app data flow, real S3 (MinIO) image uploads, admin form features (Tasks 2-41), event/image/auth features (Tasks 42-51), event backend tasks (Tasks 134-149, 153, 157), listing type changes (Tasks 171-172), hours system (Tasks 173-176), and Sentry integration (Tasks 169-170).
 
 ### Running Tests
 
@@ -78,6 +78,7 @@ Ports are offset from production to avoid collisions (5434 instead of 5432, 9100
 | `test_fulltext_search.py` | 11 | tsvector column, stemming, description-only matches |
 | `test_form_endpoints.py` | 23 | All 5 public forms: happy path, validation, duplicates, file uploads |
 | `test_event_lifecycle.py` | varies | Event creation and lifecycle |
+| `test_event_backend_tasks.py` | 27 | Event status, organizer, cost/ticketing, sponsors, reschedule, display category, date guard (Tasks 134-149, 153, 157) |
 | `test_login_redirect.py` | 6 | Login 401 behavior, no redirect loop, valid credentials |
 | `test_corporate_compliance.py` | 11 | JSONB compliance field round-trip |
 | `test_admin_poi_defaults.py` | 8 | City/county/state defaults, coordinates |
@@ -126,7 +127,7 @@ The test suite exposed and fixed these real bugs:
 
 ```
 NearbyNearby/
-├── tests/                               # Integration & cross-app tests (351+ tests)
+├── tests/                               # Integration & cross-app tests (352+ tests)
 │   ├── conftest.py                      # Shared fixtures, auth mocking, ORM helpers
 │   ├── docker-compose.test.yml          # PostGIS + MinIO test containers
 │   ├── test_admin_business.py
@@ -159,6 +160,7 @@ NearbyNearby/
 │   ├── test_event_payphone.py          # Payphone location fields
 │   ├── test_event_time_format.py       # ISO 8601 format, 12-hour time
 │   ├── test_image_function_tags.py     # Function tag upload, update, filter
+│   ├── test_event_backend_tasks.py    # Event status, organizer, cost, sponsors (Tasks 134-149, 153, 157)
 │   ├── test_listing_types.py          # Listing type changes (Tasks 171-172)
 │   ├── test_hours_system.py           # Hours resolution engine + endpoint (Tasks 173-176)
 │   └── test_sentry_integration.py     # Sentry init tests (Tasks 169-170)
@@ -417,7 +419,7 @@ The admin workflow at `.github/workflows/deploy-admin.yml` has a single `build-a
 
 | Stage | Duration | Notes |
 |-------|----------|-------|
-| App test job | ~12 minutes | PostGIS container startup + 351+ integration tests |
+| App test job | ~12 minutes | PostGIS container startup + 352+ integration tests |
 | App build-and-deploy job | ~8 minutes | Multi-stage Docker build (~5.7GB image including ML model) |
 | **App total end-to-end** | **~20 minutes** | Test + build + ECS force deploy |
 | App with `skip_tests` | ~8 minutes | Manual dispatch only, skips test job |

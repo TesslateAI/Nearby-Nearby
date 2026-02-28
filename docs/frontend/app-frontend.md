@@ -19,6 +19,8 @@ nearby-app/app/src/
 │   ├── details/          # POI detail components
 │   ├── nearby-feature/   # Nearby feature components
 │   ├── seo/              # SEO components
+│   ├── Accordion.jsx     # Shared accordion with slide animation + hash deep-linking
+│   ├── ErrorBoundary.jsx # Sentry-integrated React error boundary
 │   ├── MobileNavBar.jsx  # Mobile bottom navigation
 │   ├── AnnouncementBanner.jsx  # Top announcement bar
 │   ├── SearchOverlay.jsx # Full-screen search overlay
@@ -26,12 +28,13 @@ nearby-app/app/src/
 │   └── NNLogo.jsx        # Logo component
 ├── pages/                # Page components
 │   ├── Home.jsx
-│   ├── Explore.jsx       # Browse + URL-driven search results
+│   ├── Explore.jsx       # Browse + map/list layout with search and controls
 │   ├── POIDetail.jsx     # Smart router to type-specific detail
 │   ├── CommunityInterest.jsx  # Community interest form
 │   ├── Contact.jsx       # Contact form
 │   ├── Feedback.jsx      # Feedback with file uploads
-│   └── ClaimBusiness.jsx # Business claim form
+│   ├── ClaimBusiness.jsx # Business claim form
+│   └── SuggestEvent.jsx  # Event suggestion form
 ├── hooks/                # Custom hooks
 │   ├── useOverlay.js     # Shared overlay state management
 │   └── usePWAInstall.js  # PWA install prompt
@@ -80,6 +83,7 @@ function App() {
           <Route path="/contact" element={<Contact />} />
           <Route path="/feedback" element={<Feedback />} />
           <Route path="/claim-business" element={<ClaimBusiness />} />
+          <Route path="/suggest-event" element={<SuggestEvent />} />
           <Route path="/suggest-place" element={<Navigate to="/claim-business" replace />} />
         </Routes>
       </main>
@@ -103,6 +107,7 @@ function App() {
 | `/contact` | Contact | Contact form |
 | `/feedback` | Feedback | Feedback with file uploads |
 | `/claim-business` | ClaimBusiness | Business claim form |
+| `/suggest-event` | SuggestEvent | Event suggestion form |
 | `/suggest-place` | Redirect | Redirects to `/claim-business` |
 | `/services` | Services | Services page |
 
@@ -112,70 +117,21 @@ function App() {
 
 ### Home Page
 
-```jsx
-// pages/Home.jsx
-
-function Home() {
-  return (
-    <div className="home">
-      <Navbar />
-      <Hero />
-      <SearchBar />
-      <SignupBar />
-      <InfoSection />
-      <Footer />
-    </div>
-  );
-}
-```
+The Home page renders the Hero component, a search bar, and informational sections. CSS styles are in `Home.css`.
 
 ### Explore Page
 
-```jsx
-// pages/Explore.jsx
+The Explore page has two modes:
 
-function Explore() {
-  const [categories, setCategories] = useState([]);
-  const [selectedType, setSelectedType] = useState(null);
-  const [pois, setPois] = useState([]);
+1. **Category Grid** (default): Displays category cards for Businesses, Parks, Trails, and Events with POI counts. Clicking a card fetches POIs of that type.
+2. **Search Results**: When the user searches via URL params (`?q=...`), results display in a map + list split layout.
 
-  useEffect(() => {
-    fetchCategories();
-  }, []);
-
-  useEffect(() => {
-    if (selectedType) {
-      fetchPOIsByType(selectedType);
-    }
-  }, [selectedType]);
-
-  return (
-    <div className="explore">
-      <Navbar />
-
-      <div className="explore-categories">
-        {['BUSINESS', 'PARK', 'TRAIL', 'EVENT'].map(type => (
-          <CategoryCard
-            key={type}
-            type={type}
-            count={getCategoryCount(type)}
-            selected={selectedType === type}
-            onClick={() => setSelectedType(type)}
-          />
-        ))}
-      </div>
-
-      {selectedType && (
-        <div className="explore-results">
-          <POIGrid pois={pois} />
-        </div>
-      )}
-
-      <Footer />
-    </div>
-  );
-}
-```
+**Key features:**
+- Map/list split layout with Leaflet map and result cards
+- Radius dropdown (1, 3, 5, 10, 15 miles) and date filter (Today, Tomorrow, This Weekend, Custom)
+- Search bar with hybrid AI search integration
+- Pagination for large result sets
+- Responsive: map hides on mobile, full-width result cards
 
 ### POI Detail Page (Smart Router)
 
@@ -223,7 +179,19 @@ Each POI type has a specialized detail component in `components/details/`:
 | EventDetail | `EventDetail.jsx` | EVENT |
 | GenericDetail | `GenericDetail.jsx` | Fallback for all other types |
 
-All detail components now use the shared `HoursDisplay` component for consistent hours rendering.
+All detail components use the shared `Accordion` component for collapsible sections and the `HoursDisplay` component for consistent hours rendering.
+
+### Accordion Component
+
+A shared accordion component (`components/Accordion.jsx` + `Accordion.css`) used across all five detail views, replacing the per-component `CollapsibleSection` implementations.
+
+**Features:**
+- `closeOther`: Only one section open at a time (optional)
+- `closeAble`: Clicking an open section closes it (optional)
+- `scrollOffset`: Scroll offset for header overlap on auto-scroll
+- Hash deep-linking: `#section-id` in URL auto-opens and scrolls to matching section
+- Slide animation with `prefers-reduced-motion` support
+- `AccordionSection` sub-component defines each section with `title`, `id`, `children`, and optional `show` prop for conditional rendering
 
 ### Share & Clipboard Functionality
 
@@ -592,7 +560,7 @@ const searchOverlay = useOverlay('search_overlay', { focusTargetId: 'one_search'
 
 ### Form Pages
 
-Four form pages following a consistent pattern (card layout, success state, error handling):
+Five form pages following a consistent pattern (card layout, success state, error handling, `aria-required` on required fields, `role="alert"` on error messages):
 
 | Page | Route | API Endpoint | Key Feature |
 |------|-------|-------------|-------------|
@@ -600,8 +568,7 @@ Four form pages following a consistent pattern (card layout, success state, erro
 | `Contact.jsx` | `/contact` | `POST /api/contact` | Simple 3-field form |
 | `Feedback.jsx` | `/feedback` | `POST /api/feedback` | Drag-and-drop file upload with preview |
 | `ClaimBusiness.jsx` | `/claim-business` | `POST /api/business-claims` | Chatham County gate (Yes/No) |
-
-The `/api/event-suggestions` endpoint (POST, 5/min rate limit) accepts event suggestions from users. See [API Reference](../architecture/api-reference.md) for details.
+| `SuggestEvent.jsx` | `/suggest-event` | `POST /api/event-suggestions` | Event name + organizer email required |
 
 See [Forms System](../systems/forms.md) for full backend documentation.
 
@@ -679,38 +646,14 @@ function HoursDisplay({ poi }) {
 
 ### GenericDetail Component
 
-A fallback detail view for POI types without specialized pages.
-
-```jsx
-// components/details/GenericDetail.jsx
-
-function GenericDetail({ poi }) {
-  return (
-    <div className="generic-detail">
-      <header>
-        <h1>{poi.name}</h1>
-        <StatusBadge status={poi.publication_status} />
-      </header>
-
-      <QuickInfo poi={poi} />
-      <PhotoGrid images={poi.images} />
-      <HoursDisplay poi={poi} />
-
-      {/* Collapsible sections for all POI attributes */}
-      <CollapsibleSections poi={poi} />
-
-      <NearbySection poi={poi} />
-    </div>
-  );
-}
-```
+A fallback detail view for POI types without specialized pages. Uses the shared `Accordion` component for collapsible sections.
 
 **Features:**
-- Collapsible sections for various POI attributes
+- Accordion sections for various POI attributes (About, Hours, Address & Parking, Facilities, etc.)
 - Dynamic info rows with label-value pairs
-- Status and verified badges
 - Photo grid with lazy loading
 - Amenities display
+- Nearby section with map
 
 ### PhotoLightbox Component
 

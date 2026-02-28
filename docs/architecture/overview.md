@@ -45,6 +45,8 @@
 │  └─────────────────┘                       │    submissions  │          │
 │                                            │  - business_    │          │
 │                                            │    claims       │          │
+│                                            │  - event_       │          │
+│                                            │    suggestions  │          │
 │                                            └─────────────────┘          │
 └─────────────────────────────────────────────────────────────────────────┘
                                │
@@ -240,6 +242,7 @@ IaC:   terraform/modules/ (networking, database, storage, ecr, ecs, alb, secrets
 | API Routes | `backend/app/api/endpoints/*.py` |
 | Search Engine | `backend/app/search/search_engine.py`, `query_processor.py`, `constants.py` |
 | S3 Client | `backend/app/core/s3.py` |
+| Sentry | `backend/app/core/sentry.py` |
 | Database | `backend/app/database.py` (main engine + forms engine) |
 | Frontend | `app/src/App.jsx`, `components/`, `pages/` |
 
@@ -248,7 +251,8 @@ IaC:   terraform/modules/ (networking, database, storage, ecr, ecs, alb, secrets
 | Layer | Files |
 |-------|-------|
 | Enums | `shared/models/enums.py` (POIType, ImageType) |
-| Constants | `shared/constants/field_options.py` (amenity patterns for search) |
+| Constants | `shared/constants/field_options.py` (amenity patterns, listing types, image function tags) |
+| Utils | `shared/utils/hours_resolution.py` (Hours precedence resolution engine) |
 
 ---
 
@@ -263,3 +267,4 @@ IaC:   terraform/modules/ (networking, database, storage, ecr, ecs, alb, secrets
 7. **Forms DB Isolation**: Separate `nearby_forms` PostgreSQL role with INSERT/SELECT only on form tables — prevents SQL injection escalation to POI data
 8. **Rate Limiting**: `slowapi` on all public form endpoints (5/min general, 2/min file uploads)
 9. **File Upload Validation**: Content-type whitelist (image/* only), 10MB size limit, max 10 files per submission
+10. **Error Tracking**: Sentry integration on all 4 surfaces (both backends + both frontends). DSN configured via SSM Parameter Store, disabled by default
