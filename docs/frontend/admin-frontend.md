@@ -750,6 +750,10 @@ The EventSpecificSections accordion includes four sub-sections:
 | Event Vendors | `EventVendorsSection` | Has-vendors toggle, vendor types (grouped checkboxes), application deadline, fee, requirements |
 | Event Maps & Food | `EventMapsSection` | Downloadable maps (file upload or URL), food & drink info (rich text) |
 | Event Amenities | `EventAmenitiesSection` | Coat check options, food & drink info |
+| Event Status | `EventStatusSection` | 7-value status dropdown, cancellation paragraph, contact organizer toggle, new event link |
+| Event Organizer | `EventOrganizerSection` | Extended organizer fields: email, phone, website, social media, linked POI |
+| Event Cost | `EventCostSection` | Cost type selector (Free/Paid/Donation-based/Varies), ticket links |
+| Event Sponsors | `EventSponsorsSection` | Dynamic sponsor array with name, URL, level |
 
 ### FacilitiesSection Updates
 
@@ -777,6 +781,19 @@ The `initialValues.js` file has been extended with:
 | `event.venue_poi_id`, `event.venue_inheritance` | Venue inheritance for events (Task 45) |
 | `event.series_id`, `event.parent_event_id`, `event.excluded_dates`, `event.recurrence_end_date`, `event.manual_dates` | Recurring event fields (Task 50) |
 | `event.has_vendors`, `event.vendor_types`, `event.vendor_application_deadline`, `event.vendor_application_info`, `event.vendor_fee`, `event.vendor_requirements`, `event.vendor_poi_links` | Event vendor management fields |
+| `event.event_status`, `event.cancellation_paragraph`, `event.contact_organizer_toggle`, `event.new_event_link`, `event.rescheduled_from_event_id` | Event status and rescheduling (Tasks 134-136) |
+| `event.primary_display_category` | Primary display category override (Task 137) |
+| `event.organizer_email`, `event.organizer_phone`, `event.organizer_website`, `event.organizer_social_media`, `event.organizer_poi_id` | Extended organizer fields (Task 138) |
+| `event.cost_type`, `event.ticket_links` | Event cost and ticketing (Task 139) |
+| `event.sponsors` | Event sponsors array (Task 140) |
+
+### New Constants
+
+| Constant | Location | Description |
+|----------|----------|-------------|
+| `EVENT_STATUS_OPTIONS` | `nearby-admin/frontend/src/utils/constants.js` | 7 event status values |
+| `EVENT_COST_TYPES` | `shared/constants/field_options.py` | Cost type options: Free, Paid, Donation-based, Varies |
+| `EVENT_DISCLAIMER` | `nearby-app/app/src/components/details/EventDetail.jsx` | Disclaimer text shown on event detail pages |
 
 ### ImageUploadField Updates
 

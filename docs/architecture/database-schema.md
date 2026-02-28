@@ -331,8 +331,29 @@ POI-to-POI relationships.
 | excluded_dates | JSONB | Array of ISO date strings excluded from recurrence (e.g., `["2026-07-04", "2026-12-25"]`) |
 | recurrence_end_date | TIMESTAMP WITH TIMEZONE | When the recurrence pattern ends |
 | manual_dates | JSONB | Array of ISO datetime strings for irregular/manually specified occurrences (e.g., `["2026-03-01T18:00:00Z"]`) |
+| **Event Status & Rescheduling (Tasks 134-136)** |
+| event_status | VARCHAR(100) | Event status: Scheduled, Cancelled, Postponed, Rescheduled, Updated Date and/or Time, Sold Out, On Sale (default: Scheduled) |
+| cancellation_paragraph | TEXT | Explanation shown when event is cancelled or postponed |
+| contact_organizer_toggle | BOOLEAN | Show "Contact Organizer" button on cancelled/postponed events (default: false) |
+| new_event_link | VARCHAR | UUID string of the replacement event POI (not a FK for flexibility) |
+| rescheduled_from_event_id | UUID | FK → events.poi_id. Links to the original event this was rescheduled from |
+| **Primary Display Category (Task 137)** |
+| primary_display_category | VARCHAR(100) | Backend-only display category override (no UI control yet) |
+| **Extended Organizer (Task 138)** |
+| organizer_email | VARCHAR | Organizer contact email |
+| organizer_phone | VARCHAR | Organizer contact phone |
+| organizer_website | VARCHAR | Organizer website URL |
+| organizer_social_media | JSONB | Organizer social media links |
+| organizer_poi_id | UUID | FK → points_of_interest.id. Links organizer to an existing POI |
+| **Cost & Ticketing (Task 139)** |
+| cost_type | VARCHAR(50) | Cost classification: Free, Paid, Donation-based, Varies |
+| ticket_links | JSONB | Array of ticket purchase links `[{"url": "...", "title": "..."}]` |
+| **Sponsors (Task 140)** |
+| sponsors | JSONB | Array of sponsor objects `[{"name": "...", "url": "...", "level": "..."}]` |
 
-Migration: `e5f6g7h8i9j0_add_venue_inheritance_and_recurring`
+Migrations:
+- `e5f6g7h8i9j0_add_venue_inheritance_and_recurring`
+- `f6g7h8i9j0k1_event_backend_tasks_134_149`
 
 ---
 
@@ -430,6 +451,23 @@ Business owner registration/claim requests.
 | status | VARCHAR(20) | NOT NULL, DEFAULT 'pending' | Claim status |
 | created_at | TIMESTAMPTZ | DEFAULT NOW() | Submission time |
 
+### event_suggestions
+
+Public form for users to suggest new events. Uses isolated `nearby_forms` DB role.
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| id | UUID | PK, DEFAULT gen_random_uuid() | Primary key |
+| event_name | VARCHAR(255) | NOT NULL | Suggested event name |
+| event_description | TEXT | | Event description |
+| event_date | VARCHAR(100) | | Approximate date/time |
+| event_location | VARCHAR(255) | | Event location |
+| organizer_name | VARCHAR(100) | | Organizer name |
+| organizer_email | VARCHAR(255) | NOT NULL | Contact email |
+| organizer_phone | VARCHAR(50) | | Contact phone |
+| additional_info | TEXT | | Additional details |
+| created_at | TIMESTAMPTZ | DEFAULT NOW() | Submission time |
+
 ---
 
 ## Indexes
@@ -486,7 +524,7 @@ A restricted PostgreSQL role used by the nearby-app for public form submissions.
 **Permissions:**
 - `CONNECT` on the database
 - `USAGE` on public schema
-- `SELECT, INSERT` on: waitlist, community_interest, contact_submissions, feedback_submissions, business_claims
+- `SELECT, INSERT` on: waitlist, community_interest, contact_submissions, feedback_submissions, business_claims, event_suggestions
 
 **Cannot access:** points_of_interest, businesses, parks, trails, events, images, users, categories, or any other POI-related table.
 

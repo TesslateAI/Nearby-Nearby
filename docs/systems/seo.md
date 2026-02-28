@@ -142,74 +142,13 @@ async def serve_spa(request: Request, path: str):
     return HTMLResponse(html)
 ```
 
-### Frontend SEO Component
+### Frontend SEO Components
 
-```jsx
-// nearby-app/app/src/components/seo/SEO.jsx
+The app uses JSON-LD structured data components (`EventJsonLd`, `LocalBusinessJsonLd`) that render `<script type="application/ld+json">` tags using native React rendering (not react-helmet-async). Each type-specific detail page includes the appropriate JSON-LD component.
 
-import { Helmet } from 'react-helmet-async';
+**Note:** There is no standalone `SEO.jsx` component. Meta tags are injected server-side by the backend (see above). Client-side structured data is handled by the JSON-LD components in `nearby-app/app/src/components/seo/`.
 
-function SEO({ title, description, image, url, type = 'website' }) {
-  const siteTitle = 'Nearby Nearby';
-  const fullTitle = title ? `${title} | ${siteTitle}` : siteTitle;
-
-  return (
-    <Helmet>
-      {/* Basic */}
-      <title>{fullTitle}</title>
-      <meta name="description" content={description} />
-
-      {/* Open Graph */}
-      <meta property="og:title" content={fullTitle} />
-      <meta property="og:description" content={description} />
-      <meta property="og:type" content={type} />
-      {image && <meta property="og:image" content={image} />}
-      {url && <meta property="og:url" content={url} />}
-      <meta property="og:site_name" content={siteTitle} />
-
-      {/* Twitter */}
-      <meta name="twitter:card" content="summary_large_image" />
-      <meta name="twitter:title" content={fullTitle} />
-      <meta name="twitter:description" content={description} />
-      {image && <meta name="twitter:image" content={image} />}
-
-      {/* Canonical URL */}
-      {url && <link rel="canonical" href={url} />}
-    </Helmet>
-  );
-}
-```
-
-### Usage in Pages
-
-```jsx
-// nearby-app/app/src/pages/POIDetail.jsx
-
-function POIDetail() {
-  const [poi, setPoi] = useState(null);
-
-  // ... fetch POI
-
-  if (!poi) return <Loading />;
-
-  const image = poi.images?.[0]?.s3_url;
-  const url = `https://nearbynearby.com${getPOIUrl(poi)}`;
-
-  return (
-    <>
-      <SEO
-        title={poi.name}
-        description={truncateText(poi.teaser_description, 155)}
-        image={image}
-        url={url}
-        type="place"
-      />
-
-      {/* Page content */}
-    </>
-  );
-}
-```
+All 4 detail pages (BusinessDetail, EventDetail, ParkDetail, TrailDetail) render their respective JSON-LD components.
 
 ---
 
@@ -288,66 +227,60 @@ function formatOpeningHours(hours) {
 // nearby-app/app/src/components/seo/EventJsonLd.jsx
 
 function EventJsonLd({ poi }) {
-  const schema = {
-    "@context": "https://schema.org",
-    "@type": "Event",
-    "name": poi.name,
-    "description": poi.teaser_description,
-    "url": `https://nearbynearby.com${getPOIUrl(poi)}`,
-    "startDate": poi.event?.start_datetime,
-    "endDate": poi.event?.end_datetime,
-    "location": {
-      "@type": "Place",
-      "name": poi.name,
-      "address": {
-        "@type": "PostalAddress",
-        "streetAddress": poi.address_street,
-        "addressLocality": poi.address_city,
-        "addressRegion": poi.address_state
-      }
-    },
-    "image": poi.images?.[0]?.s3_url,
-    "organizer": poi.event?.organizer_name ? {
-      "@type": "Organization",
-      "name": poi.event.organizer_name,
-      "email": poi.event.organizer_email
-    } : undefined,
-    "offers": poi.event?.ticket_url ? {
-      "@type": "Offer",
-      "url": poi.event.ticket_url,
-      "price": poi.event.is_free ? "0" : undefined,
-      "priceCurrency": "USD"
-    } : undefined
-  };
+  // Full schema.org/Event implementation with:
+  // - eventStatus mapping from event_status field to schema.org URLs
+  // - eventAttendanceMode (Offline/Online/Mixed)
+  // - location with address and geo coordinates
+  // - organizer with name, email, phone, website
+  // - offers/pricing based on cost fields
+  // - images, performers, door time, age range, accessibility
 
-  const cleanSchema = JSON.parse(JSON.stringify(schema));
-
+  // Renders using native React <script> tag, not react-helmet-async
   return (
-    <Helmet>
-      <script type="application/ld+json">
-        {JSON.stringify(cleanSchema)}
-      </script>
-    </Helmet>
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(eventSchema) }}
+    />
   );
 }
 ```
 
+**Event Status → schema.org Mapping:**
+
+| `event_status` value | schema.org `eventStatus` |
+|---------------------|--------------------------|
+| Cancelled / Canceled | `EventCancelled` |
+| Postponed | `EventPostponed` |
+| Rescheduled | `EventRescheduled` |
+| Moved Online / Virtual | `EventMovedOnline` |
+| All others (Scheduled, Sold Out, On Sale, etc.) | `EventScheduled` |
+
 ### Usage Based on POI Type
 
+Each type-specific detail component imports and renders its own JSON-LD component:
+
 ```jsx
-function POIDetail() {
-  const [poi, setPoi] = useState(null);
+// EventDetail.jsx
+import { EventJsonLd } from '../seo/index';
 
+function EventDetail({ poi }) {
   return (
-    <>
-      <SEO title={poi.name} description={poi.teaser_description} />
+    <div>
+      <EventJsonLd poi={poi} />
+      {/* ... event detail content ... */}
+    </div>
+  );
+}
 
-      {/* Type-specific structured data */}
-      {poi.poi_type === 'BUSINESS' && <LocalBusinessJsonLd poi={poi} />}
-      {poi.poi_type === 'EVENT' && <EventJsonLd poi={poi} />}
+// BusinessDetail.jsx
+import { LocalBusinessJsonLd } from '../seo/index';
 
-      {/* Page content */}
-    </>
+function BusinessDetail({ poi }) {
+  return (
+    <div>
+      <LocalBusinessJsonLd poi={poi} />
+      {/* ... business detail content ... */}
+    </div>
   );
 }
 ```

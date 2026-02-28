@@ -601,43 +601,26 @@ Four form pages following a consistent pattern (card layout, success state, erro
 | `Feedback.jsx` | `/feedback` | `POST /api/feedback` | Drag-and-drop file upload with preview |
 | `ClaimBusiness.jsx` | `/claim-business` | `POST /api/business-claims` | Chatham County gate (Yes/No) |
 
+The `/api/event-suggestions` endpoint (POST, 5/min rate limit) accepts event suggestions from users. See [API Reference](../architecture/api-reference.md) for details.
+
 See [Forms System](../systems/forms.md) for full backend documentation.
 
-### SEO Component
+### SEO Components
 
-```jsx
-// components/seo/SEO.jsx
+The app uses JSON-LD structured data components for search engine optimization. These render `<script type="application/ld+json">` tags using native React rendering (not react-helmet-async).
 
-import { Helmet } from 'react-helmet-async';
+| Component | File | Description |
+|-----------|------|-------------|
+| `EventJsonLd` | `components/seo/EventJsonLd.jsx` | schema.org/Event structured data with event status mapping |
+| `LocalBusinessJsonLd` | `components/seo/LocalBusinessJsonLd.jsx` | schema.org/LocalBusiness structured data |
 
-function SEO({ title, description, image, url, type = 'website' }) {
-  const siteName = 'Nearby Nearby';
-  const fullTitle = title ? `${title} | ${siteName}` : siteName;
+Each type-specific detail page includes the appropriate JSON-LD component. Server-side meta tag injection handles Open Graph and Twitter Card tags.
 
-  return (
-    <Helmet>
-      <title>{fullTitle}</title>
-      <meta name="description" content={description} />
+### Event Disclaimer
 
-      {/* Open Graph */}
-      <meta property="og:title" content={fullTitle} />
-      <meta property="og:description" content={description} />
-      <meta property="og:type" content={type} />
-      {image && <meta property="og:image" content={image} />}
-      {url && <meta property="og:url" content={url} />}
-      <meta property="og:site_name" content={siteName} />
+`EventDetail.jsx` displays a disclaimer at the bottom of each event page (Task 149). The text is defined as a local `EVENT_DISCLAIMER` constant:
 
-      {/* Twitter */}
-      <meta name="twitter:card" content="summary_large_image" />
-      <meta name="twitter:title" content={fullTitle} />
-      <meta name="twitter:description" content={description} />
-      {image && <meta name="twitter:image" content={image} />}
-
-      {url && <link rel="canonical" href={url} />}
-    </Helmet>
-  );
-}
-```
+> "While we work to keep event information current and accurate, details may change. We recommend confirming directly with event organizers before making plans."
 
 ---
 

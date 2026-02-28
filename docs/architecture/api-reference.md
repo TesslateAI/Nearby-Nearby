@@ -166,6 +166,49 @@ Event create, update, and response schemas include the following fields for venu
 | `excluded_dates` | list[string] (optional) | Dates excluded from a recurring series (ISO format) |
 | `recurrence_end_date` | datetime (optional) | End date for generating recurring instances |
 | `manual_dates` | list[string] (optional) | Manually specified dates for irregular recurring events |
+| **Event Status (Tasks 134-136)** |
+| `event_status` | string (optional) | Status: Scheduled, Cancelled, Postponed, Rescheduled, Updated Date and/or Time, Sold Out, On Sale |
+| `cancellation_paragraph` | string (optional) | Explanation for cancelled/postponed events |
+| `contact_organizer_toggle` | boolean (optional) | Show "Contact Organizer" button (default: false) |
+| `new_event_link` | string (optional) | UUID string of replacement event POI |
+| `rescheduled_from_event_id` | UUID (optional) | Original event this was rescheduled from |
+| **Primary Display Category (Task 137)** |
+| `primary_display_category` | string (optional) | Display category override (backend-only, no UI control) |
+| **Extended Organizer (Task 138)** |
+| `organizer_email` | string (optional) | Organizer contact email |
+| `organizer_phone` | string (optional) | Organizer contact phone |
+| `organizer_website` | string (optional) | Organizer website URL |
+| `organizer_social_media` | object (optional) | Organizer social media links |
+| `organizer_poi_id` | UUID (optional) | Links organizer to an existing POI |
+| **Cost & Ticketing (Task 139)** |
+| `cost_type` | string (optional) | Free, Paid, Donation-based, Varies |
+| `ticket_links` | list[object] (optional) | `[{"url": "...", "title": "..."}]` |
+| **Sponsors (Task 140)** |
+| `sponsors` | list[object] (optional) | `[{"name": "...", "url": "...", "level": "..."}]` |
+
+#### POST /api/pois/{poi_id}/reschedule
+
+Reschedule an event by cloning the POI and Event with new dates. The original event is marked as "Rescheduled" with a link to the new event.
+
+**Auth**: Admin/Editor required.
+
+Request:
+```json
+{
+  "new_start_datetime": "2026-04-15T18:00:00Z",
+  "new_end_datetime": "2026-04-15T22:00:00Z"
+}
+```
+
+Response (201): Full POI object for the newly created event.
+
+**Side effects:**
+- Original event's `event_status` set to "Rescheduled"
+- Original event's `new_event_link` set to the new event POI's UUID
+- New event's `rescheduled_from_event_id` set to the original POI's UUID
+- New event's `event_status` set to "Scheduled"
+
+**Date Change Guard (Task 157):** When updating an event, if the event status is "Updated Date and/or Time" and dates are being changed, the status must be set to "Rescheduled" — otherwise the update returns 400.
 
 ---
 
@@ -631,6 +674,37 @@ Response (201):
 
 Required: business_name, contact_name, contact_phone, contact_email, business_address. Optional: how_heard, anything_else.
 
+#### Event Suggestions
+
+| Method | Endpoint | Description | Rate Limit |
+|--------|----------|-------------|------------|
+| POST | `/api/event-suggestions` | Submit an event suggestion | 5/min |
+
+Request:
+```json
+{
+  "event_name": "Chatham County Fair",
+  "event_description": "Annual county fair with rides and food",
+  "event_date": "September 2026",
+  "event_location": "Pittsboro, NC",
+  "organizer_name": "Jane Doe",
+  "organizer_email": "jane@example.com",
+  "organizer_phone": "919-555-0100",
+  "additional_info": "Has been running for 20 years"
+}
+```
+
+Response (201):
+```json
+{
+  "id": "uuid",
+  "created_at": "2026-02-27T10:30:00Z",
+  "message": "Thank you for suggesting an event!"
+}
+```
+
+Required: event_name, organizer_email. All other fields optional. Sends ntfy.sh notification on submission.
+
 ---
 
 ## Authentication
@@ -695,6 +769,7 @@ Public form endpoints are rate-limited using `slowapi` with `get_remote_address`
 | `/api/contact` | 5/min | Spam prevention |
 | `/api/feedback` | 2/min | File upload resource protection |
 | `/api/business-claims` | 5/min | Spam prevention |
+| `/api/event-suggestions` | 5/min | Spam prevention |
 
 When rate limit is exceeded, returns HTTP 429:
 ```json

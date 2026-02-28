@@ -183,9 +183,35 @@ class Event(Base):
     vendor_requirements = Column(Text)
     vendor_poi_links = Column(JSONB)  # List of POI IDs for vendors at this event
 
+    # Event Status (Tasks 134-136)
+    event_status = Column(String(100), default='Scheduled')
+    cancellation_paragraph = Column(Text)
+    contact_organizer_toggle = Column(Boolean, default=False)
+    new_event_link = Column(String)  # UUID string of replacement event (not a FK)
+    rescheduled_from_event_id = Column(UUID, ForeignKey("events.poi_id"), nullable=True)
+
+    # Primary Display Category (Task 137)
+    primary_display_category = Column(String(100))
+
+    # Extended Organizer (Task 138)
+    organizer_email = Column(String)
+    organizer_phone = Column(String)
+    organizer_website = Column(String)
+    organizer_social_media = Column(JSONB)
+    organizer_poi_id = Column(UUID, ForeignKey("points_of_interest.id"), nullable=True)
+
+    # Cost & Ticketing (Task 139)
+    cost_type = Column(String(50))  # Free, Paid, Donation-based, Varies
+    ticket_links = Column(JSONB)    # [{"url": "...", "title": "..."}]
+
+    # Sponsors (Task 140)
+    sponsors = Column(JSONB)  # [{"name": "...", "url": "...", "level": "..."}]
+
     poi = relationship("PointOfInterest", back_populates="event", foreign_keys=[poi_id])
     venue_poi = relationship("PointOfInterest", foreign_keys=[venue_poi_id])
     parent_event = relationship("Event", remote_side=[poi_id], foreign_keys=[parent_event_id])
+    rescheduled_from_event = relationship("Event", remote_side=[poi_id], foreign_keys=[rescheduled_from_event_id])
+    organizer_poi = relationship("PointOfInterest", foreign_keys=[organizer_poi_id])
 ```
 
 ---
@@ -428,6 +454,7 @@ def unpublish_poi(db: Session, poi_id: UUID):
 | DELETE | `/api/pois/{id}` | Delete POI | Admin |
 | GET | `/api/pois/search` | Search POIs | Public |
 | GET | `/api/pois/{id}/venue-data` | Get venue data for event inheritance | Admin/Editor |
+| POST | `/api/pois/{id}/reschedule` | Clone event with new dates, mark original as Rescheduled | Admin/Editor |
 
 ---
 
@@ -515,6 +542,61 @@ Events support recurrence through a set of fields on the Event model that enable
 - **Child events** are individual instances linked via `parent_event_id`.
 - All events in a series share the same `series_id` for easy querying.
 - The `excluded_dates` array on the parent tracks cancelled individual occurrences.
+
+---
+
+## Event Status System (Tasks 134-136)
+
+Events have a 7-value status field that controls display and behavior:
+
+| Status | Description |
+|--------|-------------|
+| `Scheduled` | Default. Event is confirmed and upcoming |
+| `Cancelled` | Event is cancelled. Shows `cancellation_paragraph` if provided |
+| `Postponed` | Event is postponed. Shows `cancellation_paragraph` if provided |
+| `Rescheduled` | Event has been rescheduled. `new_event_link` points to the replacement event |
+| `Updated Date and/or Time` | Dates changed without full reschedule |
+| `Sold Out` | Event is sold out |
+| `On Sale` | Tickets are currently on sale |
+
+### Cancel/Postpone Behavior
+
+When an event is cancelled or postponed:
+- `cancellation_paragraph` (optional) provides an explanation displayed to users
+- `contact_organizer_toggle` (boolean) controls whether a "Contact Organizer" button appears
+
+### Reschedule Endpoint
+
+```
+POST /api/pois/{poi_id}/reschedule
+```
+
+Clones the POI and Event with new dates. The original event is automatically marked as "Rescheduled" with `new_event_link` pointing to the clone. The new event starts with status "Scheduled".
+
+### Date Change Guard (Task 157)
+
+When updating an event via PUT, if the event's current status is "Updated Date and/or Time" and dates are being changed, the request must also set `event_status` to "Rescheduled". Otherwise the update returns HTTP 400.
+
+---
+
+## Event Cost & Ticketing (Task 139)
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `cost_type` | String | Free, Paid, Donation-based, Varies |
+| `ticket_links` | JSONB | Array of `{"url": "...", "title": "..."}` objects |
+
+The `cost_type` field replaces the older `is_free` boolean approach with a richer classification. `ticket_links` supports multiple ticketing platforms per event.
+
+---
+
+## Event Sponsors (Task 140)
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `sponsors` | JSONB | Array of `{"name": "...", "url": "...", "level": "..."}` objects |
+
+Sponsors are stored as a flexible JSONB array. Each entry can have a name, URL, and sponsorship level.
 
 ---
 
