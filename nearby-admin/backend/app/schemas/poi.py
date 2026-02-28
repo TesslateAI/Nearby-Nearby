@@ -59,7 +59,7 @@ class PointGeometry(BaseModel):
         return v
 
 # Business Schemas
-LISTING_TYPES = Literal['free', 'paid', 'paid_founding', 'sponsor', 'community_comped']
+LISTING_TYPES = Literal['free', 'paid', 'sponsor_platform', 'sponsor_state', 'sponsor_county', 'sponsor_town', 'community_comped']
 PRICE_RANGES = Literal['$', '$$', '$$$', '$$$$']
 
 class BusinessBase(BaseModel):

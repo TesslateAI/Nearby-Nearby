@@ -44,8 +44,10 @@ export const CoreInformationSection = React.memo(function CoreInformationSection
           data={[
             { value: 'free', label: 'Free' },
             { value: 'paid', label: 'Paid' },
-            { value: 'paid_founding', label: 'Paid Founding' },
-            { value: 'sponsor', label: 'Sponsor' },
+            { value: 'sponsor_platform', label: 'Sponsor – Platform' },
+            { value: 'sponsor_state', label: 'Sponsor – State' },
+            { value: 'sponsor_county', label: 'Sponsor – County' },
+            { value: 'sponsor_town', label: 'Sponsor – Town' },
             { value: 'community_comped', label: 'Community Comped' }
           ]}
           {...form.getInputProps('listing_type')}

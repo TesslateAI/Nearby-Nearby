@@ -834,6 +834,8 @@ export function formatHolidayStatus(holiday) {
 - Upcoming holiday extraction with configurable lookahead
 - Formatted display strings for UI components
 
+**Python backend equivalent:** `shared/utils/hours_resolution.py` provides the same resolution logic server-side. The `GET /api/pois/{poi_id}/effective-hours?date=YYYY-MM-DD` endpoint exposes this via API.
+
 ---
 
 ## PWA Support
@@ -928,6 +930,12 @@ src/
   --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 ```
+
+---
+
+## Error Tracking (Sentry)
+
+The user-facing frontend initializes `@sentry/react` in `main.jsx` if `VITE_SENTRY_DSN` is set. An `ErrorBoundary` component at `components/ErrorBoundary.jsx` wraps the app to catch and report uncaught React errors. Hidden source maps are generated in production builds (`build.sourcemap: 'hidden'` in `vite.config.js`).
 
 ---
 

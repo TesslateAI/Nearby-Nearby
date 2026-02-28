@@ -124,6 +124,7 @@ Main POI table with all shared fields.
 | name | VARCHAR(255) | NOT NULL | POI name |
 | slug | VARCHAR(255) | UNIQUE | SEO-friendly URL slug |
 | publication_status | VARCHAR | DEFAULT 'draft' | draft or published |
+| listing_type | VARCHAR | DEFAULT 'free' | Listing tier: free, paid, sponsor_platform, sponsor_state, sponsor_county, sponsor_town, community_comped |
 | location | GEOMETRY(Point, 4326) | | PostGIS point |
 | **Address Fields** |
 | address_street | VARCHAR(255) | | Street address |
@@ -354,6 +355,7 @@ POI-to-POI relationships.
 Migrations:
 - `e5f6g7h8i9j0_add_venue_inheritance_and_recurring`
 - `f6g7h8i9j0k1_event_backend_tasks_134_149`
+- `g7h8i9j0k1l2_listing_type_changes_171_172` (data migration: paid_founding → paid, sponsor → sponsor_platform)
 
 ---
 

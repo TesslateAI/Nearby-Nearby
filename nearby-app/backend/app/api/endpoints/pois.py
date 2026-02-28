@@ -3,12 +3,14 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from typing import List, Optional
+from datetime import date as date_type
 import uuid
 from ... import schemas, crud, models
 from ...database import get_db
 from ...schemas.poi import PointGeometry
 from ...models.image import Image
 from ...search import multi_signal_search
+from shared.utils.hours_resolution import get_effective_hours_for_date
 
 router = APIRouter()
 
@@ -195,6 +197,30 @@ def api_get_nearby_pois(
         results.append(schemas.poi.POINearbyResult.model_validate(poi_dict))
 
     return results
+
+@router.get("/pois/{poi_id}/effective-hours")
+def api_get_effective_hours(
+    poi_id: uuid.UUID,
+    date: Optional[str] = Query(None, description="Date in YYYY-MM-DD format (defaults to today)"),
+    db: Session = Depends(get_db),
+):
+    """Get the effective hours for a POI on a specific date, applying override precedence."""
+    db_poi = crud.crud_poi.get_poi(db, poi_id=str(poi_id))
+    if db_poi is None:
+        raise HTTPException(status_code=404, detail="Point of Interest not found")
+
+    if date:
+        try:
+            target_date = date_type.fromisoformat(date)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD.")
+    else:
+        target_date = date_type.today()
+
+    hours_data = db_poi.hours
+    result = get_effective_hours_for_date(hours_data, target_date)
+    return result
+
 
 @router.get("/pois/{poi_id}/nearby", response_model=List[schemas.poi.POINearbyResult])
 def api_get_nearby_pois_by_id(

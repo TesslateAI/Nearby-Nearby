@@ -445,6 +445,7 @@ Query Parameters:
 | GET | `/api/pois/by-slug/{slug}` | Get POI by slug |
 | GET | `/api/pois/by-type/{type}` | List POIs by type |
 | GET | `/api/pois/by-category/{slug}` | List POIs in category |
+| GET | `/api/pois/{poi_id}/effective-hours` | Get resolved hours for a date |
 
 #### GET /api/pois/by-slug/{slug}
 
@@ -473,6 +474,31 @@ Response:
   }
 }
 ```
+
+#### GET /api/pois/{poi_id}/effective-hours
+
+Returns the resolved hours for a POI on a given date, applying the override precedence chain: Exceptions > Holidays > Seasonal > Regular.
+
+Query Parameters:
+- `date` (string, optional): Date in `YYYY-MM-DD` format. Defaults to today.
+
+Response:
+```json
+{
+  "hours": {
+    "open": "09:00",
+    "close": "17:00"
+  },
+  "source": "regular",
+  "label": null
+}
+```
+
+Possible `source` values: `exception`, `holiday`, `seasonal`, `regular`, `none`.
+
+When a holiday or exception applies, `label` contains the name (e.g., `"Christmas Day"`, `"Staff Meeting"`).
+
+Returns `404` if the POI does not exist. Returns `400` if the date format is invalid.
 
 ---
 

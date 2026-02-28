@@ -339,8 +339,10 @@ export const VENDOR_TYPES = [
 export const LISTING_TYPES = [
   { value: 'free', label: 'Free Listing' },
   { value: 'paid', label: 'Paid Listing' },
-  { value: 'paid_founding', label: 'Paid Founding Listing' },
-  { value: 'sponsor', label: 'Sponsor Listing' },
+  { value: 'sponsor_platform', label: 'Sponsor – Platform' },
+  { value: 'sponsor_state', label: 'Sponsor – State' },
+  { value: 'sponsor_county', label: 'Sponsor – County' },
+  { value: 'sponsor_town', label: 'Sponsor – Town' },
   { value: 'community_comped', label: 'Community-Comped' }
 ];
 
@@ -494,7 +496,7 @@ export const getStatusOptions = (poiType) => {
 
 // Helper function to determine which fields to show based on listing type
 export const getFieldsForListingType = (listingType, poiType) => {
-  const isPaid = ['paid', 'paid_founding', 'sponsor', 'community_comped'].includes(listingType);
+  const isPaid = ['paid', 'sponsor_platform', 'sponsor_state', 'sponsor_county', 'sponsor_town', 'community_comped'].includes(listingType);
   
   if (poiType === 'BUSINESS') {
     if (listingType === 'free') {

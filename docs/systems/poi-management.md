@@ -600,6 +600,72 @@ Sponsors are stored as a flexible JSONB array. Each entry can have a name, URL, 
 
 ---
 
+## Listing Types
+
+POIs support a `listing_type` field that controls feature visibility and restrictions:
+
+| Value | Label | Description |
+|-------|-------|-------------|
+| `free` | Free Listing | Default. Limited features (1 category for businesses) |
+| `paid` | Paid Listing | Full access to all features |
+| `sponsor_platform` | Sponsor – Platform | Platform-level sponsor |
+| `sponsor_state` | Sponsor – State | State-level sponsor |
+| `sponsor_county` | Sponsor – County | County-level sponsor |
+| `sponsor_town` | Sponsor – Town | Town-level sponsor |
+| `community_comped` | Community-Comped | Complimentary listing for community organizations |
+
+**Canonical source**: `shared/constants/field_options.py` `LISTING_TYPES`
+
+All sponsor-level and paid listing types unlock the same paid features (unlimited categories, teaser paragraphs, community connections, etc.).
+
+**Data Migration**: `g7h8i9j0k1l2_listing_type_changes_171_172` — converts legacy `paid_founding` → `paid` and `sponsor` → `sponsor_platform`.
+
+---
+
+## Hours Resolution Engine
+
+The platform includes a Python hours resolution engine at `shared/utils/hours_resolution.py` that determines effective hours for any POI on any given date. This is a port of the frontend JS engine in `nearby-app/app/src/utils/hoursUtils.js`.
+
+### Override Precedence
+
+```
+Exceptions (highest) > Holidays > Seasonal > Regular (lowest)
+```
+
+### API Endpoint
+
+```
+GET /api/pois/{poi_id}/effective-hours?date=YYYY-MM-DD
+```
+
+Returns:
+```json
+{
+  "hours": {"open": "09:00", "close": "17:00"},
+  "source": "regular",
+  "label": null
+}
+```
+
+### Supported Features
+
+- **Regular hours**: Per-day schedule (Sunday through Saturday)
+- **Seasonal hours**: Date ranges in MM-DD format with per-day overrides
+- **Holiday hours**: 20 US holidays including computed dates (Thanksgiving, Easter, Memorial Day, etc.)
+- **One-time exceptions**: Specific dates with modified hours or closure
+- **Recurring exceptions**: Nth-weekday-of-month patterns (e.g., "3rd Wednesday")
+
+### Key Files
+
+| File | Purpose |
+|------|---------|
+| `shared/utils/hours_resolution.py` | Python resolution engine (backend) |
+| `nearby-app/app/src/utils/hoursUtils.js` | JavaScript resolution engine (frontend) |
+| `nearby-app/app/src/components/common/HoursDisplay.jsx` | User-facing hours display |
+| `nearby-admin/frontend/src/components/HoursSelector.jsx` | Admin hours editor UI |
+
+---
+
 ## Primary Parking
 
 POIs support a **primary parking location** with dedicated fields, separate from the `parking_locations` JSONB array that stores additional parking areas.

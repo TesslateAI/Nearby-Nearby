@@ -7,6 +7,7 @@ export default defineConfig({
   build: {
     outDir: '../backend/static',
     emptyOutDir: true,
+    sourcemap: 'hidden',
   },
   server: {
     host: '0.0.0.0',

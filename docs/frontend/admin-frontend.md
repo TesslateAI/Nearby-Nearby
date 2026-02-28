@@ -794,6 +794,15 @@ The `initialValues.js` file has been extended with:
 | `EVENT_STATUS_OPTIONS` | `nearby-admin/frontend/src/utils/constants.js` | 7 event status values |
 | `EVENT_COST_TYPES` | `shared/constants/field_options.py` | Cost type options: Free, Paid, Donation-based, Varies |
 | `EVENT_DISCLAIMER` | `nearby-app/app/src/components/details/EventDetail.jsx` | Disclaimer text shown on event detail pages |
+| `LISTING_TYPES` | `nearby-admin/frontend/src/utils/constants.js` | 7 listing types: free, paid, sponsor_platform/state/county/town, community_comped |
+
+### Listing Type Dropdown
+
+The Core Information section (`CoreInformationSection.jsx`) renders a dropdown for `listing_type` with 7 values. The paid features guard in `usePOIForm.js` treats `paid`, all four `sponsor_*` levels, and `community_comped` as paid listings.
+
+### Error Tracking (Sentry)
+
+The admin frontend initializes `@sentry/react` in `main.jsx` if `VITE_SENTRY_DSN` is set. An `ErrorBoundary` component at `components/ErrorBoundary.jsx` wraps child components to catch and report errors. Hidden source maps are generated in production builds (`build.sourcemap: 'hidden'` in `vite.config.js`).
 
 ### ImageUploadField Updates
 

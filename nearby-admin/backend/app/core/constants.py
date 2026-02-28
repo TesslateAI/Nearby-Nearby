@@ -137,7 +137,9 @@ GENERAL_STATUS_OPTIONS = [
 LISTING_TYPE_OPTIONS = [
     "free",
     "paid",
-    "paid_founding",
-    "sponsor",
+    "sponsor_platform",
+    "sponsor_state",
+    "sponsor_county",
+    "sponsor_town",
     "community_comped"
 ]

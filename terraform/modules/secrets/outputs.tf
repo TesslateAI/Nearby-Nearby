@@ -9,3 +9,7 @@ output "forms_database_url_arn" {
 output "secret_key_arn" {
   value = aws_ssm_parameter.secret_key.arn
 }
+
+output "sentry_dsn_arn" {
+  value = aws_ssm_parameter.sentry_dsn.arn
+}

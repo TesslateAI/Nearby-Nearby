@@ -159,6 +159,7 @@ SSM Parameter Store (SecureString):
 | `/nearbynearby/prod/database-url` | Primary database connection string |
 | `/nearbynearby/prod/forms-database-url` | Forms-only database connection string |
 | `/nearbynearby/prod/secret-key` | JWT/session secret key |
+| `/nearbynearby/prod/sentry-dsn` | Sentry error tracking DSN (set to a valid `https://` DSN to enable; any other value disables Sentry) |
 
 Terraform creates the parameters with placeholder values and ignores subsequent value changes. Set real values via AWS CLI (see Initial Setup below).
 
@@ -246,6 +247,13 @@ aws ssm put-parameter \
 aws ssm put-parameter \
   --name "/nearbynearby/prod/secret-key" \
   --value "<32-char-secret>" \
+  --type SecureString \
+  --overwrite
+
+# Optional: Enable Sentry error tracking (set a valid https:// DSN)
+aws ssm put-parameter \
+  --name "/nearbynearby/prod/sentry-dsn" \
+  --value "https://<key>@<org>.ingest.sentry.io/<project>" \
   --type SecureString \
   --overwrite
 ```
@@ -361,6 +369,7 @@ GitHub Actions authenticates via OIDC federation -- no static AWS credentials ar
 | `DATABASE_URL` | SSM Parameter Store | Both |
 | `FORMS_DATABASE_URL` | SSM Parameter Store | nearby-app |
 | `SECRET_KEY` | SSM Parameter Store | Both |
+| `SENTRY_DSN` | SSM Parameter Store | Both |
 | `ENVIRONMENT` | Task definition | Both |
 | `PYTHONPATH` | Task definition | Both |
 | `AWS_S3_BUCKET` | Task definition | Both |
@@ -409,6 +418,28 @@ Returns 503 with `"status": "degraded"` if database connection fails.
 | nearby-admin | `/api/health` | 60s | 30s | 3 |
 
 The start period gives containers time to initialize before health checks begin. The app needs 120s because the ML embedding model (~1GB) takes time to load.
+
+---
+
+## Error Tracking (Sentry)
+
+Both backends and both frontends support Sentry error tracking.
+
+### Backend (Python)
+
+Both `nearby-app` and `nearby-admin` backends have `app/core/sentry.py` that calls `sentry_sdk.init()` if the `SENTRY_DSN` environment variable is a valid `https://` URL. Non-URL values like `"disabled"` are ignored.
+
+Integrations: `FastApiIntegration`, `SqlalchemyIntegration`. Traces sample rate: 10%.
+
+### Frontend (React)
+
+Both frontends initialize `@sentry/react` in `main.jsx` using `VITE_SENTRY_DSN`. An `ErrorBoundary` component wraps the app to catch and report uncaught React errors.
+
+### Infrastructure
+
+The `SENTRY_DSN` is stored in SSM Parameter Store (`/nearbynearby/prod/sentry-dsn`) and injected into both ECS task definitions as a secret. The Terraform default is `"disabled"` — set it to a real DSN via SSM to enable.
+
+For frontend DSN injection, set `VITE_SENTRY_DSN` as a build argument in the Docker build or CI/CD pipeline.
 
 ---
 

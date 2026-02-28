@@ -33,6 +33,9 @@ aiofiles
 boto3
 botocore
 
+# Error tracking
+sentry-sdk[fastapi]
+
 # Testing dependencies
 pytest
 httpx

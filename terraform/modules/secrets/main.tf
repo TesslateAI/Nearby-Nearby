@@ -30,3 +30,14 @@ resource "aws_ssm_parameter" "secret_key" {
 
   lifecycle { ignore_changes = [value] }
 }
+
+resource "aws_ssm_parameter" "sentry_dsn" {
+  name        = "/${var.project}/${var.environment}/sentry-dsn"
+  description = "Sentry DSN for error tracking"
+  type        = "SecureString"
+  value       = var.sentry_dsn
+
+  tags = { Name = "${var.project}-${var.environment}-sentry-dsn" }
+
+  lifecycle { ignore_changes = [value] }
+}

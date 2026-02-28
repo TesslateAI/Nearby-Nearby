@@ -3,7 +3,10 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
+from .core.sentry import init_sentry
 from .core.config import settings
+
+init_sentry()
 from .api.endpoints import (
     pois, waitlist, community_interest, contact, feedback, business_claims,
     event_suggestions,
