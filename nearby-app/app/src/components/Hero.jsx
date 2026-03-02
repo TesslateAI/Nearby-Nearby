@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import SearchBar from './SearchBar';
 import './Hero.css';
 
-export default function Hero() {
+export default function Hero({ children }) {
   const searchBarRef = useRef(null);
   const navigate = useNavigate();
 
@@ -23,8 +23,7 @@ export default function Hero() {
         <div className="wrapper_default text_align_center">
           <h1 className="page_title">What's Nearby</h1>
           <p className="page_excerpt text_color_white">
-            One Search shows local businesses, events, parks, trails and more.
-            All verified and based on what's actually nearby.
+            One Search shows local businesses, events, parks, trails and more. No Ads. No Clutter.
           </p>
         </div>
       </header>
@@ -56,6 +55,8 @@ export default function Hero() {
           <Link to="/terms-of-service" className="text_color_white">Terms of Service</Link>.
         </p>
       </div>
+
+      {children}
     </div>
   );
 }

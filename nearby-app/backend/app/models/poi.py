@@ -235,6 +235,7 @@ class Event(Base):
     vendor_poi_links = Column(JSONB)
     # Task 134-136: Event Status
     event_status = Column(String(100))
+    status_explanation = Column(String(80))
     cancellation_paragraph = Column(Text)
     contact_organizer_toggle = Column(Boolean)
     new_event_link = Column(String)

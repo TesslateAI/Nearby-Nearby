@@ -288,6 +288,22 @@ EVENT_STATUS_OPTIONS = [
     "Unofficial Proposed Date",
 ]
 
+EVENT_STATUS_HELPER_TEXT = {
+    "Scheduled": "Event is confirmed and happening as planned.",
+    "Canceled": "Event has been permanently canceled and will not be rescheduled.",
+    "Postponed": "Event is temporarily on hold. A new date has not been set yet.",
+    "Updated Date and/or Time": "The event date or time has changed from the original listing.",
+    "Rescheduled": "Event has been moved to a new confirmed date.",
+    "Moved Online": "Event has been moved from in-person to an online/virtual format.",
+    "Unofficial Proposed Date": "A date has been suggested but is not yet confirmed by the organizer.",
+}
+
+EVENT_STATUS_EXPLANATION_REQUIRED = [
+    "Updated Date and/or Time",
+    "Postponed",
+    "Moved Online",
+]
+
 EVENT_COST_TYPES = ["free", "single_price", "range"]
 
 IMAGE_FUNCTION_TAGS = [

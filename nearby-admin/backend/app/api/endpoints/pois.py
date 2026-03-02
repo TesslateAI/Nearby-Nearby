@@ -236,6 +236,28 @@ def get_venue_data_for_event(
     )
 
 
+@router.get("/event-statuses", summary="Get all event statuses with helper text and valid transitions")
+def get_event_statuses(
+    current_user=Depends(require_admin_or_editor())
+):
+    """Return all event statuses with helper text and valid transitions for admin UI."""
+    from shared.constants.field_options import EVENT_STATUS_OPTIONS, EVENT_STATUS_HELPER_TEXT
+    from shared.utils.event_status import EVENT_STATUS_TRANSITIONS
+
+    result = []
+    for status in EVENT_STATUS_OPTIONS:
+        transitions = list(EVENT_STATUS_TRANSITIONS.get(status, []))
+        # "Return to Scheduled" is always allowed (except from Scheduled itself)
+        if status != "Scheduled" and "Scheduled" not in transitions:
+            transitions.insert(0, "Scheduled")
+        result.append({
+            "status": status,
+            "helper_text": EVENT_STATUS_HELPER_TEXT.get(status, ""),
+            "valid_transitions": transitions,
+        })
+    return result
+
+
 # Task 136: Reschedule endpoint
 class RescheduleRequest(BaseModel):
     new_start_datetime: datetime

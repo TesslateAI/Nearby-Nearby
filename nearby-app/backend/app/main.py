@@ -9,7 +9,7 @@ from .core.config import settings
 init_sentry()
 from .api.endpoints import (
     pois, waitlist, community_interest, contact, feedback, business_claims,
-    event_suggestions,
+    event_suggestions, sitemap,
 )
 from .database import engine, get_db
 from sqlalchemy import text
@@ -146,6 +146,7 @@ app.include_router(contact.router, prefix="/api", tags=["Contact"])
 app.include_router(feedback.router, prefix="/api", tags=["Feedback"])
 app.include_router(business_claims.router, prefix="/api", tags=["Business Claims"])
 app.include_router(event_suggestions.router, prefix="/api", tags=["Event Suggestions"])
+app.include_router(sitemap.router, tags=["Sitemap"])
 
 # Static files configuration
 BASE_DIR = Path(__file__).resolve().parent.parent

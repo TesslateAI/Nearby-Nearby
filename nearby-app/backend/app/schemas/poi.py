@@ -118,6 +118,8 @@ class POISearchResult(BaseModel):
             return None
         if isinstance(v, dict):
             return v
+        if isinstance(v, PointGeometry):
+            return v
         try:
             return PointGeometry.from_wkb(v)
         except Exception:

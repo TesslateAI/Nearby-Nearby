@@ -45,7 +45,7 @@ export default function Navbar({ navOverlay, searchOverlay }) {
     <header id="header_primary_parent">
       <div id="logo1">
         <Link id="link_logo_primary1" to="/" aria-label="Nearby Nearby home">
-          <NNLogo />
+          <NNLogo className="navbar-logo-img" />
         </Link>
       </div>
 
@@ -61,7 +61,7 @@ export default function Navbar({ navOverlay, searchOverlay }) {
           <div id="navigation_primary1">
             <div id="logo2">
               <Link to="/" onClick={navOverlay.close} aria-label="Nearby Nearby home">
-                <NNLogo />
+                <NNLogo className="navbar-logo-img" />
               </Link>
             </div>
 
@@ -147,10 +147,7 @@ export default function Navbar({ navOverlay, searchOverlay }) {
           </div>
         </Overlay>
 
-        <div id="account_box">
-          <a href="/login" className="account_link">Login</a>
-          <a href="/signup" className="account_link account_link--signup">Sign Up</a>
-        </div>
+{/* Account box removed per user request */}
       </div>
 
     </header>
