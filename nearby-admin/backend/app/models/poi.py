@@ -388,6 +388,7 @@ class Event(Base):
 
     # Task 134-136: Event Status
     event_status = Column(String(100), default='Scheduled')
+    status_explanation = Column(String(80))
     cancellation_paragraph = Column(Text)
     contact_organizer_toggle = Column(Boolean, default=False)
     new_event_link = Column(String)  # Stores UUID string of the new event POI (not a FK for flexibility)
