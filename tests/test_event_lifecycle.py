@@ -420,7 +420,7 @@ class TestPastEventBehavior:
         assert "2025-01-01" in data["event"]["start_datetime"]
 
     def test_past_event_in_nearby_results(self, db_session, app_client):
-        """Past events still appear in backend nearby results (frontend filters them)."""
+        """Past events excluded by default, included with include_past_events flag."""
         biz = orm_create_business(
             db_session,
             name="Anchor Biz Past",
@@ -439,13 +439,22 @@ class TestPastEventBehavior:
         )
         db_session.commit()
 
+        # Default: past events are excluded
         resp = app_client.get(
             f"/api/pois/{str(biz.id)}/nearby",
             params={"radius_miles": "5"},
         )
         assert resp.status_code == 200
         names = [p["name"] for p in resp.json()]
-        # Backend does NOT filter past events — verify it's present
+        assert "Expired Festival" not in names
+
+        # With flag: past events are included
+        resp = app_client.get(
+            f"/api/pois/{str(biz.id)}/nearby",
+            params={"radius_miles": "5", "include_past_events": "true"},
+        )
+        assert resp.status_code == 200
+        names = [p["name"] for p in resp.json()]
         assert "Expired Festival" in names
 
     def test_past_event_searchable(self, db_session, app_client):
