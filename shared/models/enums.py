@@ -18,6 +18,16 @@ class POIType(enum.Enum):
     DISASTER_HUBS = "DISASTER_HUBS"
 
 
+class EventStatus(enum.Enum):
+    SCHEDULED = "Scheduled"
+    CANCELED = "Canceled"
+    POSTPONED = "Postponed"
+    UPDATED_DATE_TIME = "Updated Date and/or Time"
+    RESCHEDULED = "Rescheduled"
+    MOVED_ONLINE = "Moved Online"
+    UNOFFICIAL_PROPOSED = "Unofficial Proposed Date"
+
+
 class ImageType(enum.Enum):
     main = "main"
     gallery = "gallery"

@@ -10,6 +10,8 @@ from app import models, schemas
 from app.crud.crud_category import get_category
 from app.utils.html_sanitizer import sanitize_poi_fields
 from geoalchemy2.types import Geography
+from shared.constants.field_options import EVENT_STATUS_EXPLANATION_REQUIRED
+from shared.utils.event_status import validate_status_transition
 
 
 def generate_slug(name: str, city: str = None) -> str:
@@ -240,6 +242,22 @@ def create_poi(db: Session, poi: schemas.PointOfInterestCreate):
     elif poi.poi_type == 'EVENT' and poi.event:
         event_data = poi.event.model_dump()
         event_data = sanitize_poi_fields({'event': event_data}).get('event', {})
+        # Duplicate prevention: check same venue + date + name
+        venue_id = event_data.get('venue_poi_id')
+        start_dt = event_data.get('start_datetime')
+        if venue_id and start_dt:
+            existing = db.query(models.PointOfInterest).join(
+                models.Event, models.PointOfInterest.id == models.Event.poi_id
+            ).filter(
+                func.lower(models.PointOfInterest.name) == func.lower(poi_data.get('name', '')),
+                models.Event.venue_poi_id == venue_id,
+                models.Event.start_datetime == start_dt,
+            ).first()
+            if existing:
+                raise HTTPException(
+                    status_code=409,
+                    detail=f"Duplicate event: an event with the same name, venue, and start time already exists (ID: {existing.id})."
+                )
         db_poi.event = models.Event(**event_data)
 
     try:
@@ -330,6 +348,19 @@ def update_poi(db: Session, *, db_obj: models.PointOfInterest, obj_in: schemas.P
                 400,
                 "Changing event dates when status is 'Updated Date and/or Time' requires selecting 'Rescheduled' status first."
             )
+        # Validate status transition
+        if new_status and current_status and new_status != current_status:
+            valid, msg = validate_status_transition(current_status, new_status)
+            if not valid:
+                raise HTTPException(400, msg)
+        # Require status_explanation for certain status transitions
+        if new_status and new_status != current_status and new_status in EVENT_STATUS_EXPLANATION_REQUIRED:
+            explanation = event_data.get('status_explanation')
+            if not explanation:
+                raise HTTPException(
+                    400,
+                    f"status_explanation is required when setting event_status to '{new_status}'."
+                )
         if db_obj.event:
             for key, value in event_data.items():
                 setattr(db_obj.event, key, value)

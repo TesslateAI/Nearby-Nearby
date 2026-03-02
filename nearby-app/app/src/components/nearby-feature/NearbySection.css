@@ -1,207 +1,240 @@
-/* Nearby Section */
-.nearby-section {
-  max-width: 900px;
-  margin: 40px auto 0;
-  background: var(--nn-purple1);
-  border-radius: 12px;
+/* ==========================================================================
+   Nearby Section — matches nn-templates single-poi-page-01.html
+   ========================================================================== */
+
+/* ── Wrapper utility (from nn-templates) ───────────────────── */
+.nearby-section .wrapper_default {
+  margin: 0 auto;
+  padding: 0;
+  width: 84%;
+  max-width: 1400px;
+}
+
+.nearby-section .wrapper_wide {
+  margin: 0 auto;
+  padding: 0;
+  width: 90%;
+}
+@media (min-width: 768px) {
+  .nearby-section .wrapper_wide { width: 95%; }
+}
+
+/* ── Visually Hidden (screen-reader only) ──────────────────── */
+.visually_hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
   overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
-.nearby-section__header {
-  background: var(--nn-purple1);
-  padding: 24px 24px 16px;
-  text-align: center;
+/* ── Section container — #one_search_magic ─────────────────── */
+.nearby-section {
+  display: block;
+  width: 100%;
+  background-color: var(--nn-purple1);
+  padding: 35px 0;
 }
 
+/* ── Title — .one_search_title ─────────────────────────────── */
 .nearby-section__title {
   font-family: var(--font-poppins);
-  color: white;
-  font-size: 28px;
   font-weight: 800;
-  margin: 0 0 8px 0;
-  letter-spacing: 2px;
-}
-
-.nearby-section__count {
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 15px;
-  font-weight: 500;
-  margin: 0 0 16px 0;
+  letter-spacing: 1px;
+  text-transform: uppercase;
   text-align: center;
+  color: white;
+  font-size: 31px;
+  margin: 0;
+  padding: 0;
+  line-height: 1;
+}
+@media (min-width: 600px) { .nearby-section__title { font-size: 35px; } }
+@media (min-width: 700px) { .nearby-section__title { font-size: 37px; } }
+@media (min-width: 980px) { .nearby-section__title { font-size: 39px; } }
+
+/* ── Listing count — .one_search_listing_approx ────────────── */
+.nearby-section__count {
+  font-family: var(--font-poppins);
+  font-weight: 400;
+  text-align: center;
+  color: var(--nn-purple3);
+  font-size: 1.1em;
+  margin: 0;
 }
 
-/* Controls Section */
-.nearby-section__controls {
-  background: var(--nn-purple1);
-  padding: 16px 24px 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+/* ── Controls wrapper — .one_search_wrapper ────────────────── */
+.nearby-section__controls-wrapper {
+  padding: 15px 0 0 0;
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-gap: 15px;
+  justify-content: flex-start;
+  align-items: flex-start;
 }
 
-/* Search Bar Row */
-.nearby-controls__search {
-  width: 100%;
-}
-
-/* Controls Row - Radius, Date, Clear */
-.nearby-controls__row {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-/* Generic Dropdown Styles */
-.nearby-dropdown {
-  position: relative;
-  flex: 1;
-  min-width: 120px;
-}
-
-.nearby-dropdown__btn {
-  display: flex;
-  align-items: center;
+/* ── Search + controls area — .one_search_2 ────────────────── */
+.nearby-section__search-controls {
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-gap: 20px;
   justify-content: center;
-  gap: 8px;
+  align-items: center;
+}
+
+/* ── Search container — .search_container ──────────────────── */
+.nearby-search-container {
+  padding: 0;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 15px;
+  justify-content: center;
+  align-items: center;
   width: 100%;
-  padding: 12px 16px;
+  max-width: 800px;
+  font-family: var(--font-sans);
+}
+
+/* Override SearchBar styles to match nn-templates #one_search_inpage */
+.nearby-search-container .search-bar-input__icon {
+  left: 20px;
+  color: var(--nn-purple1);
+}
+
+.nearby-search-container .search-bar-input input {
+  padding: 17px 20px 17px 52px;
+  border: 1px solid var(--nn-gold);
+  font-size: 17px;
+  line-height: 1;
+  color: var(--nn-dark);
   background: white;
-  border: none;
-  border-radius: 10px;
-  font-family: var(--font-roboto);
+  border-radius: 3px;
+  -webkit-appearance: none;
+  appearance: none;
+  font-family: var(--font-sans);
+  box-shadow: none;
+  box-sizing: border-box;
+}
+
+.nearby-search-container .search-bar-input input::placeholder {
+  color: gray;
+  opacity: 1;
+}
+
+.nearby-search-container .search-bar-input input:focus {
+  outline: 2px solid gold;
+  outline-offset: 2px;
+  border-color: var(--nn-teal1);
+  box-shadow: none;
+}
+
+/* Gold Search button — .button.btn_search.btn_search_gold */
+.nearby-search-btn {
+  background-color: var(--nn-gold);
+  color: var(--nn-dark);
+  border-radius: 3px;
+  border: 0;
+  cursor: pointer;
+  display: inline-flex;
+  flex-wrap: nowrap;
+  justify-content: center;
+  align-items: center;
+  gap: 11px;
+  font-family: var(--font-poppins);
   font-size: 14px;
   font-weight: 600;
-  color: var(--nn-dark);
-  cursor: pointer;
-  transition: all 0.2s ease;
-  min-height: 48px; /* Large touch target */
+  letter-spacing: 0.1em;
+  line-height: 1;
+  padding: 17px 25px;
+  text-align: center;
+  text-transform: uppercase;
+  transition: 0.3s all ease-out;
+  white-space: nowrap;
 }
 
-.nearby-dropdown__btn:hover {
-  background: var(--gray-5);
+.nearby-search-btn:hover {
+  background-color: #e5b73d;
 }
 
-.nearby-dropdown__btn:focus-visible {
-  outline: 2px solid var(--nn-gold);
+.nearby-search-btn:focus {
+  outline: 2px solid yellow;
   outline-offset: 2px;
 }
 
-.nearby-dropdown__btn--active {
-  background: var(--nn-gold);
-  color: var(--nn-dark);
-}
-
-.nearby-dropdown__select {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  opacity: 0;
-  cursor: pointer;
-}
-
-/* Date Dropdown Menu */
-.nearby-dropdown__menu {
-  position: absolute;
-  top: calc(100% + 8px);
-  left: 0;
-  right: 0;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-  z-index: 100;
-  overflow: hidden;
-  animation: dropdownFadeIn 0.15s ease;
-}
-
-@keyframes dropdownFadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(-8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.nearby-dropdown__option {
-  display: block;
-  width: 100%;
-  padding: 14px 16px;
-  background: none;
-  border: none;
-  text-align: left;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--nn-dark);
-  cursor: pointer;
-  transition: background 0.15s ease;
-}
-
-.nearby-dropdown__option:hover {
-  background: var(--gray-5);
-}
-
-.nearby-dropdown__option--active {
-  background: rgba(86, 37, 86, 0.1);
-  color: var(--nn-purple1);
-  font-weight: 600;
-}
-
-.nearby-dropdown__divider {
-  height: 1px;
-  background: var(--gray-d);
-  margin: 4px 0;
-}
-
-.nearby-dropdown__date-label {
+/* ── Controls row — .one_search_controls ───────────────────── */
+.nearby-controls__row {
   display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   align-items: center;
-  justify-content: space-between;
-  padding: 12px 16px;
-  cursor: pointer;
+  gap: 15px;
+  color: white;
+}
+
+/* ── Control group — .one_search_group ─────────────────────── */
+.nearby-controls__group {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  align-items: center;
+}
+
+/* ── Native select/date — #radius_select, #date_filter ─────── */
+.nearby-dropdown__select {
+  padding: 15px 30px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  font-family: var(--font-poppins);
   font-size: 14px;
   font-weight: 500;
-  color: var(--nn-dark);
-}
-
-.nearby-dropdown__date-label:hover {
-  background: var(--gray-5);
-}
-
-.nearby-dropdown__date-input {
-  font-family: var(--font-roboto);
-  padding: 6px 10px;
-  border: 1px solid var(--gray-d);
-  border-radius: 6px;
-  font-size: 13px;
   cursor: pointer;
+  min-height: 44px;
 }
 
-/* Clear Button */
+.nearby-dropdown__select option {
+  background: var(--nn-purple1);
+  color: white;
+}
+
+input[type="date"].nearby-dropdown__select {
+  padding: 12px 30px;
+}
+
+input[type="date"].nearby-dropdown__select::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+}
+
+/* ── Clear button — .btn_clear ─────────────────────────────── */
 .nearby-clear-btn {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  padding: 12px 20px;
-  background: rgba(255, 255, 255, 0.15);
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-radius: 10px;
+  gap: 11px;
+  padding: 19px 25px;
+  background-color: transparent;
+  border: 1px solid white;
+  border-radius: 3px;
+  font-family: var(--font-poppins);
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  line-height: 1;
   color: white;
   cursor: pointer;
   transition: all 0.2s ease;
-  min-height: 48px;
+  text-transform: uppercase;
   white-space: nowrap;
 }
 
 .nearby-clear-btn:hover {
-  background: rgba(255, 255, 255, 0.25);
-  border-color: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.15);
 }
 
 .nearby-clear-btn:focus-visible {
@@ -209,62 +242,44 @@
   outline-offset: 2px;
 }
 
-/* Map Legend */
-.nearby-map-legend {
-  background: white;
-  padding: 12px 24px;
-  display: flex;
-  gap: 24px;
-  justify-content: center;
-  align-items: center;
-  border-bottom: 1px solid var(--gray-d);
-}
-
-.nearby-map-legend__item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.nearby-map-legend__marker {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-}
-
-.nearby-map-legend__marker--current {
-  width: 20px;
-  height: 20px;
-  background: var(--nn-gold);
-  border: 2px solid white;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-}
-
-.nearby-map-legend__marker--nearby {
-  width: 24px;
-  height: 24px;
-  background: var(--nn-purple1);
-  border: 2px solid white;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+/* ── Add Location link — .add_location_link ────────────────── */
+.nearby-add-location-link {
   color: white;
-  font-size: 11px;
-  font-weight: 700;
+  text-align: center;
+  padding: 15px 0;
+  margin-left: 15px;
+  text-decoration: none;
+  font-family: var(--font-poppins);
+  font-size: 14px;
 }
 
-.nearby-map-legend__label {
-  font-size: 13px;
-  color: var(--nn-gray);
-  font-weight: 500;
+.nearby-add-location-link:hover {
+  text-decoration: underline;
 }
 
-/* Nearby Results */
+/* ==========================================================================
+   Map Marker Detail Title — nn-templates .map_marker_detail_title
+   ========================================================================== */
+.map_marker_detail_title {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 11px;
+  text-align: center;
+  font-family: var(--font-poppins);
+  color: var(--nn-purple1);
+  padding: 0 5%;
+}
+
+/* ==========================================================================
+   Results Grid — #one_search_map_results + .one_search_map_results_group
+   ========================================================================== */
 .nearby-results {
-  background: var(--light-yellow1);
-  padding: 32px 24px;
+  padding: 75px 0 25px 0;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 24px;
+  grid-template-columns: 1fr;
+  gap: 55px;
 }
 
 .nearby-results__loading,
@@ -276,9 +291,10 @@
   font-size: 16px;
 }
 
-/* Pagination */
+/* ==========================================================================
+   Pagination
+   ========================================================================== */
 .nearby-pagination {
-  background: var(--light-yellow1);
   padding: 0 24px 32px 24px;
   display: flex;
   justify-content: center;
@@ -319,7 +335,9 @@
   border-color: var(--nn-purple1);
 }
 
-/* Directions Modal */
+/* ==========================================================================
+   Directions Modal
+   ========================================================================== */
 .directions-modal-overlay {
   position: fixed;
   top: 0;
@@ -443,87 +461,77 @@
   min-height: 48px;
 }
 
-.directions-modal__btn--google {
-  background: #4285f4;
+.directions-modal__btn--google { background: #4285f4; }
+.directions-modal__btn--google:hover { background: #3367d6; }
+.directions-modal__btn--apple { background: var(--nn-dark); }
+.directions-modal__btn--apple:hover { background: var(--nn-slate); }
+.directions-modal__btn--waze { background: #33ccff; }
+.directions-modal__btn--waze:hover { background: #00b8f0; }
+
+/* ==========================================================================
+   RESPONSIVE — Title scaling (matches nn-templates exactly)
+   ========================================================================== */
+@media (min-width: 600px) {
+  .nearby-section__title { font-size: 35px; }
+  .nearby-search-container .search-bar-input input { font-size: 18px; }
+  .nearby-results {
+    grid-column-gap: 35px;
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
-.directions-modal__btn--google:hover {
-  background: #3367d6;
+@media (min-width: 700px) {
+  .nearby-section__title { font-size: 37px; }
+  .nearby-search-container .search-bar-input input { font-size: 19px; }
+  .nearby-search-btn { padding: 23px 30px; }
+  .nearby-results {
+    grid-template-columns: repeat(3, 1fr);
+  }
 }
 
-.directions-modal__btn--apple {
-  background: var(--nn-dark);
+@media (min-width: 980px) {
+  .nearby-section__title { font-size: 39px; }
+  .nearby-search-container {
+    display: flex;
+  }
 }
 
-.directions-modal__btn--apple:hover {
-  background: var(--nn-slate);
+@media (min-width: 1200px) {
+  .nearby-search-btn { padding: 23px 30px; }
 }
 
-.directions-modal__btn--waze {
-  background: #33ccff;
+@media (min-width: 1600px) {
+  .nearby-results {
+    grid-template-columns: repeat(4, 1fr);
+  }
+  .nearby-search-btn { font-size: 15px; }
 }
 
-.directions-modal__btn--waze:hover {
-  background: #00b8f0;
-}
-
-/* ============================================
-   MOBILE STYLES - 768px and below
-   ============================================ */
+/* ==========================================================================
+   MOBILE — 768px and below
+   ========================================================================== */
 @media (max-width: 768px) {
   .nearby-section {
-    margin: 0;
-    border-radius: 0;
-  }
-
-  .nearby-section__header {
-    padding: 20px 16px 12px;
-  }
-
-  .nearby-section__title {
-    font-size: 24px;
-  }
-
-  .nearby-section__controls {
-    padding: 12px 16px 20px;
-    gap: 10px;
+    padding: 25px 0;
   }
 
   .nearby-controls__row {
     gap: 8px;
   }
 
-  .nearby-dropdown {
-    min-width: 0;
-  }
-
-  .nearby-dropdown__btn {
-    padding: 10px 12px;
-    font-size: 13px;
-    gap: 6px;
-  }
-
-  .nearby-dropdown__menu {
-    min-width: 200px;
-  }
-
   .nearby-clear-btn {
-    padding: 10px 16px;
+    padding: 12px 18px;
     font-size: 13px;
+  }
+
+  .nearby-add-location-link {
+    margin-left: 0;
   }
 
   .nearby-results {
     grid-template-columns: 1fr;
     padding: 20px 16px;
     gap: 16px;
-  }
-
-  .nearby-map-legend {
-    flex-direction: row;
-    gap: 16px;
-    padding: 12px 16px;
-    flex-wrap: wrap;
-    justify-content: center;
   }
 
   .nearby-pagination {
@@ -537,54 +545,25 @@
   }
 }
 
-/* ============================================
-   SMALL MOBILE - 480px and below
-   ============================================ */
+/* ==========================================================================
+   SMALL MOBILE — 480px and below
+   ========================================================================== */
 @media (max-width: 480px) {
-  .nearby-section__header {
-    padding: 16px 12px 10px;
-  }
-
   .nearby-section__title {
-    font-size: 20px;
-    letter-spacing: 1px;
+    font-size: 24px;
   }
 
   .nearby-section__count {
     font-size: 13px;
   }
 
-  .nearby-section__controls {
-    padding: 10px 12px 16px;
-    gap: 8px;
-  }
-
   .nearby-controls__row {
     gap: 6px;
   }
 
-  .nearby-dropdown__btn {
-    padding: 10px;
-    font-size: 12px;
-    min-height: 44px;
-  }
-
-  .nearby-dropdown__btn span {
-    display: none; /* Hide text on very small screens */
-  }
-
-  .nearby-dropdown__btn svg:first-child {
-    width: 18px;
-    height: 18px;
-  }
-
   .nearby-clear-btn {
-    padding: 10px 12px;
+    padding: 10px 14px;
     font-size: 12px;
-  }
-
-  .nearby-clear-btn span {
-    display: none; /* Hide "Clear" text */
   }
 
   .nearby-results {
@@ -616,16 +595,12 @@
   }
 }
 
-/* ============================================
-   VERY SMALL MOBILE - 360px and below
-   ============================================ */
+/* ==========================================================================
+   VERY SMALL MOBILE — 360px and below
+   ========================================================================== */
 @media (max-width: 360px) {
-  .nearby-dropdown__btn {
-    padding: 8px;
-  }
-
   .nearby-clear-btn {
-    padding: 8px 10px;
+    padding: 8px 12px;
   }
 
   .nearby-pagination__btn,

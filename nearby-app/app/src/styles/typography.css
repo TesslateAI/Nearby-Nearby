@@ -2,33 +2,77 @@
    Typography — ported from nn-templates/inc/stylez.scss
    ========================================================================== */
 
-/* ── Headings ──────────────────────────────────────────────────── */
+/* ── Headings (base reset) ────────────────────────────────────── */
 h1, h2, h3, h4, h5, h6 {
+  margin: 0;
+  padding: 0;
+  line-height: 1;
+  font-size: 18px;
+  font-weight: bold;
+  color: var(--nn-dark);
   font-family: var(--font-poppins);
-  color: var(--color-heading);
-  line-height: 1.2;
-  margin: 0 0 15px;
 }
 
-h1 { font-size: 2em;   font-weight: 700; }
-h2 { font-size: 1.6em; font-weight: 600; }
-h3 { font-size: 1.35em; font-weight: 600; }
-h4 { font-size: 1.15em; font-weight: 600; }
-h5 { font-size: 1em;   font-weight: 600; }
-h6 { font-size: 0.9em; font-weight: 600; }
+/* ── h1 ───────────────────────────────────────────────────────── */
+h1 {
+  font-size: 36px;
+  padding: 0 0 10px 0;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+@media (min-width: 700px)  { h1 { font-size: 42px; padding: 0 0 12px 0; } }
+@media (min-width: 980px)  { h1 { font-size: 54px; padding: 0 0 15px 0; } }
+@media (min-width: 1200px) { h1 { font-size: 64px; } }
+@media (min-width: 1600px) { h1 { font-size: 74px; padding-bottom: 20px; } }
+@media (min-width: 1900px) { h1 { font-size: 84px; } }
+@media (min-width: 2400px) { h1 { font-size: 94px; } }
 
-@media (min-width: 600px) {
-  h1 { font-size: 2.2em; }
-  h2 { font-size: 1.8em; }
+/* ── h2 ───────────────────────────────────────────────────────── */
+h2 {
+  font-size: 30px;
+  padding: 20px 0 10px 0;
+  font-weight: 700;
+  letter-spacing: -0.01em;
 }
-@media (min-width: 980px) {
-  h1 { font-size: 2.6em; }
-  h2 { font-size: 2em; }
-  h3 { font-size: 1.5em; }
+@media (min-width: 600px)  { h2 { font-size: 35px; padding: 25px 0 12px 0; } }
+@media (min-width: 700px)  { h2 { font-size: 41px; padding: 25px 0 12px 0; } }
+@media (min-width: 980px)  { h2 { font-size: 47px; padding: 30px 0 15px 0; } }
+@media (min-width: 1200px) { h2 { font-size: 53px; } }
+@media (min-width: 1600px) { h2 { font-size: 60px; padding-bottom: 20px; } }
+@media (min-width: 1900px) { h2 { font-size: 67px; } }
+@media (min-width: 2400px) { h2 { font-size: 73px; } }
+
+/* ── h3 ───────────────────────────────────────────────────────── */
+h3 {
+  font-size: 25px;
+  padding: 20px 0 10px 0;
+  font-weight: 700;
+  letter-spacing: -0.01em;
 }
-@media (min-width: 1400px) {
-  h1 { font-size: 2.8em; }
+@media (min-width: 600px)  { h3 { font-size: 29px; padding: 25px 0 12px 0; } }
+@media (min-width: 700px)  { h3 { font-size: 34px; padding: 25px 0 12px 0; } }
+@media (min-width: 980px)  { h3 { font-size: 39px; padding: 30px 0 15px 0; } }
+@media (min-width: 1200px) { h3 { font-size: 44px; } }
+@media (min-width: 1600px) { h3 { font-size: 49px; padding-bottom: 20px; } }
+@media (min-width: 1900px) { h3 { font-size: 53px; } }
+@media (min-width: 2400px) { h3 { font-size: 59px; } }
+
+/* ── h4 ───────────────────────────────────────────────────────── */
+h4 {
+  font-size: 25px;
+  padding: 25px 0 10px 0;
+  font-weight: 700;
+  letter-spacing: -0.01em;
 }
+@media (min-width: 700px)  { h4 { font-size: 27px; padding: 30px 0 12px 0; } }
+@media (min-width: 980px)  { h4 { font-size: 29px; padding: 35px 0 15px 0; } }
+@media (min-width: 1200px) { h4 { font-size: 31px; padding: 40px 0 15px 0; } }
+@media (min-width: 1600px) { h4 { font-size: 33px; } }
+@media (min-width: 1900px) { h4 { font-size: 38px; } }
+
+/* ── h5, h6 ───────────────────────────────────────────────────── */
+h5 { font-size: 18px; font-weight: 600; }
+h6 { font-size: 16px; font-weight: 600; }
 
 /* ── Paragraphs ────────────────────────────────────────────────── */
 p {

@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from typing import List, Optional
-from datetime import date as date_type
+from datetime import date as date_type, datetime, timezone
 import uuid
 from ... import schemas, crud, models
 from ...database import get_db
@@ -13,6 +13,43 @@ from ...search import multi_signal_search
 from shared.utils.hours_resolution import get_effective_hours_for_date
 
 router = APIRouter()
+
+# Statuses that are excluded from browse/search results
+_EXCLUDED_EVENT_STATUSES = ("Canceled", "Rescheduled")
+
+
+def _exclude_past_and_cancelled_events(pois, include_past=False, include_cancelled=False):
+    """Filter a list of POI objects to exclude past and cancelled/rescheduled events.
+
+    Non-event POIs always pass through.
+    """
+    now = datetime.now(timezone.utc)
+    result = []
+    for poi in pois:
+        poi_type = poi.poi_type.value if hasattr(poi.poi_type, 'value') else poi.poi_type
+        if poi_type != "EVENT":
+            result.append(poi)
+            continue
+
+        event = getattr(poi, 'event', None)
+        if event is None:
+            result.append(poi)
+            continue
+
+        # Check cancelled/rescheduled
+        if not include_cancelled and getattr(event, 'event_status', None) in _EXCLUDED_EVENT_STATUSES:
+            continue
+
+        # Check past
+        if not include_past:
+            end = getattr(event, 'end_datetime', None)
+            start = getattr(event, 'start_datetime', None)
+            ref_dt = end if end else start
+            if ref_dt and ref_dt < now:
+                continue
+
+        result.append(poi)
+    return result
 
 
 def get_poi_images(db: Session, poi_id: uuid.UUID) -> List[dict]:
@@ -50,16 +87,66 @@ def get_poi_images(db: Session, poi_id: uuid.UUID) -> List[dict]:
 
     return result
 
+
+def _apply_event_search_filters(pois, date_from=None, date_to=None, event_status_filter=None):
+    """Post-filter search results by event-specific date and status params."""
+    if not date_from and not date_to and not event_status_filter:
+        return pois
+
+    dt_from = None
+    dt_to = None
+    if date_from:
+        try:
+            dt_from = datetime.strptime(date_from, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+        except ValueError:
+            pass
+    if date_to:
+        try:
+            dt_to = datetime.strptime(date_to, "%Y-%m-%d").replace(
+                hour=23, minute=59, second=59, tzinfo=timezone.utc
+            )
+        except ValueError:
+            pass
+
+    result = []
+    for poi in pois:
+        poi_type = poi.poi_type.value if hasattr(poi.poi_type, 'value') else poi.poi_type
+        if poi_type != "EVENT":
+            result.append(poi)
+            continue
+
+        event = getattr(poi, 'event', None)
+        if not event:
+            result.append(poi)
+            continue
+
+        start = getattr(event, 'start_datetime', None)
+
+        if dt_from and start and start < dt_from:
+            continue
+        if dt_to and start and start > dt_to:
+            continue
+        if event_status_filter and getattr(event, 'event_status', None) != event_status_filter:
+            continue
+
+        result.append(poi)
+    return result
+
+
 @router.get("/pois/search", response_model=List[schemas.poi.POISearchResult])
 def api_search_pois(
     request: Request,
     q: str = Query(..., min_length=1),
     poi_type: Optional[str] = Query(None, description="Filter by POI type (BUSINESS, PARK, TRAIL, EVENT)"),
+    date_from: Optional[str] = Query(None, description="Filter events starting after (YYYY-MM-DD)"),
+    date_to: Optional[str] = Query(None, description="Filter events starting before (YYYY-MM-DD)"),
+    event_status: Optional[str] = Query(None, description="Filter by event status"),
     db: Session = Depends(get_db),
 ):
     """Keyword + multi-signal search for POIs."""
     embedding_model = getattr(request.app.state, 'embedding_model', None)
-    return multi_signal_search(db, query=q, limit=10, poi_type=poi_type, model=embedding_model)
+    results = multi_signal_search(db, query=q, limit=10, poi_type=poi_type, model=embedding_model)
+    return _apply_event_search_filters(results, date_from, date_to, event_status)
 
 @router.get("/pois/semantic-search", response_model=List[schemas.poi.POISearchResult])
 def api_semantic_search_pois(
@@ -67,11 +154,15 @@ def api_semantic_search_pois(
     q: str = Query(..., min_length=1, description="Natural language search query"),
     limit: int = Query(10, ge=1, le=50, description="Number of results to return"),
     poi_type: Optional[str] = Query(None, description="Filter by POI type"),
+    date_from: Optional[str] = Query(None, description="Filter events starting after (YYYY-MM-DD)"),
+    date_to: Optional[str] = Query(None, description="Filter events starting before (YYYY-MM-DD)"),
+    event_status: Optional[str] = Query(None, description="Filter by event status"),
     db: Session = Depends(get_db),
 ):
     """Semantic search — now routed through the multi-signal engine."""
     embedding_model = getattr(request.app.state, 'embedding_model', None)
-    return multi_signal_search(db, query=q, limit=limit, poi_type=poi_type, model=embedding_model)
+    results = multi_signal_search(db, query=q, limit=limit, poi_type=poi_type, model=embedding_model)
+    return _apply_event_search_filters(results, date_from, date_to, event_status)
 
 @router.get("/pois/hybrid-search", response_model=List[schemas.poi.POISearchResult])
 def api_hybrid_search_pois(
@@ -79,6 +170,9 @@ def api_hybrid_search_pois(
     q: str = Query(..., min_length=1, description="Search query"),
     limit: int = Query(10, ge=1, le=50, description="Number of results to return"),
     poi_type: Optional[str] = Query(None, description="Filter by POI type (BUSINESS, PARK, TRAIL, EVENT)"),
+    date_from: Optional[str] = Query(None, description="Filter events starting after (YYYY-MM-DD)"),
+    date_to: Optional[str] = Query(None, description="Filter events starting before (YYYY-MM-DD)"),
+    event_status: Optional[str] = Query(None, description="Filter by event status"),
     db: Session = Depends(get_db),
 ):
     """
@@ -86,7 +180,53 @@ def api_hybrid_search_pois(
     semantic, and structured filter signals.
     """
     embedding_model = getattr(request.app.state, 'embedding_model', None)
-    return multi_signal_search(db, query=q, limit=limit, poi_type=poi_type, model=embedding_model)
+    results = multi_signal_search(db, query=q, limit=limit, poi_type=poi_type, model=embedding_model)
+    return _apply_event_search_filters(results, date_from, date_to, event_status)
+
+def _apply_venue_inheritance(db: Session, poi_dict: dict, event) -> dict:
+    """If event has venue_poi_id, resolve venue inheritance and merge into poi_dict."""
+    if not event or not getattr(event, 'venue_poi_id', None):
+        return poi_dict
+
+    venue_poi = crud.crud_poi.get_poi(db, poi_id=str(event.venue_poi_id))
+    if not venue_poi:
+        return poi_dict
+
+    from shared.utils.venue_inheritance import resolve_venue_inheritance
+
+    venue_data = {
+        column.name: getattr(venue_poi, column.name)
+        for column in venue_poi.__table__.columns
+    }
+    event_data = {
+        column.name: getattr(poi_dict, column.name)
+        if hasattr(poi_dict, column.name)
+        else poi_dict.get(column.name)
+        for column in venue_poi.__table__.columns
+    }
+
+    # Build a simpler dict from poi_dict for the fields we care about
+    inheritable_fields = [
+        "parking_types", "parking_locations", "parking_notes", "expect_to_pay_parking",
+        "public_transit_info", "public_toilets", "toilet_locations", "toilet_description",
+        "wheelchair_accessible", "wheelchair_details", "hours", "amenities",
+        "pet_options", "pet_policy", "drone_usage", "drone_policy",
+    ]
+    event_fields = {f: poi_dict.get(f) for f in inheritable_fields}
+    venue_fields = {f: getattr(venue_poi, f, None) for f in inheritable_fields}
+
+    config = getattr(event, 'venue_inheritance', None)
+    resolved = resolve_venue_inheritance(event_fields, venue_fields, config)
+
+    # Merge resolved fields back into poi_dict
+    for field in inheritable_fields:
+        if field in resolved:
+            poi_dict[field] = resolved[field]
+    if "_venue_source" in resolved:
+        poi_dict["_venue_source"] = resolved["_venue_source"]
+
+    return poi_dict
+
 
 @router.get("/pois/{poi_id}", response_model=schemas.poi.POIDetail)
 def api_get_poi(poi_id: uuid.UUID, db: Session = Depends(get_db)):
@@ -113,6 +253,9 @@ def api_get_poi(poi_id: uuid.UUID, db: Session = Depends(get_db)):
     poi_dict['trail'] = db_poi.trail
     poi_dict['event'] = db_poi.event
     poi_dict['categories'] = db_poi.categories
+
+    # Apply venue inheritance for events
+    poi_dict = _apply_venue_inheritance(db, poi_dict, db_poi.event)
 
     # Add images from images table (S3 URLs)
     poi_dict['images'] = get_poi_images(db, poi_id)
@@ -153,6 +296,9 @@ def api_get_poi_by_slug(slug: str, db: Session = Depends(get_db)):
     poi_dict['event'] = db_poi.event
     poi_dict['categories'] = db_poi.categories
 
+    # Apply venue inheritance for events
+    poi_dict = _apply_venue_inheritance(db, poi_dict, db_poi.event)
+
     # Add images from images table (S3 URLs)
     poi_dict['images'] = get_poi_images(db, db_poi.id)
 
@@ -162,26 +308,38 @@ def api_get_poi_by_slug(slug: str, db: Session = Depends(get_db)):
 def api_get_nearby_pois(
     latitude: float = Query(..., ge=-90, le=90),
     longitude: float = Query(..., ge=-180, le=180),
-    db: Session = Depends(get_db)
+    include_past_events: bool = Query(False, description="Include past events in results"),
+    db: Session = Depends(get_db),
 ):
     from sqlalchemy import literal_column
+    from sqlalchemy.orm import joinedload
 
     # Use geography type for accurate distance in meters
     distance_expr = literal_column(
         f"ST_Distance(location::geography, ST_MakePoint({longitude}, {latitude})::geography)"
     )
 
-    # Find the 8 nearest published POIs
+    # Find the 8 nearest published POIs (fetch more to account for filtering)
     nearby_pois_with_distance = db.query(
         models.poi.PointOfInterest,
         distance_expr.label('distance_meters')
+    ).options(
+        joinedload(models.poi.PointOfInterest.event)
     ).filter(
         models.poi.PointOfInterest.publication_status == 'published'
-    ).order_by('distance_meters').limit(8).all()
+    ).order_by('distance_meters').limit(20).all()
+
+    # Filter past/cancelled events, then limit to 8
+    filtered_pairs = []
+    for poi, distance in nearby_pois_with_distance:
+        filtered = _exclude_past_and_cancelled_events([poi], include_past=include_past_events)
+        if filtered:
+            filtered_pairs.append((poi, distance))
+    filtered_pairs = filtered_pairs[:8]
 
     # Format results with distance
     results = []
-    for poi, distance in nearby_pois_with_distance:
+    for poi, distance in filtered_pairs:
         poi_dict = {
             'id': poi.id,
             'name': poi.name,
@@ -226,9 +384,11 @@ def api_get_effective_hours(
 def api_get_nearby_pois_by_id(
     poi_id: uuid.UUID,
     radius_miles: float = Query(5.0, description="Search radius in miles"),
-    db: Session = Depends(get_db)
+    include_past_events: bool = Query(False, description="Include past events in results"),
+    db: Session = Depends(get_db),
 ):
     nearby_pois = crud.crud_poi.get_nearby_pois(db, poi_id=str(poi_id), radius_miles=radius_miles)
+    nearby_pois = _exclude_past_and_cancelled_events(nearby_pois, include_past=include_past_events)
 
     # Convert location data for each POI
     results = []
@@ -243,12 +403,15 @@ def api_get_nearby_pois_by_id(
                     'slug': cat.slug
                 })
 
+        # Convert WKB location to PointGeometry
+        location_geo = PointGeometry.from_wkb(poi.location) if poi.location is not None else None
+
         poi_dict = {
             'id': poi.id,
             'name': poi.name,
             'address_city': poi.address_city,
             'distance_meters': poi.distance_meters,
-            'location': PointGeometry.from_wkb(poi.location) if poi.location else None,
+            'location': location_geo,
             'poi_type': poi.poi_type.value if hasattr(poi.poi_type, 'value') else poi.poi_type,
             'hours': poi.hours,
             'wheelchair_accessible': poi.wheelchair_accessible,
@@ -292,7 +455,11 @@ def api_get_categories(db: Session = Depends(get_db)):
     return result
 
 @router.get("/pois/by-category/{category_slug}")
-def api_get_pois_by_category(category_slug: str, db: Session = Depends(get_db)):
+def api_get_pois_by_category(
+    category_slug: str,
+    include_past_events: bool = Query(False, description="Include past events in results"),
+    db: Session = Depends(get_db),
+):
     """Get all POIs for a specific category"""
     # Find the category by slug
     category = db.query(models.poi.Category).filter(
@@ -304,12 +471,18 @@ def api_get_pois_by_category(category_slug: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Category not found")
 
     # Get all published POIs for this category
-    pois = db.query(models.poi.PointOfInterest).join(
+    from sqlalchemy.orm import joinedload
+    pois = db.query(models.poi.PointOfInterest).options(
+        joinedload(models.poi.PointOfInterest.event)
+    ).join(
         models.poi.poi_category_association
     ).filter(
         models.poi.poi_category_association.c.category_id == category.id,
         models.poi.PointOfInterest.publication_status == 'published'
     ).all()
+
+    # Filter past/cancelled events
+    pois = _exclude_past_and_cancelled_events(pois, include_past=include_past_events)
 
     # Format results
     results = []
@@ -329,12 +502,13 @@ def api_get_pois_by_category(category_slug: str, db: Session = Depends(get_db)):
         # Add event-specific data if it's an event
         if poi.event:
             poi_dict['event'] = {
-                'start_date': poi.event.start_date.isoformat() if poi.event.start_date else None,
-                'end_date': poi.event.end_date.isoformat() if poi.event.end_date else None,
-                'start_time': poi.event.start_time,
-                'end_time': poi.event.end_time,
-                'is_recurring': poi.event.is_recurring,
-                'status': poi.event.status
+                'start_datetime': poi.event.start_datetime.isoformat() if poi.event.start_datetime else None,
+                'end_datetime': poi.event.end_datetime.isoformat() if poi.event.end_datetime else None,
+                'is_repeating': poi.event.is_repeating,
+                'event_status': poi.event.event_status,
+                'organizer_name': poi.event.organizer_name,
+                'venue_poi_id': str(poi.event.venue_poi_id) if poi.event.venue_poi_id else None,
+                'cost_type': poi.event.cost_type,
             }
 
         results.append(poi_dict)
@@ -349,7 +523,11 @@ def api_get_pois_by_category(category_slug: str, db: Session = Depends(get_db)):
     }
 
 @router.get("/pois/by-type/{poi_type}")
-def api_get_pois_by_type(poi_type: str, db: Session = Depends(get_db)):
+def api_get_pois_by_type(
+    poi_type: str,
+    include_past_events: bool = Query(False, description="Include past events in results"),
+    db: Session = Depends(get_db),
+):
     """Get all POIs for a specific type (BUSINESS, PARK, TRAIL, EVENT)"""
     # Validate poi_type
     valid_types = ['BUSINESS', 'PARK', 'TRAIL', 'EVENT']
@@ -357,10 +535,16 @@ def api_get_pois_by_type(poi_type: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Invalid POI type")
 
     # Get all published POIs for this type
-    pois = db.query(models.poi.PointOfInterest).filter(
+    from sqlalchemy.orm import joinedload
+    pois = db.query(models.poi.PointOfInterest).options(
+        joinedload(models.poi.PointOfInterest.event)
+    ).filter(
         models.poi.PointOfInterest.poi_type == poi_type.upper(),
         models.poi.PointOfInterest.publication_status == 'published'
     ).all()
+
+    # Filter past/cancelled events
+    pois = _exclude_past_and_cancelled_events(pois, include_past=include_past_events)
 
     # Format results
     results = []
@@ -375,5 +559,206 @@ def api_get_pois_by_type(poi_type: str, db: Session = Depends(get_db)):
             'location': PointGeometry.from_wkb(poi.location) if poi.location else None,
         }
         results.append(poi_dict)
+
+    return results
+
+
+@router.get("/events/in-range")
+def api_get_events_in_range(
+    date_from: str = Query(..., description="Start date (YYYY-MM-DD)"),
+    date_to: str = Query(..., description="End date (YYYY-MM-DD)"),
+    db: Session = Depends(get_db),
+):
+    """Get all events (including expanded recurring instances) within a date range."""
+    from shared.utils.recurring_events import expand_recurring_dates
+    from sqlalchemy.orm import joinedload
+
+    try:
+        dt_from = datetime.strptime(date_from, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+        dt_to = datetime.strptime(date_to, "%Y-%m-%d").replace(
+            hour=23, minute=59, second=59, tzinfo=timezone.utc
+        )
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD.")
+
+    # Query all published, non-cancelled EVENT POIs
+    pois = db.query(models.poi.PointOfInterest).options(
+        joinedload(models.poi.PointOfInterest.event)
+    ).filter(
+        models.poi.PointOfInterest.poi_type == "EVENT",
+        models.poi.PointOfInterest.publication_status == "published",
+    ).all()
+
+    # Filter cancelled/rescheduled
+    pois = _exclude_past_and_cancelled_events(pois, include_past=True)
+
+    results = []
+    for poi in pois:
+        event = poi.event
+        if not event:
+            continue
+
+        if event.is_repeating and event.repeat_pattern:
+            dates = expand_recurring_dates(
+                start_datetime=event.start_datetime,
+                repeat_pattern=event.repeat_pattern,
+                date_from=dt_from,
+                date_to=dt_to,
+                excluded_dates=event.excluded_dates,
+                manual_dates=event.manual_dates,
+                recurrence_end_date=event.recurrence_end_date,
+            )
+        else:
+            # Non-repeating: check if start_datetime is in range
+            if dt_from <= event.start_datetime <= dt_to:
+                dates = [event.start_datetime]
+            else:
+                dates = []
+
+        for occurrence_dt in dates:
+            results.append({
+                "id": str(poi.id),
+                "name": poi.name,
+                "slug": poi.slug,
+                "occurrence_datetime": occurrence_dt.isoformat(),
+                "address_city": poi.address_city,
+                "event_status": event.event_status,
+            })
+
+    # Sort by occurrence datetime
+    results.sort(key=lambda r: r["occurrence_datetime"])
+    return results
+
+
+@router.get("/pois/{poi_id}/vendors")
+def get_event_vendors(
+    poi_id: uuid.UUID,
+    db: Session = Depends(get_db),
+):
+    """Resolve vendor_poi_links JSONB to published POI summaries."""
+    from sqlalchemy.orm import joinedload
+
+    poi = db.query(models.poi.PointOfInterest).options(
+        joinedload(models.poi.PointOfInterest.event)
+    ).filter(
+        models.poi.PointOfInterest.id == poi_id,
+        models.poi.PointOfInterest.publication_status == "published",
+    ).first()
+    if not poi:
+        raise HTTPException(status_code=404, detail="POI not found")
+
+    event = poi.event
+    if not event:
+        return []
+
+    vendor_links = event.vendor_poi_links
+    if not vendor_links or not isinstance(vendor_links, list):
+        return []
+
+    # Collect vendor POI IDs
+    vendor_poi_ids = [
+        v["poi_id"] for v in vendor_links
+        if isinstance(v, dict) and v.get("poi_id")
+    ]
+    if not vendor_poi_ids:
+        return []
+
+    # Fetch published vendor POIs
+    vendor_pois = db.query(models.poi.PointOfInterest).filter(
+        models.poi.PointOfInterest.id.in_(vendor_poi_ids),
+        models.poi.PointOfInterest.publication_status == "published",
+    ).all()
+
+    vendor_map = {str(vp.id): vp for vp in vendor_pois}
+
+    results = []
+    for link in vendor_links:
+        if not isinstance(link, dict) or not link.get("poi_id"):
+            continue
+        vp = vendor_map.get(link["poi_id"])
+        if not vp:
+            continue
+        poi_type = vp.poi_type.value if hasattr(vp.poi_type, 'value') else vp.poi_type
+        results.append({
+            "id": str(vp.id),
+            "name": vp.name,
+            "slug": vp.slug,
+            "poi_type": poi_type,
+            "address_city": vp.address_city,
+            "featured_image": vp.featured_image,
+            "vendor_type": link.get("vendor_type"),
+        })
+
+    return results
+
+
+@router.get("/pois/{poi_id}/sponsors")
+def get_event_sponsors(
+    poi_id: uuid.UUID,
+    db: Session = Depends(get_db),
+):
+    """Resolve sponsors JSONB — linked POIs get enriched, manual entries pass through."""
+    from sqlalchemy.orm import joinedload
+
+    poi = db.query(models.poi.PointOfInterest).options(
+        joinedload(models.poi.PointOfInterest.event)
+    ).filter(
+        models.poi.PointOfInterest.id == poi_id,
+        models.poi.PointOfInterest.publication_status == "published",
+    ).first()
+    if not poi:
+        raise HTTPException(status_code=404, detail="POI not found")
+
+    event = poi.event
+    if not event:
+        return []
+
+    sponsors = event.sponsors
+    if not sponsors or not isinstance(sponsors, list):
+        return []
+
+    # Collect POI IDs from linked sponsors
+    linked_ids = [
+        s["poi_id"] for s in sponsors
+        if isinstance(s, dict) and s.get("poi_id")
+    ]
+
+    # Batch-fetch linked sponsor POIs
+    sponsor_map = {}
+    if linked_ids:
+        sponsor_pois = db.query(models.poi.PointOfInterest).filter(
+            models.poi.PointOfInterest.id.in_(linked_ids),
+            models.poi.PointOfInterest.publication_status == "published",
+        ).all()
+        sponsor_map = {str(sp.id): sp for sp in sponsor_pois}
+
+    results = []
+    for entry in sponsors:
+        if not isinstance(entry, dict):
+            continue
+
+        if entry.get("poi_id"):
+            # Linked sponsor — resolve from DB
+            sp = sponsor_map.get(entry["poi_id"])
+            if not sp:
+                continue
+            poi_type = sp.poi_type.value if hasattr(sp.poi_type, 'value') else sp.poi_type
+            results.append({
+                "poi_id": str(sp.id),
+                "name": sp.name,
+                "slug": sp.slug,
+                "poi_type": poi_type,
+                "address_city": sp.address_city,
+                "featured_image": sp.featured_image,
+                "tier": entry.get("tier"),
+            })
+        else:
+            # Manual sponsor — pass through
+            results.append({
+                "name": entry.get("name", ""),
+                "tier": entry.get("tier"),
+                "website": entry.get("website"),
+                "logo_url": entry.get("logo_url"),
+            })
 
     return results

@@ -1,0 +1,185 @@
+/* Suggest Edit Overlay — matches nn-templates suggest update form */
+
+.se-overlay {
+  max-width: 600px;
+  margin: 60px auto 40px;
+  padding: 0 20px;
+}
+
+.se-overlay__title {
+  font-family: var(--font-poppins);
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--nn-dark);
+  margin: 0 0 24px 0;
+}
+
+/* Location in Question */
+.se-overlay__location {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 24px;
+  padding: 16px;
+  background: var(--gray-9, #f8f9fa);
+  border-radius: 8px;
+}
+
+.se-overlay__location-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--nn-gray);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.se-overlay__location-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--nn-dark);
+}
+
+/* Fieldset */
+.se-overlay__fieldset {
+  border: none;
+  padding: 0;
+  margin: 0 0 24px 0;
+}
+
+.se-overlay__legend {
+  font-family: var(--font-poppins);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--nn-dark);
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--gray-d, #dee2e6);
+  width: 100%;
+}
+
+/* Field */
+.se-overlay__field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 16px;
+}
+
+.se-overlay__label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--nn-dark);
+}
+
+.se-overlay__input,
+.se-overlay__select,
+.se-overlay__textarea {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--gray-d, #dee2e6);
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--nn-dark);
+  background: white;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+}
+
+.se-overlay__input:focus,
+.se-overlay__select:focus,
+.se-overlay__textarea:focus {
+  outline: none;
+  border-color: var(--nn-teal1);
+  box-shadow: 0 0 0 2px rgba(60, 125, 111, 0.15);
+}
+
+.se-overlay__textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.se-overlay__select {
+  cursor: pointer;
+}
+
+/* Error Summary */
+.se-overlay__errors {
+  background: #fef2f2;
+  border: 1px solid #fca5a5;
+  border-radius: 6px;
+  padding: 12px 16px;
+  margin-bottom: 20px;
+}
+
+.se-overlay__errors ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.se-overlay__errors li {
+  font-size: 14px;
+  color: #b91c1c;
+  margin-bottom: 4px;
+}
+
+.se-overlay__errors li:last-child {
+  margin-bottom: 0;
+}
+
+/* Buttons */
+.se-overlay__actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.se-overlay__btn {
+  padding: 14px 28px;
+  border-radius: 55px;
+  font-family: var(--font-poppins);
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 2px solid transparent;
+}
+
+.se-overlay__btn--primary {
+  background: var(--nn-teal1);
+  color: white;
+  border-color: var(--nn-teal1);
+}
+
+.se-overlay__btn--primary:hover {
+  background: var(--nn-teal2, #2c6e5a);
+  border-color: var(--nn-teal2, #2c6e5a);
+}
+
+.se-overlay__btn--primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.se-overlay__btn--secondary {
+  background: white;
+  color: var(--nn-gray);
+  border-color: var(--gray-d, #dee2e6);
+}
+
+.se-overlay__btn--secondary:hover {
+  background: var(--gray-9, #f8f9fa);
+  border-color: var(--nn-gray);
+}
+
+/* Success State */
+.se-overlay__success {
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.se-overlay__success p {
+  font-size: 16px;
+  color: var(--nn-dark);
+  margin-bottom: 20px;
+}

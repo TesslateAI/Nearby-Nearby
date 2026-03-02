@@ -90,6 +90,7 @@ class TestCancelPostponeBehavior:
             json={
                 "event": {
                     "event_status": "Postponed",
+                    "status_explanation": "Weather delay",
                     "cancellation_paragraph": "<p>New date TBD.</p>",
                 },
             },
@@ -574,6 +575,130 @@ class TestDateChangeGuard:
                     "start_datetime": "2026-08-01T10:00:00Z",
                 },
             },
+        )
+        assert resp.status_code == 200
+
+
+# ============================================================================
+# Phase 3: Status Explanation
+# ============================================================================
+class TestStatusExplanation:
+    """status_explanation field on events (max 80 chars)."""
+
+    def test_create_event_with_status_explanation(self, admin_client):
+        """Can set status_explanation on create."""
+        data = create_event(
+            admin_client,
+            name="Explanation Event",
+            event={
+                "start_datetime": "2026-06-15T18:00:00Z",
+                "event_status": "Postponed",
+                "status_explanation": "Weather delay — new date TBD",
+            },
+        )
+        assert data["event"]["status_explanation"] == "Weather delay — new date TBD"
+
+    def test_roundtrip_status_explanation(self, admin_client):
+        """status_explanation roundtrips through create + GET."""
+        data = create_event(
+            admin_client,
+            name="Roundtrip Explanation",
+            event={
+                "start_datetime": "2026-06-15T18:00:00Z",
+                "event_status": "Updated Date and/or Time",
+                "status_explanation": "Moved to Saturday afternoon",
+            },
+        )
+        poi_id = data["id"]
+        get_resp = admin_client.get(f"/api/pois/{poi_id}")
+        assert get_resp.status_code == 200
+        assert get_resp.json()["event"]["status_explanation"] == "Moved to Saturday afternoon"
+
+    def test_status_explanation_max_80_chars(self, admin_client):
+        """status_explanation longer than 80 chars should be rejected."""
+        long_text = "x" * 81
+        resp = admin_client.post(
+            "/api/pois/",
+            json={
+                "name": "Long Explanation Event",
+                "poi_type": "EVENT",
+                "location": {"type": "Point", "coordinates": [-79.3, 35.6]},
+                "event": {
+                    "start_datetime": "2026-06-15T18:00:00Z",
+                    "event_status": "Postponed",
+                    "status_explanation": long_text,
+                },
+            },
+        )
+        assert resp.status_code == 422, f"Expected 422, got {resp.status_code}: {resp.text}"
+
+    def test_status_explanation_required_for_updated(self, admin_client):
+        """Setting status to 'Updated Date and/or Time' requires status_explanation."""
+        data = create_event(admin_client, name="Missing Explanation Event")
+        poi_id = data["id"]
+        resp = admin_client.put(
+            f"/api/pois/{poi_id}",
+            json={
+                "event": {
+                    "event_status": "Updated Date and/or Time",
+                    # No status_explanation provided
+                },
+            },
+        )
+        assert resp.status_code == 400, f"Expected 400, got {resp.status_code}: {resp.text}"
+
+    def test_status_explanation_required_for_postponed(self, admin_client):
+        """Setting status to 'Postponed' requires status_explanation."""
+        data = create_event(admin_client, name="Missing Explanation Postponed")
+        poi_id = data["id"]
+        resp = admin_client.put(
+            f"/api/pois/{poi_id}",
+            json={
+                "event": {
+                    "event_status": "Postponed",
+                },
+            },
+        )
+        assert resp.status_code == 400
+
+    def test_status_explanation_required_for_moved_online(self, admin_client):
+        """Setting status to 'Moved Online' requires status_explanation."""
+        data = create_event(admin_client, name="Missing Explanation Online")
+        poi_id = data["id"]
+        resp = admin_client.put(
+            f"/api/pois/{poi_id}",
+            json={
+                "event": {
+                    "event_status": "Moved Online",
+                },
+            },
+        )
+        assert resp.status_code == 400
+
+    def test_status_explanation_not_required_for_scheduled(self, admin_client):
+        """Setting status to 'Scheduled' does NOT require status_explanation."""
+        data = create_event(
+            admin_client,
+            name="Scheduled No Explanation",
+            event={
+                "start_datetime": "2026-06-15T18:00:00Z",
+                "event_status": "Canceled",
+            },
+        )
+        poi_id = data["id"]
+        resp = admin_client.put(
+            f"/api/pois/{poi_id}",
+            json={"event": {"event_status": "Scheduled"}},
+        )
+        assert resp.status_code == 200
+
+    def test_status_explanation_not_required_for_canceled(self, admin_client):
+        """Setting status to 'Canceled' does NOT require status_explanation."""
+        data = create_event(admin_client, name="Cancel No Explanation")
+        poi_id = data["id"]
+        resp = admin_client.put(
+            f"/api/pois/{poi_id}",
+            json={"event": {"event_status": "Canceled"}},
         )
         assert resp.status_code == 200
 

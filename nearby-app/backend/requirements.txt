@@ -24,6 +24,7 @@ slowapi
 # Utilities
 python-multipart
 bleach
+python-dateutil
 
 # Image processing
 Pillow
