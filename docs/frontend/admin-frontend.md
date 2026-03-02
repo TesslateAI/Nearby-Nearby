@@ -118,9 +118,9 @@ components/POIForm/
     ├── BusinessDetailsSection.jsx
     ├── BusinessGallerySection.jsx
     ├── FacilitiesSection.jsx            # Wheelchair & mobility access, multi-restroom cards, pay phone, rentals
-    ├── OutdoorFeaturesSection.jsx       # Multiple playgrounds array
+    ├── OutdoorFeaturesSection.jsx       # Exports: OutdoorFeaturesSection, HuntingFishingSection, PetPolicySection, PlaygroundSection
     ├── TrailSpecificSections.jsx        # Trail experience removed
-    ├── MiscellaneousSections.jsx        # Membership pass removed from trails
+    ├── MiscellaneousSections.jsx        # Exports: InternalContactSection, PricingMembershipsSection, ConnectionsSection, CommunityConnectionsSection, CorporateComplianceSection
     ├── EventSpecificSections.jsx        # EventStatusSection, EventVendorsSection, EventVenueSection, EventOrganizerSection, EventSponsorsSection, EventCostSection, EventMapsSection, EventAmenitiesSection
     ├── VenueInheritanceControls.jsx     # Per-section venue data inheritance (as_is / use_and_add / do_not_use)
     ├── RecurringEventSection.jsx        # Repeating event schedule, excluded/manual dates, preview
@@ -591,6 +591,43 @@ const LocationMap = memo(({ latitude, longitude, onLocationChange }) => {
 - **Memoized**: Uses `React.memo` with custom comparison to only re-render when latitude or longitude actually change.
 - **Event isolation**: Map interactions (click, mousedown, touch) are stopped from propagating to the parent form to prevent accidental form submissions.
 
+### HoursSelector
+
+**File**: `components/HoursSelector.jsx`
+
+A comprehensive hours management component with four tabbed panels. Uses `memo` for performance. Accepts `value` (hours JSONB object), `onChange`, and `poiType` props.
+
+**Data structure** stored as JSONB:
+```json
+{
+  "regular": { "monday": { "status": "open", "periods": [...] }, ... },
+  "seasonal": { "summer": { "monday": {...}, "useDateRange": false, ... }, ... },
+  "holidays": { "christmas": { "name": "Christmas Day", "date": "12-25", "status": "closed" }, ... },
+  "exceptions": [ { "type": "one-time", "date": "2026-03-15", "status": "closed", "reason": "..." }, ... ],
+  "timezone": "America/New_York",
+  "notes": ""
+}
+```
+
+**Tabs:**
+
+| Tab | Description |
+|-----|-------------|
+| Regular Hours | Per-day cards with `SegmentedControl` (Open / Closed / 24 Hours / By Appt). Each day supports multiple time periods for breaks. Open/close times can be fixed, dawn/dusk (with minute offset), appointment, or call-for-hours. Quick-set buttons: Mon-Fri 9-5, 24/7, By Appointment Only. Copy-hours modal to copy one day's hours to other days. |
+| Seasonal Hours | Override regular hours per season (Spring, Summer, Fall, Winter with themed icons). Each season can use default month ranges or a custom start/end date range (repeats annually). Full per-day hour cards within each season. |
+| Holiday Hours | Select from 21 predefined US holidays (New Year's through Valentine's Day, including floating holidays like Thanksgiving and Easter). Each holiday can be Open, Closed, or Modified with custom time periods. |
+| Exceptions | One-time exceptions (specific date, open/closed/modified, with reason text) and recurring exceptions (ordinal + day-of-week + optional month filter, e.g., "closed every 3rd Wednesday"). Modified status shows editable time periods. Exceptions take highest priority over all other hours. |
+
+**Sub-components** (internal, not exported):
+- `TimePeriod` -- renders open/close time type selectors and time inputs, with support for dawn/dusk offsets and per-period notes
+- `DayHours` -- card for a single day with status segmented control, multiple periods toggle, and copy-to-other-days button
+
+**Key features:**
+- **Timezone selector**: 7 US timezones (Eastern through Hawaii)
+- **Copy hours modal**: Select source day, check target days, apply in one click with notification
+- **Dawn/dusk offsets**: NumberInput with 15-minute step and tooltip explaining before/after
+- **General hours notes**: Free-text field for notes like "Kitchen closes 1 hour before closing"
+
 ### VenueSelector
 
 ```jsx
@@ -776,6 +813,33 @@ The EventSpecificSections accordion includes eight sub-sections:
 - **Wheelchair section renamed** to "Wheelchair and Mobility Access" with 5 new detail fields stored in `mobility_access` JSONB.
 - **Toilet types per-location**: Each restroom card in `toilet_locations` now includes a checkbox group for toilet types, rather than a single global toilet type field.
 - **Restroom photos hidden** for free business listings.
+
+### OutdoorFeaturesSection Exports
+
+**File**: `components/POIForm/sections/OutdoorFeaturesSection.jsx`
+
+This file exports four named components used in park/trail accordion sections:
+
+| Export | Description |
+|--------|-------------|
+| `OutdoorFeaturesSection` | Natural features checkbox group (from `NATURAL_FEATURES`), outdoor types checkbox group (from `OUTDOOR_TYPES`), night sky viewing and birding/wildlife rich text editors |
+| `HuntingFishingSection` | Hunting allowed radio group with conditional hunting types checkboxes, fishing allowed radio with conditional fishing types, licenses/permits checkboxes, and additional info rich text |
+| `PetPolicySection` | Pets allowed radio (yes/no), conditional pet policy options checkbox group (from `PET_OPTIONS`), additional pet policy rich text editor |
+| `PlaygroundSection` | Playground available toggle, dynamic array of playground cards each with: types checkboxes (`PLAYGROUND_TYPES`), surface checkboxes (`PLAYGROUND_SURFACES`), lat/lng coordinates, notes rich text, per-playground photo upload. Normalizes legacy single-object format to array. |
+
+### MiscellaneousSections Exports
+
+**File**: `components/POIForm/sections/MiscellaneousSections.jsx`
+
+This file exports five named components for internal, pricing, community, and compliance sections:
+
+| Export | Description |
+|--------|-------------|
+| `InternalContactSection` | Internal-only (not public) section with main contact name/email/phone, emergency contact textarea, and emergency protocols rich text editor |
+| `PricingMembershipsSection` | Cost field, gift card selector, pricing details rich text, payment methods checkbox group, discounts checkbox group, membership/pass details rich text |
+| `ConnectionsSection` | Business service locations and locally-found-at placeholders, camping/lodging rich text editor. Accepts `isBusiness` and `isPark` props for conditional content |
+| `CommunityConnectionsSection` | Community impact rich text editor, article links array with title/URL per row and add/remove controls |
+| `CorporateComplianceSection` | Internal-only section with corporate compliance requirements rich text, comments restriction radio with conditional explanation, social media restrictions checkbox group (Facebook, Instagram, X, TikTok, LinkedIn), other social restrictions rich text, pre-approval radio with conditional lead time details, branding requirements radio with conditional guidelines |
 
 ### Removed/Cleaned Sections
 

@@ -17,8 +17,8 @@ Both applications expose REST APIs via FastAPI. All endpoints return JSON.
 | Method | Endpoint | Description | Auth Required |
 |--------|----------|-------------|---------------|
 | POST | `/api/auth/login` | Get JWT token | No |
-| GET | `/api/auth/me` | Get current user | Yes |
-| POST | `/api/auth/users` | Create user | Yes (Admin) |
+| GET | `/api/auth/users/me` | Get current user | Yes |
+| POST | `/api/auth/users/` | Create user | Yes (Admin) |
 
 #### POST /api/auth/login
 
@@ -328,14 +328,13 @@ Response:
 | Method | Endpoint | Description | Auth Required |
 |--------|----------|-------------|---------------|
 | POST | `/api/images/upload/{poi_id}` | Upload image | Yes |
-| POST | `/api/images/bulk-upload/{poi_id}` | Bulk upload | Yes |
+| POST | `/api/images/upload-multiple/{poi_id}` | Upload multiple images | Yes |
 | POST | `/api/images/copy/{source_poi_id}/to/{target_poi_id}` | Copy images between POIs | Yes |
-| GET | `/api/images/{image_id}` | Get image | No |
+| GET | `/api/images/image/{image_id}` | Get image | No |
 | GET | `/api/images/poi/{poi_id}` | Get POI images | No |
-| GET | `/api/images/poi/{poi_id}/{type}` | Get images by type | No |
-| PUT | `/api/images/{image_id}` | Update metadata | Yes |
-| DELETE | `/api/images/{image_id}` | Delete image | Yes |
-| PUT | `/api/images/reorder` | Reorder images | Yes |
+| PUT | `/api/images/image/{image_id}` | Update metadata | Yes |
+| DELETE | `/api/images/image/{image_id}` | Delete image | Yes |
+| PUT | `/api/images/poi/{poi_id}/reorder/{image_type}` | Reorder images by type | Yes |
 
 #### POST /api/images/upload/{poi_id}
 
@@ -371,7 +370,31 @@ Query Parameters:
 
 Response: Array of image objects (see image response schema below).
 
-#### PUT /api/images/{image_id}
+#### POST /api/images/upload-multiple/{poi_id}
+
+Upload multiple images at once (primarily for galleries).
+
+Request (multipart/form-data):
+- `files`: List of image files to upload
+- `image_type`: Type of images (usually 'gallery')
+
+Response:
+```json
+{
+  "uploaded": [
+    {
+      "id": "uuid",
+      "filename": "photo1.jpg",
+      "url": "https://bucket.s3.amazonaws.com/...",
+      "thumbnail_url": "https://bucket.s3.amazonaws.com/.../thumbnail_..."
+    }
+  ],
+  "failed": [],
+  "message": "Successfully uploaded 3 images"
+}
+```
+
+#### PUT /api/images/image/{image_id}
 
 Request:
 ```json

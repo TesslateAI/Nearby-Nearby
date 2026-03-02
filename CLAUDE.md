@@ -128,7 +128,7 @@ User views POI detail page (e.g., "Jordan Lake State Park")
 "NEARBY" section loads with POIs within default 5-mile radius
     ↓
 User can:
-  • Filter by type using horizontal scrolling pills (All, Businesses, Events, Parks, Trails, Youth Events)
+  • Filter by type using horizontal scrolling pills (All, Businesses, Events, Parks, Trails)
   • Search within nearby results using hybrid AI search (keyword + semantic)
   • Adjust radius via dropdown (1, 3, 5, 10, 15 miles)
   • Select date via smart dropdown (Today, Tomorrow, This Weekend, or pick custom)
@@ -166,7 +166,7 @@ User can:
 ### Features
 
 **Filtering & Search:**
-- **Type filter pills**: All, Businesses, Events, Parks, Trails, Youth Events (with lucide icons)
+- **Type filter pills**: All, Businesses, Events, Parks, Trails (with lucide icons)
 - **Horizontal scroll**: Filter pills scroll horizontally on mobile with hidden scrollbar
 - **Hybrid AI search**: Uses `/api/pois/hybrid-search` filtered to nearby results only
 - **Date presets**: Today, Tomorrow, This Weekend, or pick a custom date (no manual entry)

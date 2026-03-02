@@ -17,7 +17,7 @@ Skip low-ROI tests: visual regression, snapshot tests, exhaustive unit tests for
 
 ## Current Test Suite
 
-The monorepo has **352+ integration tests** in the root `tests/` directory covering admin CRUD, cross-app data flow, real S3 (MinIO) image uploads, admin form features (Tasks 2-41), event/image/auth features (Tasks 42-51), event backend tasks (Tasks 134-149, 153, 157), listing type changes (Tasks 171-172), hours system (Tasks 173-176), and Sentry integration (Tasks 169-170).
+The monorepo has **440+ integration tests** in the root `tests/` directory covering admin CRUD, cross-app data flow, real S3 (MinIO) image uploads, admin form features (Tasks 2-41), event/image/auth features (Tasks 42-51), event backend tasks (Tasks 134-149, 153, 157), listing type changes (Tasks 171-172), hours system (Tasks 173-176), Sentry integration (Tasks 169-170), and event frontend TDD tests (category fix, status constants/transitions, past filtering, recurring expansion, venue inheritance resolution, duplicate prevention, search params, sitemap, vendor/sponsor resolution).
 
 ### Running Tests
 
@@ -58,7 +58,7 @@ Ports are offset from production to avoid collisions (5434 instead of 5432, 9100
 
 | File | Tests | What it covers |
 |------|-------|----------------|
-| `test_admin_business.py` | 6 | Business POI creation — minimal, all fields, links, JSONB |
+| `test_admin_business.py` | 7 | Business POI creation — minimal, all fields, links, JSONB |
 | `test_admin_park.py` | 6 | Park POI creation — minimal, outdoor, hunting/fishing, facilities |
 | `test_admin_trail.py` | 5 | Trail POI creation — minimal, all fields, coordinates, surfaces |
 | `test_admin_event.py` | 5 | Event POI creation — minimal, all fields, repeating, vendors, cost |
@@ -70,15 +70,15 @@ Ports are offset from production to avoid collisions (5434 instead of 5432, 9100
 | `test_admin_images.py` | 10 | Real MinIO uploads, metadata, reorder, delete, all 12 image types |
 | `test_admin_relationships.py` | 7 | POI-to-POI links, cascade delete, validation |
 | `test_admin_venues.py` | 5 | Venue list, venue data for events |
-| `test_crossapp_read.py` | 13 | Admin writes data, app reads it — the core cross-app contract |
-| `test_new_poi_fields.py` | 20 | New POI fields: teaser_paragraph, lat_long_most_accurate, alcohol_policy_details, parking/playground/restroom locations |
+| `test_crossapp_read.py` | 16 | Admin writes data, app reads it — the core cross-app contract |
+| `test_new_poi_fields.py` | 17 | New POI fields: teaser_paragraph, lat_long_most_accurate, alcohol_policy_details, parking/playground/restroom locations |
 | `test_admin_form_tasks.py` | 20 | Tasks 17-41: short description limit, free biz category limit, multiple playgrounds, article links, trail head/exit max count |
-| `test_search_engine.py` | 14 | Multi-signal search: exact/fuzzy/city/type/ordering/empty/fallback/published-only |
-| `test_query_processor.py` | 13 | Query parsing: amenity/type/location/difficulty extraction, edge cases |
-| `test_fulltext_search.py` | 11 | tsvector column, stemming, description-only matches |
+| `test_search_engine.py` | 9 | Multi-signal search: exact/fuzzy/city/type/ordering/empty/fallback/published-only |
+| `test_query_processor.py` | 23 | Query parsing: amenity/type/location/difficulty extraction, edge cases |
+| `test_fulltext_search.py` | 4 | tsvector column, stemming, description-only matches |
 | `test_form_endpoints.py` | 23 | All 5 public forms: happy path, validation, duplicates, file uploads |
-| `test_event_lifecycle.py` | varies | Event creation and lifecycle |
-| `test_event_backend_tasks.py` | 27 | Event status, organizer, cost/ticketing, sponsors, reschedule, display category, date guard (Tasks 134-149, 153, 157) |
+| `test_event_lifecycle.py` | 28 | Event creation and lifecycle |
+| `test_event_backend_tasks.py` | 35 | Event status, organizer, cost/ticketing, sponsors, reschedule, display category, date guard (Tasks 134-149, 153, 157) |
 | `test_login_redirect.py` | 6 | Login 401 behavior, no redirect loop, valid credentials |
 | `test_corporate_compliance.py` | 11 | JSONB compliance field round-trip |
 | `test_admin_poi_defaults.py` | 8 | City/county/state defaults, coordinates |
@@ -92,6 +92,16 @@ Ports are offset from production to avoid collisions (5434 instead of 5432, 9100
 | `test_listing_types.py` | 13 | Listing type changes: remove paid_founding, sponsor levels, validation |
 | `test_hours_system.py` | 20 | Hours JSONB round-trip, Python resolution engine, effective-hours endpoint |
 | `test_sentry_integration.py` | 6 | Sentry init with/without DSN, disabled DSN, FastApi integration check |
+| `test_event_by_category_fix.py` | 4 | By-category endpoint returns correct event field names |
+| `test_event_status_constants.py` | 9 | EventStatus enum values, helper text dict, explanation-required list |
+| `test_event_past_filtering.py` | 10 | Past event exclusion from browse/search, cancelled/rescheduled filtering |
+| `test_recurring_event_expansion.py` | 11 | expand_recurring_dates utility: daily/weekly/monthly, excluded dates, manual dates |
+| `test_venue_inheritance_resolution.py` | 10 | resolve_venue_inheritance utility: as_is, use_and_add, do_not_use modes |
+| `test_event_duplicate_prevention.py` | 6 | Duplicate event prevention: same venue + date + name returns 409 |
+| `test_event_search_params.py` | 4 | Event search date_from, date_to, event_status query params |
+| `test_event_sitemap.py` | 7 | /sitemap-events.xml endpoint: valid XML, published events, exclusion |
+| `test_event_status_transitions.py` | 10 | Status transition validation: allowed/blocked transitions, return to scheduled |
+| `test_event_vendor_sponsor_resolution.py` | 9 | Vendor/sponsor POI resolution endpoints, linked POIs + manual entries |
 
 ### How Tests Work
 
@@ -199,7 +209,7 @@ export default defineConfig({
 
 ```
 NearbyNearby/
-├── tests/                               # Integration & cross-app tests (352+ tests)
+├── tests/                               # Integration & cross-app tests (440+ tests)
 │   ├── conftest.py                      # Shared fixtures, auth mocking, ORM helpers
 │   ├── docker-compose.test.yml          # PostGIS + MinIO test containers
 │   ├── test_admin_business.py
@@ -235,7 +245,17 @@ NearbyNearby/
 │   ├── test_event_backend_tasks.py    # Event status, organizer, cost, sponsors (Tasks 134-149, 153, 157)
 │   ├── test_listing_types.py          # Listing type changes (Tasks 171-172)
 │   ├── test_hours_system.py           # Hours resolution engine + endpoint (Tasks 173-176)
-│   └── test_sentry_integration.py     # Sentry init tests (Tasks 169-170)
+│   ├── test_sentry_integration.py     # Sentry init tests (Tasks 169-170)
+│   ├── test_event_by_category_fix.py  # By-category endpoint event field names
+│   ├── test_event_status_constants.py # EventStatus enum, helper text, explanation list
+│   ├── test_event_past_filtering.py   # Past/cancelled/rescheduled event exclusion
+│   ├── test_recurring_event_expansion.py  # expand_recurring_dates utility tests
+│   ├── test_venue_inheritance_resolution.py  # resolve_venue_inheritance utility tests
+│   ├── test_event_duplicate_prevention.py  # Duplicate event 409 prevention
+│   ├── test_event_search_params.py    # Event date/status search params
+│   ├── test_event_sitemap.py          # /sitemap-events.xml endpoint tests
+│   ├── test_event_status_transitions.py  # Status transition validation rules
+│   └── test_event_vendor_sponsor_resolution.py  # Vendor/sponsor POI resolution
 │
 ├── nearby-admin/
 │   ├── backend/
@@ -528,7 +548,7 @@ The admin workflow at `.github/workflows/deploy-admin.yml` has a single `build-a
 
 | Stage | Duration | Notes |
 |-------|----------|-------|
-| App test job | ~12 minutes | PostGIS container startup + 352+ integration tests |
+| App test job | ~12 minutes | PostGIS container startup + 440+ integration tests |
 | App build-and-deploy job | ~8 minutes | Multi-stage Docker build (~5.7GB image including ML model) |
 | **App total end-to-end** | **~20 minutes** | Test + build + ECS force deploy |
 | App with `skip_tests` | ~8 minutes | Manual dispatch only, skips test job |

@@ -21,7 +21,7 @@ The user-facing frontend is a React application built with Vite. It provides sea
 nearby-app/app/src/
 ├── components/           # Reusable components
 │   ├── common/           # Shared components (HoursDisplay, etc.)
-│   ├── details/          # POI detail components
+│   ├── details/          # POI detail components (BusinessDetail, EventDetail, ParkDetail, TrailDetail, GenericDetail, SuggestEditOverlay, EventStatusBanner, EventSponsors, EventVendors, ContactOrganizerModal, PhotoLightbox)
 │   ├── nearby-feature/   # Nearby feature components
 │   ├── seo/              # SEO components
 │   ├── Accordion.jsx     # Shared accordion with slide animation + hash deep-linking
@@ -189,6 +189,24 @@ Each POI type has a specialized detail component in `components/details/`:
 | GenericDetail | `GenericDetail.jsx` | Fallback for all other types |
 
 All detail components use the shared `Accordion` component for collapsible sections and the `HoursDisplay` component for consistent hours rendering.
+
+#### BusinessDetail Enhancements
+
+`BusinessDetail.jsx` includes a "Suggest an Update" feature powered by the `SuggestEditOverlay` component.
+
+**SuggestEditOverlay** (`components/details/SuggestEditOverlay.jsx` + `SuggestEditOverlay.css`):
+
+An overlay form that allows public users to suggest edits to a business listing. It uses the shared `Overlay` component and `useOverlay` hook for open/close behavior.
+
+**Features:**
+- Triggered via a ref-based API (`externalTriggerRef.current.open()`) from BusinessDetail
+- Displays the POI name as a read-only "Location in Question" field
+- Two fieldsets: Contact Info (Full Name, Email, Phone -- all required) and Additional Details (Subject dropdown, Message -- both required)
+- Subject options: "Inappropriate content", "Something's missing", "Wrong information", "Other"
+- Client-side validation with error summary (`role="alert"`)
+- Submits to `POST /api/contact` with subject prefixed as `"Suggest Edit: {subject} -- {poiName}"`
+- Success state with confirmation message and Close button
+- Clear Form button resets all fields
 
 #### EventDetail Enhancements
 

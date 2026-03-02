@@ -21,8 +21,8 @@ The platform uses PostgreSQL 15 with PostGIS 3.4 for geospatial support. Both ap
 │ email (unique)      │       │ name                │
 │ hashed_password     │       │ slug (unique)       │
 │ role                │       │ parent_id FK ───────┼──┐
-│ created_at          │       │ applicable_types    │  │
-└─────────────────────┘       │ created_at          │  │
+│ created_at          │       │ applicable_to       │  │
+└─────────────────────┘       │ is_active,sort_order│  │
                               └──────────┬──────────┘  │
                                          │             │
                                          └─────────────┘
@@ -64,17 +64,18 @@ The platform uses PostgreSQL 15 with PostGIS 3.4 for geospatial support. Both ap
 │ id (UUID) PK        │       │ source_poi_id FK    │
 │ poi_id FK           │       │ target_poi_id FK    │
 │ image_type          │       │ relationship_type   │
-│ s3_url              │       │ created_at          │
-│ alt_text            │       └─────────────────────┘
-│ caption             │
-│ display_order       │       ┌─────────────────────┐
+│ filename            │       │ created_at          │
+│ storage_url         │       └─────────────────────┘
+│ storage_key         │
+│ mime_type,size_bytes │       ┌─────────────────────┐
 │ function_tags (JSONB)│      │     attributes      │
 │ width, height       │       ├─────────────────────┤
-│ parent_image_id FK  │       │ id (UUID) PK        │
-└─────────────────────┘       │ name                │
-                              │ attribute_type      │
-┌─────────────────────┐       │ applicable_poi_types│
-│      waitlist       │       │ options (JSONB)     │
+│ uploaded_by FK      │       │ id (UUID) PK        │
+│ parent_image_id FK  │       │ name                │
+└─────────────────────┘       │ type                │
+                              │ applicable_to       │
+┌─────────────────────┐       │ is_active,sort_order│
+│      waitlist       │       └─────────────────────┘
 ├─────────────────────┤
 │ id (UUID) PK        │
 │ email (unique)      │
@@ -138,19 +139,20 @@ Main POI table with all shared fields.
 | address_zip | VARCHAR(20) | | ZIP code |
 | address_country | VARCHAR(100) | | Country |
 | **Contact Fields** |
-| phone | VARCHAR(20) | | Phone number |
-| email | VARCHAR(255) | | Contact email |
-| website | VARCHAR(500) | | Website URL |
+| phone_number | VARCHAR | | Phone number |
+| email | VARCHAR | | Contact email |
+| website_url | VARCHAR | | Website URL |
 | **Social Media** |
-| facebook | VARCHAR(255) | | Facebook URL |
-| instagram | VARCHAR(255) | | Instagram handle |
-| twitter | VARCHAR(255) | | Twitter handle |
-| tiktok | VARCHAR(255) | | TikTok handle |
-| youtube | VARCHAR(255) | | YouTube URL |
+| instagram_username | VARCHAR | | Instagram username |
+| facebook_username | VARCHAR | | Facebook username |
+| x_username | VARCHAR | | X (Twitter) username |
+| tiktok_username | VARCHAR | | TikTok username |
+| linkedin_username | VARCHAR | | LinkedIn username |
+| other_socials | JSONB | | Additional social media `{"youtube": "channel", "bluesky": "handle"}` |
 | **Content Fields** |
 | teaser_paragraph | TEXT | | Short teaser (visible text ≤ 120 chars, HTML allowed) |
 | description_short | TEXT | | Short description (visible text ≤ 250 chars, HTML allowed) |
-| long_description | TEXT | | Full description |
+| description_long | TEXT | | Full description |
 | internal_notes | TEXT | | Admin-only notes |
 | **Flags** |
 | lat_long_most_accurate | BOOLEAN | DEFAULT false | Mark lat/long as verified accurate |
@@ -179,8 +181,8 @@ Main POI table with all shared fields.
 | **Mobility Access** |
 | mobility_access | JSONB | | Structured accessibility info: `step_free_entry`, `main_area_accessible`, `ground_level_service`, `accessible_restroom`, `accessible_parking` |
 | **Timestamps** |
-| created_at | TIMESTAMP | DEFAULT NOW() | Creation time |
-| updated_at | TIMESTAMP | | Last update |
+| created_at | TIMESTAMPTZ | DEFAULT NOW() | Creation time |
+| last_updated | TIMESTAMPTZ | DEFAULT NOW(), ON UPDATE | Last update |
 
 **Additional Fields (100+)**: The table includes many more fields for specific features like rentals, outdoor amenities, memberships, payments, compliance, etc.
 
@@ -199,21 +201,22 @@ Hierarchical category system.
 | Column | Type | Constraints | Description |
 |--------|------|-------------|-------------|
 | id | UUID | PK | Primary key |
-| name | VARCHAR(100) | NOT NULL | Category name |
-| slug | VARCHAR(100) | UNIQUE | URL-friendly slug |
-| parent_id | UUID | FK → categories.id | Parent category |
-| applicable_types | ARRAY | | POI types this applies to |
-| created_at | TIMESTAMP | DEFAULT NOW() | Creation time |
+| name | VARCHAR | NOT NULL, UNIQUE | Category name |
+| slug | VARCHAR | NOT NULL, UNIQUE, INDEX | URL-friendly slug |
+| parent_id | UUID | FK → categories.id, INDEX | Parent category |
+| applicable_to | ARRAY(String) | | POI types this category applies to |
+| is_active | BOOLEAN | DEFAULT true | Whether the category is active |
+| sort_order | INTEGER | DEFAULT 0 | Display sort order |
 
-### poi_category_association
+### poi_categories
 
 Junction table for POI-category many-to-many relationship.
 
 | Column | Type | Constraints | Description |
 |--------|------|-------------|-------------|
-| poi_id | UUID | FK → points_of_interest.id | POI reference |
-| category_id | UUID | FK → categories.id | Category reference |
-| is_main | BOOLEAN | DEFAULT false | Whether this is the POI's main category |
+| poi_id | UUID | PK, FK → points_of_interest.id | POI reference |
+| category_id | UUID | PK, FK → categories.id | Category reference |
+| is_main | BOOLEAN | NOT NULL, DEFAULT false | Whether this is the POI's main category |
 
 **Business rules:**
 - Free business listings are limited to 1 category (enforced backend + frontend)
@@ -226,19 +229,37 @@ Image storage with variants. All POI photos are now stored in this table (consol
 | Column | Type | Constraints | Description |
 |--------|------|-------------|-------------|
 | id | UUID | PK | Primary key |
-| poi_id | UUID | FK → points_of_interest.id | Associated POI |
-| image_type | VARCHAR | NOT NULL | main, gallery, entry, etc. |
-| storage_provider | VARCHAR | DEFAULT 's3' | Always 's3' (database deprecated) |
+| poi_id | UUID | FK → points_of_interest.id, ON DELETE CASCADE | Associated POI |
+| image_type | ENUM(ImageType) | NOT NULL | main, gallery, entry, etc. |
+| image_context | VARCHAR(50) | | Contextual grouping (e.g., 'restroom_1', 'parking_2') |
+| **File Information** |
+| filename | VARCHAR(255) | NOT NULL | Stored filename |
+| original_filename | VARCHAR(255) | | Original upload filename |
+| mime_type | VARCHAR(50) | | MIME type (e.g., 'image/jpeg', 'application/pdf') |
+| size_bytes | INTEGER | | File size in bytes |
+| width | INTEGER | | Image width in pixels |
+| height | INTEGER | | Image height in pixels |
+| **Variant Tracking** |
+| image_size_variant | VARCHAR(20) | | Size variant: 'original', 'thumbnail', 'medium', 'large' |
+| parent_image_id | UUID | FK → images.id | Parent image (for size variants) |
+| is_optimized | BOOLEAN | DEFAULT false | Whether this is an optimized version |
+| **Cloud Storage** |
+| storage_provider | VARCHAR(50) | DEFAULT 's3' | Always 's3' |
 | storage_url | VARCHAR(500) | | S3 storage URL |
-| image_context | VARCHAR(50) | | Contextual grouping (e.g., 'parking_1', 'playground_2') |
-| alt_text | VARCHAR(255) | | Accessibility text |
+| storage_key | VARCHAR(255) | | S3 object key/path |
+| **Image Processing** |
+| quality | INTEGER | | JPEG/WebP quality setting |
+| format_optimized | VARCHAR(10) | | Target format after optimization |
+| compression_ratio | INTEGER | | Compression ratio achieved |
+| **Metadata** |
+| alt_text | TEXT | | Accessibility text |
 | caption | TEXT | | Image caption |
 | display_order | INTEGER | DEFAULT 0 | Sort order |
 | function_tags | JSONB | | Array of string tags describing image purpose (e.g., "storefront", "interior", "menu"). See predefined tags below |
-| width | INTEGER | | Image width |
-| height | INTEGER | | Image height |
-| parent_image_id | UUID | FK → images.id | Original image (for variants) |
-| created_at | TIMESTAMP | DEFAULT NOW() | Creation time |
+| **Tracking** |
+| uploaded_by | UUID | FK → users.id | User who uploaded the image |
+| created_at | TIMESTAMPTZ | DEFAULT NOW() | Creation time |
+| updated_at | TIMESTAMPTZ | ON UPDATE | Last update time |
 
 **Note:** The `image_data` column (binary storage) has been deprecated. All images are stored in S3.
 
@@ -392,11 +413,12 @@ Dynamic configurable fields.
 | Column | Type | Description |
 |--------|------|-------------|
 | id | UUID | PK |
-| name | VARCHAR | Attribute name |
-| attribute_type | VARCHAR | text, select, multi-select, etc. |
-| applicable_poi_types | ARRAY | POI types this applies to |
-| options | JSONB | Options for select types |
-| created_at | TIMESTAMP | Creation time |
+| name | VARCHAR | Attribute name (e.g., "Live Music") |
+| type | VARCHAR | Attribute type (e.g., "ENTERTAINMENT", "PAYMENT_METHOD", "AMENITY") |
+| parent_id | UUID | FK → attributes.id. Self-referencing parent for hierarchy |
+| applicable_to | ARRAY(String) | POI types this attribute applies to |
+| is_active | BOOLEAN | Whether the attribute is active (default: true) |
+| sort_order | INTEGER | Display sort order (default: 0) |
 
 ### primary_types
 

@@ -185,10 +185,9 @@ class Event(Base):
 
     # Event Status (Tasks 134-136)
     event_status = Column(String(100), default='Scheduled')
-    status_explanation = Column(Text)  # Required for Postponed, Updated Date, Moved Online
+    status_explanation = Column(String(80))  # Required for Postponed, Updated Date, Moved Online (max 80 chars)
     cancellation_paragraph = Column(Text)
     contact_organizer_toggle = Column(Boolean, default=False)
-    online_event_url = Column(String)  # URL for virtual/online events
     new_event_link = Column(String)  # UUID string of replacement event (not a FK)
     rescheduled_from_event_id = Column(UUID, ForeignKey("events.poi_id"), nullable=True)
 
@@ -639,12 +638,13 @@ Events have a 7-value status field that controls display and behavior:
 | Field | Type | Description |
 |-------|------|-------------|
 | `event_status` | `String(100)` | Current status (default: `"Scheduled"`) |
-| `status_explanation` | `Text` | Required when transitioning to `Updated Date and/or Time`, `Postponed`, or `Moved Online` |
+| `status_explanation` | `String(80)` | Required when transitioning to `Updated Date and/or Time`, `Postponed`, or `Moved Online`. Max 80 characters (enforced by Pydantic validator) |
 | `cancellation_paragraph` | `Text` | Explanation displayed to users when canceled or postponed |
 | `contact_organizer_toggle` | `Boolean` | Controls whether a "Contact Organizer" button appears |
-| `online_event_url` | `String` | URL for virtual events (used when status is `Moved Online`) |
 | `new_event_link` | `String` | UUID string of replacement event (not a FK) |
 | `rescheduled_from_event_id` | `FK -> events.poi_id` | Links back to the original event that was rescheduled |
+
+**Note**: The frontend includes an `online_event_url` field in form initial values for virtual/online events, but this field is not yet present in the backend SQLAlchemy model or Pydantic schema. It is a frontend-only field at this time.
 
 ### Status Transitions
 
