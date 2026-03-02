@@ -339,8 +339,10 @@ export const VENDOR_TYPES = [
 export const LISTING_TYPES = [
   { value: 'free', label: 'Free Listing' },
   { value: 'paid', label: 'Paid Listing' },
-  { value: 'paid_founding', label: 'Paid Founding Listing' },
-  { value: 'sponsor', label: 'Sponsor Listing' },
+  { value: 'sponsor_platform', label: 'Sponsor – Platform' },
+  { value: 'sponsor_state', label: 'Sponsor – State' },
+  { value: 'sponsor_county', label: 'Sponsor – County' },
+  { value: 'sponsor_town', label: 'Sponsor – Town' },
   { value: 'community_comped', label: 'Community-Comped' }
 ];
 
@@ -474,6 +476,16 @@ export const IDEAL_FOR_OPTIONS = [
   { value: 'Youth WITHOUT Adult - Visually Impaired', label: 'Visually Impaired', group: 'Youth WITHOUT Adult' }
 ];
 
+// Event Cost Types (Task 139)
+export const EVENT_COST_TYPES = [
+  { value: 'free', label: 'Free' },
+  { value: 'single_price', label: 'Single Price' },
+  { value: 'range', label: 'Price Range' },
+];
+
+// Event Disclaimer (Task 149)
+export const EVENT_DISCLAIMER = "While we work to keep event information current and accurate, details may change. We recommend confirming directly with event organizers before making plans.";
+
 // Helper function to get status options based on POI type
 export const getStatusOptions = (poiType) => {
   if (poiType === 'EVENT') {
@@ -482,9 +494,45 @@ export const getStatusOptions = (poiType) => {
   return BUSINESS_STATUS_OPTIONS;
 };
 
+// Venue Inheritance Sections — which venue fields an event can inherit
+export const VENUE_INHERITANCE_SECTIONS = [
+  { value: 'address', label: 'Address & Location' },
+  { value: 'parking', label: 'Parking' },
+  { value: 'accessibility', label: 'Accessibility' },
+  { value: 'restrooms', label: 'Restrooms' },
+  { value: 'contact', label: 'Contact Info' },
+  { value: 'hours', label: 'Hours' },
+  { value: 'amenities', label: 'Amenities' },
+];
+
+// Venue Inheritance Modes — how each inherited section is used
+export const VENUE_INHERITANCE_MODES = [
+  { value: 'as_is', label: 'Use As Is' },
+  { value: 'use_and_add', label: 'Use & Add' },
+  { value: 'do_not_use', label: "Don't Use" },
+];
+
+// Recurrence frequency options for recurring events
+export const REPEAT_FREQUENCY_OPTIONS = [
+  { value: 'daily', label: 'Daily' },
+  { value: 'weekly', label: 'Weekly' },
+  { value: 'biweekly', label: 'Every 2 Weeks' },
+  { value: 'monthly', label: 'Monthly' },
+  { value: 'yearly', label: 'Yearly' },
+];
+
+// Sponsor tier options for event sponsors
+export const SPONSOR_TIERS = [
+  { value: 'Platinum', label: 'Platinum' },
+  { value: 'Gold', label: 'Gold' },
+  { value: 'Silver', label: 'Silver' },
+  { value: 'Bronze', label: 'Bronze' },
+  { value: 'Community', label: 'Community' },
+];
+
 // Helper function to determine which fields to show based on listing type
 export const getFieldsForListingType = (listingType, poiType) => {
-  const isPaid = ['paid', 'paid_founding', 'sponsor', 'community_comped'].includes(listingType);
+  const isPaid = ['paid', 'sponsor_platform', 'sponsor_state', 'sponsor_county', 'sponsor_town', 'community_comped'].includes(listingType);
   
   if (poiType === 'BUSINESS') {
     if (listingType === 'free') {

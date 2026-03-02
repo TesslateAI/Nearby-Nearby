@@ -257,8 +257,10 @@ VENUE_SETTINGS = [
 LISTING_TYPES = [
     {"value": "free", "label": "Free Listing"},
     {"value": "paid", "label": "Paid Listing"},
-    {"value": "paid_founding", "label": "Paid Founding Listing"},
-    {"value": "sponsor", "label": "Sponsor Listing"},
+    {"value": "sponsor_platform", "label": "Sponsor – Platform"},
+    {"value": "sponsor_state", "label": "Sponsor – State"},
+    {"value": "sponsor_county", "label": "Sponsor – County"},
+    {"value": "sponsor_town", "label": "Sponsor – Town"},
     {"value": "community_comped", "label": "Community-Comped"},
 ]
 
@@ -285,6 +287,8 @@ EVENT_STATUS_OPTIONS = [
     "Moved Online",
     "Unofficial Proposed Date",
 ]
+
+EVENT_COST_TYPES = ["free", "single_price", "range"]
 
 IMAGE_FUNCTION_TAGS = [
     "storefront", "entrance", "interior", "exterior", "signage",

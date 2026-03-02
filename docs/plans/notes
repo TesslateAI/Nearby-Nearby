@@ -70,3 +70,21 @@ Testing plan
   Admin is running at:
   - Frontend: http://localhost:5175
   - Backend API docs: http://localhost:8001/docs
+
+  NEW - Can’t Login on Safari Browser to admin - when I hit login it takes me back to the login page, just keeps cycling. Works fine on chrome - Fix after launch
+Task #2 - Still Doesn’t work, as soon as I click event, it goes to a white page - updated on google sheets to Doesn't Work
+Task #3 - Still Doesn't work, I still can’t click on anything for Corporate Requirements - updated google sheet to Doesn’t work - Fix after Launch
+For Parks and Trails for all Listing Type - When Task #4 was completed for the Add Another Parking Location, it left out a few important parking details, The Parking Types Available, Parking Notes, Expect to pay for Parking  - Fix after Launch
+For Parks and Trails for all Listing Type for the Template Parking Information can we add the Parking Lat and Longitude and Parking Area Name as its set up in the Additional Parking fields. - Fix after Launch
+Task #5 - NN31- When you copy the address on the POI pages on the Address + Parking accordion we need something signaling that the address was copied, similar to the function when you click the lat and long button on the POI pages, it copies fine but I had no idea it actually worked - Launch fix
+Native Share button on POI pages, mistakenly removed from design and needs to be reimplemented, Barry is updating design for Robert to be able to re-add to the design. - Launch Fix  
+Task #11 - Not seeing this added to any POI type for the LAT and Long added to the first set of Parking Lot Fields, they are in the add parking - Moved back to In Progress - Fix after Launch
+In Parks for public restroom the Public Toilet Options (Family, Porta, etc) Needs to be in with the restroom location itself and in the add another bathroom location for each time as it can vary - Fix after launch
+Missing Parking Lot Photos on all POI type in the first set of Parking Lot Fields, they are in the add additional parking - Fix after launch
+On Free Business Listing Short Description, if you try to paste something that is too long it doesn't even try to paste and then just cuts it off at character limit. It will paste if it is the exact - Fix after launch
+In Free Business Listing, remove restroom photos - fix after launch
+The added selections for Wheelchair Accessibility entered in Jira as NM-20 make sure that is also added to Free Business listings 
+Task #33 - Trials still only lets you upload 1 image for Trail Head Photo - fix after launch
+Task #34 - Trails still only lets you upload 1 image for Trail Exit Photo - fix after launch
+
+

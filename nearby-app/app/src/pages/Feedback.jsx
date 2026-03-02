@@ -129,6 +129,7 @@ function Feedback() {
               minLength={10}
               maxLength={5000}
               required
+              aria-required="true"
             />
           </div>
 
@@ -176,7 +177,7 @@ function Feedback() {
             </div>
           )}
 
-          {error && <p className="feedback-page__error">{error}</p>}
+          {error && <p className="feedback-page__error" role="alert">{error}</p>}
 
           <button
             type="submit"

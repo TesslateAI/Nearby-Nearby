@@ -386,6 +386,32 @@ class Event(Base):
     vendor_requirements = Column(Text)
     vendor_poi_links = Column(JSONB)  # List of POI IDs for vendors at this event
 
+    # Task 134-136: Event Status
+    event_status = Column(String(100), default='Scheduled')
+    cancellation_paragraph = Column(Text)
+    contact_organizer_toggle = Column(Boolean, default=False)
+    new_event_link = Column(String)  # Stores UUID string of the new event POI (not a FK for flexibility)
+    rescheduled_from_event_id = Column(UUID(as_uuid=True), ForeignKey("events.poi_id"), nullable=True)
+
+    # Task 137: Primary Display Category
+    primary_display_category = Column(String(100))
+
+    # Task 138: Extended Organizer
+    organizer_email = Column(String)
+    organizer_phone = Column(String)
+    organizer_website = Column(String)
+    organizer_social_media = Column(JSONB)
+    organizer_poi_id = Column(UUID(as_uuid=True), ForeignKey("points_of_interest.id"), nullable=True)
+
+    # Task 139: Cost & Ticketing
+    cost_type = Column(String(50))
+    ticket_links = Column(JSONB)
+
+    # Task 140: Sponsors
+    sponsors = Column(JSONB)
+
     poi = relationship("PointOfInterest", back_populates="event", foreign_keys=[poi_id])
     venue_poi = relationship("PointOfInterest", foreign_keys=[venue_poi_id])
     parent_event = relationship("Event", remote_side=[poi_id], foreign_keys=[parent_event_id])
+    rescheduled_from_event = relationship("Event", remote_side=[poi_id], foreign_keys=[rescheduled_from_event_id])
+    organizer_poi = relationship("PointOfInterest", foreign_keys=[organizer_poi_id])

@@ -112,6 +112,10 @@ resource "aws_ecs_task_definition" "app" {
           name      = "SECRET_KEY"
           valueFrom = var.ssm_secret_key_arn
         },
+        {
+          name      = "SENTRY_DSN"
+          valueFrom = var.ssm_sentry_dsn_arn
+        },
       ]
 
       healthCheck = {
@@ -245,6 +249,10 @@ resource "aws_ecs_task_definition" "admin" {
         {
           name      = "SECRET_KEY"
           valueFrom = var.ssm_secret_key_arn
+        },
+        {
+          name      = "SENTRY_DSN"
+          valueFrom = var.ssm_sentry_dsn_arn
         },
       ]
 

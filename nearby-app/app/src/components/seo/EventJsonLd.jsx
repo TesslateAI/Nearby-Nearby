@@ -74,51 +74,21 @@ function EventJsonLd({ poi }) {
     return {
       "@type": "Organization",
       name: poi.event.organizer_name,
-      ...(poi.website_url && { url: poi.website_url.startsWith('http') ? poi.website_url : `https://${poi.website_url}` }),
-      ...(poi.email && { email: poi.email }),
-      ...(poi.phone_number && { telephone: poi.phone_number })
+      ...(poi.event?.organizer_website && { url: poi.event.organizer_website?.startsWith('http') ? poi.event.organizer_website : `https://${poi.event.organizer_website}` }),
+      ...(poi.event?.organizer_email && { email: poi.event.organizer_email }),
+      ...(poi.event?.organizer_phone && { telephone: poi.event.organizer_phone })
     };
   };
 
   // Build offers array
   const buildOffers = () => {
-    const offers = [];
-
-    // If we have event cost information
-    if (poi.event?.cost_range_min !== null || poi.event?.cost_range_max !== null) {
-      const offer = {
-        "@type": "Offer",
-        url: eventUrl,
-        availability: "https://schema.org/InStock",
-        priceCurrency: "USD"
-      };
-
-      if (poi.event.cost_range_min !== null && poi.event.cost_range_max !== null) {
-        offer.lowPrice = poi.event.cost_range_min;
-        offer.highPrice = poi.event.cost_range_max;
-      } else if (poi.event.cost_range_min !== null) {
-        offer.price = poi.event.cost_range_min;
-      } else if (poi.event.cost_range_max !== null) {
-        offer.price = poi.event.cost_range_max;
-      }
-
-      // Add valid date range
-      if (poi.event.start_datetime) {
-        offer.validFrom = formatISODate(poi.event.start_datetime);
-      }
-
-      offers.push(offer);
-    } else if (poi.event?.is_free) {
-      offers.push({
-        "@type": "Offer",
-        url: eventUrl,
-        availability: "https://schema.org/InStock",
-        price: 0,
-        priceCurrency: "USD"
-      });
+    if (poi.event?.cost_type === 'free') {
+      return [{ "@type": "Offer", url: eventUrl, price: 0, priceCurrency: "USD", availability: "https://schema.org/InStock" }];
     }
-
-    return offers.length > 0 ? offers : null;
+    if (poi.cost && (poi.event?.cost_type === 'single_price' || poi.event?.cost_type === 'range')) {
+      return [{ "@type": "Offer", url: eventUrl, price: poi.cost, priceCurrency: "USD", availability: "https://schema.org/InStock" }];
+    }
+    return null;
   };
 
   // Build performer array
@@ -131,22 +101,17 @@ function EventJsonLd({ poi }) {
     }));
   };
 
-  // Determine event status
+  // Determine event status using poi.event.event_status
   const getEventStatus = () => {
-    const status = poi.event?.status?.toLowerCase() || poi.status?.toLowerCase();
+    const status = poi.event?.event_status || 'Scheduled';
     switch (status) {
-      case 'cancelled':
-      case 'canceled':
-        return "https://schema.org/EventCancelled";
-      case 'postponed':
-        return "https://schema.org/EventPostponed";
-      case 'rescheduled':
-        return "https://schema.org/EventRescheduled";
-      case 'moved_online':
-      case 'virtual':
-        return "https://schema.org/EventMovedOnline";
-      default:
-        return "https://schema.org/EventScheduled";
+      case 'Canceled': return 'https://schema.org/EventCancelled';
+      case 'Postponed': return 'https://schema.org/EventPostponed';
+      case 'Rescheduled': return 'https://schema.org/EventRescheduled';
+      case 'Moved Online': return 'https://schema.org/EventMovedOnline';
+      case 'Updated Date and/or Time': return 'https://schema.org/EventScheduled';
+      case 'Unofficial Proposed Date': return 'https://schema.org/EventScheduled';
+      default: return 'https://schema.org/EventScheduled';
     }
   };
 
@@ -193,6 +158,15 @@ function EventJsonLd({ poi }) {
     eventAttendanceMode: getEventAttendanceMode(),
     location: buildLocation()
   };
+
+  // Add VirtualLocation when event is moved online and online URL is available
+  if (poi.event?.event_status === 'Moved Online' && poi.event?.online_event_url) {
+    eventSchema.location = [
+      buildLocation(),
+      { "@type": "VirtualLocation", url: poi.event.online_event_url }
+    ];
+    eventSchema.eventAttendanceMode = "https://schema.org/OnlineEventAttendanceMode";
+  }
 
   // Add dates
   if (poi.event?.start_datetime) {

@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, MapPin, ChevronDown, X, RotateCcw } from 'lucide-react';
 import SearchBar from '../SearchBar';
 import Map from '../Map';
 import NearbyCard from './NearbyCard';
@@ -35,18 +34,6 @@ const getDatePresets = () => {
   };
 };
 
-// Format date for display
-const formatDateDisplay = (dateStr) => {
-  if (!dateStr) return 'Any Date';
-  const presets = getDatePresets();
-  if (dateStr === presets.today) return 'Today';
-  if (dateStr === presets.tomorrow) return 'Tomorrow';
-  if (dateStr === presets.saturday || dateStr === presets.sunday) return 'This Weekend';
-
-  const date = new Date(dateStr + 'T12:00:00');
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-};
-
 function NearbySection({ currentPOI }) {
   const navigate = useNavigate();
   const [nearbyPOIs, setNearbyPOIs] = useState([]);
@@ -61,20 +48,7 @@ function NearbySection({ currentPOI }) {
   const [highlightedCardId, setHighlightedCardId] = useState(null); // For map-card connection
   const [copiedText, setCopiedText] = useState(null); // Track what was copied
   const [searchFilteredIds, setSearchFilteredIds] = useState(null); // IDs from hybrid search filter
-  const [showDateDropdown, setShowDateDropdown] = useState(false); // Date dropdown visibility
   const cardRefs = useRef({}); // Refs for card scrolling
-  const dateDropdownRef = useRef(null); // Ref for date dropdown
-
-  // Close date dropdown on outside click
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dateDropdownRef.current && !dateDropdownRef.current.contains(event.target)) {
-        setShowDateDropdown(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
 
   useEffect(() => {
     if (currentPOI) {
@@ -131,28 +105,11 @@ function NearbySection({ currentPOI }) {
         'Events': 'event',
         'Parks': 'park',
         'Trails': 'trail',
-        'Youth Events': 'event' // Youth events are a subset of events
       };
 
       const expectedType = filterMap[selectedFilter];
       if (expectedType && nearbyPoi.poi_type?.toLowerCase() !== expectedType) {
         return false;
-      }
-
-      // Additional filter for Youth Events - check if event is youth-oriented
-      if (selectedFilter === 'Youth Events') {
-        // Check for youth-related categories or tags
-        const isYouthEvent = nearbyPoi.categories?.some(c =>
-          c.category?.name?.toLowerCase().includes('youth') ||
-          c.category?.name?.toLowerCase().includes('kids') ||
-          c.category?.name?.toLowerCase().includes('family') ||
-          c.category?.name?.toLowerCase().includes('children')
-        ) || nearbyPoi.name?.toLowerCase().includes('youth') ||
-           nearbyPoi.name?.toLowerCase().includes('kids');
-
-        if (!isYouthEvent) {
-          return false;
-        }
       }
     }
 
@@ -345,119 +302,84 @@ function NearbySection({ currentPOI }) {
 
   return (
     <div className="nearby-section">
-      <div className="nearby-section__header">
-        <h2 className="nearby-section__title">NEARBY</h2>
+      {/* Title area — wrapper_default */}
+      <div className="wrapper_default">
+        <h2 className="nearby-section__title">Nearby</h2>
         <div className="nearby-section__count">
-          {filteredNearbyPOIs.length} {filteredNearbyPOIs.length === 1 ? 'listing' : 'listings'}
+          {filteredNearbyPOIs.length} {filteredNearbyPOIs.length === 1 ? 'Listing' : 'Listings'}
         </div>
+      </div>
+
+      {/* Controls wrapper — wrapper_default */}
+      <div className="wrapper_default nearby-section__controls-wrapper">
+        {/* Filter pills */}
         <NearbyFilters
           selectedFilter={selectedFilter}
           onFilterChange={handleFilterChange}
         />
-      </div>
 
-      <div className="nearby-section__controls">
-        {/* Search Bar - Full width row */}
-        <div className="nearby-controls__search">
-          <SearchBar
-            placeholder='Search nearby... try "pet friendly" or "coffee"'
-            openInNewTab={true}
-            nearbyPoiIds={nearbyPOIs.map(poi => poi.id)}
-            onFilterNearby={handleSearchFilter}
-          />
-        </div>
-
-        {/* Control buttons row */}
-        <div className="nearby-controls__row">
-          {/* Radius Dropdown */}
-          <div className="nearby-dropdown">
-            <button
-              className="nearby-dropdown__btn"
-              onClick={(e) => {
-                const select = e.currentTarget.nextElementSibling;
-                select.focus();
-                select.click();
-              }}
-            >
-              <MapPin size={16} />
-              <span>{radiusMiles} {radiusMiles === 1 ? 'mile' : 'miles'}</span>
-              <ChevronDown size={14} />
+        {/* Search + controls */}
+        <div className="nearby-section__search-controls">
+          {/* Search container — input + gold button */}
+          <div className="nearby-search-container">
+            <SearchBar
+              placeholder="What's nearby? Search for locations or interests..."
+              openInNewTab={true}
+              nearbyPoiIds={nearbyPOIs.map(poi => poi.id)}
+              onFilterNearby={handleSearchFilter}
+            />
+            <button type="button" className="nearby-search-btn" onClick={() => {}}>
+              Search
             </button>
-            <select
-              value={radiusMiles}
-              onChange={(e) => setRadiusMiles(Number(e.target.value))}
-              className="nearby-dropdown__select"
-              aria-label="Select radius"
-            >
-              <option value={1}>1 mile</option>
-              <option value={3}>3 miles</option>
-              <option value={5}>5 miles</option>
-              <option value={10}>10 miles</option>
-              <option value={15}>15 miles</option>
-            </select>
           </div>
 
-          {/* Date Dropdown */}
-          <div className="nearby-dropdown" ref={dateDropdownRef}>
+          {/* Controls row — radius, date, clear, add location */}
+          <div className="nearby-controls__row">
+            <div className="nearby-controls__group">
+              <label className="visually_hidden" htmlFor="radius_select">Search Radius:</label>
+              <select
+                id="radius_select"
+                value={radiusMiles}
+                onChange={(e) => setRadiusMiles(Number(e.target.value))}
+                className="nearby-dropdown__select"
+                aria-label="Select radius"
+              >
+                <option value={1}>1 mile</option>
+                <option value={3}>3 miles</option>
+                <option value={5}>5 miles</option>
+                <option value={10}>10 miles</option>
+                <option value={15}>15 miles</option>
+              </select>
+            </div>
+
+            <div className="nearby-controls__group">
+              <label className="visually_hidden" htmlFor="date_filter">Filter by Date:</label>
+              <input
+                type="date"
+                id="date_filter"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                min={getDatePresets().today}
+                className="nearby-dropdown__select"
+                aria-label="Filter by date"
+              />
+            </div>
+
             <button
-              className={`nearby-dropdown__btn ${selectedDate ? 'nearby-dropdown__btn--active' : ''}`}
-              onClick={() => setShowDateDropdown(!showDateDropdown)}
+              type="button"
+              onClick={handleClear}
+              className="nearby-clear-btn"
+              aria-label="Clear all filters"
             >
-              <Calendar size={16} />
-              <span>{formatDateDisplay(selectedDate)}</span>
-              <ChevronDown size={14} />
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                <path d="M3 3v5h5"></path>
+              </svg>
+              <span>Clear</span>
             </button>
 
-            {showDateDropdown && (
-              <div className="nearby-dropdown__menu">
-                <button
-                  className={`nearby-dropdown__option ${!selectedDate ? 'nearby-dropdown__option--active' : ''}`}
-                  onClick={() => { setSelectedDate(''); setShowDateDropdown(false); }}
-                >
-                  Any Date
-                </button>
-                <button
-                  className={`nearby-dropdown__option ${selectedDate === getDatePresets().today ? 'nearby-dropdown__option--active' : ''}`}
-                  onClick={() => { setSelectedDate(getDatePresets().today); setShowDateDropdown(false); }}
-                >
-                  Today
-                </button>
-                <button
-                  className={`nearby-dropdown__option ${selectedDate === getDatePresets().tomorrow ? 'nearby-dropdown__option--active' : ''}`}
-                  onClick={() => { setSelectedDate(getDatePresets().tomorrow); setShowDateDropdown(false); }}
-                >
-                  Tomorrow
-                </button>
-                <button
-                  className={`nearby-dropdown__option ${selectedDate === getDatePresets().saturday ? 'nearby-dropdown__option--active' : ''}`}
-                  onClick={() => { setSelectedDate(getDatePresets().saturday); setShowDateDropdown(false); }}
-                >
-                  This Weekend
-                </button>
-                <div className="nearby-dropdown__divider" />
-                <label className="nearby-dropdown__date-label">
-                  <span>Pick a date</span>
-                  <input
-                    type="date"
-                    value={selectedDate}
-                    onChange={(e) => { setSelectedDate(e.target.value); setShowDateDropdown(false); }}
-                    min={getDatePresets().today}
-                    className="nearby-dropdown__date-input"
-                  />
-                </label>
-              </div>
-            )}
+            <a href="/claim-business" className="nearby-add-location-link" aria-label="Add a new location to the directory">Add Location</a>
           </div>
-
-          {/* Clear Button */}
-          <button
-            onClick={handleClear}
-            className="nearby-clear-btn"
-            aria-label="Clear all filters"
-          >
-            <RotateCcw size={16} />
-            <span>Clear</span>
-          </button>
         </div>
       </div>
 
@@ -470,20 +392,8 @@ function NearbySection({ currentPOI }) {
         highlightedId={highlightedCardId}
       />
 
-      {/* Map Legend */}
-      <div className="nearby-map-legend">
-        <div className="nearby-map-legend__item">
-          <span className="nearby-map-legend__marker nearby-map-legend__marker--current"></span>
-          <span className="nearby-map-legend__label">Current Location</span>
-        </div>
-        <div className="nearby-map-legend__item">
-          <span className="nearby-map-legend__marker nearby-map-legend__marker--nearby">1</span>
-          <span className="nearby-map-legend__label">Nearby POI</span>
-        </div>
-      </div>
-
-      {/* Nearby Results */}
-      <div className="nearby-results">
+      {/* Nearby Results — nn-templates .one_search_map_results_group */}
+      <div className="nearby-results wrapper_wide">
         {nearbyLoading ? (
           <div className="nearby-results__loading">Loading nearby locations...</div>
         ) : paginatedPOIs.length > 0 ? (

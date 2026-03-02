@@ -601,8 +601,8 @@
   .nearby-pagination__num {
     padding: 8px 12px;
     font-size: 13px;
-    min-width: 40px;
-    min-height: 40px;
+    min-width: 44px;
+    min-height: 44px;
   }
 
   .directions-modal {
@@ -631,8 +631,8 @@
   .nearby-pagination__btn,
   .nearby-pagination__num {
     padding: 6px 10px;
-    min-width: 36px;
-    min-height: 36px;
+    min-width: 44px;
+    min-height: 44px;
     font-size: 12px;
   }
 }

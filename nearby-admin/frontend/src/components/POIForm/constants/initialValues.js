@@ -213,7 +213,30 @@ export const emptyInitialValues = {
     vendor_application_info: '',
     vendor_fee: '',
     vendor_requirements: '',
-    vendor_poi_links: []
+    vendor_poi_links: [],
+    // Task 134-136: Event Status
+    event_status: 'Scheduled',
+    cancellation_paragraph: '',
+    contact_organizer_toggle: false,
+    new_event_link: '',
+    rescheduled_from_event_id: null,
+    status_explanation: '',
+    online_event_url: '',
+    rescheduled_start_datetime: null,
+    rescheduled_end_datetime: null,
+    // Task 137: Primary Display Category
+    primary_display_category: '',
+    // Task 138: Extended Organizer
+    organizer_email: '',
+    organizer_phone: '',
+    organizer_website: '',
+    organizer_social_media: {},
+    organizer_poi_id: null,
+    // Task 139: Cost & Ticketing
+    cost_type: '',
+    ticket_links: [],
+    // Task 140: Sponsors
+    sponsors: [],
   },
   // Other fields
   photos: { featured: null, gallery: [] },

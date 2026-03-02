@@ -7,12 +7,17 @@ export default defineConfig({
   build: {
     outDir: '../backend/static',
     emptyOutDir: true,
+    sourcemap: 'hidden',
   },
   server: {
     host: '0.0.0.0',
     port: 5173,
     watch: {
       usePolling: true,  // Required for Docker file watching on Windows/Mac
+    },
+    hmr: {
+      host: 'localhost',
+      port: 8003,        // Client-facing port (mapped from 5173 in docker-compose)
     },
     proxy: {
       '/api': {

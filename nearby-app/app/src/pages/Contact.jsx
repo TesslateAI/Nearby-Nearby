@@ -78,6 +78,7 @@ function Contact() {
               placeholder="First and last name"
               maxLength={100}
               required
+              aria-required="true"
             />
           </div>
 
@@ -91,6 +92,7 @@ function Contact() {
               placeholder="you@example.com"
               maxLength={255}
               required
+              aria-required="true"
             />
           </div>
 
@@ -105,10 +107,11 @@ function Contact() {
               minLength={10}
               maxLength={5000}
               required
+              aria-required="true"
             />
           </div>
 
-          {error && <p className="contact-page__error">{error}</p>}
+          {error && <p className="contact-page__error" role="alert">{error}</p>}
 
           <button
             type="submit"

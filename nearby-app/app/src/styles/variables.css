@@ -16,12 +16,13 @@
   /* ── Brand colors ────────────────────────────────────────────── */
   --nn-dark:     #1A2128;
   --nn-slate:    #33404E;
-  --nn-gray:     #597189;
+  --nn-gray:     #4D6578;
 
   --nn-purple1:  #562556;
   --nn-purple2:  #853885;
+  --nn-purple3:  #DFBFDF;
 
-  --nn-teal1:    #276255;
+  --nn-teal1:    #245B4E;
   --nn-teal2:    #328170;
   --nn-gold:     #FEC764;
 
@@ -29,9 +30,11 @@
   --nn-red:      #AF1818;
   --nn-orange:   #ff8500;
   --nn-yellow:   #f9d503;
-  --nn-green:    #6dba24;
+  --nn-green:    #386327;
+  --nn-green2:   #487D17;
   --nn-aqua:     #00dbdb;
-  --nn-blue:     #0846E2;
+  --nn-blue:     #075E8D;
+  --nn-blue2:    #115579;
   --nn-magenta:  #c02aac;
   --nn-brown:    #523a2e;
 
@@ -59,6 +62,9 @@
   --color-youtube:    #FF0000;
   --color-tiktok:     #141414;
   --color-pinterest:  #BD081C;
+  --color-patreon:    #F96854;
+  --color-etsy:       #F16521;
+  --color-vimeo:      #1a8acb;
 
   /* ── Semantic tokens ─────────────────────────────────────────── */
   --color-text:        var(--nn-slate);
@@ -71,8 +77,11 @@
   --color-success:     var(--nn-green);
   --color-focus:       #0066cc;
 
+  /* ── Gradients ──────────────────────────────────────────────── */
+  --purple-teal-gradient-1: linear-gradient(180deg, rgba(86, 37, 86, 1) 0%, rgba(50, 129, 112, 1) 100%);
+
   /* ── Overlay / shell ─────────────────────────────────────────── */
-  --mobile-nav-height: 55px;
+  --mobile-nav-height: 75px;
   --overlay-backdrop:  hsla(0, 0%, 0%, 0.55);
   --overlay-panel-bg:  #ffffff;
 }

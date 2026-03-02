@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import Overlay from './Overlay';
 import NNLogo from './NNLogo';
@@ -33,16 +33,24 @@ export default function Navbar({ navOverlay, searchOverlay }) {
     return () => window.removeEventListener('resize', handler);
   }, []);
 
+  // Desktop hover handlers for submenu
+  const handleMouseEnter = useCallback(() => {
+    if (window.innerWidth >= 1200) setMoreOpen(true);
+  }, []);
+  const handleMouseLeave = useCallback(() => {
+    if (window.innerWidth >= 1200) setMoreOpen(false);
+  }, []);
+
   return (
     <header id="header_primary_parent">
       <div id="logo1">
         <Link id="link_logo_primary1" to="/" aria-label="Nearby Nearby home">
-          <img src="/Logo.png" alt="Nearby Nearby" className="navbar-logo-img" />
+          <NNLogo />
         </Link>
       </div>
 
       <div id="wrapper_header_primary">
-        {/* Nav overlay — mobile panel, desktop inline */}
+        {/* Nav overlay — mobile: fixed panel, desktop: inline */}
         <Overlay
           id="nav_overlay"
           isOpen={navOverlay.isOpen}
@@ -95,20 +103,23 @@ export default function Navbar({ navOverlay, searchOverlay }) {
                     <a role="menuitem" href="https://blog.nearbynearby.com/" className="aaa_menu_1_link" target="_blank" rel="noopener noreferrer">Updates</a>
                   </li>
 
-                  {/* More dropdown */}
+                  {/* More dropdown — submenu always in DOM, toggled via class */}
                   <li
                     role="none"
                     className={`aaa_menu_1_list_item aaa_menu_1_has_sub_menu${moreOpen ? ' aaa_menu_open' : ''}`}
                     ref={moreRef}
+                    onMouseEnter={handleMouseEnter}
+                    onMouseLeave={handleMouseLeave}
                   >
-                    <a
+                    <button
+                      type="button"
                       role="menuitem"
-                      href="#"
-                      className="aaa_menu_1_link"
-                      onClick={(e) => { e.preventDefault(); setMoreOpen(v => !v); }}
+                      className="aaa_menu_1_link aaa_menu_1_link--btn"
+                      aria-haspopup="true"
+                      onClick={() => setMoreOpen(v => !v)}
                     >
                       More
-                    </a>
+                    </button>
                     <button
                       className="aaa_menu_1_dd_button"
                       aria-expanded={moreOpen}
@@ -117,19 +128,17 @@ export default function Navbar({ navOverlay, searchOverlay }) {
                     >
                       &#9662;
                     </button>
-                    {moreOpen && (
-                      <ul role="menu" className="aaa_menu_1_sub_menu">
-                        <li role="none" className="aaa_menu_1_list_item">
-                          <a role="menuitem" href="/help/" className="aaa_menu_1_link" onClick={navOverlay.close}>Help / FAQ's</a>
-                        </li>
-                        <li role="none" className="aaa_menu_1_list_item">
-                          <a role="menuitem" href="/contact/" className="aaa_menu_1_link" onClick={navOverlay.close}>Contact</a>
-                        </li>
-                        <li role="none" className="aaa_menu_1_list_item">
-                          <Link role="menuitem" to="/suggest-place" className="aaa_menu_1_link" onClick={navOverlay.close}>Register Your Business</Link>
-                        </li>
-                      </ul>
-                    )}
+                    <ul role="menu" className={`aaa_menu_1_sub_menu${moreOpen ? ' aaa_menu_open' : ''}`}>
+                      <li role="none" className="aaa_menu_1_list_item">
+                        <a role="menuitem" href="/help/" className="aaa_menu_1_link" onClick={navOverlay.close}>Help / FAQ's</a>
+                      </li>
+                      <li role="none" className="aaa_menu_1_list_item">
+                        <Link role="menuitem" to="/contact" className="aaa_menu_1_link" onClick={navOverlay.close}>Contact</Link>
+                      </li>
+                      <li role="none" className="aaa_menu_1_list_item">
+                        <Link role="menuitem" to="/claim-business" className="aaa_menu_1_link" onClick={navOverlay.close}>Register Your Business</Link>
+                      </li>
+                    </ul>
                   </li>
                 </ul>
               </div>

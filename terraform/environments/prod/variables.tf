@@ -48,6 +48,13 @@ variable "secret_key" {
   description = "JWT signing secret key"
 }
 
+variable "sentry_dsn" {
+  type        = string
+  sensitive   = true
+  default     = "disabled"
+  description = "Sentry DSN for error tracking (set to actual DSN to enable)"
+}
+
 # Container images (defaults to placeholder, overridden after first push)
 variable "app_image" {
   type    = string

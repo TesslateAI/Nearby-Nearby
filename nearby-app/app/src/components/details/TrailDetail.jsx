@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Clock, Phone, Globe, Heart, Share2, Navigation, Plus, ChevronDown, ChevronUp, Mountain, AlertCircle, Copy, Check, ExternalLink, Info, CalendarCheck, Truck, ShoppingCart } from 'lucide-react';
+import { MapPin, Clock, Phone, Globe, Heart, Share2, Navigation, Plus, Mountain, AlertCircle, Copy, Check, ExternalLink, Info, CalendarCheck, Truck, ShoppingCart } from 'lucide-react';
 import NearbySection from '../nearby-feature/NearbySection';
+import Accordion, { AccordionSection } from '../Accordion';
 import HoursDisplay from '../common/HoursDisplay';
 import { isCurrentlyOpen } from '../../utils/hoursUtils';
 import './TrailDetail.css';
@@ -12,7 +13,6 @@ import './TrailDetail.css';
  */
 function TrailDetail({ poi }) {
   const navigate = useNavigate();
-  const [expandedSections, setExpandedSections] = useState({});
   const [showHours, setShowHours] = useState(false);
   const [copiedCoords, setCopiedCoords] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
@@ -125,13 +125,6 @@ function TrailDetail({ poi }) {
     setShowShareMenu(false);
   };
 
-  const toggleSection = (section) => {
-    setExpandedSections(prev => ({
-      ...prev,
-      [section]: !prev[section]
-    }));
-  };
-
   // Get photos by type from the images array (for typed sections like trail_head, restroom, etc.)
   const getPhotosByType = (type) => {
     if (!poi.images) return [];
@@ -155,29 +148,6 @@ function TrailDetail({ poi }) {
         caption: img.caption
       }))
       .filter(img => img.url);
-  };
-
-  const CollapsibleSection = ({ title, children, show = true }) => {
-    if (!show) return null;
-
-    const isOpen = expandedSections[title];
-
-    return (
-      <div className="collapsible-section">
-        <button
-          onClick={() => toggleSection(title)}
-          className="collapsible-section__header"
-        >
-          <span className="collapsible-section__title">{title}</span>
-          {isOpen ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-        </button>
-        {isOpen && (
-          <div className="collapsible-section__content">
-            {children}
-          </div>
-        )}
-      </div>
-    );
   };
 
   const InfoRow = ({ label, value }) => {
@@ -403,114 +373,116 @@ function TrailDetail({ poi }) {
 
         {/* Trail-Specific Collapsible Sections */}
         <div className="poi-detail__collapsible-sections">
-          <CollapsibleSection title="TRAIL DETAILS" show={poi.trail}>
-            <div className="collapsible-section__info">
-              <InfoRow label="Length" value={poi.trail?.length_text} />
-              <InfoRow label="Difficulty" value={poi.trail?.difficulty} />
-              <InfoRow label="Route Type" value={poi.trail?.route_type} />
-              {poi.trail?.difficulty_description && (
-                <InfoRow label="Difficulty Info" value={poi.trail.difficulty_description} />
-              )}
-            </div>
-          </CollapsibleSection>
+          <Accordion closeOther closeAble scrollOffset={120}>
+            <AccordionSection title="TRAIL DETAILS" show={!!poi.trail}>
+              <div className="collapsible-section__info">
+                <InfoRow label="Length" value={poi.trail?.length_text} />
+                <InfoRow label="Difficulty" value={poi.trail?.difficulty} />
+                <InfoRow label="Route Type" value={poi.trail?.route_type} />
+                {poi.trail?.difficulty_description && (
+                  <InfoRow label="Difficulty Info" value={poi.trail.difficulty_description} />
+                )}
+              </div>
+            </AccordionSection>
 
-          <CollapsibleSection title="ABOUT + HOURS" show={poi.description_long || poi.hours}>
-            <div className="collapsible-section__info">
-              {poi.description_long && (
-                <InfoRow label="Description" value={poi.description_long} />
-              )}
-              <HoursDisplay
-                hours={poi.hours}
-                holidayHours={poi.holiday_hours}
-                appointmentLinks={poi.appointment_links}
-                appointmentBookingUrl={poi.appointment_booking_url}
-                appointmentRequired={poi.hours_but_appointment_required}
-                hoursNotes={poi.hours_notes}
-              />
-            </div>
-          </CollapsibleSection>
+            <AccordionSection title="ABOUT + HOURS" show={!!(poi.description_long || poi.hours)}>
+              <div className="collapsible-section__info">
+                {poi.description_long && (
+                  <InfoRow label="Description" value={poi.description_long} />
+                )}
+                <HoursDisplay
+                  hours={poi.hours}
+                  holidayHours={poi.holiday_hours}
+                  appointmentLinks={poi.appointment_links}
+                  appointmentBookingUrl={poi.appointment_booking_url}
+                  appointmentRequired={poi.hours_but_appointment_required}
+                  hoursNotes={poi.hours_notes}
+                />
+              </div>
+            </AccordionSection>
 
-          <CollapsibleSection title="ADDRESS + PARKING" show={poi.address_street || poi.parking_types}>
-            <div className="collapsible-section__info">
-              <InfoRow label="Street" value={poi.address_street} />
-              <InfoRow label="City" value={poi.address_city} />
-              <InfoRow label="State" value={poi.address_state} />
-              <InfoRow label="Zip" value={poi.address_zip} />
-              {poi.parking_types && Array.isArray(poi.parking_types) && (
-                <InfoRow label="Parking" value={poi.parking_types.join(", ")} />
-              )}
-              {poi.parking_notes && <InfoRow label="Parking Notes" value={poi.parking_notes} />}
-            </div>
-          </CollapsibleSection>
+            <AccordionSection title="ADDRESS + PARKING" show={!!(poi.address_street || poi.parking_types)}>
+              <div className="collapsible-section__info">
+                <InfoRow label="Street" value={poi.address_street} />
+                <InfoRow label="City" value={poi.address_city} />
+                <InfoRow label="State" value={poi.address_state} />
+                <InfoRow label="Zip" value={poi.address_zip} />
+                {poi.parking_types && Array.isArray(poi.parking_types) && (
+                  <InfoRow label="Parking" value={poi.parking_types.join(", ")} />
+                )}
+                {poi.parking_notes && <InfoRow label="Parking Notes" value={poi.parking_notes} />}
+              </div>
+            </AccordionSection>
 
-          <CollapsibleSection title="WHAT TO EXPECT" show={poi.wheelchair_accessible || poi.ideal_for}>
-            <div className="collapsible-section__info">
-              {poi.wheelchair_accessible && Array.isArray(poi.wheelchair_accessible) && (
-                <InfoRow label="Accessibility" value={poi.wheelchair_accessible.join(", ")} />
-              )}
-              {poi.ideal_for && Array.isArray(poi.ideal_for) && (
-                <InfoRow label="Ideal For" value={poi.ideal_for.join(", ")} />
-              )}
-            </div>
-          </CollapsibleSection>
+            <AccordionSection title="WHAT TO EXPECT" show={!!(poi.wheelchair_accessible || poi.ideal_for)}>
+              <div className="collapsible-section__info">
+                {poi.wheelchair_accessible && Array.isArray(poi.wheelchair_accessible) && (
+                  <InfoRow label="Accessibility" value={poi.wheelchair_accessible.join(", ")} />
+                )}
+                {poi.ideal_for && Array.isArray(poi.ideal_for) && (
+                  <InfoRow label="Ideal For" value={poi.ideal_for.join(", ")} />
+                )}
+              </div>
+            </AccordionSection>
 
-          <CollapsibleSection title="PUBLIC RESTROOMS" show={poi.public_toilets}>
-            <div className="collapsible-section__info">
-              {poi.public_toilets && Array.isArray(poi.public_toilets) && (
-                <InfoRow label="Available" value={poi.public_toilets.join(", ")} />
-              )}
-              {poi.toilet_description && (
-                <InfoRow label="Details" value={poi.toilet_description} />
-              )}
-            </div>
-          </CollapsibleSection>
+            <AccordionSection title="PUBLIC RESTROOMS" show={!!poi.public_toilets}>
+              <div className="collapsible-section__info">
+                {poi.public_toilets && Array.isArray(poi.public_toilets) && (
+                  <InfoRow label="Available" value={poi.public_toilets.join(", ")} />
+                )}
+                {poi.toilet_description && (
+                  <InfoRow label="Details" value={poi.toilet_description} />
+                )}
+              </div>
+            </AccordionSection>
 
-          <CollapsibleSection title="ACCESSIBILITY" show={poi.wheelchair_accessible || poi.wheelchair_details}>
-            <div className="collapsible-section__info">
-              {poi.wheelchair_accessible && Array.isArray(poi.wheelchair_accessible) && (
-                <InfoRow label="Wheelchair" value={poi.wheelchair_accessible.join(", ")} />
-              )}
-              {poi.wheelchair_details && (
-                <InfoRow label="Details" value={poi.wheelchair_details} />
-              )}
-            </div>
-          </CollapsibleSection>
+            <AccordionSection title="ACCESSIBILITY" show={!!(poi.wheelchair_accessible || poi.wheelchair_details)}>
+              <div className="collapsible-section__info">
+                {poi.wheelchair_accessible && Array.isArray(poi.wheelchair_accessible) && (
+                  <InfoRow label="Wheelchair" value={poi.wheelchair_accessible.join(", ")} />
+                )}
+                {poi.wheelchair_details && (
+                  <InfoRow label="Details" value={poi.wheelchair_details} />
+                )}
+              </div>
+            </AccordionSection>
 
-          <CollapsibleSection title="PET POLICY" show={poi.pet_options || poi.pet_policy}>
-            <div className="collapsible-section__info">
-              {poi.pet_options && Array.isArray(poi.pet_options) && (
-                <InfoRow label="Pets Allowed" value={poi.pet_options.join(", ")} />
-              )}
-              {poi.pet_policy && (
-                <InfoRow label="Policy" value={poi.pet_policy} />
-              )}
-            </div>
-          </CollapsibleSection>
+            <AccordionSection title="PET POLICY" show={!!(poi.pet_options || poi.pet_policy)}>
+              <div className="collapsible-section__info">
+                {poi.pet_options && Array.isArray(poi.pet_options) && (
+                  <InfoRow label="Pets Allowed" value={poi.pet_options.join(", ")} />
+                )}
+                {poi.pet_policy && (
+                  <InfoRow label="Policy" value={poi.pet_policy} />
+                )}
+              </div>
+            </AccordionSection>
 
-          <CollapsibleSection title="TIPS + TRICKS" show={poi.community_impact || poi.history_paragraph}>
-            <div className="collapsible-section__info">
-              {poi.history_paragraph && (
-                <InfoRow label="History" value={poi.history_paragraph} />
-              )}
-              {poi.community_impact && (
-                <InfoRow label="Community Impact" value={poi.community_impact} />
-              )}
-            </div>
-          </CollapsibleSection>
+            <AccordionSection title="TIPS + TRICKS" show={!!(poi.community_impact || poi.history_paragraph)}>
+              <div className="collapsible-section__info">
+                {poi.history_paragraph && (
+                  <InfoRow label="History" value={poi.history_paragraph} />
+                )}
+                {poi.community_impact && (
+                  <InfoRow label="Community Impact" value={poi.community_impact} />
+                )}
+              </div>
+            </AccordionSection>
 
-          <CollapsibleSection title="CONTACT" show={poi.phone_number || poi.email || poi.website_url}>
-            <div className="collapsible-section__info">
-              <InfoRow label="Phone" value={poi.phone_number} />
-              <InfoRow label="Email" value={poi.email} />
-              <InfoRow label="Website" value={poi.website_url} />
-              {poi.instagram_username && (
-                <InfoRow label="Instagram" value={`@${poi.instagram_username}`} />
-              )}
-              {poi.facebook_username && (
-                <InfoRow label="Facebook" value={poi.facebook_username} />
-              )}
-            </div>
-          </CollapsibleSection>
+            <AccordionSection title="CONTACT" show={!!(poi.phone_number || poi.email || poi.website_url)}>
+              <div className="collapsible-section__info">
+                <InfoRow label="Phone" value={poi.phone_number} />
+                <InfoRow label="Email" value={poi.email} />
+                <InfoRow label="Website" value={poi.website_url} />
+                {poi.instagram_username && (
+                  <InfoRow label="Instagram" value={`@${poi.instagram_username}`} />
+                )}
+                {poi.facebook_username && (
+                  <InfoRow label="Facebook" value={poi.facebook_username} />
+                )}
+              </div>
+            </AccordionSection>
+          </Accordion>
         </div>
 
         {/* Bottom Border */}

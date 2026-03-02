@@ -233,6 +233,25 @@ class Event(Base):
     vendor_fee = Column(String)
     vendor_requirements = Column(Text)
     vendor_poi_links = Column(JSONB)
+    # Task 134-136: Event Status
+    event_status = Column(String(100))
+    cancellation_paragraph = Column(Text)
+    contact_organizer_toggle = Column(Boolean)
+    new_event_link = Column(String)
+    rescheduled_from_event_id = Column(PG_UUID(as_uuid=True), nullable=True)
+    # Task 137: Primary Display Category
+    primary_display_category = Column(String(100))
+    # Task 138: Extended Organizer
+    organizer_email = Column(String)
+    organizer_phone = Column(String)
+    organizer_website = Column(String)
+    organizer_social_media = Column(JSONB)
+    organizer_poi_id = Column(PG_UUID(as_uuid=True), nullable=True)
+    # Task 139: Cost & Ticketing
+    cost_type = Column(String(50))
+    ticket_links = Column(JSONB)
+    # Task 140: Sponsors
+    sponsors = Column(JSONB)
     poi = relationship("PointOfInterest", back_populates="event")
 
 

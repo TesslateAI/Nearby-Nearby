@@ -119,6 +119,25 @@
   border-color: #2e7d32;
 }
 
+/* Subscribe button */
+.btn_subscribe {
+  background-color: var(--nn-gold);
+  color: var(--nn-dark);
+  font-weight: 700;
+  font-family: var(--font-poppins);
+  font-size: 16px;
+  padding: 16px 30px;
+  border: none;
+  border-radius: 0;
+  cursor: pointer;
+  transition: background 0.2s;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.btn_subscribe:hover {
+  background-color: #FEB42F;
+}
+
 /* ── Layer 2: Community interest ─────────────────────────────── */
 #footer_layer_community {
   width: 100%;
@@ -158,6 +177,26 @@
   font-family: var(--font-poppins);
   font-weight: 700;
   color: var(--nn-purple1);
+}
+
+.btn_community {
+  background-color: var(--nn-purple1);
+  color: white;
+  font-family: var(--font-poppins);
+  font-weight: 700;
+  font-size: 16px;
+  padding: 16px 35px;
+  border: none;
+  border-radius: 6px;
+  text-decoration: none;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  display: inline-block;
+  transition: background 0.2s;
+}
+.btn_community:hover {
+  background-color: var(--nn-purple2);
+  color: white;
 }
 
 /* ── Layer 3: Main footer ────────────────────────────────────── */

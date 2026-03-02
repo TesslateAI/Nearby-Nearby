@@ -3,9 +3,13 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
+from .core.sentry import init_sentry
 from .core.config import settings
+
+init_sentry()
 from .api.endpoints import (
     pois, waitlist, community_interest, contact, feedback, business_claims,
+    event_suggestions,
 )
 from .database import engine, get_db
 from sqlalchemy import text
@@ -141,6 +145,7 @@ app.include_router(community_interest.router, prefix="/api", tags=["Community In
 app.include_router(contact.router, prefix="/api", tags=["Contact"])
 app.include_router(feedback.router, prefix="/api", tags=["Feedback"])
 app.include_router(business_claims.router, prefix="/api", tags=["Business Claims"])
+app.include_router(event_suggestions.router, prefix="/api", tags=["Event Suggestions"])
 
 # Static files configuration
 BASE_DIR = Path(__file__).resolve().parent.parent

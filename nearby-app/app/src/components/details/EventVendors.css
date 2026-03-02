@@ -1,0 +1,60 @@
+.event-vendors {
+  margin: 1rem 0;
+}
+
+.event-vendors__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 0.75rem;
+}
+
+.event-vendors__card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  background: #fff;
+  transition: box-shadow 0.15s ease;
+}
+
+.event-vendors__card:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.event-vendors__name {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #212529;
+  text-decoration: none;
+}
+
+.event-vendors__name:hover {
+  color: #5c4df0;
+  text-decoration: underline;
+}
+
+.event-vendors__type-badge {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: #6c757d;
+  background: #f1f3f5;
+  border-radius: 4px;
+  padding: 0.1rem 0.4rem;
+  text-transform: capitalize;
+  align-self: flex-start;
+}
+
+.event-vendors__loading,
+.event-vendors__error,
+.event-vendors__empty {
+  font-size: 0.9rem;
+  color: #6c757d;
+  padding: 0.5rem 0;
+}
+
+.event-vendors__error {
+  color: #c0392b;
+}

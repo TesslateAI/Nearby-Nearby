@@ -48,31 +48,30 @@ const createNumberedIcon = (number, isHighlighted = false) => {
   });
 };
 
-// Component to auto-fit bounds with radius-based zoom
+// Component to auto-fit bounds so all markers are visible
 function AutoFitBounds({ bounds, radiusMiles }) {
   const map = useMap();
 
   useEffect(() => {
     if (bounds && bounds.length > 0 && map) {
-      // Calculate zoom level based on radius in miles - allow closer zoom
-      let maxZoom = 18; // default for 1 mile - increased from 17
-      if (radiusMiles <= 1) {
-        maxZoom = 18;
-      } else if (radiusMiles <= 3) {
-        maxZoom = 17;
-      } else if (radiusMiles <= 5) {
-        maxZoom = 16;
-      } else if (radiusMiles <= 10) {
-        maxZoom = 15;
-      } else {
-        maxZoom = 14;
+      // Calculate maxZoom based on radius (for NearbySection) or default 15 (for Explore)
+      let maxZoom = 15;
+      if (radiusMiles) {
+        if (radiusMiles <= 1) maxZoom = 18;
+        else if (radiusMiles <= 3) maxZoom = 17;
+        else if (radiusMiles <= 5) maxZoom = 16;
+        else if (radiusMiles <= 10) maxZoom = 15;
+        else maxZoom = 14;
       }
 
-      // Wrap in try-catch to handle edge cases where map container is removed during animation
       try {
-        map.fitBounds(bounds, { padding: [50, 50], maxZoom });
+        if (bounds.length === 1) {
+          // Single marker — center on it at a reasonable zoom
+          map.setView(bounds[0], Math.min(maxZoom, 14));
+        } else {
+          map.fitBounds(bounds, { padding: [50, 50], maxZoom });
+        }
       } catch (e) {
-        // Silently handle - map may have been unmounted during transition
         console.warn('Map fitBounds failed:', e.message);
       }
     }
@@ -81,7 +80,7 @@ function AutoFitBounds({ bounds, radiusMiles }) {
   return null;
 }
 
-function Map({ currentPOI, nearbyPOIs = [], radiusMiles = 3, onMarkerClick, highlightedId }) {
+function Map({ currentPOI, nearbyPOIs = [], radiusMiles, onMarkerClick, highlightedId }) {
   if (!currentPOI || !currentPOI.location) {
     return (
       <div className="map-placeholder">
@@ -109,7 +108,7 @@ function Map({ currentPOI, nearbyPOIs = [], radiusMiles = 3, onMarkerClick, high
   return (
     <div className="map-container">
       <MapContainer
-        key={currentPOI?.id || 'default-map'}
+        key={`${currentPOI?.id}-${nearbyPOIs.length}-${nearbyPOIs[nearbyPOIs.length - 1]?.id || ''}`}
         center={currentCoords}
         zoom={14}
         className="leaflet-map"

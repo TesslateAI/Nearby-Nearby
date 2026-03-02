@@ -1,7 +1,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.core.sentry import init_sentry
 from app.api.endpoints import pois, categories, attributes, auth, relationships, images, primary_types
+
+init_sentry()
 from app.database import engine, Base
 from app.core.middleware import add_security_middleware
 from app.core.config import settings

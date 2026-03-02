@@ -17,7 +17,7 @@ export const usePOIForm = () => {
     const isPark = form.values.poi_type === 'PARK';
     const isTrail = form.values.poi_type === 'TRAIL';
     const isEvent = form.values.poi_type === 'EVENT';
-    const isPaidListing = isBusiness && ['paid', 'paid_founding', 'sponsor', 'community_comped'].includes(form.values.listing_type);
+    const isPaidListing = isBusiness && ['paid', 'sponsor_platform', 'sponsor_state', 'sponsor_county', 'sponsor_town', 'community_comped'].includes(form.values.listing_type);
     const isFreeListing = form.values.listing_type === 'free';
 
     return {
