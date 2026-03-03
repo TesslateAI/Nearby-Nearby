@@ -126,10 +126,6 @@ def multi_signal_search(
             _enrich_poi_with_category_info(db, poi)
             ordered.append(poi)
 
-    # Post-filter: exclude past and cancelled/rescheduled events from search
-    from ..api.endpoints.pois import _exclude_past_and_cancelled_events
-    ordered = _exclude_past_and_cancelled_events(ordered)
-
     return ordered
 
 
