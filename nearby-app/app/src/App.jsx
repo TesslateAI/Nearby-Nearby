@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import useOverlay from './hooks/useOverlay';
 import MobileNavBar from './components/MobileNavBar';
@@ -21,6 +22,42 @@ import EventsCalendar from './pages/EventsCalendar';
 function App() {
   const navOverlay = useOverlay('nav_overlay', { skipDesktop: true });
   const searchOverlay = useOverlay('search_overlay', { focusTargetId: 'one_search' });
+
+  useEffect(() => {
+    const root = document.documentElement;
+    const keyboardKeys = new Set([
+      'Tab',
+      'Enter',
+      ' ',
+      'ArrowUp',
+      'ArrowDown',
+      'ArrowLeft',
+      'ArrowRight',
+    ]);
+
+    const enableKeyboardFocus = (event) => {
+      if (event.metaKey || event.ctrlKey || event.altKey) return;
+      if (!keyboardKeys.has(event.key)) return;
+      root.classList.add('using-keyboard');
+    };
+
+    const disableKeyboardFocus = () => {
+      root.classList.remove('using-keyboard');
+    };
+
+    window.addEventListener('keydown', enableKeyboardFocus, true);
+    window.addEventListener('pointerdown', disableKeyboardFocus, true);
+    window.addEventListener('mousedown', disableKeyboardFocus, true);
+    window.addEventListener('touchstart', disableKeyboardFocus, true);
+
+    return () => {
+      window.removeEventListener('keydown', enableKeyboardFocus, true);
+      window.removeEventListener('pointerdown', disableKeyboardFocus, true);
+      window.removeEventListener('mousedown', disableKeyboardFocus, true);
+      window.removeEventListener('touchstart', disableKeyboardFocus, true);
+      root.classList.remove('using-keyboard');
+    };
+  }, []);
 
   return (
     <>
