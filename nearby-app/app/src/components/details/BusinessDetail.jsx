@@ -9,6 +9,8 @@ import NearbySection from '../nearby-feature/NearbySection';
 import PhotoLightbox from './PhotoLightbox';
 import HoursDisplay from '../common/HoursDisplay';
 import { LocalBusinessJsonLd } from '../seo/index';
+import SEO from '../SEO';
+import { truncateText, getPOIUrl } from '../../utils/slugify';
 import { isCurrentlyOpen } from '../../utils/hoursUtils';
 import './BusinessDetail.css';
 
@@ -257,7 +259,25 @@ function BusinessDetail({ poi }) {
   // Get primary category
   const primaryCategory = poi.categories?.[0]?.name || '';
 
+  // Prepare SEO data
+  const seoTitle = poi.name;
+  const seoDescription = truncateText(
+    poi.description_long || poi.description_short || poi.teaser_paragraph ||
+    `Discover ${poi.name} in ${poi.address_city || 'your area'}. Local business on NearbyNearby.`,
+    155
+  );
+  const seoImage = poi.featured_image || (poi.images && poi.images.length > 0 ? poi.images[0].url : null);
+  const seoUrl = `${window.location.origin}${getPOIUrl(poi)}`;
+
   return (
+    <>
+      <SEO
+        title={seoTitle}
+        description={seoDescription}
+        image={seoImage}
+        url={seoUrl}
+        type="business.business"
+      />
     <div className="bd-page">
       <LocalBusinessJsonLd poi={poi} />
 
@@ -1184,6 +1204,7 @@ function BusinessDetail({ poi }) {
         initialIndex={lightboxIndex}
       />
     </div>
+    </>
   );
 }
 

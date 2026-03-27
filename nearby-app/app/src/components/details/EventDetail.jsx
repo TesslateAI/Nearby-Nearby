@@ -4,6 +4,8 @@ import { MapPin, Clock, Phone, Globe, Heart, Share2, Navigation, Plus, ChevronDo
 import NearbySection from '../nearby-feature/NearbySection';
 import HoursDisplay from '../common/HoursDisplay';
 import { EventJsonLd } from '../seo/index';
+import SEO from '../SEO';
+import { truncateText, getPOIUrl } from '../../utils/slugify';
 import './EventDetail.css';
 
 /**
@@ -154,7 +156,25 @@ function EventDetail({ poi }) {
 
   // POIDetail handles loading/error states, so poi is guaranteed to exist here
 
+  // Prepare SEO data
+  const seoTitle = poi.name;
+  const seoDescription = truncateText(
+    poi.description_long || poi.description_short || poi.teaser_paragraph ||
+    `Discover ${poi.name} in ${poi.address_city || 'your area'}. Local event on NearbyNearby.`,
+    155
+  );
+  const seoImage = poi.featured_image || (poi.images && poi.images.length > 0 ? poi.images[0].url : null);
+  const seoUrl = `${window.location.origin}${getPOIUrl(poi)}`;
+
   return (
+    <>
+      <SEO
+        title={seoTitle}
+        description={seoDescription}
+        image={seoImage}
+        url={seoUrl}
+        type="event"
+      />
     <div className="poi-detail">
       {/* Schema.org Event structured data for SEO */}
       <EventJsonLd poi={poi} />
@@ -491,6 +511,7 @@ function EventDetail({ poi }) {
       {/* Nearby Section */}
       <NearbySection currentPOI={poi} />
     </div>
+    </>
   );
 }
 
