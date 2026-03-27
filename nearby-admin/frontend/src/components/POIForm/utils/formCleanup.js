@@ -46,6 +46,18 @@ export const preparePOIPayload = (formValues) => {
   delete payload.longitude;
   delete payload.latitude;
 
+  // Remove read-only / relationship fields returned by the API that the backend doesn't accept on update
+  delete payload.id;
+  delete payload.created_at;
+  delete payload.last_updated;
+  delete payload.categories;
+  delete payload.main_category;
+  delete payload.secondary_categories;
+  delete payload.primary_type;
+  delete payload.images;
+  delete payload.source_relationships;
+  delete payload.target_relationships;
+
   // Remove UI-only fields that don't exist in backend
   // These are used to control whether sections are shown, but the actual data is in other fields
   delete payload.alcohol_available;  // UI control only - alcohol_options array is what gets saved

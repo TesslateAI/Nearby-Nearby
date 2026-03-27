@@ -43,9 +43,12 @@ export const api = {
     
     if (response.status === 401) {
       // Token expired or invalid, redirect to login
-      secureTokenStorage.clearToken();
-      window.location.href = '/login';
-      return;
+      // But don't redirect if we're already on the login page (avoid refresh loop)
+      if (!endpoint.includes('/auth/login')) {
+        secureTokenStorage.clearToken();
+        window.location.href = '/login';
+        return;
+      }
     }
 
     return response;
