@@ -115,7 +115,7 @@ function Home() {
         </div>
       </div>
 
-      {/* Sponsors */}
+      {/* Sponsors - hidden for now
       <div id="sponsor_layer_1">
         <div className="wrapper_default sponsor_layer_intro_text">
           <h2>Sponsors</h2>
@@ -129,6 +129,7 @@ function Home() {
           ))}
         </div>
       </div>
+      */}
     </>
   );
 }
