@@ -81,10 +81,7 @@ class Park(ParkBase):
 # Trail Schemas
 TRAIL_DIFFICULTY = Literal['easy','moderate','difficult','expert']
 ROUTE_TYPES = Literal['loop','out_and_back','point_to_point','lollipop','stacked_loops','thru_trail','water_trail','connecting_network']
-LISTING_TYPES = Literal[
-    'free', 'paid', 'paid_founding', 'community_comped',
-    'sponsor', 'sponsor_platform', 'sponsor_state', 'sponsor_county', 'sponsor_town',
-]
+LISTING_TYPES = Literal['free', 'paid', 'paid_founding', 'community_comped']
 SPONSOR_LEVELS = Literal['platform','state','county','town']
 ALCOHOL_AVAILABLE = Literal['full_bar','beer_wine','byob','no_alcohol','seasonal','nearby']
 TRAIL_LIGHTING = Literal['partial','full','seasonal','dusk_to_dawn']
