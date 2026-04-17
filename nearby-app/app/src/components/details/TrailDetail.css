@@ -1,632 +1,552 @@
-/* Trail Detail Styles - Outdoor/Adventure Theme */
-.poi-detail {
+/* TrailDetail.css — parallel to Business/Park detail CSS, template class names
+   plus local td- helpers. Uses variables.css tokens. */
+
+.td-page {
   min-height: 60vh;
-  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-  padding: 40px 20px;
+  background: var(--nn-bg-soft, #faf9f5);
+  padding: 0 0 48px 0;
 }
 
-.poi-detail__container {
+.td-container {
   max-width: 1100px;
   margin: 0 auto;
-  background: white;
+  background: #fff;
   border-radius: 12px;
   padding: 32px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
-.poi-detail__back-link {
+.td-back-link {
   display: inline-block;
-  color: #b45309;
+  color: var(--nn-purple1, #6e4bff);
   text-decoration: none;
   font-weight: 600;
-  margin-bottom: 24px;
+  margin-bottom: 16px;
   cursor: pointer;
   background: none;
   border: none;
   font-size: 14px;
   padding: 0;
 }
+.td-back-link:hover { text-decoration: underline; }
 
-.poi-detail__back-link:hover {
-  text-decoration: underline;
+/* STATUS strip */
+.td-status-row {
+  background: #fef2f2;
+  color: var(--nn-red, #b91c1c);
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  text-transform: uppercase;
 }
+.td-status-label { font-weight: 700; }
+.td-status-value { font-weight: 700; }
+.td-status-msg { font-weight: 400; text-transform: none; color: var(--nn-slate, #334155); }
 
-/* Header Styles - Trail Focused */
-.poi-detail__new-header {
-  border-bottom: 1px solid #fde047;
+/* Intro grid: 2.5fr / 1fr per plan */
+.td-intro.page_header_poi_style_1 {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
   padding-bottom: 24px;
+  border-bottom: 1px solid var(--nn-border, #e5e7eb);
   margin-bottom: 24px;
 }
+@media (min-width: 980px) {
+  .td-intro.page_header_poi_style_1 { grid-template-columns: 2.5fr 1fr; }
+}
 
-.poi-detail__status-row {
+.poi_col2 {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 12px;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-start;
 }
 
-.poi-detail__status-text {
-  font-size: 14px;
-  color: var(--nn-gray);
-}
-
-.poi-detail__status-value {
-  color: #ca8a04;
-  font-weight: 600;
-}
-
-.poi-detail__verified {
-  display: flex;
-  align-items: center;
-  color: #ca8a04;
-  font-size: 14px;
-  gap: 4px;
-}
-
-.poi-detail__verified-icon {
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  border: 2px solid #ca8a04;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.poi-detail__verified-dot {
-  width: 8px;
-  height: 8px;
-  background: #ca8a04;
-  border-radius: 50%;
-}
-
-.poi-detail__main-title {
+.td-title {
   font-size: 32px;
   font-weight: 800;
-  color: #78350f;
+  color: var(--nn-dark, #1f2937);
+  margin: 0 0 6px 0;
+  font-family: var(--font-poppins, inherit);
+  line-height: 1.2;
+}
+.td-subtitle {
+  color: var(--nn-slate, #475569);
   margin: 0 0 8px 0;
-  font-family: var(--font-poppins);
-}
-
-.poi-detail__subtitle {
-  color: #b45309;
-  margin: 0 0 16px 0;
   font-size: 16px;
+  font-weight: 500;
 }
-
-/* Sponsor Section - Trail Theme */
-.poi-detail__sponsor {
-  margin-bottom: 16px;
-}
-
-.poi-detail__sponsor-badge {
-  display: inline-block;
-  background: #fef3c7;
-  color: #92400e;
-  padding: 6px 12px;
-  border-radius: 20px;
+.td-location-line {
+  color: var(--nn-gray, #6b7280);
   font-size: 14px;
+  margin: 0 0 12px 0;
+}
+
+.td-hours-inline { margin-top: 8px; }
+
+.poi_last_updated { font-size: 12px; color: var(--nn-gray, #6b7280); }
+
+.td-suggest-update {
+  background: none;
+  border: 1px solid var(--nn-purple1, #6e4bff);
+  color: var(--nn-purple1, #6e4bff);
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
   font-weight: 600;
 }
+.td-suggest-update:hover { background: var(--nn-purple1, #6e4bff); color: #fff; }
 
-.poi-detail__sponsor-info {
+/* Actions */
+.td-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.td-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: 1px solid var(--nn-border, #e5e7eb);
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--nn-slate, #334155);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+.td-action-btn:hover { background: var(--nn-bg-soft, #faf9f5); border-color: var(--nn-purple1, #6e4bff); color: var(--nn-purple1, #6e4bff); }
+
+/* QuickFacts copy button lives inside the value cell */
+.td-qf-copy-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border: 1px solid var(--nn-border, #e5e7eb);
+  border-radius: 4px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--nn-purple1, #6e4bff);
+}
+.td-qf-copy-btn:hover { background: var(--nn-bg-soft, #faf9f5); }
+
+/* Photos */
+.td-photos { margin: 24px 0; }
+.td-photos-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+}
+@media (max-width: 768px) { .td-photos-grid { grid-template-columns: repeat(2, 1fr); } }
+.td-photo-item {
+  aspect-ratio: 1;
+  border-radius: 8px;
+  overflow: hidden;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  background: var(--nn-bg-soft, #faf9f5);
+}
+.td-photo-item img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.td-see-all-photos {
+  margin-top: 12px;
+  background: none;
+  border: 1px solid var(--nn-purple1, #6e4bff);
+  color: var(--nn-purple1, #6e4bff);
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* THINGS TO DO chip strip */
+.td-things-to-do {
+  margin: 24px 0;
+  padding: 16px;
+  background: #fff;
+  border: 1px solid var(--nn-border, #e5e7eb);
+  border-radius: 10px;
+}
+.td-things-to-do__title {
+  font-family: var(--font-poppins, inherit);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--nn-dark, #1f2937);
+  margin: 0 0 12px 0;
+  text-transform: uppercase;
+}
+.td-things-to-do__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0; padding: 0;
+  list-style: none;
+}
+.td-thing-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: var(--nn-bg-soft, #faf9f5);
+  border: 1px solid var(--nn-border, #e5e7eb);
+  border-radius: 999px;
+  font-size: 13px;
+  color: var(--nn-dark, #1f2937);
+}
+.td-thing-pill svg { color: var(--nn-teal2, #0e7490); }
+
+/* Accordions container */
+.td-accordions { margin-top: 24px; }
+
+/* Generic two-col layout shared by most accordion bodies */
+.td-about-hours,
+.td-address-parking {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+}
+@media (min-width: 768px) {
+  .td-about-hours,
+  .td-address-parking { grid-template-columns: 1fr 1fr; }
+}
+
+.td-about-description { color: var(--nn-slate, #334155); line-height: 1.6; margin-bottom: 12px; }
+
+/* Tag groups */
+.td-tags-section { margin-bottom: 12px; }
+.td-tags-section__label {
+  display: block;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--nn-gray, #6b7280);
+  margin-bottom: 6px;
+  font-weight: 700;
+}
+.td-tags-grid { display: flex; flex-wrap: wrap; gap: 6px; }
+.td-tag {
+  background: var(--nn-bg-soft, #faf9f5);
+  border: 1px solid var(--nn-border, #e5e7eb);
+  color: var(--nn-slate, #334155);
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+}
+
+/* Section headers inside accordion bodies */
+.td-section-header {
+  display: block;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--nn-gray, #6b7280);
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.td-address-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: var(--nn-slate, #334155);
+  margin-bottom: 10px;
+}
+.td-address-btns { display: flex; flex-wrap: wrap; gap: 6px; }
+.td-address-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border: 1px solid var(--nn-border, #e5e7eb);
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--nn-slate, #334155);
+}
+.td-address-btn:hover { border-color: var(--nn-purple1, #6e4bff); color: var(--nn-purple1, #6e4bff); }
+
+.td-parking-notes,
+.td-section-notes {
+  color: var(--nn-slate, #334155);
+  line-height: 1.6;
+  font-size: 14px;
   margin-top: 8px;
 }
 
-.poi-detail__sponsor-label {
-  font-size: 14px;
-  color: var(--nn-slate);
-  display: block;
-  margin-bottom: 4px;
-}
-
-.poi-detail__sponsor-text {
-  font-size: 12px;
-  color: var(--nn-gray);
-  margin: 4px 0;
-}
-
-.poi-detail__sponsor-link {
-  font-size: 12px;
-  color: #b45309;
-  text-decoration: underline;
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 0;
-  margin-top: 4px;
-  display: inline-block;
-}
-
-/* Trail Info Section */
-.poi-detail__quick-info {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-bottom: 16px;
-}
-
-.poi-detail__info-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 14px;
-}
-
-.poi-detail__icon {
-  color: #ca8a04;
-  flex-shrink: 0;
-}
-
-.poi-detail__icon--green {
-  color: #ca8a04;
-}
-
-.poi-detail__info-primary {
-  color: #ca8a04;
-  font-weight: 600;
-}
-
-.poi-detail__info-secondary {
-  color: var(--nn-gray);
-}
-
-.poi-detail__info-text {
-  color: var(--nn-gray);
-}
-
-.poi-detail__info-link {
-  color: #b45309;
-  text-decoration: underline;
-}
-
-.poi-detail__hours-btn {
-  font-size: 12px;
-  color: #b45309;
-  border: 1px solid #b45309;
-  padding: 2px 8px;
-  border-radius: 4px;
-  background: none;
-  cursor: pointer;
-  margin-left: 8px;
-}
-
-/* Titled Links - Reservations, Delivery, Online Ordering */
-.poi-detail__titled-links {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-bottom: 16px;
-  padding: 16px;
-  background: #fef3c7;
-  border-radius: 8px;
-  border: 1px solid #fcd34d;
-}
-
-.poi-detail__titled-link {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 16px;
-  background: white;
-  border: 1px solid #fcd34d;
+/* ADA sub-card */
+.td-ada-sub-card {
+  margin-top: 12px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
   border-radius: 6px;
-  color: var(--nn-slate);
-  text-decoration: none;
-  font-size: 14px;
-  font-weight: 500;
-  transition: all 0.2s;
+  padding: 10px 14px;
 }
-
-.poi-detail__titled-link:hover {
-  background: #d97706;
-  color: white;
-  border-color: #d97706;
-}
-
-.poi-detail__titled-link svg:first-child {
-  color: #d97706;
-}
-
-.poi-detail__titled-link:hover svg:first-child {
-  color: white;
-}
-
-.poi-detail__titled-link svg:last-child {
-  opacity: 0.5;
-  margin-left: auto;
-}
-
-/* Trail Actions */
-.poi-detail__actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 16px;
-}
-
-.poi-detail__action-btn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  border: 1px solid #fde047;
-  border-radius: 6px;
-  background: white;
-  cursor: pointer;
-  font-size: 14px;
-  color: var(--nn-slate);
-  transition: background-color 0.2s;
-}
-
-.poi-detail__action-btn:hover {
-  background: #fef3c7;
-}
-
-.poi-detail__description-box {
-  background: #fef3c7;
-  border: 1px solid #fde047;
-  padding: 16px;
-  border-radius: 8px;
-  margin-bottom: 16px;
-}
-
-.poi-detail__description-text {
-  white-space: pre-line;
-  font-size: 14px;
-  color: var(--nn-slate);
-  line-height: 1.6;
-}
-
-/* Trail Amenities */
-.poi-detail__amenities-section {
-  margin-top: 24px;
-}
-
-.poi-detail__amenities-title {
-  font-weight: 600;
-  color: #78350f;
-  margin-bottom: 12px;
-  font-size: 16px;
-}
-
-.poi-detail__amenities-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.poi-detail__amenity-tag {
-  display: flex;
-  align-items: center;
+.td-ada-sub-card__title {
   font-size: 12px;
-  background: #fef3c7;
-  padding: 6px 12px;
-  border-radius: 20px;
-  color: #92400e;
-}
-
-.poi-detail__amenity-dot {
-  margin-right: 4px;
-  color: #ca8a04;
-}
-
-/* Photos Section */
-.poi-detail__photos-section {
-  padding: 24px 0;
-  border-bottom: 1px solid #fde047;
-}
-
-.poi-detail__photos-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 16px;
-}
-
-.poi-detail__photos-title {
-  font-weight: 600;
-  color: #78350f;
-  font-size: 14px;
-}
-
-.poi-detail__photos-link {
-  color: #b45309;
-  font-size: 14px;
-  background: none;
-  border: none;
-  cursor: pointer;
-  text-decoration: underline;
-}
-
-.poi-detail__photos-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
-}
-
-.poi-detail__photo-placeholder {
-  aspect-ratio: 1;
-  background: #fde047;
-  border-radius: 8px;
-}
-
-/* Collapsible Sections - Trail Theme */
-.poi-detail__collapsible-sections {
-  margin-top: 24px;
-}
-
-.collapsible-section {
-  margin-bottom: 8px;
-}
-
-.collapsible-section__header {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 16px;
-  background: white;
-  color: var(--nn-purple1);
-  font-weight: 600;
-  border: 2px solid var(--nn-purple1);
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.collapsible-section__header:hover {
-  background: var(--gray-9);
-}
-
-.collapsible-section__title {
+  color: #1e40af;
+  font-weight: 700;
+  margin: 0 0 6px 0;
   text-transform: uppercase;
-  font-size: 14px;
+  letter-spacing: 0.4px;
+}
+.td-ada-sub-card__list {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--nn-slate, #334155);
+  font-size: 13px;
+}
+
+/* Trail guide */
+.td-trail-guide__subhead {
+  font-size: 13px;
+  text-transform: uppercase;
   letter-spacing: 0.5px;
-}
-
-.collapsible-section__content {
-  background: white;
-  border: 1px solid #fde047;
-  padding: 16px;
-}
-
-.collapsible-section__info {
-  display: flex;
-  flex-direction: column;
-}
-
-.info-row {
-  display: flex;
-  padding: 12px 0;
-  border-bottom: 1px solid #fef3c7;
-}
-
-.info-row:last-child {
-  border-bottom: none;
-}
-
-.info-row__label {
-  font-weight: 600;
-  color: var(--nn-slate);
-  width: 33.333%;
-  font-size: 14px;
-}
-
-.info-row__value {
-  color: var(--nn-gray);
-  width: 66.666%;
-  font-size: 14px;
-}
-
-/* Today highlighting */
-.info-row--today {
-  background: #fef3c7;
-  margin: 0 -16px;
-  padding: 12px 16px;
-}
-
-.info-row--today .info-row__label {
-  color: #b45309;
+  color: var(--nn-purple1, #6e4bff);
+  margin: 16px 0 8px 0;
   font-weight: 700;
 }
-
-.info-row__today-badge {
-  display: inline-block;
-  background: #b45309;
-  color: white;
-  font-size: 10px;
-  padding: 2px 6px;
-  border-radius: 4px;
-  margin-left: 8px;
-  font-weight: 500;
-  text-transform: uppercase;
-}
-
-/* Modified hours styling */
-.info-row--modified .info-row__value {
-  color: #ca8a04;
-}
-
-.info-row__modified-label {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  margin-left: 8px;
-  font-size: 11px;
-  color: #ca8a04;
-  background: #fef3c7;
-  padding: 2px 6px;
-  border-radius: 4px;
-}
-
-.info-row--note {
-  background: #fef3c7;
-  margin: 8px -16px -16px;
-  padding: 12px 16px;
-  border-bottom-left-radius: 8px;
-  border-bottom-right-radius: 8px;
-}
-
-.info-row--note .info-row__label {
-  color: #92400e;
-}
-
-/* Hours modified indicator in quick info */
-.poi-detail__hours-modified {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  margin-left: 8px;
-  font-size: 12px;
-  color: #ca8a04;
-  background: #fef3c7;
-  padding: 2px 8px;
-  border-radius: 4px;
-}
-
-.poi-detail__info-primary--closed {
-  color: var(--nn-red) !important;
-}
-
-/* Verified tooltip */
-.poi-detail__verified-wrapper {
-  position: relative;
-  display: inline-block;
-}
-
-.poi-detail__verified-info {
-  margin-left: 4px;
-  opacity: 0.6;
-  cursor: help;
-}
-
-.poi-detail__verified-tooltip {
-  position: absolute;
-  top: 100%;
-  right: 0;
-  background: var(--nn-dark);
-  color: white;
-  padding: 12px 16px;
-  border-radius: 8px;
-  font-size: 13px;
-  line-height: 1.4;
-  width: 280px;
-  z-index: 100;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.2s, visibility 0.2s;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-.poi-detail__verified-wrapper:hover .poi-detail__verified-tooltip {
-  opacity: 1;
-  visibility: visible;
-}
-
-/* Share menu */
-.poi-detail__share-wrapper {
-  position: relative;
-}
-
-.poi-detail__share-menu {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  background: white;
-  border: 1px solid #fde047;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  z-index: 100;
-  min-width: 150px;
-  overflow: hidden;
-}
-
-.poi-detail__share-menu button {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  padding: 10px 14px;
-  border: none;
-  background: none;
+.td-trail-guide__notes {
+  color: var(--nn-slate, #334155);
+  line-height: 1.6;
   font-size: 14px;
-  color: var(--nn-slate);
-  cursor: pointer;
-  text-align: left;
+  margin-bottom: 12px;
 }
-
-.poi-detail__share-menu button:hover {
-  background: #fef3c7;
+.td-trail-in-park {
+  background: var(--nn-bg-soft, #faf9f5);
+  border-left: 3px solid var(--nn-purple1, #6e4bff);
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 14px;
+  margin-bottom: 12px;
+  color: var(--nn-slate, #334155);
 }
-
-/* Bottom Border - Trail Accent */
-.poi-detail__bottom-border {
-  border-top: 4px solid #eab308;
-  margin-top: 24px;
-}
-
-/* Loading and Error States */
-.poi-detail__loading,
-.poi-detail__error {
-  min-height: 60vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 40px 20px;
-  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-}
-
-.poi-detail__loading {
-  font-size: 18px;
-  color: var(--nn-gray);
-}
-
-.poi-detail__error h2 {
-  font-size: 24px;
-  color: #78350f;
-  margin-bottom: 16px;
-}
-
-.poi-detail__back-btn {
-  background: #b45309;
-  color: white;
-  border: none;
-  padding: 12px 24px;
-  border-radius: 8px;
+.td-trail-in-park__link {
+  color: var(--nn-purple1, #6e4bff);
   font-weight: 600;
-  font-size: 16px;
-  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.td-trail-in-park__link:hover { text-decoration: underline; }
+
+/* Access point cards */
+.td-access-points { display: flex; flex-direction: column; gap: 12px; }
+.td-access-point-card {
+  background: #fff;
+  border: 1px solid var(--nn-border, #e5e7eb);
+  border-radius: 8px;
+  padding: 12px 14px;
+}
+.td-access-point-card__name {
+  font-size: 14px;
+  margin: 0 0 6px 0;
+  color: var(--nn-dark, #1f2937);
+  font-weight: 700;
+}
+.td-access-point-card__notes {
+  color: var(--nn-slate, #334155);
+  line-height: 1.5;
+  font-size: 13px;
+  margin-top: 6px;
+}
+.td-access-point-card__photos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  gap: 6px;
+  margin-top: 8px;
+}
+.td-access-point-card__photos img {
+  aspect-ratio: 1;
+  width: 100%;
+  object-fit: cover;
+  border-radius: 4px;
 }
 
-.poi-detail__back-btn:hover {
-  background: #d97706;
+/* Pricing / Discounts */
+.td-discounts { margin-top: 8px; }
+.td-discounts__list {
+  margin: 4px 0 0 0;
+  padding-left: 18px;
+  color: var(--nn-slate, #334155);
+  font-size: 14px;
 }
+
+/* Alcohol + Smoking */
+.td-alcohol-smoking { display: grid; grid-template-columns: 1fr; gap: 16px; }
+@media (min-width: 768px) { .td-alcohol-smoking { grid-template-columns: 1fr 1fr; } }
+.td-alcohol-smoking__section { }
+.td-alcohol-smoking__header {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--nn-gray, #6b7280);
+  font-weight: 700;
+  margin: 0 0 6px 0;
+}
+
+/* Contact */
+.td-contact a { color: var(--nn-purple1, #6e4bff); text-decoration: none; font-weight: 600; }
+.td-contact a:hover { text-decoration: underline; }
+.td-contact-feedback {
+  margin-top: 8px;
+  background: none;
+  border: 1px solid var(--nn-purple1, #6e4bff);
+  color: var(--nn-purple1, #6e4bff);
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.td-contact-feedback:hover { background: var(--nn-purple1, #6e4bff); color: #fff; }
 
 /* Responsive */
 @media (max-width: 768px) {
-  .poi-detail__container {
-    padding: 24px 16px;
-  }
+  .td-container { padding: 20px 16px; }
+  .td-title { font-size: 24px; }
+}
 
-  .poi-detail__main-title {
-    font-size: 24px;
-  }
+/* ─── Template DOM classes (page_header_poi_style_1 + accordion) ─── */
+.page_header_poi_style_1 { margin: 16px 0 18px; }
+.page_header_poi_style_1 .poi_intro_wrapper {
+  display: grid; grid-template-columns: 1fr; gap: 20px;
+}
+@media (min-width: 980px) {
+  .page_header_poi_style_1 .poi_intro_wrapper { grid-template-columns: 2.5fr 1fr; }
+}
+.page_header_poi_style_1 .poi_col1 { display: flex; flex-direction: column; gap: 12px; }
+.page_header_poi_style_1 .poi_col2 { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
 
-  .poi-detail__photos-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
+.poi_status {
+  align-self: flex-start; padding: 6px 10px; border-radius: 4px;
+  background: #e6f6ee; color: #1c7a4a; font-weight: 700; font-size: 12px;
+  text-transform: uppercase; letter-spacing: 0.5px;
+}
+.poi_page_title {
+  font-family: var(--font-poppins); font-weight: 700; color: var(--nn-dark);
+  margin: 0 0 6px; font-size: clamp(24px, 3.5vw, 34px); line-height: 1.15;
+}
+.poi_page_main_category {
+  color: var(--nn-purple1); font-weight: 600; font-size: 15px; margin-bottom: 4px;
+}
+.poi_intro_location { color: var(--nn-slate); font-size: 14px; margin-bottom: 6px; }
+.poi_page_hours { font-size: 14px; color: var(--nn-slate); }
 
-  .info-row {
-    flex-direction: column;
-  }
+.poi_button_group_1 { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 6px; }
+.btn_poi_button_1 {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 12px; border-radius: 6px; cursor: pointer; background: #fff;
+  border: 1px solid var(--nn-teal2, #0b6e6e); color: var(--nn-teal2, #0b6e6e);
+  font-weight: 600; font-size: 13px;
+}
+.btn_poi_button_1:hover { background: var(--nn-teal2, #0b6e6e); color: #fff; }
 
-  .info-row__label,
-  .info-row__value {
-    width: 100%;
-  }
+.poi_verified_box, .poi_sponsor_box { width: 100%; }
+.poi_last_updated { font-size: 12px; color: var(--nn-gray); }
 
-  .info-row__label {
-    margin-bottom: 4px;
-  }
+.box_style_1 {
+  background: #fff; border: 1px solid var(--gray-d, #e5e5e5); border-radius: 10px;
+  padding: 16px; margin: 16px 0;
+}
+#poi_quick_info_photos_box { display: grid; grid-template-columns: 1fr; gap: 16px; }
+@media (min-width: 900px) { #poi_quick_info_photos_box { grid-template-columns: 1.2fr 1fr; } }
+.poi_quick_info_title {
+  font-family: var(--font-poppins); font-weight: 700; letter-spacing: 0.4px;
+  font-size: 15px; color: var(--nn-dark); margin-bottom: 10px;
+}
+.poi_quick_info_single { display: flex; gap: 8px; margin: 6px 0; font-size: 14px; }
+.poi_quick_info_single_title { font-weight: 700; color: var(--nn-dark); }
+.poi_quick_info_single_info { color: var(--nn-slate); }
+.poi_photos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.poi_photo_thumb {
+  padding: 0; border: none; background: none; border-radius: 6px;
+  overflow: hidden; aspect-ratio: 1/1; cursor: pointer;
+}
+.poi_photo_thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.poi_amenities_list { margin-top: 4px; }
+
+.poi_accordion_box { margin: 20px 0; }
+.poi_accordion_parent { display: flex; flex-direction: column; gap: 10px; }
+.acc_section {
+  border: 1px solid var(--gray-d, #e5e5e5); border-radius: 10px;
+  background: #fff; overflow: hidden;
+}
+.acc_head {
+  width: 100%; display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 18px; background: none; border: none; cursor: pointer; text-align: left;
+}
+.acc_title {
+  font-family: var(--font-poppins); margin: 0; font-size: 16px; font-weight: 700;
+  color: var(--nn-dark);
+}
+.acc_toggles { display: flex; align-items: center; color: var(--nn-slate); transition: transform .2s; }
+.acc_section.acc_active .acc_toggles { transform: rotate(180deg); }
+.acc_content {
+  padding: 16px 18px 18px;
+  border-top: 1px solid var(--gray-d, #eee);
+  display: grid; grid-template-columns: 1fr; gap: 18px;
+}
+.basic_column_parent.column_grid_5050 { grid-template-columns: 1fr; }
+@media (min-width: 760px) {
+  .basic_column_parent.column_grid_5050 { grid-template-columns: 1fr 1fr; }
+}
+.acc_col_1, .acc_col_2 { display: flex; flex-direction: column; gap: 14px; }
+.acc_content_group { display: flex; flex-direction: column; gap: 6px; }
+.acc_content_title_style_1 {
+  font-family: var(--font-poppins);
+  font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+  color: var(--nn-dark);
+}
+.acc_content_text { color: var(--nn-slate); font-size: 14px; line-height: 1.55; }
+.acc_list_group_1 { display: flex; flex-wrap: wrap; gap: 8px; font-size: 14px; }
+.acc_list_item {
+  font-size: 12px; color: var(--nn-purple1);
+  padding: 4px 10px; background: var(--light-yellow1, #fff8e1);
+  border: 1px solid var(--nn-purple1); border-radius: 16px; white-space: nowrap;
+}
+
+/* Trail-local quick-facts copy-button & access point photos */
+.td-qf-copy-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 10px; border-radius: 6px; cursor: pointer;
+  background: var(--light-yellow1, #fff8e1); color: var(--nn-purple1);
+  border: 1px solid var(--nn-purple1); font-size: 13px;
+}
+.td-address-btn {
+  display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px;
+  border-radius: 6px; cursor: pointer; background: #fff;
+  border: 1px solid var(--nn-teal2, #0b6e6e); color: var(--nn-teal2, #0b6e6e);
+  font-weight: 600; font-size: 13px;
+}
+.td-trail-in-park__link {
+  color: var(--nn-purple1); font-weight: 600; text-decoration: none;
+  display: inline-flex; align-items: center; gap: 4px;
+}
+.td-access-point-card { border-top: 1px dashed var(--gray-d); padding-top: 8px; margin-top: 8px; }
+.td-access-point-card:first-child { border-top: none; padding-top: 0; margin-top: 0; }
+.td-access-point-card h5 {
+  margin: 0 0 4px; font-family: var(--font-poppins); font-size: 14px; color: var(--nn-dark);
+}
+.td-access-point-card__photos { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.td-access-point-card__photos img {
+  width: 80px; height: 80px; object-fit: cover; border-radius: 6px;
 }

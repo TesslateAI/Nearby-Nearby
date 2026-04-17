@@ -6,6 +6,8 @@
  * to help search engines understand and display event information.
  */
 
+import { escapeForJsonLd } from '../../utils/sanitize';
+
 function EventJsonLd({ poi }) {
   if (!poi || !poi.event) return null;
 
@@ -240,7 +242,7 @@ function EventJsonLd({ poi }) {
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(eventSchema, null, 2) }}
+      dangerouslySetInnerHTML={{ __html: escapeForJsonLd(JSON.stringify(eventSchema, null, 2)) }}
     />
   );
 }

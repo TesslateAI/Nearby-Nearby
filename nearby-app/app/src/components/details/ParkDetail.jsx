@@ -1,594 +1,427 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { MapPin, Clock, Phone, Globe, Heart, Share2, Navigation, Plus, ChevronDown, ChevronUp, Trees, AlertCircle, Copy, Check, ExternalLink, Info, CalendarCheck, Truck, ShoppingCart } from 'lucide-react';
-import NearbySection from '../nearby-feature/NearbySection';
+import { useState, useMemo } from 'react';
+import { MapPin, Navigation, Copy, Check, ExternalLink } from 'lucide-react';
+
+import {
+  AccSection, ContentGroup, ChipList, QuickInfoRow, InfoPair,
+  POIDetailLayout, QuickInfoPhotosBox, AmenitiesBox,
+  hasVal, asArray, copyToClipboard, getCoordinates, openDirections, getImages,
+  isYes,
+} from './shared';
 import HoursDisplay from '../common/HoursDisplay';
-import Accordion, { AccordionSection } from '../Accordion';
-import { isCurrentlyOpen, getWeekHours } from '../../utils/hoursUtils';
-import './ParkDetail.css';
+import ServiceAnimalAlert from './ServiceAnimalAlert';
+import { getDisplayableLocation } from '../../utils/getDisplayableLocation';
+import { isPaidTier } from '../../utils/poiTier';
+import { isCurrentlyOpen } from '../../utils/hoursUtils';
+import { sanitizeHtml } from '../../utils/sanitize';
 
-/**
- * ParkDetail - Specialized detail view for park POIs
- * Receives poi data as a prop from POIDetail (smart router)
- */
-function ParkDetail({ poi }) {
-  const navigate = useNavigate();
-  const [showHours, setShowHours] = useState(false);
-  const [copiedCoords, setCopiedCoords] = useState(false);
-  const [copiedLink, setCopiedLink] = useState(false);
-  const [showShareMenu, setShowShareMenu] = useState(false);
+/* ------------------------------------------------------------------ */
+/* Section builders                                                    */
+/* ------------------------------------------------------------------ */
 
-  // Get coordinates - prefer front_door, fallback to location
-  const getCoordinates = () => {
-    if (poi?.front_door_latitude && poi?.front_door_longitude) {
-      return { lat: poi.front_door_latitude, lng: poi.front_door_longitude };
-    }
-    if (poi?.location?.coordinates) {
-      return { lat: poi.location.coordinates[1], lng: poi.location.coordinates[0] };
-    }
-    return null;
-  };
+function buildSections(poi, helpers) {
+  const {
+    displayLoc, handleDirections, handleCopyAddress, handleCopyCoords,
+    copiedAddress, copiedCoords,
+  } = helpers;
 
-  // Open directions in Google Maps
-  const handleDirections = () => {
-    const coords = getCoordinates();
-    if (coords) {
-      const url = `https://www.google.com/maps/dir/?api=1&destination=${coords.lat},${coords.lng}`;
-      window.open(url, '_blank');
-    } else if (poi?.address_street) {
-      const address = encodeURIComponent(`${poi.address_street}, ${poi.address_city}, ${poi.address_state} ${poi.address_zip}`);
-      window.open(`https://www.google.com/maps/dir/?api=1&destination=${address}`, '_blank');
-    }
-  };
+  const out = [];
 
-  const fallbackCopyToClipboard = (text) => {
-    const textArea = document.createElement('textarea');
-    textArea.value = text;
-    textArea.style.position = 'fixed';
-    textArea.style.left = '-999999px';
-    textArea.style.top = '-999999px';
-    document.body.appendChild(textArea);
-    textArea.focus();
-    textArea.select();
-    try {
-      document.execCommand('copy');
-      return true;
-    } catch (err) {
-      console.error('Fallback: Could not copy text:', err);
-      return false;
-    } finally {
-      document.body.removeChild(textArea);
-    }
-  };
+  /* ABOUT + HOURS */
+  {
+    const idealFor = poi.ideal_for && typeof poi.ideal_for === 'object' && !Array.isArray(poi.ideal_for)
+      ? poi.ideal_for : null;
+    const outdoorOne = asArray(poi.outdoor_types).slice(0, 1);
 
-  const copyToClipboard = async (text) => {
-    if (navigator.clipboard && window.isSecureContext) {
-      try {
-        await navigator.clipboard.writeText(text);
-        return true;
-      } catch (err) {
-        console.error('Clipboard API failed:', err);
-        return fallbackCopyToClipboard(text);
-      }
-    } else {
-      return fallbackCopyToClipboard(text);
-    }
-  };
+    const col1 = [
+      hasVal(poi.description_long) && (
+        <div className="acc_content_group" key="desc">
+          <div className="acc_content_text" dangerouslySetInnerHTML={{ __html: sanitizeHtml(poi.description_long) }} />
+        </div>
+      ),
+      outdoorOne.length > 0 && (
+        <ContentGroup key="otype" title="Outdoor Type"><ChipList items={outdoorOne} /></ContentGroup>
+      ),
+      idealFor && <ContentGroup key="ideal_atmos" title="Atmosphere" when={hasVal(idealFor.atmosphere)}><ChipList items={idealFor.atmosphere} /></ContentGroup>,
+      idealFor && <ContentGroup key="ideal_age" title="Age Group" when={hasVal(idealFor.age_group)}><ChipList items={idealFor.age_group} /></ContentGroup>,
+      idealFor && <ContentGroup key="ideal_social" title="Social Settings" when={hasVal(idealFor.social_settings)}><ChipList items={idealFor.social_settings} /></ContentGroup>,
+      idealFor && <ContentGroup key="ideal_local" title="Local Special" when={hasVal(idealFor.local_special)}><ChipList items={idealFor.local_special} /></ContentGroup>,
+      !idealFor && Array.isArray(poi.ideal_for) && poi.ideal_for.length > 0 && (
+        <ContentGroup key="ideal_arr" title="Ideal For"><ChipList items={poi.ideal_for} /></ContentGroup>
+      ),
+    ].filter(Boolean);
 
-  // Copy coordinates to clipboard
-  const handleCopyCoords = async () => {
-    const coords = getCoordinates();
-    if (coords) {
-      const text = `${coords.lat}, ${coords.lng}`;
-      const success = await copyToClipboard(text);
-      if (success) {
-        setCopiedCoords(true);
-        setTimeout(() => setCopiedCoords(false), 2000);
-      } else {
-        alert(`Lat/Long: ${text}`);
-      }
-    }
-  };
-
-  // Share functionality
-  const handleShare = async (platform) => {
-    const url = window.location.href;
-    const title = poi?.name || 'Check out this park';
-    const description = poi?.description_short || poi?.description_long?.substring(0, 150) || '';
-    const hashtags = 'NearbyNearby,LocalParks';
-
-    const shareUrls = {
-      facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}&quote=${encodeURIComponent(title + ' - ' + description)}`,
-      twitter: `https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(title)}&hashtags=${hashtags}`,
-      email: `mailto:?subject=${encodeURIComponent(title)}&body=${encodeURIComponent(description + '\n\n' + url)}`,
-      copy: url
-    };
-
-    if (platform === 'copy') {
-      try {
-        const success = await copyToClipboard(url);
-        if (success) {
-          setCopiedLink(true);
-          setTimeout(() => setCopiedLink(false), 2000);
-        }
-      } catch (err) {
-        console.error('Failed to copy URL:', err);
-      }
-    } else if (platform === 'native' && navigator.share) {
-      try {
-        await navigator.share({ title, text: description, url });
-      } catch (err) {
-        if (err.name !== 'AbortError') console.error('Share failed:', err);
-      }
-    } else if (platform === 'email') {
-      window.location.href = shareUrls.email;
-    } else if (shareUrls[platform]) {
-      window.open(shareUrls[platform], '_blank', 'width=600,height=400');
-    }
-    setShowShareMenu(false);
-  };
-
-  // Get photos by type from the images array (for typed sections like parking, restroom, etc.)
-  const getPhotosByType = (type) => {
-    if (!poi.images) return [];
-    return poi.images
-      .filter(img => {
-        const imgType = img.type || img.image_type;
-        if (typeof imgType === 'string') {
-          return imgType.toLowerCase() === type.toLowerCase();
-        }
-        if (imgType?.value) {
-          return imgType.value.toLowerCase() === type.toLowerCase();
-        }
-        return false;
-      })
-      .filter(img => !img.parent_image_id)
-      .map(img => ({
-        id: img.id,
-        url: img.storage_url || img.url,
-        thumbnail: img.thumbnail_url || img.storage_url || img.url,
-        alt: img.alt_text || `${type} photo`,
-        caption: img.caption
-      }))
-      .filter(img => img.url);
-  };
-
-  const InfoRow = ({ label, value }) => {
-    if (!value) return null;
-    return (
-      <div className="info-row">
-        <span className="info-row__label">{label}</span>
-        <span className="info-row__value">{value}</span>
-      </div>
-    );
-  };
-
-  // POIDetail handles loading/error states, so poi is guaranteed to exist here
-
-  return (
-    <div className="poi-detail">
-      <div className="poi-detail__container">
-        <button onClick={() => navigate('/')} className="poi-detail__back-link">
-          ← Back to Search
-        </button>
-
-        {/* Header Section */}
-        <div className="poi-detail__new-header">
-          {/* Status Badge */}
-          <div className="poi-detail__status-row">
-            <span className="poi-detail__status-text">
-              STATUS: <span className="poi-detail__status-value">{poi.status || 'Open'}</span>
-            </span>
-            {poi.is_verified && (
-              <div className="poi-detail__verified-wrapper">
-                <div className="poi-detail__verified">
-                  <div className="poi-detail__verified-icon">
-                    <div className="poi-detail__verified-dot"></div>
-                  </div>
-                  Verified
-                  <Info size={14} className="poi-detail__verified-info" />
-                </div>
-                <div className="poi-detail__verified-tooltip">
-                  This place has been checked and confirmed as accurate by a Nearby Nearby Team member
-                </div>
-              </div>
-            )}
+    const col2 = [
+      hasVal(poi.hours) && (
+        <ContentGroup key="hours" title="Hours">
+          <div className="acc_content_text">
+            <HoursDisplay
+              hours={poi.hours}
+              holidayHours={poi.holiday_hours}
+              appointmentBookingUrl={poi.appointment_booking_url}
+              appointmentRequired={poi.hours_but_appointment_required}
+              hoursNotes={poi.hours_notes}
+            />
           </div>
+        </ContentGroup>
+      ),
+    ].filter(Boolean);
 
-          {/* Title */}
-          <h1 className="poi-detail__main-title">{poi.name}</h1>
+    out.push({ id: 'about_hours', title: 'About + Hours', col1, col2, defaultOpen: true });
+  }
 
-          {/* Subtitle */}
-          {poi.description_short && (
-            <p className="poi-detail__subtitle">{poi.description_short}</p>
-          )}
-
-          {/* Sponsor Badge */}
-          {poi.listing_type && poi.listing_type !== 'free' && (
-            <div className="poi-detail__sponsor">
-              <span className="poi-detail__sponsor-badge">
-                ⭐ {poi.listing_type}
-              </span>
-              <div className="poi-detail__sponsor-info">
-                <span className="poi-detail__sponsor-label">Park Partnership</span>
-                <p className="poi-detail__sponsor-text">
-                  <em>Info about our partnership with this park</em>
-                </p>
-                <button className="poi-detail__sponsor-link">
-                  LEARN MORE
+  /* ADDRESS + PARKING */
+  {
+    const hasAddr = !displayLoc.hideExact && hasVal(poi.address_street);
+    const col1 = [
+      (
+        <ContentGroup key="addr" title="Address" when={hasAddr || (displayLoc.hideExact && (displayLoc.city || displayLoc.region))}>
+          <div className="acc_content_text">
+            {displayLoc.hideExact ? (
+              <p><MapPin size={14} /> {displayLoc.full}</p>
+            ) : hasAddr && (
+              <p>
+                <MapPin size={14} />{' '}
+                {[poi.address_street, poi.address_city, poi.address_state, poi.address_zip]
+                  .filter(Boolean).join(', ')}
+              </p>
+            )}
+            {!displayLoc.hideExact && (
+              <div className="pd-addr__actions">
+                <button type="button" className="btn_reset button btn_outline_teal btn_poi_button_1" onClick={handleDirections}>
+                  <Navigation size={14} /> <span className="poi_button_title">Get Directions</span>
+                </button>
+                {hasAddr && (
+                  <button type="button" className="btn_reset button btn_outline_teal btn_poi_button_1" onClick={handleCopyAddress}>
+                    {copiedAddress ? <Check size={14} /> : <Copy size={14} />}
+                    <span className="poi_button_title">{copiedAddress ? 'Copied!' : 'Copy Address'}</span>
+                  </button>
+                )}
+                <button type="button" className="btn_reset button btn_outline_teal btn_poi_button_1" onClick={handleCopyCoords}>
+                  {copiedCoords ? <Check size={14} /> : <Copy size={14} />}
+                  <span className="poi_button_title">{copiedCoords ? 'Copied!' : 'Copy Lat+Long'}</span>
                 </button>
               </div>
-            </div>
-          )}
-
-          {/* Quick Info */}
-          <div className="poi-detail__quick-info">
-            {poi.hours && (() => {
-              const openStatus = isCurrentlyOpen(poi.hours);
-              const weekHours = getWeekHours(poi.hours);
-              return (
-                <div className="poi-detail__hours-container">
-                  <div className="poi-detail__info-item">
-                    <Clock size={16} className={`poi-detail__icon ${openStatus.isOpen ? 'poi-detail__icon--green' : ''}`} />
-                    <span className={`poi-detail__info-primary ${openStatus.isOpen ? '' : 'poi-detail__info-primary--closed'}`}>
-                      {openStatus.isOpen ? 'Open Now' : 'Closed'}
-                    </span>
-                    <span className="poi-detail__info-secondary"> - {openStatus.status}</span>
-                    {openStatus.label && (
-                      <span className="poi-detail__hours-modified">
-                        <AlertCircle size={12} /> {openStatus.label}
-                      </span>
-                    )}
-                    <button
-                      className="poi-detail__hours-btn"
-                      onClick={() => setShowHours(!showHours)}
-                    >
-                      {showHours ? 'Hide Hours' : 'Show Hours'}
-                      {showHours ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                    </button>
-                  </div>
-                  {showHours && (
-                    <div className="poi-detail__hours-dropdown">
-                      {weekHours.map((day) => (
-                        <div key={day.dayName} className={`poi-detail__hours-row ${day.isToday ? 'poi-detail__hours-row--today' : ''}`}>
-                          <span className="poi-detail__hours-day">{day.dayShort}</span>
-                          <span className="poi-detail__hours-time">{day.formattedHours}</span>
-                          {day.isModified && day.label && (
-                            <span className="poi-detail__hours-badge">{day.label}</span>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              );
-            })()}
-
-            {poi.address_street && (
-              <div className="poi-detail__info-item">
-                <MapPin size={16} className="poi-detail__icon" />
-                <span className="poi-detail__info-text">{poi.address_street}</span>
-              </div>
-            )}
-
-            {poi.phone_number && (
-              <div className="poi-detail__info-item">
-                <Phone size={16} className="poi-detail__icon" />
-                <span className="poi-detail__info-text">{poi.phone_number}</span>
-              </div>
-            )}
-
-            {poi.website_url && (
-              <div className="poi-detail__info-item">
-                <Globe size={16} className="poi-detail__icon" />
-                <a href={`https://${poi.website_url}`} className="poi-detail__info-link" target="_blank" rel="noopener noreferrer">
-                  {poi.website_url}
-                </a>
-              </div>
             )}
           </div>
+        </ContentGroup>
+      ),
+      hasVal(poi.park_entry_notes) && (
+        <ContentGroup key="entry" title="Park Entry">
+          <div className="acc_content_text" dangerouslySetInnerHTML={{ __html: sanitizeHtml(poi.park_entry_notes) }} />
+        </ContentGroup>
+      ),
+    ].filter(Boolean);
 
-          {/* Titled Links Section */}
-          {(poi.reservation_links?.length > 0 || poi.delivery_links?.length > 0 || poi.online_ordering_links?.length > 0 || poi.appointment_links?.length > 0) && (
-            <div className="poi-detail__titled-links">
-              {poi.reservation_links && poi.reservation_links.map((link, idx) => {
-                const url = typeof link === 'string' ? link : link?.url;
-                const title = typeof link === 'string' ? 'Make a Reservation' : (link?.title || 'Make a Reservation');
-                if (!url) return null;
-                return (
-                  <a key={`res-${idx}`} href={url.startsWith('http') ? url : `https://${url}`} className="poi-detail__titled-link" target="_blank" rel="noopener noreferrer">
-                    <CalendarCheck size={18} /><span>{title}</span><ExternalLink size={14} />
-                  </a>
-                );
-              })}
-              {poi.delivery_links && poi.delivery_links.map((link, idx) => {
-                const url = typeof link === 'string' ? link : link?.url;
-                const title = typeof link === 'string' ? 'Order Delivery' : (link?.title || 'Order Delivery');
-                if (!url) return null;
-                return (
-                  <a key={`del-${idx}`} href={url.startsWith('http') ? url : `https://${url}`} className="poi-detail__titled-link" target="_blank" rel="noopener noreferrer">
-                    <Truck size={18} /><span>{title}</span><ExternalLink size={14} />
-                  </a>
-                );
-              })}
-              {poi.online_ordering_links && poi.online_ordering_links.map((link, idx) => {
-                const url = typeof link === 'string' ? link : link?.url;
-                const title = typeof link === 'string' ? 'Order Online' : (link?.title || 'Order Online');
-                if (!url) return null;
-                return (
-                  <a key={`ord-${idx}`} href={url.startsWith('http') ? url : `https://${url}`} className="poi-detail__titled-link" target="_blank" rel="noopener noreferrer">
-                    <ShoppingCart size={18} /><span>{title}</span><ExternalLink size={14} />
-                  </a>
-                );
-              })}
-              {poi.appointment_links && poi.appointment_links.map((link, idx) => {
-                const url = typeof link === 'string' ? link : link?.url;
-                const title = typeof link === 'string' ? 'Book Appointment' : (link?.title || 'Book Appointment');
-                if (!url) return null;
-                return (
-                  <a key={`apt-${idx}`} href={url.startsWith('http') ? url : `https://${url}`} className="poi-detail__titled-link" target="_blank" rel="noopener noreferrer">
-                    <CalendarCheck size={18} /><span>{title}</span><ExternalLink size={14} />
-                  </a>
-                );
-              })}
+    const col2 = [
+      hasVal(poi.parking_types) && (
+        <ContentGroup key="parking" title="Parking"><ChipList items={poi.parking_types} /></ContentGroup>
+      ),
+      hasVal(poi.parking_notes) && (
+        <ContentGroup key="parking_notes">
+          <div className="acc_content_text" dangerouslySetInnerHTML={{ __html: sanitizeHtml(poi.parking_notes) }} />
+        </ContentGroup>
+      ),
+      asArray(poi.parking_types).includes('Accessible Parking') && hasVal(poi.accessible_parking_details) && (
+        <ContentGroup key="adaparking" title="Accessible Parking Details"><ChipList items={poi.accessible_parking_details} /></ContentGroup>
+      ),
+    ].filter(Boolean);
+
+    if (col1.length || col2.length) out.push({ id: 'address_parking', title: 'Address + Parking', col1, col2 });
+  }
+
+  /* PRICING + PASSES */
+  {
+    const cost = poi.park?.cost ?? poi.cost;
+    const passInfo = poi.park?.pass_info ?? poi.membership_passes ?? poi.membership_details;
+    const passText = Array.isArray(passInfo) ? (passInfo.length ? passInfo.join(', ') : null) : passInfo;
+
+    const col1 = [
+      <InfoPair key="cost" title="Cost" value={cost} />,
+      <InfoPair key="passes" title="Passes" value={passText} />,
+    ].filter(Boolean);
+    const col2 = [
+      hasVal(poi.discounts) && (
+        <ContentGroup key="disc" title="Discounts">
+          {Array.isArray(poi.discounts) ? (
+            <div className="acc_list_group_1">
+              {poi.discounts.map((d, i) => <span key={i}>{typeof d === 'string' ? d : (d?.description || d?.title)}</span>)}
             </div>
+          ) : (
+            <div className="acc_content_text"><p>{poi.discounts}</p></div>
           )}
+        </ContentGroup>
+      ),
+    ].filter(Boolean);
+    if (col1.length || col2.length) out.push({ id: 'pricing_passes', title: 'Pricing + Passes', col1, col2 });
+  }
 
-          {/* Action Buttons */}
-          <div className="poi-detail__actions">
-            <button className="poi-detail__action-btn" onClick={handleDirections}>
-              <Navigation size={16} />
-              Directions
-            </button>
-            {getCoordinates() && (
-              <button className="poi-detail__action-btn" onClick={handleCopyCoords}>
-                {copiedCoords ? <Check size={16} /> : <Copy size={16} />}
-                {copiedCoords ? 'Copied!' : 'Copy Lat/Long'}
-              </button>
-            )}
-            <button className="poi-detail__action-btn">
-              <Plus size={16} />
-              Add to Plan
-            </button>
-            <div className="poi-detail__share-wrapper">
-              <button
-                className="poi-detail__action-btn"
-                onClick={() => navigator.share ? handleShare('native') : setShowShareMenu(!showShareMenu)}
-              >
-                <Share2 size={16} />
-                Share
-              </button>
-              {showShareMenu && (
-                <div className="poi-detail__share-menu">
-                  <button onClick={() => handleShare('facebook')}>
-                    <ExternalLink size={14} /> Facebook
-                  </button>
-                  <button onClick={() => handleShare('twitter')}>
-                    <ExternalLink size={14} /> Twitter/X
-                  </button>
-                  <button onClick={() => handleShare('email')}>
-                    <ExternalLink size={14} /> Email
-                  </button>
-                  <button onClick={() => handleShare('copy')}>
-                    {copiedLink ? <Check size={14} /> : <Copy size={14} />}
-                    {copiedLink ? 'Copied!' : 'Copy Link'}
-                  </button>
-                </div>
-              )}
-            </div>
-            <button className="poi-detail__action-btn">
-              <Heart size={16} />
-            </button>
+  /* PUBLIC RESTROOMS */
+  {
+    const col1 = [
+      hasVal(poi.public_toilets) && <ContentGroup key="pt" title="Public Restrooms"><ChipList items={poi.public_toilets} /></ContentGroup>,
+      hasVal(poi.toilet_description) && <ContentGroup key="td"><div className="acc_content_text" dangerouslySetInnerHTML={{ __html: sanitizeHtml(poi.toilet_description) }} /></ContentGroup>,
+    ].filter(Boolean);
+    const col2 = [
+      poi.accessible_restroom && hasVal(poi.accessible_restroom_details) && (
+        <ContentGroup key="adarest" title="Accessible Restroom Details"><ChipList items={poi.accessible_restroom_details} /></ContentGroup>
+      ),
+    ].filter(Boolean);
+    if (col1.length || col2.length) out.push({ id: 'public_restrooms', title: 'Public Restrooms', col1, col2 });
+  }
+
+  /* PLAYGROUND */
+  if (poi.playground_available || hasVal(poi.playground_types)) {
+    const col1 = [
+      hasVal(poi.playground_types) && <ContentGroup key="pt" title="Types"><ChipList items={poi.playground_types} /></ContentGroup>,
+      hasVal(poi.playground_surface_types) && <ContentGroup key="ps" title="Surface"><ChipList items={poi.playground_surface_types} /></ContentGroup>,
+      hasVal(poi.playground_notes) && <ContentGroup key="pn"><div className="acc_content_text" dangerouslySetInnerHTML={{ __html: sanitizeHtml(poi.playground_notes) }} /></ContentGroup>,
+    ].filter(Boolean);
+    const col2 = [
+      hasVal(poi.playground_age_groups) && <ContentGroup key="pa" title="Age Groups"><ChipList items={poi.playground_age_groups} /></ContentGroup>,
+      hasVal(poi.playground_ada_checklist) && <ContentGroup key="pada" title="ADA Accessibility"><ChipList items={poi.playground_ada_checklist} /></ContentGroup>,
+      poi.inclusive_playground && <ContentGroup key="incl" title="Inclusive Playground"><div className="acc_list_group_1"><span>Inclusive Playground</span></div></ContentGroup>,
+    ].filter(Boolean);
+    if (col1.length || col2.length) out.push({ id: 'playground', title: 'Playground', col1, col2 });
+  }
+
+  /* WHEELCHAIR + MOBILITY ACCESS */
+  {
+    const col1 = hasVal(poi.wheelchair_accessible) ? [<ContentGroup key="wa" title="Wheelchair Accessible"><ChipList items={poi.wheelchair_accessible} /></ContentGroup>] : [];
+    const col2 = hasVal(poi.wheelchair_details) ? [<ContentGroup key="wd"><div className="acc_content_text" dangerouslySetInnerHTML={{ __html: sanitizeHtml(poi.wheelchair_details) }} /></ContentGroup>] : [];
+    if (col1.length || col2.length) out.push({ id: 'mobility_access', title: 'Wheelchair and Mobility Access', col1, col2 });
+  }
+
+  /* PET POLICY */
+  if (hasVal(poi.pet_options) || hasVal(poi.pet_policy)) {
+    const col1 = [
+      hasVal(poi.pet_options) && <ContentGroup key="po" title="Pet Options"><ChipList items={poi.pet_options} /></ContentGroup>,
+      hasVal(poi.pet_policy) && <ContentGroup key="pp"><div className="acc_content_text" dangerouslySetInnerHTML={{ __html: sanitizeHtml(poi.pet_policy) }} /></ContentGroup>,
+    ].filter(Boolean);
+    const col2 = [<div className="acc_content_group" key="sa"><ServiceAnimalAlert /></div>];
+    out.push({ id: 'pet_policy', title: 'Pet Policy', col1, col2 });
+  }
+
+  /* DRONE POLICY */
+  if (hasVal(poi.drone_usage) || hasVal(poi.drone_policy)) {
+    const col1 = [<InfoPair key="du" title="Drone Usage" value={poi.drone_usage} />].filter(Boolean);
+    const col2 = [
+      hasVal(poi.drone_policy) && <ContentGroup key="dp"><div className="acc_content_text" dangerouslySetInnerHTML={{ __html: sanitizeHtml(poi.drone_policy) }} /></ContentGroup>,
+    ].filter(Boolean);
+    if (col1.length || col2.length) out.push({ id: 'drone_policy', title: 'Drone Policy', col1, col2 });
+  }
+
+  /* ALCOHOL + SMOKING */
+  if (hasVal(poi.alcohol_available) || hasVal(poi.alcohol_options) || hasVal(poi.smoking_options) || hasVal(poi.smoking_details) || hasVal(poi.alcohol_policy_details)) {
+    const col1 = [
+      <InfoPair key="aa" title="Alcohol" value={poi.alcohol_available} />,
+      hasVal(poi.alcohol_options) && <ContentGroup key="ao" title="Alcohol Options"><ChipList items={poi.alcohol_options} /></ContentGroup>,
+      hasVal(poi.alcohol_policy_details) && <ContentGroup key="apd"><div className="acc_content_text" dangerouslySetInnerHTML={{ __html: sanitizeHtml(poi.alcohol_policy_details) }} /></ContentGroup>,
+    ].filter(Boolean);
+    const col2 = [
+      hasVal(poi.smoking_options) && <ContentGroup key="so" title="Smoking"><ChipList items={poi.smoking_options} /></ContentGroup>,
+      hasVal(poi.smoking_details) && <ContentGroup key="sd"><div className="acc_content_text" dangerouslySetInnerHTML={{ __html: sanitizeHtml(poi.smoking_details) }} /></ContentGroup>,
+    ].filter(Boolean);
+    if (col1.length || col2.length) out.push({ id: 'alcohol_smoking', title: 'Alcohol + Smoking', col1, col2 });
+  }
+
+  /* NIGHT SKY VIEWING */
+  if (hasVal(poi.night_sky_viewing) && poi.night_sky_viewing !== false) {
+    const val = poi.night_sky_viewing;
+    const body = typeof val === 'string'
+      ? <div className="acc_content_text" dangerouslySetInnerHTML={{ __html: sanitizeHtml(val) }} />
+      : <div className="acc_content_text"><p>Night sky viewing available.</p></div>;
+    out.push({ id: 'night_sky', title: 'Night Sky Viewing', col1: [<ContentGroup key="ns">{body}</ContentGroup>], col2: [] });
+  }
+
+  /* BIRDING + WILDLIFE */
+  if (hasVal(poi.birding_wildlife)) {
+    out.push({
+      id: 'birding_wildlife', title: 'Birding + Wildlife',
+      col1: [<ContentGroup key="bw"><div className="acc_content_text" dangerouslySetInnerHTML={{ __html: sanitizeHtml(poi.birding_wildlife) }} /></ContentGroup>], col2: [],
+    });
+  }
+
+  /* HUNTING + FISHING */
+  const huntingAllowed = isYes(poi.hunting_allowed) || isYes(poi.hunting_fishing_allowed);
+  const fishingAllowed = isYes(poi.fishing_allowed);
+  if (huntingAllowed || fishingAllowed) {
+    const col1 = [];
+    if (huntingAllowed) {
+      col1.push(
+        <ContentGroup key="hunt" title="Hunting">
+          {hasVal(poi.hunting_types) && <ChipList items={poi.hunting_types} />}
+          {hasVal(poi.hunting_notes) && <div className="acc_content_text" dangerouslySetInnerHTML={{ __html: sanitizeHtml(poi.hunting_notes) }} />}
+        </ContentGroup>
+      );
+    }
+    const col2 = [];
+    if (fishingAllowed) {
+      col2.push(
+        <ContentGroup key="fish" title="Fishing">
+          {hasVal(poi.fishing_types) && <ChipList items={poi.fishing_types} />}
+          {hasVal(poi.fishing_notes) && <div className="acc_content_text" dangerouslySetInnerHTML={{ __html: sanitizeHtml(poi.fishing_notes) }} />}
+        </ContentGroup>
+      );
+    }
+    if (hasVal(poi.hunting_fishing_info)) col2.push(<ContentGroup key="hfi"><div className="acc_content_text" dangerouslySetInnerHTML={{ __html: sanitizeHtml(poi.hunting_fishing_info) }} /></ContentGroup>);
+    if (hasVal(poi.licenses_required)) col2.push(<ContentGroup key="lic" title="Licenses Required"><ChipList items={poi.licenses_required} /></ContentGroup>);
+    out.push({ id: 'hunting_fishing', title: 'Hunting + Fishing', col1, col2 });
+  }
+
+  /* RENTALS */
+  if (poi.available_for_rent === true) {
+    const col1 = [hasVal(poi.rental_info) && <ContentGroup key="ri"><div className="acc_content_text" dangerouslySetInnerHTML={{ __html: sanitizeHtml(poi.rental_info) }} /></ContentGroup>].filter(Boolean);
+    const col2 = [
+      <InfoPair key="rp" title="Pricing" value={poi.rental_pricing} />,
+      hasVal(poi.rental_link) && (
+        <ContentGroup key="rl" title="Link">
+          <div className="acc_content_text">
+            <a href={poi.rental_link.startsWith('http') ? poi.rental_link : `https://${poi.rental_link}`} className="pd-link" target="_blank" rel="noopener noreferrer">
+              Rental Info <ExternalLink size={12} />
+            </a>
           </div>
+        </ContentGroup>
+      ),
+    ].filter(Boolean);
+    if (col1.length || col2.length) out.push({ id: 'rentals', title: 'Rentals', col1, col2 });
+  }
 
-          {/* Description Box */}
-          {poi.description_long && (
-            <div className="poi-detail__description-box">
-              <div className="poi-detail__description-text">
-                {poi.description_long}
+  /* LOCALLY FOUND + HISTORY */
+  if (hasVal(poi.locally_found_at) || hasVal(poi.history_paragraph) || hasVal(poi.community_impact)) {
+    const col1 = [
+      hasVal(poi.locally_found_at) && (
+        <ContentGroup key="lf" title="Locally Found At">
+          {Array.isArray(poi.locally_found_at) ? (
+            <div className="acc_list_group_1">
+              {poi.locally_found_at.map((item, i) => <span key={i}>{typeof item === 'string' ? item : (item?.name || item?.title)}</span>)}
+            </div>
+          ) : (
+            <div className="acc_content_text"><p>{poi.locally_found_at}</p></div>
+          )}
+        </ContentGroup>
+      ),
+    ].filter(Boolean);
+    const col2 = [
+      hasVal(poi.history_paragraph) && <ContentGroup key="hist" title="History"><div className="acc_content_text" dangerouslySetInnerHTML={{ __html: sanitizeHtml(poi.history_paragraph) }} /></ContentGroup>,
+      hasVal(poi.community_impact) && <ContentGroup key="ci" title="Community Impact"><div className="acc_content_text" dangerouslySetInnerHTML={{ __html: sanitizeHtml(poi.community_impact) }} /></ContentGroup>,
+    ].filter(Boolean);
+    if (col1.length || col2.length) out.push({ id: 'locally_history', title: 'Locally Found + History', col1, col2 });
+  }
+
+  /* CONTACT */
+  if (hasVal(poi.website_url) || hasVal(poi.phone_number) || hasVal(poi.email)) {
+    const col1 = [
+      hasVal(poi.phone_number) && (
+        <ContentGroup key="ph" title="Phone"><div className="acc_list_group_1"><a href={`tel:${poi.phone_number}`}>{poi.phone_number}</a></div></ContentGroup>
+      ),
+      hasVal(poi.website_url) && (
+        <ContentGroup key="web" title="Website">
+          <div className="acc_list_group_1">
+            <a href={poi.website_url.startsWith('http') ? poi.website_url : `https://${poi.website_url}`} target="_blank" rel="noopener noreferrer">{poi.website_url}</a>
+          </div>
+        </ContentGroup>
+      ),
+    ].filter(Boolean);
+    const col2 = [
+      hasVal(poi.email) && <ContentGroup key="em" title="Email"><div className="acc_list_group_1"><a href={`mailto:${poi.email}`}>{poi.email}</a></div></ContentGroup>,
+      <div className="acc_content_group" key="fb"><div className="acc_content_text"><a href="/feedback" className="pd-link">Questions or Feedback?</a></div></div>,
+    ].filter(Boolean);
+    if (col1.length || col2.length) out.push({ id: 'contact', title: 'Contact', col1, col2 });
+  }
+
+  return out;
+}
+
+/* ------------------------------------------------------------------ */
+/* Component                                                          */
+/* ------------------------------------------------------------------ */
+
+export default function ParkDetail({ poi }) {
+  const [copiedCoords, setCopiedCoords] = useState(false);
+  const [copiedAddress, setCopiedAddress] = useState(false);
+
+  const displayLoc = getDisplayableLocation(poi);
+  const paid = isPaidTier(poi);
+  const coords = getCoordinates(poi, displayLoc.hideExact);
+  const images = useMemo(() => getImages(poi), [poi]);
+  const openStatus = poi.hours ? isCurrentlyOpen(poi.hours) : null;
+
+  const handleDirections = () => openDirections(poi, coords);
+  const handleCopyCoords = async () => {
+    if (!coords) return;
+    if (await copyToClipboard(`${coords.lat}, ${coords.lng}`)) {
+      setCopiedCoords(true); setTimeout(() => setCopiedCoords(false), 2000);
+    }
+  };
+  const handleCopyAddress = async () => {
+    const a = [poi.address_street, poi.address_city, poi.address_state, poi.address_zip].filter(Boolean).join(', ');
+    if (!a) return;
+    if (await copyToClipboard(a)) {
+      setCopiedAddress(true); setTimeout(() => setCopiedAddress(false), 2000);
+    }
+  };
+
+  const subtitle = poi.park?.primary_type || poi.primary_type?.name || asArray(poi.outdoor_types)[0] || '';
+
+  const thingsToDo = (() => {
+    const list = asArray(poi.things_to_do).length > 0 ? asArray(poi.things_to_do) : asArray(poi.park?.activities);
+    return list.length ? list : asArray(poi.amenities?.recreation);
+  })();
+
+  const idealForLocal = (poi.ideal_for && !Array.isArray(poi.ideal_for))
+    ? asArray(poi.ideal_for.local_special).join(', ') : null;
+  const costValue = poi.park?.cost || poi.cost || (poi.listing_type === 'free' ? 'Free' : null);
+  const petSummary = asArray(poi.pet_options).join(', ');
+
+  const sections = buildSections(poi, {
+    displayLoc, handleDirections, handleCopyAddress, handleCopyCoords, copiedAddress, copiedCoords,
+  });
+
+  return (
+    <POIDetailLayout
+      poi={poi}
+      mainCategory={subtitle}
+      statusVariant={openStatus ? (openStatus.isOpen ? 'open' : 'closed') : undefined}
+      statusLabel={openStatus ? (openStatus.isOpen
+        ? (openStatus.status ? `Open Now – ${openStatus.status}` : 'Open Now')
+        : (openStatus.status || 'Closed')) : undefined}
+    >
+      {({ images: imgs, openLightbox }) => (
+        <>
+          <QuickInfoPhotosBox
+            title={poi.description_short}
+            quickInfoRows={
+              <>
+                <QuickInfoRow title="Best For:" value={idealForLocal} />
+                <QuickInfoRow title="Cost:" value={costValue} />
+                <QuickInfoRow title="At-A-Glance:" value={poi.description_short} />
+                <QuickInfoRow title="Pets:" value={petSummary} />
+              </>
+            }
+            images={imgs}
+            onOpenLightbox={openLightbox}
+          />
+
+          <AmenitiesBox poi={poi} />
+
+          {thingsToDo.length > 0 && (
+            <div id="poi_things_to_do_box" className="box_style_1">
+              <div className="poi_quick_info_title">Things To Do</div>
+              <div className="poi_amenities_list">
+                {thingsToDo.map((item, i) => <span className="aaa" key={`${item}-${i}`}>{item}</span>)}
               </div>
             </div>
           )}
 
-          {/* Amenities */}
-          {poi.amenities && poi.amenities.length > 0 && (
-            <div className="poi-detail__amenities-section">
-              <h3 className="poi-detail__amenities-title">Park Features</h3>
-              <div className="poi-detail__amenities-grid">
-                {poi.amenities.map((amenity, idx) => (
-                  <span key={idx} className="poi-detail__amenity-tag">
-                    <span className="poi-detail__amenity-dot">•</span> {amenity}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Photos Section */}
-        {poi.images && poi.images.length > 0 && (
-          <div className="poi-detail__photos-section">
-            <div className="poi-detail__photos-header">
-              <h3 className="poi-detail__photos-title">PHOTOS</h3>
-              <button className="poi-detail__photos-link">View All ({poi.images.filter(img => !img.parent_image_id).length})</button>
-            </div>
-            <div className="poi-detail__photos-grid">
-              {poi.images
-                .filter(img => !img.parent_image_id)
-                .slice(0, 4)
-                .map((image, i) => (
-                  <div key={image.id || i} className="poi-detail__photo-item">
-                    <img
-                      src={image.thumbnail_url || image.storage_url || image.url}
-                      alt={image.alt_text || `${poi.name} photo ${i + 1}`}
-                      loading="lazy"
-                    />
-                  </div>
+          <div id="accordion_1_box" className="poi_accordion_box">
+            <div id="accordion_1_parent" className="poi_accordion_parent">
+              {sections.map((s) => (
+                <AccSection key={s.id} id={s.id} title={s.title} defaultOpen={!!s.defaultOpen} col1={s.col1} col2={s.col2} />
               ))}
             </div>
           </div>
-        )}
-
-        {/* Park-Specific Collapsible Sections */}
-        <div className="poi-detail__collapsible-sections">
-          <Accordion closeOther closeAble scrollOffset={120}>
-          <AccordionSection title="ABOUT + HOURS" show={!!(poi.description_long || poi.hours)}>
-            <div className="collapsible-section__info">
-              {poi.description_long && (
-                <InfoRow label="Description" value={poi.description_long} />
-              )}
-              <HoursDisplay
-                hours={poi.hours}
-                holidayHours={poi.holiday_hours}
-                appointmentLinks={poi.appointment_links}
-                appointmentBookingUrl={poi.appointment_booking_url}
-                appointmentRequired={poi.hours_but_appointment_required}
-                hoursNotes={poi.hours_notes}
-              />
-            </div>
-          </AccordionSection>
-
-          <AccordionSection title="ADDRESS + PARKING" show={!!(poi.address_street || poi.parking_types)}>
-            <div className="collapsible-section__info">
-              <InfoRow label="Street" value={poi.address_street} />
-              <InfoRow label="City" value={poi.address_city} />
-              <InfoRow label="State" value={poi.address_state} />
-              <InfoRow label="Zip" value={poi.address_zip} />
-              {poi.parking_types && Array.isArray(poi.parking_types) && (
-                <InfoRow label="Parking" value={poi.parking_types.join(", ")} />
-              )}
-              {poi.parking_notes && <InfoRow label="Parking Notes" value={poi.parking_notes} />}
-            </div>
-          </AccordionSection>
-
-          {(() => {
-            const playgroundPhotos = getPhotosByType('playground');
-            return (
-              <AccordionSection title="PLAYGROUND" show={!!(poi.playground_available || playgroundPhotos.length > 0)}>
-                <div className="collapsible-section__info">
-                  <InfoRow label="Available" value={poi.playground_available ? "Yes" : "No"} />
-                  {poi.playground_types && Array.isArray(poi.playground_types) && (
-                    <InfoRow label="Types" value={poi.playground_types.join(", ")} />
-                  )}
-                  {poi.playground_notes && (
-                    <InfoRow label="Notes" value={poi.playground_notes} />
-                  )}
-                  {playgroundPhotos.length > 0 && (
-                    <div className="collapsible-section__photos">
-                      <span className="collapsible-section__photos-label">PHOTOS</span>
-                      <div className="collapsible-section__photos-grid">
-                        {playgroundPhotos.slice(0, 4).map((photo, idx) => (
-                          <div key={photo.id || idx} className="collapsible-section__photo-item">
-                            <img src={photo.thumbnail} alt={photo.alt} loading="lazy" />
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </AccordionSection>
-            );
-          })()}
-
-          <AccordionSection title="WHAT TO EXPECT" show={!!(poi.wheelchair_accessible || poi.wifi_options || poi.ideal_for)}>
-            <div className="collapsible-section__info">
-              {poi.wheelchair_accessible && Array.isArray(poi.wheelchair_accessible) && (
-                <InfoRow label="Accessibility" value={poi.wheelchair_accessible.join(", ")} />
-              )}
-              {poi.wifi_options && Array.isArray(poi.wifi_options) && (
-                <InfoRow label="Wi-Fi" value={poi.wifi_options.join(", ")} />
-              )}
-              {poi.ideal_for && Array.isArray(poi.ideal_for) && (
-                <InfoRow label="Ideal For" value={poi.ideal_for.join(", ")} />
-              )}
-            </div>
-          </AccordionSection>
-
-          {(() => {
-            const restroomPhotos = getPhotosByType('restroom');
-            return (
-              <AccordionSection title="PUBLIC RESTROOMS" show={!!(poi.public_toilets || restroomPhotos.length > 0)}>
-                <div className="collapsible-section__info">
-                  {poi.public_toilets && Array.isArray(poi.public_toilets) && (
-                    <InfoRow label="Available" value={poi.public_toilets.join(", ")} />
-                  )}
-                  {poi.toilet_description && (
-                    <InfoRow label="Details" value={poi.toilet_description} />
-                  )}
-                  {restroomPhotos.length > 0 && (
-                    <div className="collapsible-section__photos">
-                      <span className="collapsible-section__photos-label">PHOTOS</span>
-                      <div className="collapsible-section__photos-grid">
-                        {restroomPhotos.slice(0, 4).map((photo, idx) => (
-                          <div key={photo.id || idx} className="collapsible-section__photo-item">
-                            <img src={photo.thumbnail} alt={photo.alt} loading="lazy" />
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </AccordionSection>
-            );
-          })()}
-
-          <AccordionSection title="ACCESSIBILITY" show={!!(poi.wheelchair_accessible || poi.wheelchair_details)}>
-            <div className="collapsible-section__info">
-              {poi.wheelchair_accessible && Array.isArray(poi.wheelchair_accessible) && (
-                <InfoRow label="Wheelchair" value={poi.wheelchair_accessible.join(", ")} />
-              )}
-              {poi.wheelchair_details && (
-                <InfoRow label="Details" value={poi.wheelchair_details} />
-              )}
-            </div>
-          </AccordionSection>
-
-          <AccordionSection title="PET POLICY" show={!!(poi.pet_options || poi.pet_policy)}>
-            <div className="collapsible-section__info">
-              {poi.pet_options && Array.isArray(poi.pet_options) && (
-                <InfoRow label="Pets Allowed" value={poi.pet_options.join(", ")} />
-              )}
-              {poi.pet_policy && (
-                <InfoRow label="Policy" value={poi.pet_policy} />
-              )}
-            </div>
-          </AccordionSection>
-
-          <AccordionSection title="TIPS + TRICKS" show={!!(poi.community_impact || poi.history_paragraph)}>
-            <div className="collapsible-section__info">
-              {poi.history_paragraph && (
-                <InfoRow label="History" value={poi.history_paragraph} />
-              )}
-              {poi.community_impact && (
-                <InfoRow label="Community Impact" value={poi.community_impact} />
-              )}
-            </div>
-          </AccordionSection>
-
-          <AccordionSection title="CONTACT" show={!!(poi.phone_number || poi.email || poi.website_url)}>
-            <div className="collapsible-section__info">
-              <InfoRow label="Phone" value={poi.phone_number} />
-              <InfoRow label="Email" value={poi.email} />
-              <InfoRow label="Website" value={poi.website_url} />
-              {poi.instagram_username && (
-                <InfoRow label="Instagram" value={`@${poi.instagram_username}`} />
-              )}
-              {poi.facebook_username && (
-                <InfoRow label="Facebook" value={poi.facebook_username} />
-              )}
-            </div>
-          </AccordionSection>
-          </Accordion>
-        </div>
-
-        {/* Bottom Border */}
-        <div className="poi-detail__bottom-border"></div>
-      </div>
-
-      {/* Nearby Section */}
-      <NearbySection currentPOI={poi} />
-    </div>
+        </>
+      )}
+    </POIDetailLayout>
   );
 }
-
-export default ParkDetail;

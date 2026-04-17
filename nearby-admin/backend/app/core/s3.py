@@ -108,8 +108,26 @@ class S3Client:
                         # Create bucket for MinIO
                         logger.info(f"Creating MinIO bucket: {self.config.bucket_name}")
                         self._client.create_bucket(Bucket=self.config.bucket_name)
-                        # Set bucket policy to public for MinIO
-                        self._set_bucket_public_policy()
+                        # Public policy is OPT-IN now (defaults to off). Set
+                        # S3_ALLOW_PUBLIC_BUCKET=true to restore the legacy
+                        # behavior — only safe on dev MinIO that is not exposed
+                        # to the internet. Production AWS S3 never reaches
+                        # this branch (is_minio is False there).
+                        if os.getenv("S3_ALLOW_PUBLIC_BUCKET", "false").lower() == "true":
+                            logger.warning(
+                                "S3_ALLOW_PUBLIC_BUCKET=true — applying public-read "
+                                "policy to bucket '%s'. All uploaded objects will be "
+                                "world-readable. Use only in non-exposed dev environments.",
+                                self.config.bucket_name,
+                            )
+                            self._set_bucket_public_policy()
+                        else:
+                            logger.info(
+                                "MinIO bucket '%s' created without public-read policy. "
+                                "Serve images via /api/images/serve/{image_id} which "
+                                "redirects to a presigned URL.",
+                                self.config.bucket_name,
+                            )
                     else:
                         raise
 

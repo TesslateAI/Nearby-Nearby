@@ -6,6 +6,8 @@
  * to help search engines understand and display business information.
  */
 
+import { escapeForJsonLd } from '../../utils/sanitize';
+
 function LocalBusinessJsonLd({ poi }) {
   if (!poi) return null;
 
@@ -276,7 +278,7 @@ function LocalBusinessJsonLd({ poi }) {
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(businessSchema, null, 2) }}
+      dangerouslySetInnerHTML={{ __html: escapeForJsonLd(JSON.stringify(businessSchema, null, 2)) }}
     />
   );
 }

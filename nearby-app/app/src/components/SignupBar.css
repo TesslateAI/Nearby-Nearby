@@ -79,7 +79,7 @@
   }
 }
 
-@media (max-width: 560px) {
+@media (max-width: 600px) {
   .nn-signup__title { font-size: 22px; }
   .nn-signup { padding: 12px 12px 18px; }
 }

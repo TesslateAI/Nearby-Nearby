@@ -1,25 +1,13 @@
-import { useState } from 'react';
-import './AnnouncementBanner.css';
-
+/**
+ * Announce box — rendered verbatim from nn-templates/home-page-01.html.
+ * Styling lives in src/styles/nn/stylez.css (#announce_box).
+ */
 export default function AnnouncementBanner() {
-  const [dismissed, setDismissed] = useState(false);
-
-  if (dismissed) return null;
-
   return (
     <div id="announce_box">
-      <div className="wrapper_default announce_inner">
-        <span>
-          <strong><span className="announce_highlight">Testing in Progress:</span></strong>{' '}
-          Currently, Nearby Nearby is available only in select areas of Pittsboro, NC. We are starting small to ensure we get it right.
-        </span>
-        <button
-          className="announce_close"
-          onClick={() => setDismissed(true)}
-          aria-label="Dismiss announcement"
-        >
-          &times;
-        </button>
+      <div className="wrapper_default">
+        <strong><span style={{ color: '#562556' }}>Testing in Progress:</span></strong>{' '}
+        Currently, Nearby Nearby is available only in select areas of Pittsboro, NC. We are starting small to ensure we get it right.
       </div>
     </div>
   );

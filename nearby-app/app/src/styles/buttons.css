@@ -1,5 +1,9 @@
 /* ==========================================================================
-   Button system — ported from nn-templates/inc/stylez.scss
+   Button system — app-level button styles.
+
+   Nav-icon buttons (.btn_nav_icon_style_1/_2, .text_nav_style_1/_2) are
+   owned by src/styles/nn/stylez.css (the template) and intentionally NOT
+   redefined here, so the header/mobile-nav icon swap keeps working.
    ========================================================================== */
 
 /* ── Default button ────────────────────────────────────────────── */
@@ -58,20 +62,12 @@
   font-size: 0.82em;
 }
 
-/* ── Reset (strip all default button styles — for icon buttons) ── */
-.btn_reset {
-  background: none;
-  border: none;
-  padding: 0;
-  margin: 0;
-  cursor: pointer;
-  font: inherit;
-  color: inherit;
-  outline: none;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  appearance: none;
-}
+/* .btn_reset is owned by src/styles/nn/stylez.css (the template).
+   Do NOT redefine here — any redefinition loads AFTER the template and
+   will clobber border/background rules that build on top of .btn_reset,
+   e.g. `.one_search_button_style_1 { background-color:#481f48; border:1px solid #fec764 }`.
+   The template's .btn_reset is sufficient; focus handling lives in
+   the :focus-visible rule below which uses a different property. */
 .btn_reset:focus-visible {
   outline: 3px solid var(--color-focus);
   outline-offset: 2px;
@@ -93,6 +89,16 @@
   background: var(--nn-purple2);
 }
 
+/* ── Search button (gold variant) ──────────────────────────────── */
+.btn_search_gold {
+  background: var(--nn-gold);
+  color: var(--nn-dark);
+}
+.btn_search_gold:hover {
+  background: #f7b947;
+  color: var(--nn-dark);
+}
+
 /* ── Subscribe button (footer email layer) ─────────────────────── */
 .btn_subscribe {
   background: var(--nn-gold);
@@ -107,47 +113,4 @@
 }
 .btn_subscribe:hover {
   background: var(--nn-gold-hover, #fdb93e);
-}
-
-/* ── Icon button styles (mobile nav, header search) ────────────── */
-.btn_nav_icon_style_1 {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 2px;
-  min-width: 55px;
-  min-height: 55px;
-  color: #fff;
-}
-.btn_nav_icon_style_1 .icon_open   { display: block; }
-.btn_nav_icon_style_1 .icon_close  { display: none; }
-.btn_nav_icon_style_1[aria-expanded="true"] .icon_open  { display: none; }
-.btn_nav_icon_style_1[aria-expanded="true"] .icon_close { display: block; }
-
-.text_nav_style_1 {
-  font-family: var(--font-poppins);
-  font-size: 10px;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.btn_nav_icon_style_2 {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 12px;
-  color: var(--nn-purple1);
-}
-.btn_nav_icon_style_2 .icon_open   { display: block; }
-.btn_nav_icon_style_2 .icon_close  { display: none; }
-.btn_nav_icon_style_2[aria-expanded="true"] .icon_open  { display: none; }
-.btn_nav_icon_style_2[aria-expanded="true"] .icon_close { display: block; }
-
-.text_nav_style_2 {
-  font-family: var(--font-poppins);
-  font-size: 0.9em;
-  font-weight: 600;
-  color: var(--nn-purple1);
 }

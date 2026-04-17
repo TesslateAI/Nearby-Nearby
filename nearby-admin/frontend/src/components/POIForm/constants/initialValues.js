@@ -40,7 +40,7 @@ export const emptyInitialValues = {
   // Cost fields
   cost: '',
   pricing_details: '',
-  ticket_link: '',
+  // ticket_link removed in Phase 1 — use event.ticket_links instead
   // History and featured image
   history_paragraph: '',
   featured_image: '',
@@ -67,7 +67,7 @@ export const emptyInitialValues = {
   downloadable_maps: [],
   payment_methods: [],
   key_facilities: [],
-  alcohol_available: 'no',
+  alcohol_available: null,
   alcohol_options: [],
   alcohol_policy_details: '',
   wheelchair_accessible: [],
@@ -243,7 +243,8 @@ export const emptyInitialValues = {
   hours: {},
   holiday_hours: {},
   amenities: {},
-  ideal_for: [],
+  // Phase 1 — ideal_for is now grouped (was flat list)
+  ideal_for: { atmosphere: [], age_group: [], social_settings: [], local_special: [] },
   contact_info: {},
   compliance: {},
   mobility_access: {},
@@ -251,5 +252,33 @@ export const emptyInitialValues = {
   main_category_id: null,
   // Primary Type linkage (unidirectional)
   primary_type_id: null,
-  category_ids: []
+  category_ids: [],
+  // ==========================================================================
+  // Phase 1 (May Launch) defaults — new columns added by migration p1_001
+  // ==========================================================================
+  has_been_published: false,
+  arrival_methods: [],
+  what3words_address: '',
+  icon_free_wifi: false,
+  icon_pet_friendly: false,
+  icon_public_restroom: false,
+  icon_wheelchair_accessible: false,
+  is_sponsor: false,
+  sponsor_level: null,
+  admin_notes: '',
+  accessible_parking_details: [],
+  accessible_restroom: false,
+  accessible_restroom_details: [],
+  playground_age_groups: [],
+  playground_ada_checklist: [],
+  inclusive_playground: false,
+  cell_service: null,
+  // Trail — new Phase 1 columns
+  mile_markers: false,
+  trailhead_signage: false,
+  audio_guide_available: false,
+  qr_trail_guide: false,
+  trail_guide_notes: '',
+  trail_lighting: null,
+  access_points: []
 };

@@ -5,6 +5,8 @@ from sqlalchemy import func
 from typing import List, Optional
 from datetime import date as date_type, datetime, timezone
 import uuid
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 from ... import schemas, crud, models
 from ...database import get_db
 from ...schemas.poi import PointGeometry
@@ -13,6 +15,13 @@ from ...search import multi_signal_search
 from shared.utils.hours_resolution import get_effective_hours_for_date
 
 router = APIRouter()
+
+# Per-IP throttle on the search surface. The semantic + hybrid endpoints run a
+# 1GB embedding model on each request, so unbounded query rates / very long
+# input strings are an easy DoS. 60/min is enough for normal page-load traffic
+# (Home + Nearby + Explore each fire ~1 search per nav).
+limiter = Limiter(key_func=get_remote_address)
+SEARCH_QUERY_MAX_LEN = 500
 
 # Statuses that are excluded from browse/search results
 _EXCLUDED_EVENT_STATUSES = ("Canceled", "Rescheduled")
@@ -134,9 +143,10 @@ def _apply_event_search_filters(pois, date_from=None, date_to=None, event_status
 
 
 @router.get("/pois/search", response_model=List[schemas.poi.POISearchResult])
+@limiter.limit("60/minute")
 def api_search_pois(
     request: Request,
-    q: str = Query(..., min_length=1),
+    q: str = Query(..., min_length=1, max_length=SEARCH_QUERY_MAX_LEN),
     poi_type: Optional[str] = Query(None, description="Filter by POI type (BUSINESS, PARK, TRAIL, EVENT)"),
     date_from: Optional[str] = Query(None, description="Filter events starting after (YYYY-MM-DD)"),
     date_to: Optional[str] = Query(None, description="Filter events starting before (YYYY-MM-DD)"),
@@ -149,9 +159,10 @@ def api_search_pois(
     return _apply_event_search_filters(results, date_from, date_to, event_status)
 
 @router.get("/pois/semantic-search", response_model=List[schemas.poi.POISearchResult])
+@limiter.limit("30/minute")
 def api_semantic_search_pois(
     request: Request,
-    q: str = Query(..., min_length=1, description="Natural language search query"),
+    q: str = Query(..., min_length=1, max_length=SEARCH_QUERY_MAX_LEN, description="Natural language search query"),
     limit: int = Query(10, ge=1, le=50, description="Number of results to return"),
     poi_type: Optional[str] = Query(None, description="Filter by POI type"),
     date_from: Optional[str] = Query(None, description="Filter events starting after (YYYY-MM-DD)"),
@@ -165,9 +176,10 @@ def api_semantic_search_pois(
     return _apply_event_search_filters(results, date_from, date_to, event_status)
 
 @router.get("/pois/hybrid-search", response_model=List[schemas.poi.POISearchResult])
+@limiter.limit("30/minute")
 def api_hybrid_search_pois(
     request: Request,
-    q: str = Query(..., min_length=1, description="Search query"),
+    q: str = Query(..., min_length=1, max_length=SEARCH_QUERY_MAX_LEN, description="Search query"),
     limit: int = Query(10, ge=1, le=50, description="Number of results to return"),
     poi_type: Optional[str] = Query(None, description="Filter by POI type (BUSINESS, PARK, TRAIL, EVENT)"),
     date_from: Optional[str] = Query(None, description="Filter events starting after (YYYY-MM-DD)"),
@@ -410,6 +422,8 @@ def api_get_nearby_pois_by_id(
             'id': poi.id,
             'name': poi.name,
             'address_city': poi.address_city,
+            'address_state': poi.address_state,
+            'address_county': poi.address_county,
             'distance_meters': poi.distance_meters,
             'location': location_geo,
             'poi_type': poi.poi_type.value if hasattr(poi.poi_type, 'value') else poi.poi_type,
@@ -417,6 +431,7 @@ def api_get_nearby_pois_by_id(
             'wheelchair_accessible': poi.wheelchair_accessible,
             'wifi_options': poi.wifi_options,
             'pet_options': poi.pet_options,
+            'public_toilets': poi.public_toilets,
             'categories': categories_data
         }
         results.append(schemas.poi.POINearbyResult.model_validate(poi_dict))
@@ -549,14 +564,33 @@ def api_get_pois_by_type(
     # Format results
     results = []
     for poi in pois:
+        # Categories — list[{id,name,slug}] for client-side category-name rendering on cards.
+        categories_data = []
+        if hasattr(poi, 'categories') and poi.categories:
+            for cat in poi.categories:
+                categories_data.append({
+                    'id': str(cat.id),
+                    'name': cat.name,
+                    'slug': cat.slug,
+                })
+
         poi_dict = {
-            'id': poi.id,
+            'id': str(poi.id),
             'name': poi.name,
+            'slug': poi.slug,
             'poi_type': poi.poi_type.value if hasattr(poi.poi_type, 'value') else poi.poi_type,
             'address_city': poi.address_city,
+            'address_state': poi.address_state,
+            'address_county': poi.address_county,
             'address_street': poi.address_street,
             'description_short': poi.description_short,
             'location': PointGeometry.from_wkb(poi.location) if poi.location else None,
+            'hours': poi.hours,
+            'pet_options': poi.pet_options,
+            'wifi_options': poi.wifi_options,
+            'wheelchair_accessible': poi.wheelchair_accessible,
+            'public_toilets': poi.public_toilets,
+            'categories': categories_data,
         }
         results.append(poi_dict)
 

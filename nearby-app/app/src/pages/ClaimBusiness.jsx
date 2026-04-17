@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Building2, CheckCircle } from 'lucide-react';
 import { getApiUrl } from '../config';
+import '../styles/forms.css';
 import './ClaimBusiness.css';
 
 function ClaimBusiness() {
@@ -56,13 +57,13 @@ function ClaimBusiness() {
 
   if (submitted) {
     return (
-      <div className="claim-page">
-        <div className="claim-page__container">
-          <div className="claim-page__success">
+      <div className="form_page">
+        <div className="form_page__container">
+          <div className="form_page__success">
             <CheckCircle size={48} />
             <h2>Claim received!</h2>
             <p>Thank you for registering <strong>{businessName}</strong>. Our team will review your submission and reach out soon.</p>
-            <Link to="/explore" className="claim-page__back-link">Back to Explore</Link>
+            <Link to="/explore" className="form_page__back-link">Back to Explore</Link>
           </div>
         </div>
       </div>
@@ -70,9 +71,9 @@ function ClaimBusiness() {
   }
 
   return (
-    <div className="claim-page">
-      <div className="claim-page__container">
-        <div className="claim-page__header">
+    <div className="form_page">
+      <div className="form_page__container">
+        <div className="form_page__header">
           <Building2 size={32} />
           <h1>Claim Your Business</h1>
           <p>Get your business listed on Nearby Nearby for free. We&rsquo;re currently serving Chatham County, NC.</p>
@@ -102,52 +103,66 @@ function ClaimBusiness() {
         )}
 
         {inChatham === true && (
-          <form className="claim-page__form" onSubmit={handleSubmit}>
-            <div className="claim-page__field">
-              <label htmlFor="cb-name">Business name *</label>
-              <input
-                id="cb-name"
-                type="text"
-                value={businessName}
-                onChange={(e) => setBusinessName(e.target.value)}
-                placeholder="e.g. Joe's Coffee Shop"
-                maxLength={200}
-                required
-                aria-required="true"
-              />
-            </div>
+          <form className="accessible_form" onSubmit={handleSubmit} noValidate>
+            <fieldset>
+              <legend>Business Information</legend>
 
-            <div className="claim-page__field">
-              <label htmlFor="cb-address">Business address *</label>
-              <input
-                id="cb-address"
-                type="text"
-                value={businessAddress}
-                onChange={(e) => setBusinessAddress(e.target.value)}
-                placeholder="Street address, city, state, zip"
-                maxLength={500}
-                required
-                aria-required="true"
-              />
-            </div>
+              <div className="form_group">
+                <label htmlFor="cb-name">
+                  Business name <span className="required" aria-label="required">*</span>
+                </label>
+                <input
+                  id="cb-name"
+                  type="text"
+                  value={businessName}
+                  onChange={(e) => setBusinessName(e.target.value)}
+                  placeholder="e.g. Joe's Coffee Shop"
+                  maxLength={200}
+                  required
+                  aria-required="true"
+                />
+              </div>
 
-            <div className="claim-page__field">
-              <label htmlFor="cb-contact-name">Your name *</label>
-              <input
-                id="cb-contact-name"
-                type="text"
-                value={contactName}
-                onChange={(e) => setContactName(e.target.value)}
-                placeholder="First and last name"
-                maxLength={100}
-                required
-                aria-required="true"
-              />
-            </div>
+              <div className="form_group">
+                <label htmlFor="cb-address">
+                  Business address <span className="required" aria-label="required">*</span>
+                </label>
+                <input
+                  id="cb-address"
+                  type="text"
+                  value={businessAddress}
+                  onChange={(e) => setBusinessAddress(e.target.value)}
+                  placeholder="Street address, city, state, zip"
+                  maxLength={500}
+                  required
+                  aria-required="true"
+                />
+              </div>
+            </fieldset>
 
-            <div className="claim-page__row">
-              <div className="claim-page__field">
-                <label htmlFor="cb-phone">Phone *</label>
+            <fieldset>
+              <legend>Your Contact Information</legend>
+
+              <div className="form_group">
+                <label htmlFor="cb-contact-name">
+                  Your name <span className="required" aria-label="required">*</span>
+                </label>
+                <input
+                  id="cb-contact-name"
+                  type="text"
+                  value={contactName}
+                  onChange={(e) => setContactName(e.target.value)}
+                  placeholder="First and last name"
+                  maxLength={100}
+                  required
+                  aria-required="true"
+                />
+              </div>
+
+              <div className="form_group">
+                <label htmlFor="cb-phone">
+                  Phone <span className="required" aria-label="required">*</span>
+                </label>
                 <input
                   id="cb-phone"
                   type="tel"
@@ -159,8 +174,11 @@ function ClaimBusiness() {
                   aria-required="true"
                 />
               </div>
-              <div className="claim-page__field">
-                <label htmlFor="cb-email">Email *</label>
+
+              <div className="form_group">
+                <label htmlFor="cb-email">
+                  Email <span className="required" aria-label="required">*</span>
+                </label>
                 <input
                   id="cb-email"
                   type="email"
@@ -172,40 +190,46 @@ function ClaimBusiness() {
                   aria-required="true"
                 />
               </div>
+            </fieldset>
+
+            <fieldset>
+              <legend>Additional Details</legend>
+
+              <div className="form_group">
+                <label htmlFor="cb-heard">How did you hear about us?</label>
+                <input
+                  id="cb-heard"
+                  type="text"
+                  value={howHeard}
+                  onChange={(e) => setHowHeard(e.target.value)}
+                  placeholder="Social media, friend, event, etc."
+                  maxLength={500}
+                />
+              </div>
+
+              <div className="form_group">
+                <label htmlFor="cb-anything">Anything else?</label>
+                <textarea
+                  id="cb-anything"
+                  value={anythingElse}
+                  onChange={(e) => setAnythingElse(e.target.value)}
+                  rows={3}
+                  maxLength={2000}
+                />
+              </div>
+            </fieldset>
+
+            {error && <p className="form_error" role="alert">{error}</p>}
+
+            <div className="form_actions">
+              <button
+                type="submit"
+                className="button btn_primary"
+                disabled={submitting || !businessName.trim() || !contactName.trim() || !contactPhone.trim() || !contactEmail.trim() || !businessAddress.trim()}
+              >
+                {submitting ? 'Submitting...' : 'Claim My Business'}
+              </button>
             </div>
-
-            <div className="claim-page__field">
-              <label htmlFor="cb-heard">How did you hear about us?</label>
-              <input
-                id="cb-heard"
-                type="text"
-                value={howHeard}
-                onChange={(e) => setHowHeard(e.target.value)}
-                placeholder="Social media, friend, event, etc."
-                maxLength={500}
-              />
-            </div>
-
-            <div className="claim-page__field">
-              <label htmlFor="cb-anything">Anything else?</label>
-              <textarea
-                id="cb-anything"
-                value={anythingElse}
-                onChange={(e) => setAnythingElse(e.target.value)}
-                rows={3}
-                maxLength={2000}
-              />
-            </div>
-
-            {error && <p className="claim-page__error" role="alert">{error}</p>}
-
-            <button
-              type="submit"
-              className="claim-page__submit"
-              disabled={submitting || !businessName.trim() || !contactName.trim() || !contactPhone.trim() || !contactEmail.trim() || !businessAddress.trim()}
-            >
-              {submitting ? 'Submitting...' : 'Claim My Business'}
-            </button>
           </form>
         )}
       </div>

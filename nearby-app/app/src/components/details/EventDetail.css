@@ -1,639 +1,215 @@
-/* Event Detail Styles - Vibrant/Celebration Theme */
-.poi-detail {
-  min-height: 60vh;
-  background: linear-gradient(135deg, #fae8ff 0%, #f3e8ff 100%);
-  padding: 40px 20px;
-}
+/* EventDetail — ONLY event-specific (.ed-*) styles.
+   Template class styles (.poi_page_title, .poi_intro, .poi_col1, .box_style_1,
+   .acc_content_title_style_1, etc.) are owned by POIDetail.css.
+   Keep this file scoped so it can't leak into Business/Park/Trail/Generic pages. */
 
-.poi-detail__container {
-  max-width: 1100px;
-  margin: 0 auto;
-  background: white;
-  border-radius: 12px;
-  padding: 32px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.poi-detail__back-link {
-  display: inline-block;
-  color: #7c3aed;
-  text-decoration: none;
+/* Venue line below the date/time subtitle */
+.ed-venue-line {
+  margin: 0;
+  font-size: 1rem;
   font-weight: 600;
-  margin-bottom: 24px;
-  cursor: pointer;
-  background: none;
-  border: none;
-  font-size: 14px;
-  padding: 0;
+  color: var(--nn-dark, #0f172a);
+}
+.ed-suggest-update { margin-top: 4px; }
+
+/* Tickets button */
+.ed-ticket-btn {
+  background: var(--nn-gold, #fec764) !important;
+  border-color: var(--nn-gold, #fec764) !important;
+  color: var(--nn-dark, #0f172a) !important;
+}
+.ed-ticket-btn:hover {
+  background: #f6b947 !important;
+  border-color: #f6b947 !important;
 }
 
-.poi-detail__back-link:hover {
-  text-decoration: underline;
-}
-
-/* Header Styles - Event Focused */
-.poi-detail__new-header {
-  border-bottom: 1px solid #e9d5ff;
-  padding-bottom: 24px;
-  margin-bottom: 24px;
-}
-
-.poi-detail__status-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 12px;
-}
-
-.poi-detail__status-text {
-  font-size: 14px;
-  color: var(--nn-gray);
-}
-
-.poi-detail__status-value {
-  color: #a855f7;
-  font-weight: 600;
-}
-
-.poi-detail__verified {
-  display: flex;
-  align-items: center;
-  color: #a855f7;
-  font-size: 14px;
-  gap: 4px;
-}
-
-.poi-detail__verified-icon {
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  border: 2px solid #a855f7;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.poi-detail__verified-dot {
-  width: 8px;
-  height: 8px;
-  background: #a855f7;
-  border-radius: 50%;
-}
-
-.poi-detail__main-title {
-  font-size: 32px;
-  font-weight: 800;
-  color: #581c87;
-  margin: 0 0 8px 0;
-  font-family: var(--font-poppins);
-}
-
-.poi-detail__subtitle {
-  color: #7c3aed;
-  margin: 0 0 16px 0;
-  font-size: 16px;
-}
-
-/* Sponsor Section - Event Theme */
-.poi-detail__sponsor {
-  margin-bottom: 16px;
-}
-
-.poi-detail__sponsor-badge {
-  display: inline-block;
-  background: #fae8ff;
-  color: #6b21a8;
-  padding: 6px 12px;
-  border-radius: 20px;
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.poi-detail__sponsor-info {
-  margin-top: 8px;
-}
-
-.poi-detail__sponsor-label {
-  font-size: 14px;
-  color: var(--nn-slate);
-  display: block;
-  margin-bottom: 4px;
-}
-
-.poi-detail__sponsor-text {
-  font-size: 12px;
-  color: var(--nn-gray);
-  margin: 4px 0;
-}
-
-.poi-detail__sponsor-link {
-  font-size: 12px;
-  color: #7c3aed;
-  text-decoration: underline;
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 0;
-  margin-top: 4px;
-  display: inline-block;
-}
-
-/* Event Info Section */
-.poi-detail__quick-info {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-bottom: 16px;
-}
-
-.poi-detail__info-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 14px;
-}
-
-.poi-detail__icon {
-  color: #a855f7;
-  flex-shrink: 0;
-}
-
-.poi-detail__icon--green {
-  color: #a855f7;
-}
-
-.poi-detail__info-primary {
-  color: #a855f7;
-  font-weight: 600;
-}
-
-.poi-detail__info-secondary {
-  color: var(--nn-gray);
-}
-
-.poi-detail__info-text {
-  color: var(--nn-gray);
-}
-
-.poi-detail__info-link {
-  color: #7c3aed;
-  text-decoration: underline;
-}
-
-.poi-detail__hours-btn {
-  font-size: 12px;
-  color: #7c3aed;
-  border: 1px solid #7c3aed;
-  padding: 2px 8px;
-  border-radius: 4px;
-  background: none;
-  cursor: pointer;
-  margin-left: 8px;
-}
-
-/* Titled Links - Reservations, Delivery, Online Ordering */
-.poi-detail__titled-links {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-bottom: 16px;
-  padding: 16px;
-  background: #f5f3ff;
-  border-radius: 8px;
-  border: 1px solid #c4b5fd;
-}
-
-.poi-detail__titled-link {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 16px;
-  background: white;
-  border: 1px solid #c4b5fd;
+/* Cancellation block */
+.ed-cancellation {
+  margin-top: 12px;
+  padding: 12px 14px;
+  background: #fff1f2;
+  border-left: 3px solid #e11d48;
+  color: #9f1239;
   border-radius: 6px;
-  color: var(--nn-slate);
-  text-decoration: none;
-  font-size: 14px;
   font-weight: 500;
-  transition: all 0.2s;
 }
 
-.poi-detail__titled-link:hover {
-  background: #7c3aed;
-  color: white;
-  border-color: #7c3aed;
+/* Organizer block */
+.ed-organizer-block {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--gray-d, #e2e8f0);
 }
 
-.poi-detail__titled-link svg:first-child {
-  color: #7c3aed;
-}
+/* Vendor list */
+.ed-vendor-list { margin: 0; padding-left: 18px; }
+.ed-vendor-list li { margin: 2px 0; }
+.ed-vendor-list a { color: var(--nn-teal2, #1f7a8c); text-decoration: none; }
+.ed-vendor-list a:hover { text-decoration: underline; }
 
-.poi-detail__titled-link:hover svg:first-child {
-  color: white;
-}
-
-.poi-detail__titled-link svg:last-child {
-  opacity: 0.5;
-  margin-left: auto;
-}
-
-/* Event Actions */
-.poi-detail__actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 16px;
-}
-
-.poi-detail__action-btn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  border: 1px solid #e9d5ff;
-  border-radius: 6px;
-  background: white;
-  cursor: pointer;
-  font-size: 14px;
-  color: var(--nn-slate);
-  transition: background-color 0.2s;
-}
-
-.poi-detail__action-btn:hover {
-  background: #fae8ff;
-}
-
-.poi-detail__description-box {
-  background: #fae8ff;
-  border: 1px solid #e9d5ff;
-  padding: 16px;
-  border-radius: 8px;
-  margin-bottom: 16px;
-}
-
-.poi-detail__description-text {
-  white-space: pre-line;
-  font-size: 14px;
-  color: var(--nn-slate);
-  line-height: 1.6;
-}
-
-/* Event Amenities */
-.poi-detail__amenities-section {
-  margin-top: 24px;
-}
-
-.poi-detail__amenities-title {
-  font-weight: 600;
-  color: #581c87;
-  margin-bottom: 12px;
-  font-size: 16px;
-}
-
-.poi-detail__amenities-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.poi-detail__amenity-tag {
-  display: flex;
-  align-items: center;
-  font-size: 12px;
-  background: #fae8ff;
-  padding: 6px 12px;
-  border-radius: 20px;
-  color: #6b21a8;
-}
-
-.poi-detail__amenity-dot {
-  margin-right: 4px;
-  color: #a855f7;
-}
-
-/* Photos Section */
-.poi-detail__photos-section {
-  padding: 24px 0;
-  border-bottom: 1px solid #e9d5ff;
-}
-
-.poi-detail__photos-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 16px;
-}
-
-.poi-detail__photos-title {
-  font-weight: 600;
-  color: #581c87;
-  font-size: 14px;
-}
-
-.poi-detail__photos-link {
-  color: #7c3aed;
-  font-size: 14px;
-  background: none;
-  border: none;
-  cursor: pointer;
-  text-decoration: underline;
-}
-
-.poi-detail__photos-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
-}
-
-.poi-detail__photo-placeholder {
-  aspect-ratio: 1;
-  background: #e9d5ff;
-  border-radius: 8px;
-}
-
-/* Collapsible Sections - Event Theme */
-.poi-detail__collapsible-sections {
-  margin-top: 24px;
-}
-
-.collapsible-section {
-  margin-bottom: 8px;
-}
-
-.collapsible-section__header {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 16px;
-  background: white;
-  color: var(--nn-purple1);
-  font-weight: 600;
-  border: 2px solid var(--nn-purple1);
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.collapsible-section__header:hover {
-  background: var(--gray-9);
-}
-
-.collapsible-section__title {
-  text-transform: uppercase;
-  font-size: 14px;
-  letter-spacing: 0.5px;
-}
-
-.collapsible-section__content {
-  background: white;
-  border: 1px solid #e9d5ff;
-  padding: 16px;
-}
-
-.collapsible-section__info {
-  display: flex;
-  flex-direction: column;
-}
-
-.info-row {
-  display: flex;
-  padding: 12px 0;
-  border-bottom: 1px solid #fae8ff;
-}
-
-.info-row:last-child {
-  border-bottom: none;
-}
-
-.info-row__label {
-  font-weight: 600;
-  color: var(--nn-slate);
-  width: 33.333%;
-  font-size: 14px;
-}
-
-.info-row__value {
-  color: var(--nn-gray);
-  width: 66.666%;
-  font-size: 14px;
-}
-
-.info-row__link {
-  color: #7c3aed;
-  text-decoration: underline;
-  font-size: 14px;
-  width: 66.666%;
-}
-
-/* Today highlighting */
-.info-row--today {
-  background: #fae8ff;
-  margin: 0 -16px;
-  padding: 12px 16px;
-}
-
-.info-row--today .info-row__label {
-  color: #a855f7;
-  font-weight: 700;
-}
-
-.info-row__today-badge {
-  display: inline-block;
-  background: #a855f7;
-  color: white;
-  font-size: 10px;
-  padding: 2px 6px;
-  border-radius: 4px;
-  margin-left: 8px;
-  font-weight: 500;
-  text-transform: uppercase;
-}
-
-/* Modified hours styling */
-.info-row--modified .info-row__value {
-  color: #9333ea;
-}
-
-.info-row__modified-label {
+/* Contact organizer button */
+.ed-contact-organizer-btn {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  margin-left: 8px;
-  font-size: 11px;
-  color: #9333ea;
-  background: #f3e8ff;
-  padding: 2px 6px;
-  border-radius: 4px;
-}
-
-.info-row--note {
-  background: #fef3c7;
-  margin: 8px -16px -16px;
-  padding: 12px 16px;
-  border-bottom-left-radius: 8px;
-  border-bottom-right-radius: 8px;
-}
-
-.info-row--note .info-row__label {
-  color: #92400e;
-}
-
-/* Hours modified indicator in quick info */
-.poi-detail__hours-modified {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  margin-left: 8px;
-  font-size: 12px;
-  color: #9333ea;
-  background: #f3e8ff;
-  padding: 2px 8px;
-  border-radius: 4px;
-}
-
-.poi-detail__info-primary--closed {
-  color: var(--nn-red) !important;
-}
-
-/* Verified tooltip */
-.poi-detail__verified-wrapper {
-  position: relative;
-  display: inline-block;
-}
-
-.poi-detail__verified-info {
-  margin-left: 4px;
-  opacity: 0.6;
-  cursor: help;
-}
-
-.poi-detail__verified-tooltip {
-  position: absolute;
-  top: 100%;
-  right: 0;
-  background: var(--nn-dark);
-  color: white;
-  padding: 12px 16px;
-  border-radius: 8px;
+  gap: 6px;
+  margin-top: 10px;
+  padding: 8px 14px;
+  border: 1px solid var(--nn-teal2, #1f7a8c);
+  color: #fff;
+  background: var(--nn-teal2, #1f7a8c);
+  border-radius: 999px;
   font-size: 13px;
-  line-height: 1.4;
-  width: 280px;
-  z-index: 100;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.2s, visibility 0.2s;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  font-weight: 600;
+  text-decoration: none;
+}
+.ed-contact-organizer-btn:hover {
+  background: var(--nn-dark, #0f172a);
+  border-color: var(--nn-dark, #0f172a);
 }
 
-.poi-detail__verified-wrapper:hover .poi-detail__verified-tooltip {
-  opacity: 1;
-  visibility: visible;
+/* Sponsors */
+.ed-sponsors__label {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--nn-gray, #64748b);
+  margin-bottom: 10px;
 }
-
-/* Share menu */
-.poi-detail__share-wrapper {
-  position: relative;
+.ed-sponsors__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
 }
-
-.poi-detail__share-menu {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  background: white;
-  border: 1px solid #e9d5ff;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  z-index: 100;
-  min-width: 150px;
-  overflow: hidden;
-}
-
-.poi-detail__share-menu button {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  padding: 10px 14px;
-  border: none;
-  background: none;
-  font-size: 14px;
-  color: var(--nn-slate);
-  cursor: pointer;
-  text-align: left;
-}
-
-.poi-detail__share-menu button:hover {
-  background: #fae8ff;
-}
-
-/* Bottom Border - Event Accent */
-.poi-detail__bottom-border {
-  border-top: 4px solid #a855f7;
-  margin-top: 24px;
-}
-
-/* Loading and Error States */
-.poi-detail__loading,
-.poi-detail__error {
-  min-height: 60vh;
+.ed-sponsor-card {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  padding: 40px 20px;
-  background: linear-gradient(135deg, #fae8ff 0%, #f3e8ff 100%);
-}
-
-.poi-detail__loading {
-  font-size: 18px;
-  color: var(--nn-gray);
-}
-
-.poi-detail__error h2 {
-  font-size: 24px;
-  color: #581c87;
-  margin-bottom: 16px;
-}
-
-.poi-detail__back-btn {
-  background: #7c3aed;
-  color: white;
-  border: none;
-  padding: 12px 24px;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid var(--gray-5, #e2e8f0);
   border-radius: 8px;
+  background: #fff;
+  text-align: center;
+}
+.ed-sponsor-card__logo {
+  max-width: 100%;
+  max-height: 80px;
+  object-fit: contain;
+}
+.ed-sponsor-card__name {
+  font-size: 14px;
   font-weight: 600;
-  font-size: 16px;
+  color: var(--nn-dark, #0f172a);
+  text-decoration: none;
+}
+.ed-sponsor-card__name:hover { color: var(--nn-teal2, #1f7a8c); }
+.ed-sponsor-card__tier {
+  display: inline-block;
+  margin-top: 4px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--nn-gray, #64748b);
+}
+
+/* Disclaimer */
+.ed-disclaimer {
+  margin: 24px 0;
+  padding: 12px 16px;
+  background: var(--gray-7, #f7f8fa);
+  border-left: 3px solid var(--gray-4, #94a3b8);
+  border-radius: 4px;
+  font-size: 13px;
+  color: var(--nn-gray, #475569);
+  line-height: 1.5;
+}
+
+/* Tickets modal */
+.ed-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+.ed-modal {
+  background: #fff;
+  border-radius: 10px;
+  width: 100%;
+  max-width: 420px;
+  padding: 20px;
+  box-shadow: 0 8px 32px rgba(0,0,0,.25);
+}
+.ed-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.ed-modal__header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--nn-dark, #0f172a);
+}
+.ed-modal__close {
+  background: none;
+  border: 0;
   cursor: pointer;
+  padding: 4px;
+  color: var(--nn-gray, #64748b);
 }
-
-.poi-detail__back-btn:hover {
-  background: #8b5cf6;
+.ed-modal__list { list-style: none; margin: 0; padding: 0; }
+.ed-modal__list li + li { margin-top: 8px; }
+.ed-modal__list a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border: 1px solid var(--gray-5, #e2e8f0);
+  border-radius: 8px;
+  color: var(--nn-dark, #0f172a);
+  text-decoration: none;
+  font-weight: 500;
 }
+.ed-modal__list a:hover {
+  background: var(--nn-teal2, #1f7a8c);
+  color: #fff;
+  border-color: var(--nn-teal2, #1f7a8c);
+}
+.ed-modal__list a span { flex: 1; }
 
-/* Responsive */
-@media (max-width: 768px) {
-  .poi-detail__container {
-    padding: 24px 16px;
-  }
+/* Chips (scoped) */
+.poi_detail_event .poi_chip_row { display: flex; flex-wrap: wrap; gap: 6px; }
+.poi_detail_event .poi_chip {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--gray-e, #f1f5f9);
+  border: 1px solid var(--gray-5, #e2e8f0);
+  color: var(--nn-dark, #0f172a);
+  font-size: 0.8rem;
+  text-decoration: none;
+}
+.poi_detail_event .poi_chip.ed-chip-link { color: var(--nn-teal2, #1f7a8c); }
+.poi_detail_event .poi_chip.ed-chip-link:hover { background: var(--nn-teal2, #1f7a8c); color: #fff; }
 
-  .poi-detail__main-title {
-    font-size: 24px;
-  }
-
-  .poi-detail__photos-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .info-row {
-    flex-direction: column;
-  }
-
-  .info-row__label,
-  .info-row__value {
-    width: 100%;
-  }
-
-  .info-row__label {
-    margin-bottom: 4px;
-  }
+/* ADA sub-card (scoped) */
+.poi_detail_event .poi_ada_sub_card {
+  margin-top: 10px;
+  padding: 12px;
+  background: var(--nn-gold-soft, #fef8e5);
+  border-left: 3px solid var(--nn-gold, #f6c244);
+  border-radius: 6px;
+  font-size: 13px;
+}
+.poi_detail_event .poi_ada_sub_card_title {
+  margin: 0 0 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--nn-dark, #0f172a);
 }

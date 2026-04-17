@@ -11,7 +11,7 @@ import { api } from '../../../utils/api';
  * VenueSelector component for selecting a venue (BUSINESS or PARK)
  * and copying venue data to an event.
  */
-export function VenueSelector({ form, poiId }) {
+export function VenueSelector({ form, poiId, types = ['BUSINESS', 'PARK', 'TRAIL'] }) {
   const [venues, setVenues] = useState([]);
   const [loading, setLoading] = useState(false);
   const [venueLoading, setVenueLoading] = useState(false);
@@ -35,10 +35,13 @@ export function VenueSelector({ form, poiId }) {
     const fetchVenues = async () => {
       setLoading(true);
       try {
-        const response = await api.get('/pois/venues/list');
+        const qs = (types || []).map(t => `types=${encodeURIComponent(t)}`).join('&');
+        const url = qs ? `/pois/venues/list?${qs}` : '/pois/venues/list';
+        const response = await api.get(url);
         if (response.ok) {
           const data = await response.json();
-          setVenues(data);
+          // Defensive client-side filter in case backend ignores types param
+          setVenues((data || []).filter(v => !types || types.includes(v.poi_type)));
         }
       } catch (error) {
         console.error('Failed to fetch venues:', error);
@@ -47,7 +50,7 @@ export function VenueSelector({ form, poiId }) {
       }
     };
     fetchVenues();
-  }, []);
+  }, [JSON.stringify(types)]);
 
   // Fetch venue data when a venue is selected
   const handleVenueSelect = async (venueId) => {

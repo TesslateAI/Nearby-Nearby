@@ -428,9 +428,14 @@ const PoiDetailPage = () => {
                             {poi.pricing_details && (
                                 <DetailItem label="Pricing Details" value={poi.pricing_details} icon={{ type: IconBuilding, props: {} }} />
                             )}
-                            {poi.ticket_link && (
-                                <DetailItem label="Tickets" value={poi.ticket_link} icon={{ type: IconLink, props: {} }} />
-                            )}
+                            {(poi.ticket_links || poi.event?.ticket_links || []).map((tl, i) => (
+                                <DetailItem
+                                    key={i}
+                                    label={tl.platform || tl.name || 'Tickets'}
+                                    value={tl.url}
+                                    icon={{ type: IconLink, props: {} }}
+                                />
+                            ))}
                             <DetailItem label="Phone Number" value={poi.phone_number} icon={{ type: IconPhone, props: {} }} />
                             <DetailItem label="Website" value={poi.website_url} icon={{ type: IconWorldWww, props: {} }} />
                             <DetailItem label="Good For" value={poi.ideal_for || poi.ideal_for_key} icon={{ type: IconCheck, props: {} }} />

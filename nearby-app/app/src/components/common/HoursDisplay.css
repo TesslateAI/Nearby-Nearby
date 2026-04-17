@@ -217,7 +217,7 @@
 }
 
 /* Responsive adjustments */
-@media (max-width: 640px) {
+@media (max-width: 600px) {
   .hours-display__holiday-row {
     grid-template-columns: 35px 1fr;
     grid-template-rows: auto auto;

@@ -42,9 +42,22 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  font-family: inherit;
   font-weight: 700;
   font-size: 25px;
   box-shadow: 0 2px 6px rgba(86, 37, 86, 0.3);
+  cursor: pointer;
+  padding: 0;
+  z-index: 2;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.nearby-card__number:hover {
+  transform: translateX(-50%) scale(1.08);
+  box-shadow: 0 4px 10px rgba(86, 37, 86, 0.45);
+}
+.nearby-card__number:focus-visible {
+  outline: 3px solid var(--nn-gold);
+  outline-offset: 2px;
 }
 
 /* Content Area */
@@ -94,6 +107,25 @@
   font-weight: 500;
 }
 
+/* City line — nn-templates .one_search_map_single_city */
+.nearby-card__city {
+  font-size: 90%;
+  color: var(--nn-gray);
+  font-weight: 500;
+}
+
+/* Whole-card click target. Inner buttons / number badge stop propagation. */
+.nearby-card--clickable { cursor: pointer; }
+.nearby-card--clickable:focus-visible {
+  outline: 3px solid var(--nn-gold);
+  outline-offset: 2px;
+}
+.nearby-card--clickable:hover {
+  box-shadow: 0 6px 16px rgba(86, 37, 86, 0.18);
+  transform: translateY(-1px);
+  transition: box-shadow .15s ease, transform .15s ease;
+}
+
 /* Hours Display — nn-templates .one_search_map_result_hours */
 .nearby-card__hours {
   font-size: 90%;
@@ -116,23 +148,37 @@
   flex-wrap: wrap;
 }
 
-/* Amenity Icons — nn-templates .one_search_map_result_amenities */
+/* Amenity Icons — nn-templates .one_search_map_result_amenities.
+   The template inlines 19px SVGs, but at our card width those read as smudges.
+   Bump to 28px and round-chip them so each amenity is unmistakable. */
 .nearby-card__amenities {
   display: flex;
-  gap: 9px;
-  margin-top: 4px;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 6px;
 }
 
 .nearby-card__amenity {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--nn-purple-soft, #f3e8f3);
   cursor: help;
-  transition: opacity 0.2s;
+  transition: background-color .2s, transform .2s;
 }
-
+.nearby-card__amenity svg {
+  width: 22px !important;
+  height: 22px !important;
+}
 .nearby-card__amenity:hover {
-  opacity: 0.7;
+  background: var(--nn-purple1, #562556);
+  transform: translateY(-1px);
+}
+.nearby-card__amenity:hover svg path {
+  fill: #fff !important;
 }
 
 /* Action Buttons — matches nn-templates .btn_outline_teal.btn_poi_button_1 */
@@ -186,9 +232,8 @@
   border-color: var(--nn-teal2);
 }
 
-.nearby-card--event .nearby-card__number {
-  background: var(--nn-teal2);
-}
+/* Card number badges intentionally use a single color across all POI types so
+   they don't visually read as pagination state. */
 
 .nearby-card__event-date {
   display: flex;
@@ -208,10 +253,6 @@
   border-color: var(--nn-green);
 }
 
-.nearby-card--park .nearby-card__number {
-  background: var(--nn-green);
-}
-
 .nearby-card__park-type {
   display: flex;
   align-items: center;
@@ -224,10 +265,6 @@
 /* Trail Card Specific Styles */
 .nearby-card--trail {
   border-color: var(--nn-gold);
-}
-
-.nearby-card--trail .nearby-card__number {
-  background: var(--nn-gold);
 }
 
 .nearby-card__trail-info {
@@ -345,3 +382,65 @@
   text-decoration: line-through;
   color: #9ca3af;
 }
+
+/* Paid-tier quick-facts pad (Figma listing-card spec) */
+.nearby-card__quick-facts {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border: 1.5px solid var(--nn-gold);
+  border-radius: 8px;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.nearby-card__quick-facts-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--gray-e, #eaeaea);
+}
+.nearby-card__quick-facts-row:last-child {
+  border-bottom: none;
+}
+
+.nearby-card__quick-facts-label {
+  font-family: var(--font-poppins);
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.2px;
+  color: var(--nn-dark);
+  text-transform: uppercase;
+}
+.nearby-card__quick-facts-value {
+  font-size: 13px;
+  line-height: 1.35;
+  color: var(--nn-slate, #475569);
+}
+
+@media (min-width: 600px) {
+  .nearby-card__quick-facts-row {
+    grid-template-columns: 0.9fr 1.4fr;
+    gap: 10px;
+    align-items: center;
+  }
+}
+
+/* Paid-tier amenity pill strip — scoped to fit the card width */
+.nearby-card__amenity-strip-wrap {
+  margin-top: 10px;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.nearby-card__amenity-strip-wrap::-webkit-scrollbar {
+  display: none;
+}
+.nearby-card__amenity-strip-wrap .poi_amenity_pill_strip {
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+

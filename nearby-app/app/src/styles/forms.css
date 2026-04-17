@@ -1,0 +1,330 @@
+/* Page wrapper for form pages */
+.form_page {
+  min-height: 100vh;
+  background: var(--color-bg, #f5f3f0);
+  padding: 60px 20px 80px;
+}
+
+.form_page__container {
+  max-width: 780px;
+  margin: 0 auto;
+}
+
+.form_page__header {
+  text-align: center;
+  margin-bottom: 32px;
+  color: var(--nn-purple1);
+}
+
+.form_page__header h1 {
+  font-family: var(--font-poppins);
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--nn-dark);
+  margin: 12px 0 8px;
+}
+
+.form_page__header p {
+  color: var(--nn-gray);
+  font-size: 15px;
+  margin: 0;
+}
+
+.form_page__success {
+  background: white;
+  border: 2px solid var(--nn-gold);
+  border-radius: 16px;
+  padding: 40px 28px;
+  text-align: center;
+  color: var(--nn-dark);
+}
+
+.form_page__success h2 {
+  font-family: var(--font-poppins);
+  margin: 16px 0 12px;
+}
+
+.form_page__back-link {
+  display: inline-block;
+  margin-top: 18px;
+  color: var(--nn-purple1);
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+/* Shared form styles — ported from nn-templates/form-page-01.html + inc/stylez.css
+ * Template-class aliases (.form_label/.form_input/.form_textarea/.form_select/
+ * .form_fieldset/.form_legend/.form_radio_group/.form_checkbox_group/
+ * .form_error/.form_submit_row) map to the same visual rules.
+ */
+
+.accessible_form {
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 0;
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--nn-dark);
+  font-family: var(--font-roboto);
+}
+
+/* Fieldsets (outer) */
+.accessible_form fieldset,
+.form_fieldset {
+  border: 1.5px solid var(--nn-gold);
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.accessible_form fieldset legend,
+.form_legend {
+  font-size: 1.25rem;
+  font-weight: 700;
+  padding: 0 0.5rem;
+  color: var(--nn-dark);
+  font-family: var(--font-poppins);
+}
+
+/* Nested fieldset (radio/checkbox group) — no border */
+.accessible_form fieldset fieldset,
+.form_fieldset .form_fieldset {
+  border: none;
+  padding: 0;
+  margin-bottom: 1rem;
+}
+
+.accessible_form fieldset fieldset legend {
+  font-size: 1rem;
+  font-weight: 600;
+  padding: 0;
+}
+
+/* Form group wrapper */
+.form_group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.form_group:last-child {
+  margin-bottom: 0;
+}
+
+/* Labels */
+.accessible_form label,
+.form_label {
+  display: block;
+  font-family: var(--font-poppins);
+  font-weight: 600;
+  color: var(--nn-dark);
+  margin-bottom: 0;
+}
+
+.accessible_form label .required,
+.form_label .required,
+.required {
+  color: var(--nn-red);
+  font-weight: 700;
+}
+
+/* Inputs / textareas / selects */
+.accessible_form input[type="text"],
+.accessible_form input[type="email"],
+.accessible_form input[type="tel"],
+.accessible_form input[type="url"],
+.accessible_form input[type="number"],
+.accessible_form input[type="date"],
+.accessible_form input[type="search"],
+.accessible_form textarea,
+.accessible_form select,
+.form_input,
+.form_textarea,
+.form_select {
+  width: 100%;
+  padding: 12px 14px;
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--nn-dark);
+  background-color: #fff;
+  border: 1.5px solid var(--nn-purple1);
+  border-radius: 6px;
+  font-family: var(--font-roboto);
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+  box-sizing: border-box;
+}
+
+.accessible_form input:focus,
+.accessible_form textarea:focus,
+.accessible_form select:focus,
+.form_input:focus,
+.form_textarea:focus,
+.form_select:focus {
+  outline: none;
+  border-color: var(--nn-gold);
+  box-shadow: 0 0 0 3px rgba(254, 199, 100, 0.25);
+}
+
+.accessible_form input[aria-invalid="true"],
+.accessible_form textarea[aria-invalid="true"],
+.accessible_form select[aria-invalid="true"] {
+  border-color: var(--nn-red);
+}
+
+.accessible_form textarea,
+.form_textarea {
+  resize: vertical;
+  min-height: 120px;
+}
+
+.accessible_form select,
+.form_select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%231a1a1a' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 12px;
+  padding-right: 2.5rem;
+}
+
+/* Radio / checkbox groups */
+.radio_group,
+.checkbox_group,
+.form_radio_group,
+.form_checkbox_group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.radio_item,
+.checkbox_item {
+  display: flex;
+  align-items: center;
+}
+
+.radio_item input[type="radio"],
+.checkbox_item input[type="checkbox"] {
+  width: 1.25rem;
+  height: 1.25rem;
+  margin-right: 0.5rem;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.radio_item label,
+.checkbox_item label {
+  margin-bottom: 0;
+  cursor: pointer;
+  font-weight: 400;
+  font-family: var(--font-roboto);
+}
+
+/* Hints + errors */
+.hint_text {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.875rem;
+  color: var(--nn-gray);
+}
+
+.error_message,
+.form_error {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.9rem;
+  color: var(--nn-red);
+  font-weight: 600;
+}
+
+.error_message:empty {
+  display: none;
+}
+
+/* Submit row */
+.form_actions,
+.form_submit_row {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 2rem;
+  flex-wrap: wrap;
+}
+
+.form_actions .button,
+.form_submit_row .button,
+.form_actions .btn_primary,
+.form_submit_row .btn_primary {
+  min-width: 160px;
+}
+
+/* Primary submit button (alias to .button default if no other rule exists) */
+.btn_primary {
+  display: inline-block;
+  padding: 12px 24px;
+  font-family: var(--font-poppins);
+  font-weight: 600;
+  font-size: 1rem;
+  color: #fff;
+  background-color: var(--nn-purple1);
+  border: 2px solid var(--nn-purple1);
+  border-radius: 6px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out;
+}
+
+.btn_primary:hover:not(:disabled) {
+  background-color: var(--nn-purple2);
+  border-color: var(--nn-purple2);
+}
+
+.btn_primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn_secondary {
+  display: inline-block;
+  padding: 12px 24px;
+  font-family: var(--font-poppins);
+  font-weight: 600;
+  font-size: 1rem;
+  color: var(--nn-dark);
+  background-color: #fff;
+  border: 2px solid var(--nn-dark);
+  border-radius: 6px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background-color 0.15s ease-in-out, color 0.15s ease-in-out;
+}
+
+.btn_secondary:hover:not(:disabled) {
+  background-color: var(--nn-purple1);
+  color: #fff;
+  border-color: var(--nn-purple1);
+}
+
+/* Responsive */
+@media (max-width: 700px) {
+  .accessible_form {
+    max-width: 100%;
+  }
+
+  .accessible_form fieldset,
+  .form_fieldset {
+    padding: 1rem;
+  }
+
+  .form_actions,
+  .form_submit_row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .form_actions .button,
+  .form_submit_row .button {
+    width: 100%;
+  }
+}

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { CalendarPlus, CheckCircle } from 'lucide-react';
 import { getApiUrl } from '../config';
-import './SuggestEvent.css';
+import '../styles/forms.css';
 
 function SuggestEvent() {
   const [eventName, setEventName] = useState('');
@@ -55,16 +55,16 @@ function SuggestEvent() {
 
   if (submitted) {
     return (
-      <div className="suggest-event-page">
-        <div className="suggest-event-page__container">
-          <div className="suggest-event-page__success">
+      <div className="form_page">
+        <div className="form_page__container">
+          <div className="form_page__success">
             <CheckCircle size={48} />
             <h2>Event suggestion submitted!</h2>
             <p>
               Thank you for letting us know about this event.
               Our team will review your suggestion and may follow up for more details.
             </p>
-            <Link to="/" className="suggest-event-page__back-link">Back to Home</Link>
+            <Link to="/" className="form_page__back-link">Back to Home</Link>
           </div>
         </div>
       </div>
@@ -72,9 +72,9 @@ function SuggestEvent() {
   }
 
   return (
-    <div className="suggest-event-page">
-      <div className="suggest-event-page__container">
-        <div className="suggest-event-page__header">
+    <div className="form_page">
+      <div className="form_page__container">
+        <div className="form_page__header">
           <CalendarPlus size={32} />
           <h1>Suggest an Event</h1>
           <p>
@@ -203,7 +203,7 @@ function SuggestEvent() {
             </div>
           </fieldset>
 
-          {error && <p className="suggest-event-page__error" role="alert">{error}</p>}
+          {error && <p className="form_error" role="alert">{error}</p>}
 
           <div className="form_actions">
             <button

@@ -1,163 +1,19 @@
-/* ==========================================================================
-   Hero / Home Search — ported from nn-templates/home-page-01.html + stylez.scss
-   ========================================================================== */
+/* Hero selectors (.page_wrapper_gradient_1, #home_layer_search, .page_title,
+   .page_excerpt, .text_color_white, .search_box_page_container,
+   #search_box_page, #search_form_page, .search_container,
+   .search_input_wrapper, .search_icon, .search_terms_text, #one_search)
+   are owned by src/styles/nn/stylez.css (the template). No overrides here. */
 
-/* ── Gradient wrapper ──────────────────────────────────────────── */
-.page_wrapper_gradient_1 {
-  background-color: var(--nn-purple1);
-  background: var(--purple-teal-gradient-1);
-  padding: 55px 0 65px 0;
-}
-
-/* ── Text helpers ──────────────────────────────────────────────── */
-.text_color_white { color: white; }
-.text_color_white a { color: white; text-decoration: underline; }
-
-/* ── Search layer ──────────────────────────────────────────────── */
-#home_layer_search {
-  padding-bottom: 20px;
-}
-
-.page_title {
-  color: white;
-  padding: 0 0 20px 0;
-  font-family: var(--font-poppins);
-  font-weight: 800;
-  font-size: 48px;
-  line-height: 1.1;
-  margin: 0;
-}
-@media (min-width: 700px) {
-  .page_title { font-size: 56px; }
-}
-@media (min-width: 1200px) {
-  .page_title { font-size: 64px; }
-}
-@media (min-width: 1900px) {
-  .page_title { font-size: 72px; }
-}
-
-.page_excerpt {
-  font-family: var(--font-roboto);
-  font-size: 18px;
-  line-height: 1.5;
-  margin: 0;
-  padding-bottom: 40px;
-}
-
-/* ── Search box on home page ───────────────────────────────────── */
-.search_box_page_container {
-  width: 90%;
-  max-width: 800px;
-  margin: 0 auto;
-}
-
-#search_box_page {
-  padding: 20px;
-  display: grid;
-  grid-template-columns: 1fr;
-  grid-gap: 0;
-}
-
-#search_form_page {
-  width: 100%;
-}
-
-/* Search container in hero — reuses global .search_container from SearchOverlay */
-.page_wrapper_gradient_1 .search_container {
-  padding: 0;
-  margin: 0 auto;
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 15px;
-  justify-content: center;
-  align-items: center;
-  width: 100%;
-  max-width: 800px;
-  font-family: var(--font-sans);
-}
-@media (min-width: 980px) {
-  .page_wrapper_gradient_1 .search_container {
-    display: flex;
-  }
-}
-
-.page_wrapper_gradient_1 .search_input_wrapper {
-  position: relative;
-  flex: 1;
-}
-
-.page_wrapper_gradient_1 .search_icon {
-  position: absolute;
-  left: 20px;
-  top: 50%;
-  transform: translateY(-50%);
-  pointer-events: none;
-  display: flex;
-  align-items: center;
-  z-index: 1;
-}
-
-/* Override SearchBar styles inside hero */
-.page_wrapper_gradient_1 .search-bar-wrapper {
-  flex: 1;
-  width: 100%;
-}
-.page_wrapper_gradient_1 .search-bar-input {
-  border: none;
-  background: none;
-  padding: 0;
-}
-.page_wrapper_gradient_1 .search-bar-input__icon {
-  display: none;
-}
-.page_wrapper_gradient_1 .search-bar-input input {
-  width: 100%;
-  padding: 17px 20px 17px 52px;
-  border: 1px solid var(--nn-teal1);
-  font-size: 17px;
-  line-height: 1;
-  color: var(--nn-dark);
-  background: white;
-  border-radius: 3px;
-  -webkit-appearance: none;
-  appearance: none;
-  outline: none;
-}
-.page_wrapper_gradient_1 .search-bar-input input::placeholder {
-  color: gray;
-  opacity: 1;
-}
-.page_wrapper_gradient_1 .search-bar-input input:focus {
-  outline: 2px solid gold;
-  outline-offset: 2px;
-  border-color: teal;
-}
-@media (min-width: 600px) {
-  .page_wrapper_gradient_1 .search-bar-input input { font-size: 18px; }
-}
-@media (min-width: 700px) {
-  .page_wrapper_gradient_1 .search-bar-input input { font-size: 19px; }
-}
-
-/* Gold search button variant */
-.btn_search_gold {
-  background-color: var(--nn-gold);
-  color: var(--nn-dark);
-  font-weight: 600;
-}
-.btn_search_gold:hover {
-  background-color: #FEB42F;
-}
-
-/* Terms text in hero */
-.page_wrapper_gradient_1 .search_terms_text {
-  font-size: 13px;
-  text-align: center;
-  padding: 20px 5%;
-  color: rgba(255, 255, 255, 0.8);
-}
-.page_wrapper_gradient_1 .search_terms_text a {
-  color: white;
-  text-decoration: underline;
+/* ── Scoped override ──────────────────────────────────────────────
+   SearchOverlay.css defines `.search_terms_text { color: var(--nn-gray) }`
+   as a generic rule that bleeds into the Hero's terms paragraph (which
+   reuses the same `.search_terms_text` class). When the Hero's <p> also
+   carries `.text_color_white`, that intent must win. We scope by the
+   parent (`.search_box_page_container`) and require both classes so
+   we only target the Hero terms text — not the overlay variant. */
+.search_box_page_container .search_terms_text,
+.search_box_page_container .search_terms_text a,
+.search_box_page_container .search_terms_text.text_color_white,
+.search_box_page_container .search_terms_text.text_color_white a {
+  color: #fff !important;
 }

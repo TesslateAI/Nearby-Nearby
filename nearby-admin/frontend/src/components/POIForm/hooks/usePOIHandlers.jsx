@@ -89,7 +89,7 @@ export const usePOIHandlers = (id, isEditing, form, setPoiId) => {
             'phone_number', 'email', 'instagram_username', 'facebook_username', 'x_username',
             'tiktok_username', 'linkedin_username', 'main_contact_name', 'main_contact_email',
             'main_contact_phone', 'offsite_emergency_contact', 'emergency_protocols',
-            'cost', 'pricing_details', 'ticket_link', 'history_paragraph', 'featured_image',
+            'cost', 'pricing_details', 'history_paragraph', 'featured_image',
             'parking_notes', 'public_transit_info', 'wheelchair_details', 'smoking_details',
             'drone_usage', 'drone_policy', 'pet_policy', 'toilet_description', 'rental_info',
             'rental_pricing', 'rental_link', 'price_range_per_person', 'pricing', 'gift_cards',

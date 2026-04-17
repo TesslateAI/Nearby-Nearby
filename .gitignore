@@ -102,3 +102,4 @@ npm-debug.log*
 .terraform.lock.hcl
 *.tfvars
 !terraform/environments/prod/terraform.tfvars
+may-launch/

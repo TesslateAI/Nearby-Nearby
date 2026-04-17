@@ -299,8 +299,13 @@ input[type="date"].nearby-dropdown__select::-webkit-calendar-picker-indicator {
   display: flex;
   justify-content: center;
   align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
 }
+.nearby-pagination::-webkit-scrollbar { display: none; }
 
 .nearby-pagination__btn,
 .nearby-pagination__num {
@@ -530,8 +535,8 @@ input[type="date"].nearby-dropdown__select::-webkit-calendar-picker-indicator {
 
   .nearby-results {
     grid-template-columns: 1fr;
-    padding: 20px 16px;
-    gap: 16px;
+    padding: 50px 16px 20px;
+    gap: 40px;
   }
 
   .nearby-pagination {

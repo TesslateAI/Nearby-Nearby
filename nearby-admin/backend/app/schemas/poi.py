@@ -59,7 +59,6 @@ class PointGeometry(BaseModel):
         return v
 
 # Business Schemas
-LISTING_TYPES = Literal['free', 'paid', 'sponsor_platform', 'sponsor_state', 'sponsor_county', 'sponsor_town', 'community_comped']
 PRICE_RANGES = Literal['$', '$$', '$$$', '$$$$']
 
 class BusinessBase(BaseModel):
@@ -80,8 +79,15 @@ class Park(ParkBase):
     model_config = ConfigDict(from_attributes=True)
 
 # Trail Schemas
-TRAIL_DIFFICULTY = Literal['easy', 'moderate', 'difficult', 'expert']
-ROUTE_TYPES = Literal['loop', 'out_and_back', 'point_to_point']
+TRAIL_DIFFICULTY = Literal['easy','moderate','difficult','expert']
+ROUTE_TYPES = Literal['loop','out_and_back','point_to_point','lollipop','stacked_loops','thru_trail','water_trail','connecting_network']
+LISTING_TYPES = Literal[
+    'free', 'paid', 'paid_founding', 'community_comped',
+    'sponsor', 'sponsor_platform', 'sponsor_state', 'sponsor_county', 'sponsor_town',
+]
+SPONSOR_LEVELS = Literal['platform','state','county','town']
+ALCOHOL_AVAILABLE = Literal['full_bar','beer_wine','byob','no_alcohol','seasonal','nearby']
+TRAIL_LIGHTING = Literal['partial','full','seasonal','dusk_to_dawn']
 
 class TrailBase(BaseModel):
     length_text: Optional[str] = None
@@ -109,6 +115,15 @@ class TrailBase(BaseModel):
     trail_surfaces: Optional[List[str]] = None
     trail_conditions: Optional[List[str]] = None
     trail_experiences: Optional[List[str]] = None
+
+    # Phase 1 additions
+    mile_markers: Optional[bool] = False
+    trailhead_signage: Optional[bool] = False
+    audio_guide_available: Optional[bool] = False
+    qr_trail_guide: Optional[bool] = False
+    trail_guide_notes: Optional[str] = None
+    trail_lighting: Optional[TRAIL_LIGHTING] = None
+    access_points: Optional[List[Dict[str, Any]]] = None
 
 class TrailCreate(TrailBase): pass
 class Trail(TrailBase):
@@ -277,8 +292,7 @@ class PointOfInterestBase(BaseModel):
     # Cost fields (for Events, Parks, Trails)
     cost: Optional[str] = None  # Flexible format: "$1000" or "$0.00-$1000.00" or "0"
     pricing_details: Optional[str] = None  # Additional pricing details
-    ticket_link: Optional[str] = None  # For Events - link to buy tickets
-    
+
     # History (for paid listings, parks, trails)
     history_paragraph: Optional[str] = None
     
@@ -365,7 +379,27 @@ class PointOfInterestBase(BaseModel):
 
     # Publication status (draft, published, archived)
     publication_status: PUBLICATION_STATUS = 'draft'
-    
+    has_been_published: Optional[bool] = False
+
+    # Phase 1 additions
+    arrival_methods: Optional[List[str]] = []
+    what3words_address: Optional[str] = None
+    icon_free_wifi: Optional[bool] = False
+    icon_pet_friendly: Optional[bool] = False
+    icon_public_restroom: Optional[bool] = False
+    icon_wheelchair_accessible: Optional[bool] = False
+    is_sponsor: Optional[bool] = False
+    sponsor_level: Optional[SPONSOR_LEVELS] = None
+    admin_notes: Optional[str] = None
+    accessible_parking_details: Optional[List[str]] = None
+    accessible_restroom: Optional[bool] = False
+    accessible_restroom_details: Optional[Dict[str, Any]] = None
+    playground_age_groups: Optional[List[str]] = None
+    playground_ada_checklist: Optional[List[str]] = None
+    inclusive_playground: Optional[bool] = False
+    alcohol_available: Optional[ALCOHOL_AVAILABLE] = None
+
+
     # Contact info
     website_url: Optional[str] = None
     phone_number: Optional[str] = None
@@ -457,7 +491,7 @@ class PointOfInterestBase(BaseModel):
     hours: Optional[Dict[str, Any]] = None  # Complex hours with multiple periods, seasonal
     holiday_hours: Optional[Dict[str, Any]] = None  # Recurring holiday hours
     amenities: Optional[Dict[str, Any]] = None
-    ideal_for: Optional[List[str]] = None  # List of ideal_for options
+    ideal_for: Optional[Union[Dict[str, List[str]], List[str]]] = None  # Grouped dict preferred; flat list accepted for back-compat
     contact_info: Optional[Dict[str, Any]] = None
     compliance: Optional[Dict[str, Any]] = None
     custom_fields: Optional[Dict[str, Any]] = None
@@ -515,7 +549,6 @@ class PointOfInterestUpdate(BaseModel):
     listing_type: Optional[LISTING_TYPES] = None
     cost: Optional[str] = None
     pricing_details: Optional[str] = None
-    ticket_link: Optional[str] = None
     history_paragraph: Optional[str] = None
     featured_image: Optional[str] = None
     primary_type_id: Optional[uuid.UUID] = None
@@ -638,11 +671,30 @@ class PointOfInterestUpdate(BaseModel):
     hours: Optional[Dict[str, Any]] = None
     holiday_hours: Optional[Dict[str, Any]] = None
     amenities: Optional[Dict[str, Any]] = None
-    ideal_for: Optional[List[str]] = None
+    ideal_for: Optional[Union[Dict[str, List[str]], List[str]]] = None
     contact_info: Optional[Dict[str, Any]] = None
     compliance: Optional[Dict[str, Any]] = None
     custom_fields: Optional[Dict[str, Any]] = None
-    
+
+    # Phase 1 additions
+    has_been_published: Optional[bool] = None
+    arrival_methods: Optional[List[str]] = None
+    what3words_address: Optional[str] = None
+    icon_free_wifi: Optional[bool] = None
+    icon_pet_friendly: Optional[bool] = None
+    icon_public_restroom: Optional[bool] = None
+    icon_wheelchair_accessible: Optional[bool] = None
+    is_sponsor: Optional[bool] = None
+    sponsor_level: Optional[SPONSOR_LEVELS] = None
+    admin_notes: Optional[str] = None
+    accessible_parking_details: Optional[List[str]] = None
+    accessible_restroom: Optional[bool] = None
+    accessible_restroom_details: Optional[Dict[str, Any]] = None
+    playground_age_groups: Optional[List[str]] = None
+    playground_ada_checklist: Optional[List[str]] = None
+    inclusive_playground: Optional[bool] = None
+    alcohol_available: Optional[ALCOHOL_AVAILABLE] = None
+
     location: Optional[PointGeometry] = None
     business: Optional[BusinessCreate] = None
     park: Optional[ParkCreate] = None

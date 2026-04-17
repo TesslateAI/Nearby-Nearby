@@ -129,14 +129,57 @@ async def startup_event():
         print("[INFO] Semantic search will fall back to keyword search")
         app.state.embedding_model = None
 
-# CORS Middleware
+# CORS Middleware — restrict methods/headers explicitly. With
+# allow_credentials=True, wildcard methods/headers expand the cross-origin
+# attack surface to anything an allowed-origin page can issue.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.ALLOWED_ORIGINS.split(','),
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "X-Requested-With", "Accept"],
+    max_age=600,
 )
+
+
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    """
+    Apply baseline security headers to every response. The nearby-app serves
+    its own SPA via FastAPI (no fronting nginx for the user app), so headers
+    must originate here.
+
+    - HSTS: force HTTPS for one year on all subdomains.
+    - X-Content-Type-Options: stop browsers from MIME-sniffing.
+    - Referrer-Policy: leak as little URL info as possible to third parties.
+    - Permissions-Policy: disable powerful browser APIs by default.
+    - X-Frame-Options: clickjacking guard.
+    - CSP: blocks injected <script> from running. 'unsafe-inline' is kept for
+      Vite's build runtime; migrate to nonces if/when feasible.
+    """
+    response = await call_next(request)
+    response.headers.setdefault("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    response.headers.setdefault("X-Frame-Options", "SAMEORIGIN")
+    response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+    response.headers.setdefault(
+        "Permissions-Policy",
+        "camera=(), microphone=(), geolocation=(self), payment=()",
+    )
+    response.headers.setdefault(
+        "Content-Security-Policy",
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline'; "
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+        "font-src 'self' https://fonts.gstatic.com data:; "
+        "img-src 'self' data: https: blob:; "
+        "connect-src 'self' https: wss:; "
+        "frame-ancestors 'self'; "
+        "base-uri 'self'; "
+        "form-action 'self'; "
+        "object-src 'none'",
+    )
+    return response
 
 # Include API Routers
 app.include_router(pois.router, prefix="/api", tags=["Points of Interest"])
@@ -251,7 +294,12 @@ def inject_meta_tags(html: str, meta_tags: str) -> str:
     return html
 
 
-# Health check endpoint for ECS/ALB
+# Health check endpoint for ECS/ALB. Return only the minimum signal needed
+# for liveness probes — never raw exception text (leaks driver state, host
+# names, etc.).
+import logging as _logging
+_health_logger = _logging.getLogger("nearby_app.health")
+
 @app.get("/api/health")
 async def health_check():
     health = {"status": "healthy", "service": "nearby-app"}
@@ -259,9 +307,10 @@ async def health_check():
         with engine.connect() as connection:
             connection.execute(text("SELECT 1"))
             health["database"] = "connected"
-    except Exception as e:
+    except Exception:
+        _health_logger.exception("Health check database probe failed")
         health["status"] = "degraded"
-        health["database"] = str(e)
+        health["database"] = "disconnected"
     health["ml_model"] = "loaded" if getattr(app.state, 'embedding_model', None) else "not loaded"
     status_code = 200 if health["status"] == "healthy" else 503
     return JSONResponse(content=health, status_code=status_code)

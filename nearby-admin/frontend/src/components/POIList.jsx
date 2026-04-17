@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Table, Button, Group, Title, Anchor, Text, Paper, ActionIcon, Tooltip, Badge, UnstyledButton, Center, TextInput, Select, Stack } from '@mantine/core';
+import { Table, Button, Group, Title, Anchor, Text, Paper, ActionIcon, Tooltip, Badge, UnstyledButton, Center, TextInput, Select, Stack, SimpleGrid, ScrollArea } from '@mantine/core';
 import { Link, useNavigate } from 'react-router-dom';
 import { notifications } from '@mantine/notifications';
 import { modals } from '@mantine/modals';
@@ -264,21 +264,19 @@ function POIList() {
 
       {/* Filters */}
       <Stack gap="md" mb="lg">
-        <Group align="flex-end">
-          <TextInput
-            placeholder="Search by name, type, or city..."
-            value={searchText}
-            onChange={(event) => setSearchText(event.currentTarget.value)}
-            leftSection={<IconSearch size={16} />}
-            style={{ flex: 1, minWidth: 300 }}
-          />
+        <TextInput
+          placeholder="Search by name, type, or city..."
+          value={searchText}
+          onChange={(event) => setSearchText(event.currentTarget.value)}
+          leftSection={<IconSearch size={16} />}
+        />
+        <SimpleGrid cols={{ base: 1, xs: 2, sm: 3 }} spacing="sm">
           <Select
             placeholder="Filter by Type"
             value={typeFilter}
             onChange={setTypeFilter}
             data={getUniqueTypes()}
             clearable
-            style={{ minWidth: 150 }}
           />
           <Select
             placeholder="Filter by City"
@@ -286,7 +284,6 @@ function POIList() {
             onChange={setCityFilter}
             data={getUniqueCities()}
             clearable
-            style={{ minWidth: 150 }}
           />
           <Select
             placeholder="Filter by Status"
@@ -294,14 +291,15 @@ function POIList() {
             onChange={setStatusFilter}
             data={getUniqueStatuses()}
             clearable
-            style={{ minWidth: 150 }}
           />
-          {(searchText || typeFilter || cityFilter || statusFilter) && (
-            <Button variant="light" color="gray" onClick={clearFilters} leftSection={<IconX size={16} />}>
+        </SimpleGrid>
+        {(searchText || typeFilter || cityFilter || statusFilter) && (
+          <Group>
+            <Button variant="light" color="gray" onClick={clearFilters} leftSection={<IconX size={16} />} size="xs">
               Clear Filters
             </Button>
-          )}
-        </Group>
+          </Group>
+        )}
         {(searchText || typeFilter || cityFilter || statusFilter) && (
           <Text size="sm" c="dimmed">
             Showing {filteredAndSortedPois.length} of {pois.length} POIs
@@ -314,7 +312,7 @@ function POIList() {
           Loading POIs...
         </Text>
       ) : filteredAndSortedPois.length > 0 ? (
-        <Table striped highlightOnHover withTableBorder>
+        <ScrollArea type="auto"><Table striped highlightOnHover withTableBorder miw={700}>
           <Table.Thead style={{ backgroundColor: 'var(--mantine-color-deep-purple-0)' }}>
             <Table.Tr>
               <Table.Th>
@@ -353,7 +351,7 @@ function POIList() {
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>{rows}</Table.Tbody>
-        </Table>
+        </Table></ScrollArea>
       ) : (
         <Text c="dimmed" ta="center" py="xl">
           {pois.length === 0

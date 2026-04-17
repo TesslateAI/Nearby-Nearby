@@ -5,6 +5,7 @@ import uuid
 
 from app import crud, schemas, models
 from app.database import get_db
+from app.core.security import get_current_user
 
 router = APIRouter()
 
@@ -44,7 +45,8 @@ def create_poi_relationship(
     source_poi_id: uuid.UUID,
     target_poi_id: uuid.UUID,
     relationship_type: str,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: str = Depends(get_current_user),
 ):
     """Create a relationship between two POIs"""
     # Verify both POIs exist
@@ -98,7 +100,8 @@ def delete_poi_relationship(
     source_poi_id: uuid.UUID,
     target_poi_id: uuid.UUID,
     relationship_type: str,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: str = Depends(get_current_user),
 ):
     """Delete a specific relationship between two POIs"""
     relationship = db.query(models.POIRelationship).filter(

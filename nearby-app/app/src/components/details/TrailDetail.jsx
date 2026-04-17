@@ -1,498 +1,264 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { MapPin, Clock, Phone, Globe, Heart, Share2, Navigation, Plus, Mountain, AlertCircle, Copy, Check, ExternalLink, Info, CalendarCheck, Truck, ShoppingCart } from 'lucide-react';
-import NearbySection from '../nearby-feature/NearbySection';
-import Accordion, { AccordionSection } from '../Accordion';
+import { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { MapPin, Navigation, Copy, Check, ExternalLink } from 'lucide-react';
+
+import {
+  AccSection, ContentGroup, ChipList, QuickInfoRow,
+  POIDetailLayout, QuickInfoPhotosBox, AmenitiesBox,
+  hasVal, asArray, copyToClipboard, getImages,
+} from './shared';
 import HoursDisplay from '../common/HoursDisplay';
+import ServiceAnimalAlert from './ServiceAnimalAlert';
 import { isCurrentlyOpen } from '../../utils/hoursUtils';
-import './TrailDetail.css';
+import { getDisplayableLocation } from '../../utils/getDisplayableLocation';
+import { isPaidTier } from '../../utils/poiTier';
+import { sanitizeHtml } from '../../utils/sanitize';
 
-/**
- * TrailDetail - Specialized detail view for trail POIs
- * Receives poi data as a prop from POIDetail (smart router)
- */
-function TrailDetail({ poi }) {
-  const navigate = useNavigate();
-  const [showHours, setShowHours] = useState(false);
+function labelsFor(routeType) {
+  if (routeType === 'water_trail') return { primary: 'Primary Put-In', exit: 'Primary Take-Out', accessPoints: 'Additional Put-In + Take-Out Points' };
+  return { primary: 'Primary Trailhead', exit: 'Trail Exit', accessPoints: 'Access Points' };
+}
+
+const ROUTE_TYPE_LABELS = {
+  loop: 'Loop', out_and_back: 'Out & Back', point_to_point: 'Point to Point',
+  lollipop: 'Lollipop', stacked_loops: 'Stacked Loops', thru_trail: 'Thru-Trail', water_trail: 'Water Trail',
+};
+
+const TRAIL_LIGHTING_LABELS = { partial: 'Partial', full: 'Full', seasonal: 'Seasonal', dusk_to_dawn: 'Dusk to Dawn' };
+
+const cap = (s) => (typeof s === 'string' && s.length > 0 ? s[0].toUpperCase() + s.slice(1) : s);
+
+export default function TrailDetail({ poi }) {
   const [copiedCoords, setCopiedCoords] = useState(false);
-  const [copiedLink, setCopiedLink] = useState(false);
-  const [showShareMenu, setShowShareMenu] = useState(false);
+  const [copiedAddress, setCopiedAddress] = useState(false);
 
-  // Get coordinates - prefer trailhead, then front_door, fallback to location
-  const getCoordinates = () => {
-    if (poi?.trailhead_latitude && poi?.trailhead_longitude) {
-      return { lat: poi.trailhead_latitude, lng: poi.trailhead_longitude };
-    }
-    if (poi?.front_door_latitude && poi?.front_door_longitude) {
-      return { lat: poi.front_door_latitude, lng: poi.front_door_longitude };
-    }
-    if (poi?.location?.coordinates) {
-      return { lat: poi.location.coordinates[1], lng: poi.location.coordinates[0] };
-    }
+  const displayLoc = getDisplayableLocation(poi);
+  const trail = poi?.trail || {};
+  const routeType = trail.route_type || null;
+  const labels = labelsFor(routeType);
+  const paid = isPaidTier(poi);
+  const images = useMemo(() => getImages(poi), [poi]);
+
+  const getCoords = () => {
+    if (displayLoc.hideExact) return null;
+    if (trail?.trailhead_latitude && trail?.trailhead_longitude) return { lat: trail.trailhead_latitude, lng: trail.trailhead_longitude };
+    if (poi?.front_door_latitude && poi?.front_door_longitude) return { lat: poi.front_door_latitude, lng: poi.front_door_longitude };
+    if (poi?.location?.coordinates) return { lat: poi.location.coordinates[1], lng: poi.location.coordinates[0] };
     return null;
   };
+  const coords = getCoords();
 
   const handleDirections = () => {
-    const coords = getCoordinates();
-    if (coords) {
-      window.open(`https://www.google.com/maps/dir/?api=1&destination=${coords.lat},${coords.lng}`, '_blank');
-    } else if (poi?.address_street) {
-      const address = encodeURIComponent(`${poi.address_street}, ${poi.address_city}, ${poi.address_state} ${poi.address_zip}`);
-      window.open(`https://www.google.com/maps/dir/?api=1&destination=${address}`, '_blank');
+    if (coords) window.open(`https://www.google.com/maps/dir/?api=1&destination=${coords.lat},${coords.lng}`, '_blank');
+    else if (poi.address_street) {
+      const addr = encodeURIComponent([poi.address_street, poi.address_city, poi.address_state, poi.address_zip].filter(Boolean).join(', '));
+      window.open(`https://www.google.com/maps/dir/?api=1&destination=${addr}`, '_blank');
     }
   };
-
-  const fallbackCopyToClipboard = (text) => {
-    const textArea = document.createElement('textarea');
-    textArea.value = text;
-    textArea.style.position = 'fixed';
-    textArea.style.left = '-999999px';
-    textArea.style.top = '-999999px';
-    document.body.appendChild(textArea);
-    textArea.focus();
-    textArea.select();
-    try {
-      document.execCommand('copy');
-      return true;
-    } catch (err) {
-      console.error('Fallback: Could not copy text:', err);
-      return false;
-    } finally {
-      document.body.removeChild(textArea);
-    }
-  };
-
-  const copyToClipboard = async (text) => {
-    if (navigator.clipboard && window.isSecureContext) {
-      try {
-        await navigator.clipboard.writeText(text);
-        return true;
-      } catch (err) {
-        console.error('Clipboard API failed:', err);
-        return fallbackCopyToClipboard(text);
-      }
-    } else {
-      return fallbackCopyToClipboard(text);
-    }
-  };
-
   const handleCopyCoords = async () => {
-    const coords = getCoordinates();
-    if (coords) {
-      const text = `${coords.lat}, ${coords.lng}`;
-      const success = await copyToClipboard(text);
-      if (success) {
-        setCopiedCoords(true);
-        setTimeout(() => setCopiedCoords(false), 2000);
-      } else {
-        alert(`Lat/Long: ${text}`);
-      }
-    }
+    if (!coords) return;
+    if (await copyToClipboard(`${coords.lat}, ${coords.lng}`)) { setCopiedCoords(true); setTimeout(() => setCopiedCoords(false), 2000); }
+  };
+  const handleCopyAddress = async () => {
+    const addr = [poi.address_street, poi.address_city, poi.address_state, poi.address_zip].filter(Boolean).join(', ');
+    if (!addr) return;
+    if (await copyToClipboard(addr)) { setCopiedAddress(true); setTimeout(() => setCopiedAddress(false), 2000); }
   };
 
-  const handleShare = async (platform) => {
-    const url = window.location.href;
-    const title = poi?.name || 'Check out this trail';
-    const description = poi?.description_short || poi?.description_long?.substring(0, 150) || '';
+  const subtitleParts = [];
+  if (routeType && ROUTE_TYPE_LABELS[routeType]) subtitleParts.push(ROUTE_TYPE_LABELS[routeType]);
+  else if (routeType) subtitleParts.push(routeType);
+  if (trail.length_text) subtitleParts.push(trail.length_text);
+  if (trail.difficulty) subtitleParts.push(cap(trail.difficulty));
+  const subtitleText = subtitleParts.join(', ');
 
-    const shareUrls = {
-      facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}&quote=${encodeURIComponent(title)}`,
-      twitter: `https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(title)}&hashtags=NearbyNearby,Trails`,
-      email: `mailto:?subject=${encodeURIComponent(title)}&body=${encodeURIComponent(description + '\n\n' + url)}`,
-    };
+  const openStatus = poi.hours ? isCurrentlyOpen(poi.hours) : null;
+  const statusLabel = openStatus?.isOpen ? 'Fully Open' : (openStatus ? 'Closed' : (poi.status || 'Open'));
 
-    if (platform === 'copy') {
-      try {
-        const success = await copyToClipboard(url);
-        if (success) {
-          setCopiedLink(true);
-          setTimeout(() => setCopiedLink(false), 2000);
-        }
-      } catch (err) {
-        console.error('Failed to copy URL:', err);
-      }
-    } else if (platform === 'native' && navigator.share) {
-      try {
-        await navigator.share({ title, text: description, url });
-      } catch (err) {
-        if (err.name !== 'AbortError') console.error('Share failed:', err);
-      }
-    } else if (platform === 'email') {
-      window.location.href = shareUrls.email;
-    } else if (shareUrls[platform]) {
-      window.open(shareUrls[platform], '_blank', 'width=600,height=400');
-    }
-    setShowShareMenu(false);
-  };
+  const relList = poi.poi_relationships || poi.relationships || [];
+  const trailInParkRel = Array.isArray(relList) ? relList.find((r) => (r.relationship_type || r.type) === 'trail_in_park') : null;
+  const linkedParkFromRel = trailInParkRel ? (trailInParkRel.target_poi || trailInParkRel.related_poi || trailInParkRel.park || null) : null;
+  const linkedParkId = trail.park_poi_id || linkedParkFromRel?.id || trailInParkRel?.target_poi_id || null;
+  const linkedParkName = trail.park_name || trail.park?.name || linkedParkFromRel?.name || null;
 
-  // Get photos by type from the images array (for typed sections like trail_head, restroom, etc.)
-  const getPhotosByType = (type) => {
-    if (!poi.images) return [];
-    return poi.images
-      .filter(img => {
-        const imgType = img.type || img.image_type;
-        if (typeof imgType === 'string') {
-          return imgType.toLowerCase() === type.toLowerCase();
-        }
-        if (imgType?.value) {
-          return imgType.value.toLowerCase() === type.toLowerCase();
-        }
-        return false;
-      })
-      .filter(img => !img.parent_image_id)
-      .map(img => ({
-        id: img.id,
-        url: img.storage_url || img.url,
-        thumbnail: img.thumbnail_url || img.storage_url || img.url,
-        alt: img.alt_text || `${type} photo`,
-        caption: img.caption
-      }))
-      .filter(img => img.url);
-  };
+  const ig = (poi.ideal_for && typeof poi.ideal_for === 'object' && !Array.isArray(poi.ideal_for)) ? poi.ideal_for : null;
+  const accessPoints = Array.isArray(trail.access_points) ? trail.access_points.filter(Boolean) : [];
+  const hasTrailGuide = !!(trail.mile_markers || trail.trailhead_signage || trail.audio_guide_available || trail.qr_trail_guide || trail.trail_guide_notes || trail.trail_lighting || accessPoints.length > 0);
 
-  const InfoRow = ({ label, value }) => {
-    if (!value) return null;
-    return (
-      <div className="info-row">
-        <span className="info-row__label">{label}</span>
-        <span className="info-row__value">{value}</span>
+  /* ── Accordion section definitions ── */
+  const aboutCol1 = [
+    hasVal(poi.description_long) && <ContentGroup key="desc" title="About"><div className="acc_content_text" dangerouslySetInnerHTML={{ __html: sanitizeHtml(poi.description_long) }} /></ContentGroup>,
+    hasVal(poi.outdoor_types) && <ContentGroup key="ot" title="Outdoor Types"><ChipList items={poi.outdoor_types} /></ContentGroup>,
+    ig && Object.entries(ig).filter(([k]) => k !== '_legacy').map(([group, items]) =>
+      Array.isArray(items) && items.length > 0 && (
+        <ContentGroup key={group} title={group.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}><ChipList items={items} /></ContentGroup>
+      )
+    ),
+  ].flat().filter(Boolean);
+
+  const aboutCol2 = [
+    hasVal(poi.hours) && (
+      <ContentGroup key="hours" title="Hours">
+        <div className="acc_content_text">
+          <HoursDisplay hours={poi.hours} holidayHours={poi.holiday_hours} appointmentBookingUrl={poi.appointment_booking_url} appointmentRequired={poi.hours_but_appointment_required} hoursNotes={poi.hours_notes} />
+        </div>
+      </ContentGroup>
+    ),
+  ].filter(Boolean);
+
+  const addrCol1 = [
+    <ContentGroup key="addr" title="Address" when={hasVal(poi.address_street) || (displayLoc.hideExact && displayLoc.full)}>
+      <div className="acc_content_text">
+        {displayLoc.hideExact ? (
+          <div><MapPin size={14} /> {displayLoc.full}</div>
+        ) : hasVal(poi.address_street) && (
+          <div><MapPin size={14} /> {[poi.address_street, poi.address_city, poi.address_state, poi.address_zip].filter(Boolean).join(', ')}</div>
+        )}
       </div>
-    );
-  };
-
-  // POIDetail handles loading/error states, so poi is guaranteed to exist here
-
-  return (
-    <div className="poi-detail">
-      <div className="poi-detail__container">
-        <button onClick={() => navigate('/')} className="poi-detail__back-link">
-          ← Back to Search
-        </button>
-
-        {/* Header Section */}
-        <div className="poi-detail__new-header">
-          {/* Status Badge */}
-          <div className="poi-detail__status-row">
-            <span className="poi-detail__status-text">
-              STATUS: <span className="poi-detail__status-value">{poi.status || 'Open'}</span>
-            </span>
-            {poi.is_verified && (
-              <div className="poi-detail__verified-wrapper">
-                <div className="poi-detail__verified">
-                  <div className="poi-detail__verified-icon">
-                    <div className="poi-detail__verified-dot"></div>
-                  </div>
-                  Verified
-                  <Info size={14} className="poi-detail__verified-info" />
-                </div>
-                <div className="poi-detail__verified-tooltip">
-                  This place has been checked and confirmed as accurate by a Nearby Nearby Team member
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Title */}
-          <h1 className="poi-detail__main-title">{poi.name}</h1>
-
-          {/* Subtitle */}
-          {poi.description_short && (
-            <p className="poi-detail__subtitle">{poi.description_short}</p>
-          )}
-
-          {/* Trail Difficulty Badge */}
-          {poi.trail && poi.trail.difficulty && (
-            <div className="poi-detail__sponsor">
-              <span className="poi-detail__sponsor-badge">
-                {poi.trail.difficulty} Difficulty
-              </span>
-            </div>
-          )}
-
-          {/* Quick Info */}
-          <div className="poi-detail__quick-info">
-            {poi.trail && poi.trail.length_text && (
-              <div className="poi-detail__info-item">
-                <Mountain size={16} className="poi-detail__icon poi-detail__icon--green" />
-                <span className="poi-detail__info-primary">{poi.trail.length_text}</span>
-                {poi.trail.route_type && (
-                  <span className="poi-detail__info-secondary"> - {poi.trail.route_type}</span>
-                )}
-              </div>
-            )}
-
-            {poi.address_street && (
-              <div className="poi-detail__info-item">
-                <MapPin size={16} className="poi-detail__icon" />
-                <span className="poi-detail__info-text">{poi.address_street}</span>
-              </div>
-            )}
-
-            {poi.phone_number && (
-              <div className="poi-detail__info-item">
-                <Phone size={16} className="poi-detail__icon" />
-                <span className="poi-detail__info-text">{poi.phone_number}</span>
-              </div>
-            )}
-
-            {poi.website_url && (
-              <div className="poi-detail__info-item">
-                <Globe size={16} className="poi-detail__icon" />
-                <a href={`https://${poi.website_url}`} className="poi-detail__info-link" target="_blank" rel="noopener noreferrer">
-                  {poi.website_url}
-                </a>
-              </div>
-            )}
-          </div>
-
-          {/* Titled Links Section */}
-          {(poi.reservation_links?.length > 0 || poi.delivery_links?.length > 0 || poi.online_ordering_links?.length > 0 || poi.appointment_links?.length > 0) && (
-            <div className="poi-detail__titled-links">
-              {poi.reservation_links && poi.reservation_links.map((link, idx) => {
-                const url = typeof link === 'string' ? link : link?.url;
-                const title = typeof link === 'string' ? 'Make a Reservation' : (link?.title || 'Make a Reservation');
-                if (!url) return null;
-                return (
-                  <a key={`res-${idx}`} href={url.startsWith('http') ? url : `https://${url}`} className="poi-detail__titled-link" target="_blank" rel="noopener noreferrer">
-                    <CalendarCheck size={18} /><span>{title}</span><ExternalLink size={14} />
-                  </a>
-                );
-              })}
-              {poi.delivery_links && poi.delivery_links.map((link, idx) => {
-                const url = typeof link === 'string' ? link : link?.url;
-                const title = typeof link === 'string' ? 'Order Delivery' : (link?.title || 'Order Delivery');
-                if (!url) return null;
-                return (
-                  <a key={`del-${idx}`} href={url.startsWith('http') ? url : `https://${url}`} className="poi-detail__titled-link" target="_blank" rel="noopener noreferrer">
-                    <Truck size={18} /><span>{title}</span><ExternalLink size={14} />
-                  </a>
-                );
-              })}
-              {poi.online_ordering_links && poi.online_ordering_links.map((link, idx) => {
-                const url = typeof link === 'string' ? link : link?.url;
-                const title = typeof link === 'string' ? 'Order Online' : (link?.title || 'Order Online');
-                if (!url) return null;
-                return (
-                  <a key={`ord-${idx}`} href={url.startsWith('http') ? url : `https://${url}`} className="poi-detail__titled-link" target="_blank" rel="noopener noreferrer">
-                    <ShoppingCart size={18} /><span>{title}</span><ExternalLink size={14} />
-                  </a>
-                );
-              })}
-              {poi.appointment_links && poi.appointment_links.map((link, idx) => {
-                const url = typeof link === 'string' ? link : link?.url;
-                const title = typeof link === 'string' ? 'Book Appointment' : (link?.title || 'Book Appointment');
-                if (!url) return null;
-                return (
-                  <a key={`apt-${idx}`} href={url.startsWith('http') ? url : `https://${url}`} className="poi-detail__titled-link" target="_blank" rel="noopener noreferrer">
-                    <CalendarCheck size={18} /><span>{title}</span><ExternalLink size={14} />
-                  </a>
-                );
-              })}
-            </div>
-          )}
-
-          {/* Action Buttons */}
-          <div className="poi-detail__actions">
-            <button className="poi-detail__action-btn" onClick={handleDirections}>
-              <Navigation size={16} />
-              Directions
+      {!displayLoc.hideExact && (
+        <div className="pd-addr__actions">
+          <button type="button" className="btn_reset button btn_outline_teal btn_poi_button_1" onClick={handleDirections}>
+            <Navigation size={14} /> <span className="poi_button_title">Get Directions</span>
+          </button>
+          {hasVal(poi.address_street) && (
+            <button type="button" className="btn_reset button btn_outline_teal btn_poi_button_1" onClick={handleCopyAddress}>
+              {copiedAddress ? <Check size={14} /> : <Copy size={14} />} <span className="poi_button_title">{copiedAddress ? 'Copied!' : 'Copy Address'}</span>
             </button>
-            {getCoordinates() && (
-              <button className="poi-detail__action-btn" onClick={handleCopyCoords}>
-                {copiedCoords ? <Check size={16} /> : <Copy size={16} />}
-                {copiedCoords ? 'Copied!' : 'Copy Lat/Long'}
-              </button>
-            )}
-            <button className="poi-detail__action-btn">
-              <Plus size={16} />
-              Add to Plan
-            </button>
-            <div className="poi-detail__share-wrapper">
-              <button
-                className="poi-detail__action-btn"
-                onClick={() => navigator.share ? handleShare('native') : setShowShareMenu(!showShareMenu)}
-              >
-                <Share2 size={16} />
-                Share
-              </button>
-              {showShareMenu && (
-                <div className="poi-detail__share-menu">
-                  <button onClick={() => handleShare('facebook')}><ExternalLink size={14} /> Facebook</button>
-                  <button onClick={() => handleShare('twitter')}><ExternalLink size={14} /> Twitter/X</button>
-                  <button onClick={() => handleShare('email')}><ExternalLink size={14} /> Email</button>
-                  <button onClick={() => handleShare('copy')}>
-                    {copiedLink ? <Check size={14} /> : <Copy size={14} />}
-                    {copiedLink ? 'Copied!' : 'Copy Link'}
-                  </button>
-                </div>
-              )}
-            </div>
-            <button className="poi-detail__action-btn">
-              <Heart size={16} />
-            </button>
-          </div>
-
-          {/* Description Box */}
-          {poi.description_long && (
-            <div className="poi-detail__description-box">
-              <div className="poi-detail__description-text">
-                {poi.description_long}
-              </div>
-            </div>
           )}
-
-          {/* Amenities */}
-          {poi.amenities && poi.amenities.length > 0 && (
-            <div className="poi-detail__amenities-section">
-              <h3 className="poi-detail__amenities-title">Trail Features</h3>
-              <div className="poi-detail__amenities-grid">
-                {poi.amenities.map((amenity, idx) => (
-                  <span key={idx} className="poi-detail__amenity-tag">
-                    <span className="poi-detail__amenity-dot">•</span> {amenity}
-                  </span>
-                ))}
-              </div>
-            </div>
+          {coords && (
+            <button type="button" className="btn_reset button btn_outline_teal btn_poi_button_1" onClick={handleCopyCoords}>
+              {copiedCoords ? <Check size={14} /> : <Copy size={14} />} <span className="poi_button_title">{copiedCoords ? 'Copied!' : 'Copy Lat+Long'}</span>
+            </button>
           )}
         </div>
+      )}
+    </ContentGroup>,
+  ].filter(Boolean);
 
-        {/* Photos Section */}
-        {poi.images && poi.images.length > 0 && (
-          <div className="poi-detail__photos-section">
-            <div className="poi-detail__photos-header">
-              <h3 className="poi-detail__photos-title">PHOTOS</h3>
-              <button className="poi-detail__photos-link">View All</button>
+  const addrCol2 = [
+    hasVal(poi.parking_types) && <ContentGroup key="parking" title="Parking"><ChipList items={poi.parking_types} /></ContentGroup>,
+    hasVal(poi.parking_notes) && <ContentGroup key="pnotes"><div className="acc_content_text" dangerouslySetInnerHTML={{ __html: sanitizeHtml(poi.parking_notes) }} /></ContentGroup>,
+    hasVal(poi.accessible_parking_details) && <ContentGroup key="adaparking" title="ADA Accessible Parking"><ChipList items={poi.accessible_parking_details} /></ContentGroup>,
+  ].filter(Boolean);
+
+  const trailGuideCol1 = [
+    linkedParkName && linkedParkId && (
+      <ContentGroup key="park" title="Located In">
+        <div className="acc_content_text"><Link to={`/poi/${linkedParkId}`} className="pd-link">{linkedParkName} <ExternalLink size={12} /></Link></div>
+      </ContentGroup>
+    ),
+    (coords || accessPoints.length > 0) && (
+      <ContentGroup key="primary" title={labels.primary}>
+        <div className="acc_content_text">
+          {trail.mile_markers && <div><strong>Mile Markers:</strong> Yes</div>}
+          {trail.trailhead_signage && <div><strong>Trailhead Signage:</strong> Yes</div>}
+          {trail.audio_guide_available && <div><strong>Audio Guide:</strong> Yes</div>}
+          {trail.qr_trail_guide && <div><strong>QR Trail Guide:</strong> Yes</div>}
+          {trail.trail_lighting && <div><strong>Trail Lighting:</strong> {TRAIL_LIGHTING_LABELS[trail.trail_lighting] || trail.trail_lighting}</div>}
+          {trail.trail_guide_notes && <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(trail.trail_guide_notes) }} />}
+        </div>
+      </ContentGroup>
+    ),
+  ].filter(Boolean);
+
+  const trailGuideCol2 = [
+    hasVal(trail.trail_exit_notes) && <ContentGroup key="exit" title={labels.exit}><div className="acc_content_text" dangerouslySetInnerHTML={{ __html: sanitizeHtml(trail.trail_exit_notes) }} /></ContentGroup>,
+    accessPoints.length > 0 && (
+      <ContentGroup key="ap" title={labels.accessPoints}>
+        <div className="acc_content_text">
+          {accessPoints.map((ap, idx) => (
+            <div key={ap.id || idx} style={{ marginBottom: 12 }}>
+              {ap.name && <h5>{ap.name}</h5>}
+              {(ap.latitude != null && ap.longitude != null) && <div><strong>Lat / Long:</strong> {ap.latitude}, {ap.longitude}</div>}
+              {ap.what3words && <div><strong>what3words:</strong> {ap.what3words}</div>}
+              {ap.notes && <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(ap.notes) }} />}
             </div>
-            <div className="poi-detail__photos-grid">
-              {poi.images.slice(0, 4).map((image, i) => (
-                <div key={i} className="poi-detail__photo-placeholder"></div>
+          ))}
+        </div>
+      </ContentGroup>
+    ),
+  ].filter(Boolean);
+
+  const sections = [
+    (aboutCol1.length || aboutCol2.length) && { id: 'about_hours', title: 'About + Hours', defaultOpen: true, col1: aboutCol1, col2: aboutCol2 },
+    (addrCol1.length || addrCol2.length) && { id: 'address_parking', title: 'Address + Parking', col1: addrCol1, col2: addrCol2 },
+    hasTrailGuide && { id: 'trail_guide', title: 'Trail Guide', col1: trailGuideCol1, col2: trailGuideCol2 },
+    (hasVal(trail.cost) || hasVal(trail.pass_info) || hasVal(poi.discounts)) && {
+      id: 'pricing', title: 'Pricing + Passes',
+      col1: [hasVal(trail.cost) && <ContentGroup key="cost" title="Cost"><div className="acc_content_text">{trail.cost}</div></ContentGroup>, hasVal(trail.pass_info) && <ContentGroup key="pass" title="Passes"><div className="acc_content_text">{trail.pass_info}</div></ContentGroup>].filter(Boolean),
+      col2: [hasVal(poi.discounts) && <ContentGroup key="disc" title="Discounts"><div className="acc_content_text">{typeof poi.discounts === 'string' ? <span dangerouslySetInnerHTML={{ __html: sanitizeHtml(poi.discounts) }} /> : <ChipList items={poi.discounts_offered || poi.discounts} />}</div></ContentGroup>].filter(Boolean),
+    },
+    (hasVal(poi.public_toilets) || hasVal(poi.toilet_description)) && {
+      id: 'restrooms', title: 'Public Restrooms',
+      col1: [hasVal(poi.public_toilets) && <ContentGroup key="pt" title="Available"><ChipList items={poi.public_toilets} /></ContentGroup>, hasVal(poi.toilet_description) && <ContentGroup key="td" title="Details"><div className="acc_content_text" dangerouslySetInnerHTML={{ __html: sanitizeHtml(poi.toilet_description) }} /></ContentGroup>].filter(Boolean),
+      col2: [hasVal(poi.accessible_restroom_details) && <ContentGroup key="ada" title="ADA Accessible Restrooms"><ChipList items={poi.accessible_restroom_details} /></ContentGroup>].filter(Boolean),
+    },
+    (hasVal(poi.wheelchair_accessible) || hasVal(poi.wheelchair_details)) && {
+      id: 'mobility', title: 'Wheelchair and Mobility Access',
+      col1: [hasVal(poi.wheelchair_accessible) && <ContentGroup key="wa" title="Wheelchair"><div className="acc_content_text">{asArray(poi.wheelchair_accessible).join(', ')}</div></ContentGroup>, hasVal(poi.wheelchair_details) && <ContentGroup key="wd" title="Details"><div className="acc_content_text" dangerouslySetInnerHTML={{ __html: sanitizeHtml(poi.wheelchair_details) }} /></ContentGroup>].filter(Boolean),
+      col2: [hasVal(poi.amenities?.mobility_access) && <ContentGroup key="ma" title="Mobility Access"><ChipList items={poi.amenities.mobility_access} /></ContentGroup>].filter(Boolean),
+    },
+    (hasVal(poi.pet_options) || hasVal(poi.pet_policy)) && {
+      id: 'pets', title: 'Pet Policy',
+      col1: [hasVal(poi.pet_options) && <ContentGroup key="po" title="Pets"><ChipList items={poi.pet_options} /></ContentGroup>, hasVal(poi.pet_policy) && <ContentGroup key="pp" title="Policy"><div className="acc_content_text" dangerouslySetInnerHTML={{ __html: sanitizeHtml(poi.pet_policy) }} /></ContentGroup>].filter(Boolean),
+      col2: [<div className="acc_content_group" key="sa"><ServiceAnimalAlert /></div>],
+    },
+    hasVal(poi.drone_policy) && {
+      id: 'drone', title: 'Drone Policy',
+      col1: [<ContentGroup key="dp" title="Drone Policy"><div className="acc_content_text" dangerouslySetInnerHTML={{ __html: sanitizeHtml(poi.drone_policy) }} /></ContentGroup>], col2: [],
+    },
+    (hasVal(poi.locally_found) || hasVal(poi.history) || hasVal(poi.history_paragraph) || hasVal(poi.community_impact)) && {
+      id: 'locally_history', title: 'Locally Found + History',
+      col1: [hasVal(poi.locally_found) && <ContentGroup key="lf" title="Locally Found"><div className="acc_content_text" dangerouslySetInnerHTML={{ __html: sanitizeHtml(poi.locally_found) }} /></ContentGroup>].filter(Boolean),
+      col2: [
+        (hasVal(poi.history) || hasVal(poi.history_paragraph)) && <ContentGroup key="hist" title="History"><div className="acc_content_text" dangerouslySetInnerHTML={{ __html: sanitizeHtml(poi.history || poi.history_paragraph) }} /></ContentGroup>,
+        hasVal(poi.community_impact) && <ContentGroup key="ci" title="Community Impact"><div className="acc_content_text" dangerouslySetInnerHTML={{ __html: sanitizeHtml(poi.community_impact) }} /></ContentGroup>,
+      ].filter(Boolean),
+    },
+    (hasVal(poi.website_url) || hasVal(poi.phone_number) || hasVal(poi.email)) && {
+      id: 'contact', title: 'Contact',
+      col1: [
+        hasVal(poi.phone_number) && <ContentGroup key="ph" title="Phone"><div className="acc_list_group_1"><a href={`tel:${poi.phone_number}`}>{poi.phone_number}</a></div></ContentGroup>,
+        hasVal(poi.website_url) && <ContentGroup key="web" title="Website"><div className="acc_list_group_1"><a href={poi.website_url.startsWith('http') ? poi.website_url : `https://${poi.website_url}`} target="_blank" rel="noopener noreferrer">{poi.website_url}</a></div></ContentGroup>,
+      ].filter(Boolean),
+      col2: [hasVal(poi.email) && <ContentGroup key="em" title="Email"><div className="acc_list_group_1"><a href={`mailto:${poi.email}`}>{poi.email}</a></div></ContentGroup>].filter(Boolean),
+    },
+  ].filter(Boolean);
+
+  return (
+    <POIDetailLayout
+      poi={poi}
+      mainCategory={subtitleText}
+      statusVariant={statusLabel && /open/i.test(statusLabel) ? 'open' : (statusLabel ? 'closed' : undefined)}
+      statusLabel={statusLabel}
+    >
+      {({ images: imgs, openLightbox }) => (
+        <>
+          <QuickInfoPhotosBox
+            title={poi.description_short}
+            quickInfoRows={
+              <>
+                <QuickInfoRow title="Trail:" value={subtitleText} />
+                <QuickInfoRow title="Cost:" value={trail.cost} />
+                <QuickInfoRow title="Pets:" value={Array.isArray(poi.pet_options) && poi.pet_options.length > 0 ? poi.pet_options.join(', ') : null} />
+                <QuickInfoRow title="Parking:" value={Array.isArray(poi.parking_types) && poi.parking_types.length > 0 ? poi.parking_types.join(', ') : null} />
+              </>
+            }
+            images={imgs}
+            onOpenLightbox={openLightbox}
+          />
+
+          <AmenitiesBox poi={poi} title="Amenities" />
+
+          <div id="accordion_1_box" className="poi_accordion_box">
+            <div id="accordion_1_parent" className="poi_accordion_parent">
+              {sections.map((s) => (
+                <AccSection key={s.id} id={s.id} title={s.title} defaultOpen={!!s.defaultOpen} col1={s.col1} col2={s.col2} />
               ))}
             </div>
           </div>
-        )}
-
-        {/* Trail-Specific Collapsible Sections */}
-        <div className="poi-detail__collapsible-sections">
-          <Accordion closeOther closeAble scrollOffset={120}>
-            <AccordionSection title="TRAIL DETAILS" show={!!poi.trail}>
-              <div className="collapsible-section__info">
-                <InfoRow label="Length" value={poi.trail?.length_text} />
-                <InfoRow label="Difficulty" value={poi.trail?.difficulty} />
-                <InfoRow label="Route Type" value={poi.trail?.route_type} />
-                {poi.trail?.difficulty_description && (
-                  <InfoRow label="Difficulty Info" value={poi.trail.difficulty_description} />
-                )}
-              </div>
-            </AccordionSection>
-
-            <AccordionSection title="ABOUT + HOURS" show={!!(poi.description_long || poi.hours)}>
-              <div className="collapsible-section__info">
-                {poi.description_long && (
-                  <InfoRow label="Description" value={poi.description_long} />
-                )}
-                <HoursDisplay
-                  hours={poi.hours}
-                  holidayHours={poi.holiday_hours}
-                  appointmentLinks={poi.appointment_links}
-                  appointmentBookingUrl={poi.appointment_booking_url}
-                  appointmentRequired={poi.hours_but_appointment_required}
-                  hoursNotes={poi.hours_notes}
-                />
-              </div>
-            </AccordionSection>
-
-            <AccordionSection title="ADDRESS + PARKING" show={!!(poi.address_street || poi.parking_types)}>
-              <div className="collapsible-section__info">
-                <InfoRow label="Street" value={poi.address_street} />
-                <InfoRow label="City" value={poi.address_city} />
-                <InfoRow label="State" value={poi.address_state} />
-                <InfoRow label="Zip" value={poi.address_zip} />
-                {poi.parking_types && Array.isArray(poi.parking_types) && (
-                  <InfoRow label="Parking" value={poi.parking_types.join(", ")} />
-                )}
-                {poi.parking_notes && <InfoRow label="Parking Notes" value={poi.parking_notes} />}
-              </div>
-            </AccordionSection>
-
-            <AccordionSection title="WHAT TO EXPECT" show={!!(poi.wheelchair_accessible || poi.ideal_for)}>
-              <div className="collapsible-section__info">
-                {poi.wheelchair_accessible && Array.isArray(poi.wheelchair_accessible) && (
-                  <InfoRow label="Accessibility" value={poi.wheelchair_accessible.join(", ")} />
-                )}
-                {poi.ideal_for && Array.isArray(poi.ideal_for) && (
-                  <InfoRow label="Ideal For" value={poi.ideal_for.join(", ")} />
-                )}
-              </div>
-            </AccordionSection>
-
-            <AccordionSection title="PUBLIC RESTROOMS" show={!!poi.public_toilets}>
-              <div className="collapsible-section__info">
-                {poi.public_toilets && Array.isArray(poi.public_toilets) && (
-                  <InfoRow label="Available" value={poi.public_toilets.join(", ")} />
-                )}
-                {poi.toilet_description && (
-                  <InfoRow label="Details" value={poi.toilet_description} />
-                )}
-              </div>
-            </AccordionSection>
-
-            <AccordionSection title="ACCESSIBILITY" show={!!(poi.wheelchair_accessible || poi.wheelchair_details)}>
-              <div className="collapsible-section__info">
-                {poi.wheelchair_accessible && Array.isArray(poi.wheelchair_accessible) && (
-                  <InfoRow label="Wheelchair" value={poi.wheelchair_accessible.join(", ")} />
-                )}
-                {poi.wheelchair_details && (
-                  <InfoRow label="Details" value={poi.wheelchair_details} />
-                )}
-              </div>
-            </AccordionSection>
-
-            <AccordionSection title="PET POLICY" show={!!(poi.pet_options || poi.pet_policy)}>
-              <div className="collapsible-section__info">
-                {poi.pet_options && Array.isArray(poi.pet_options) && (
-                  <InfoRow label="Pets Allowed" value={poi.pet_options.join(", ")} />
-                )}
-                {poi.pet_policy && (
-                  <InfoRow label="Policy" value={poi.pet_policy} />
-                )}
-              </div>
-            </AccordionSection>
-
-            <AccordionSection title="TIPS + TRICKS" show={!!(poi.community_impact || poi.history_paragraph)}>
-              <div className="collapsible-section__info">
-                {poi.history_paragraph && (
-                  <InfoRow label="History" value={poi.history_paragraph} />
-                )}
-                {poi.community_impact && (
-                  <InfoRow label="Community Impact" value={poi.community_impact} />
-                )}
-              </div>
-            </AccordionSection>
-
-            <AccordionSection title="CONTACT" show={!!(poi.phone_number || poi.email || poi.website_url)}>
-              <div className="collapsible-section__info">
-                <InfoRow label="Phone" value={poi.phone_number} />
-                <InfoRow label="Email" value={poi.email} />
-                <InfoRow label="Website" value={poi.website_url} />
-                {poi.instagram_username && (
-                  <InfoRow label="Instagram" value={`@${poi.instagram_username}`} />
-                )}
-                {poi.facebook_username && (
-                  <InfoRow label="Facebook" value={poi.facebook_username} />
-                )}
-              </div>
-            </AccordionSection>
-          </Accordion>
-        </div>
-
-        {/* Bottom Border */}
-        <div className="poi-detail__bottom-border"></div>
-      </div>
-
-      {/* Nearby Section */}
-      <NearbySection currentPOI={poi} />
-    </div>
+        </>
+      )}
+    </POIDetailLayout>
   );
 }
-
-export default TrailDetail;

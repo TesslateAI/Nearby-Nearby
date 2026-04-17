@@ -1,0 +1,64 @@
+/* VerifiedBadge — selectors ported verbatim from nn-templates/inc/stylez.css */
+
+.poi_verified_box {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  align-items: center;
+}
+
+.poi_verified_badge {
+  background-color: transparent !important;
+  color: var(--nn-dark) !important;
+  padding: 15px 20px 15px 0 !important;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.poi_verified_badge .poi_button_icon {
+  width: 22px;
+  height: 22px;
+  fill: var(--nn-green);
+}
+
+.poi_verified_badge_title {
+  font-weight: 600;
+  text-transform: none !important;
+  letter-spacing: 0;
+  font-size: 1.2em;
+}
+
+.poi_verified_badge_about,
+.poi_verified_badge_about:hover {
+  border: 0;
+  background-color: transparent;
+  color: var(--nn-teal1) !important;
+  padding: 15px 20px !important;
+  text-decoration: underline;
+  text-transform: none;
+  letter-spacing: 0;
+  cursor: pointer;
+}
+
+#poi_verified_tooltip {
+  font-size: 0.9em;
+  line-height: 1.2;
+  color: var(--nn-dark);
+  background-color: #ffd;
+  border: 1px solid var(--nn-gold);
+  padding: 25px;
+  display: none;
+  overflow: hidden;
+  max-height: 0;
+  transition: max-height 1s ease-in-out, padding 1s ease-in-out;
+  flex-basis: 100%;
+  margin-top: 8px;
+  border-radius: 6px;
+}
+
+#poi_verified_tooltip.is_open {
+  display: block;
+  max-height: 500px;
+  padding: 25px;
+}

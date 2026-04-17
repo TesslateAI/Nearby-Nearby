@@ -59,14 +59,7 @@ article, aside, details, figcaption, figure, footer, header, main, nav, section 
   display: block;
 }
 
-/* Remove default button styling residuals */
-button {
-  font-family: inherit;
-  cursor: pointer;
-}
-
-/* Ensure inputs inherit fonts */
-input, textarea, select {
-  font-family: inherit;
-  font-size: inherit;
+/* Template base reset: inputs/buttons inherit font (size + family). */
+input, button, textarea, select {
+  font: inherit;
 }

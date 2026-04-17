@@ -17,6 +17,15 @@ ALLOWED_CONTENT_TYPES = {"image/jpeg", "image/png", "image/gif", "image/webp"}
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
 MAX_FILES = 10
 
+# Map MIME type → safe extension. We never trust `f.filename` for the storage
+# key (path traversal + overwrite of sibling submissions).
+_MIME_EXT = {
+    "image/jpeg": "jpg",
+    "image/png": "png",
+    "image/gif": "gif",
+    "image/webp": "webp",
+}
+
 
 @router.post("/feedback", response_model=FeedbackResponse, status_code=201)
 @limiter.limit("2/minute")
@@ -59,7 +68,8 @@ async def submit_feedback(
             )
 
         if s3_client:
-            key = f"feedback/{submission_id}/{f.filename}"
+            ext = _MIME_EXT.get(f.content_type, "bin")
+            key = f"feedback/{submission_id}/{uuid.uuid4()}.{ext}"
             url = await s3_client.upload_file(data, key, f.content_type)
             file_urls.append(url)
 

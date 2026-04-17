@@ -3,11 +3,12 @@ import { Checkbox, Stack, Accordion, Text, Group, Badge, SimpleGrid } from '@man
 import { IDEAL_FOR_OPTIONS } from '../utils/constants';
 
 export function IdealForSelector({ value = [], onChange, keyIdealFor = [], maxSelections, showAll = true }) {
-  const [selectedValues, setSelectedValues] = useState(value);
+  const toArray = (v) => (Array.isArray(v) ? v : (v == null ? [] : [v]));
+  const [selectedValues, setSelectedValues] = useState(toArray(value));
 
   // Sync internal state with external value prop
   useEffect(() => {
-    setSelectedValues(value);
+    setSelectedValues(toArray(value));
   }, [value]);
 
   // Group options by their group property

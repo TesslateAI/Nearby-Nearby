@@ -1,1162 +1,291 @@
-import { useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useMemo } from 'react';
+import { useLocation } from 'react-router-dom';
+
 import {
-  MapPin, Phone, Globe, Navigation, Copy, Check, Share2,
-  Users, Mail, ExternalLink,
-  Wifi, Car, TreePine, Bath, Bike, Droplets, Dog, UtensilsCrossed, CirclePlus
-} from 'lucide-react';
-import NearbySection from '../nearby-feature/NearbySection';
-import PhotoLightbox from './PhotoLightbox';
+  AccSection, ContentGroup, ChipList, QuickInfoRow,
+  POIDetailLayout, QuickInfoPhotosBox, AmenitiesBox,
+  hasVal, asArray, getImages,
+} from './shared';
 import HoursDisplay from '../common/HoursDisplay';
-import Accordion, { AccordionSection } from '../Accordion';
+import ServiceAnimalAlert from './ServiceAnimalAlert';
+import { SvgDirections, SvgLatLong } from './PoiHeader';
 import { LocalBusinessJsonLd } from '../seo/index';
+
 import { isCurrentlyOpen } from '../../utils/hoursUtils';
-import SuggestEditOverlay from './SuggestEditOverlay';
-import './BusinessDetail.css';
+import { getDisplayableLocation } from '../../utils/getDisplayableLocation';
+import { isPaidTier } from '../../utils/poiTier';
+import { copyToClipboard, getCoordinates, openDirections } from './shared/poiDetailUtils';
+import { sanitizeHtml } from '../../utils/sanitize';
 
-/**
- * BusinessDetail - Specialized detail view for business POIs
- * Receives poi data as a prop from POIDetail (smart router)
- */
-function BusinessDetail({ poi }) {
-  const navigate = useNavigate();
-  const [copiedCoords, setCopiedCoords] = useState(false);
-  const [copiedAddress, setCopiedAddress] = useState(false);
-  const [copiedLink, setCopiedLink] = useState(false);
-  const [showShareMenu, setShowShareMenu] = useState(false);
-  const [lightboxOpen, setLightboxOpen] = useState(false);
-  const [lightboxIndex, setLightboxIndex] = useState(0);
-  const [showWhatsThis, setShowWhatsThis] = useState(false);
-  const suggestEditRef = useRef(null);
+const ALCOHOL_LABELS = {
+  full_bar: 'Full Bar', beer_wine: 'Beer + Wine Only', byob: 'BYOB',
+  no_alcohol: 'No Alcohol', seasonal: 'Seasonal/Event Only', nearby: 'Adjacent/Nearby Available',
+};
 
-  const getCoordinates = () => {
-    if (poi?.front_door_latitude && poi?.front_door_longitude) {
-      return { lat: poi.front_door_latitude, lng: poi.front_door_longitude };
-    }
-    if (poi?.location?.coordinates) {
-      return { lat: poi.location.coordinates[1], lng: poi.location.coordinates[0] };
-    }
-    return null;
-  };
+const IDEAL_FOR_GROUPS = [
+  { key: 'atmosphere', label: 'Atmosphere' },
+  { key: 'age_group', label: 'For Ages' },
+  { key: 'social_settings', label: 'Social Settings' },
+  { key: 'local_special', label: 'Local Special' },
+];
 
-  const handleDirections = () => {
-    const coords = getCoordinates();
-    if (coords) {
-      window.open(`https://www.google.com/maps/dir/?api=1&destination=${coords.lat},${coords.lng}`, '_blank');
-    } else if (poi?.address_street) {
-      const address = encodeURIComponent(`${poi.address_street}, ${poi.address_city}, ${poi.address_state} ${poi.address_zip}`);
-      window.open(`https://www.google.com/maps/dir/?api=1&destination=${address}`, '_blank');
-    }
-  };
+export default function BusinessDetail({ poi }) {
+  const location = useLocation();
+  const tierParam = new URLSearchParams(location.search).get('tier');
+  const paid = useMemo(() => {
+    if (tierParam === 'free') return false;
+    if (tierParam === 'paid') return true;
+    return isPaidTier(poi);
+  }, [tierParam, poi]);
 
-  const fallbackCopyToClipboard = (text) => {
-    const textArea = document.createElement('textarea');
-    textArea.value = text;
-    textArea.style.position = 'fixed';
-    textArea.style.left = '-999999px';
-    textArea.style.top = '-999999px';
-    document.body.appendChild(textArea);
-    textArea.focus();
-    textArea.select();
-    try {
-      document.execCommand('copy');
-      return true;
-    } catch (err) {
-      console.error('Fallback: Could not copy text:', err);
-      return false;
-    } finally {
-      document.body.removeChild(textArea);
-    }
-  };
+  const displayLoc = getDisplayableLocation(poi);
+  const hideExact = displayLoc.hideExact;
+  const coords = getCoordinates(poi, hideExact);
+  const openStatus = poi?.hours ? isCurrentlyOpen(poi.hours) : null;
+  const images = useMemo(() => getImages(poi), [poi]);
 
-  const copyToClipboard = async (text) => {
-    if (navigator.clipboard && window.isSecureContext) {
-      try {
-        await navigator.clipboard.writeText(text);
-        return true;
-      } catch (err) {
-        console.error('Clipboard API failed:', err);
-        return fallbackCopyToClipboard(text);
-      }
-    } else {
-      return fallbackCopyToClipboard(text);
-    }
-  };
+  const primaryCategory = poi?.categories?.[0]?.name || poi?.business?.primary_category || '';
 
-  const handleCopyCoords = async () => {
-    const coords = getCoordinates();
-    if (coords) {
-      const text = `${coords.lat}, ${coords.lng}`;
-      const success = await copyToClipboard(text);
-      if (success) {
-        setCopiedCoords(true);
-        setTimeout(() => setCopiedCoords(false), 2000);
-      } else {
-        alert(`Lat/Long: ${text}`);
-      }
-    }
-  };
+  const petsLabel = Array.isArray(poi?.pet_options) && poi.pet_options.length > 0 ? poi.pet_options.join(', ') : null;
+  const goodForLabel = (() => {
+    const ideal = poi?.ideal_for;
+    if (!ideal || typeof ideal !== 'object') return null;
+    const parts = [];
+    IDEAL_FOR_GROUPS.forEach(({ key }) => { const arr = ideal[key]; if (Array.isArray(arr) && arr.length) parts.push(...arr); });
+    return parts.length ? parts.join(', ') : null;
+  })();
+  const costLabel = poi?.business?.price_range || poi?.price_range_per_person || null;
+  const parkingLabel = Array.isArray(poi?.parking_types) && poi.parking_types.length > 0 ? poi.parking_types.join(', ') : null;
 
-  const handleCopyAddress = async () => {
-    const address = [poi.address_street, poi.address_city, poi.address_state, poi.address_zip]
-      .filter(Boolean).join(', ');
-    if (address) {
-      const success = await copyToClipboard(address);
-      if (success) {
-        setCopiedAddress(true);
-        setTimeout(() => setCopiedAddress(false), 2000);
-      }
-    }
-  };
+  const amenitiesFlat = useMemo(() => {
+    if (!paid) return [];
+    const a = poi?.amenities;
+    if (!a || typeof a !== 'object') return [];
+    const out = [];
+    Object.values(a).forEach((v) => {
+      if (Array.isArray(v)) v.forEach((x) => hasVal(x) && out.push(typeof x === 'object' ? (x.name || x.label || '') : String(x)));
+    });
+    return Array.from(new Set(out.filter(Boolean)));
+  }, [poi, paid]);
 
-  const handleShare = async (platform) => {
-    const url = window.location.href;
-    const title = poi?.name || 'Check out this place';
-    const description = poi?.teaser_paragraph || poi?.description_short || '';
+  const webHref = poi?.website_url ? (poi.website_url.startsWith('http') ? poi.website_url : `https://${poi.website_url}`) : null;
+  const phoneHref = poi?.phone_number ? `tel:${poi.phone_number}` : null;
+  const addressLine = hasVal(poi?.address_street)
+    ? [poi.address_street, poi.address_city, poi.address_state, poi.address_zip].filter(Boolean).join(', ')
+    : null;
+  const alcoholLabel = poi?.alcohol_available ? (ALCOHOL_LABELS[poi.alcohol_available] || poi.alcohol_available) : null;
 
-    switch (platform) {
-      case 'native':
-        if (navigator.share) {
-          try {
-            await navigator.share({ title, text: description, url });
-          } catch (err) {
-            if (err.name !== 'AbortError') console.error('Share failed:', err);
-          }
+  const socialLinks = (() => {
+    const out = [];
+    const s = poi?.social_media;
+    if (s && typeof s === 'object') {
+      Object.entries(s).forEach(([key, val]) => {
+        if (hasVal(val)) {
+          const url = typeof val === 'string' ? val : (val.url || val.link);
+          if (url) out.push({ label: key.charAt(0).toUpperCase() + key.slice(1), url });
         }
-        break;
-      case 'facebook':
-        window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}&quote=${encodeURIComponent(title)}`, '_blank', 'width=600,height=400');
-        break;
-      case 'twitter':
-        window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(title)}&url=${encodeURIComponent(url)}`, '_blank', 'width=600,height=400');
-        break;
-      case 'email':
-        window.location.href = `mailto:?subject=${encodeURIComponent(title)}&body=${encodeURIComponent(description + '\n\n' + url)}`;
-        break;
-      case 'copy':
-        try {
-          const success = await copyToClipboard(url);
-          if (success) {
-            setCopiedLink(true);
-            setTimeout(() => setCopiedLink(false), 2000);
-          }
-        } catch (err) {
-          console.error('Failed to copy:', err);
-        }
-        break;
+      });
     }
-    setShowShareMenu(false);
-  };
+    return out;
+  })();
 
-  const handleCall = () => {
-    if (poi?.phone_number) {
-      window.location.href = `tel:${poi.phone_number}`;
-    }
-  };
-
-  const handleWebsite = () => {
-    if (poi?.website_url) {
-      const url = poi.website_url.startsWith('http') ? poi.website_url : `https://${poi.website_url}`;
-      window.open(url, '_blank');
-    }
-  };
-
-  const scrollToNearby = () => {
-    const nearbySection = document.querySelector('.nearby-section');
-    if (nearbySection) {
-      nearbySection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  };
-
-  // toggleSection removed — using Accordion component instead
-
-  const hasContent = (value) => {
-    if (value === null || value === undefined || value === '') return false;
-    if (Array.isArray(value) && value.length === 0) return false;
-    if (typeof value === 'object' && Object.keys(value).length === 0) return false;
-    return true;
-  };
-
-  // Open lightbox at specific index
-  const openLightbox = (index = 0) => {
-    setLightboxIndex(index);
-    setLightboxOpen(true);
-  };
-
-  // AccordionSection imported from Accordion component
-
-  // Two-column info row for accordion content
-  const InfoItem = ({ label, value, isHTML = false }) => {
-    if (!hasContent(value)) return null;
-    const displayValue = Array.isArray(value) ? value.join(", ") : value;
-
+  const menuLinks = poi?.menu_links || (poi?.menu_link ? [{ title: 'Menu', url: poi.menu_link }] : null);
+  const buildLinkGroup = (title, items) => {
+    const list = asArray(items).filter((x) => x && (x.url || x.link));
+    if (list.length === 0) return null;
     return (
-      <div className="bd-info-item">
-        <span className="bd-info-item__label">{label}</span>
-        {isHTML ? (
-          <span className="bd-info-item__value" dangerouslySetInnerHTML={{ __html: displayValue }} />
-        ) : (
-          <span className="bd-info-item__value">{displayValue}</span>
-        )}
-      </div>
+      <ContentGroup key={title} title={title}>
+        <div className="acc_list_group_1">
+          {list.map((item, i) => <a key={i} href={item.url || item.link} target="_blank" rel="noreferrer">{item.title || item.label || item.url}</a>)}
+        </div>
+      </ContentGroup>
     );
   };
 
-  // Get hours info
-  const openStatus = poi.hours ? isCurrentlyOpen(poi.hours) : null;
+  /* ── Accordion sections ──────────────────────────────────────── */
+  const aboutCol1 = [
+    hasVal(poi?.description_long) && <ContentGroup key="desc"><div className="acc_content_text" dangerouslySetInnerHTML={{ __html: sanitizeHtml(poi.description_long) }} /></ContentGroup>,
+    paid && Array.isArray(poi?.categories) && poi.categories.length > 0 && <ContentGroup key="cats" title="Categories"><ChipList items={poi.categories.map((c) => c.name || c.label || '')} /></ContentGroup>,
+    paid && goodForLabel && (
+      <ContentGroup key="ideal" title="Ideal For">
+        <ChipList items={(() => { const parts = []; IDEAL_FOR_GROUPS.forEach(({ key }) => { const arr = poi?.ideal_for?.[key]; if (Array.isArray(arr)) parts.push(...arr); }); return parts; })()} />
+      </ContentGroup>
+    ),
+  ].filter(Boolean);
 
-  // Format pet options for display
-  const formatPetOptions = () => {
-    if (!poi.pet_options || poi.pet_options.length === 0) return null;
-    return poi.pet_options.join(', ');
-  };
+  const aboutCol2 = [
+    hasVal(poi?.hours) && (
+      <ContentGroup key="hours" title="Hours">
+        <div className="acc_content_text">
+          <HoursDisplay hours={poi.hours} holidayHours={poi.holiday_hours} appointmentBookingUrl={poi.appointment_booking_url} appointmentRequired={poi.hours_but_appointment_required} hoursNotes={poi.hours_notes} />
+        </div>
+      </ContentGroup>
+    ),
+  ].filter(Boolean);
 
-  // Get all images for lightbox and grid
-  const getImages = () => {
-    if (poi.images && poi.images.length > 0) {
-      // Filter to only original/parent images (not size variants)
-      // Check for various ways the API might indicate this
-      return poi.images
-        .filter(img => {
-          // Skip if this is a child/variant image
-          if (img.parent_image_id) return false;
-          // Include if it's explicitly original OR if no variant info
-          if (img.image_size_variant === 'original') return true;
-          if (!img.image_size_variant) return true;
-          return false;
-        })
-        .map(img => {
-          // Get thumbnail from size_variants or fall back to original
-          const thumbnailVariant = img.size_variants?.find(v => v.image_size_variant === 'thumbnail');
-          const mediumVariant = img.size_variants?.find(v => v.image_size_variant === 'medium');
-
-          // Try multiple possible URL fields
-          const mainUrl = img.storage_url || img.url || img.image_url || img.src;
-          const thumbUrl = thumbnailVariant?.storage_url || mediumVariant?.storage_url ||
-                          img.thumbnail_url || img.medium_url || mainUrl;
-
-          return {
-            id: img.id,
-            url: mainUrl,
-            thumbnail_url: thumbUrl,
-            alt_text: img.alt_text || `${poi.name} photo`,
-            caption: img.caption
-          };
-        })
-        .filter(img => img.url); // Only include images with valid URLs
-    }
-    // Fallback to legacy fields
-    const photos = [];
-    if (poi.featured_image) photos.push({ url: poi.featured_image, thumbnail_url: poi.featured_image, alt_text: poi.name });
-    if (poi.gallery_photos) {
-      photos.push(...poi.gallery_photos.filter(p => p).map(p => ({ url: p, thumbnail_url: p, alt_text: poi.name })));
-    }
-    return photos;
-  };
-
-  const images = getImages();
-  const gridImages = images.slice(0, 8); // Show up to 8 in grid
-
-  // Get photos by type from the images array (for typed sections like parking, restroom, etc.)
-  const getPhotosByType = (type) => {
-    if (!poi.images) return [];
-    return poi.images
-      .filter(img => {
-        // Match by image_type field
-        const imgType = img.type || img.image_type;
-        if (typeof imgType === 'string') {
-          return imgType.toLowerCase() === type.toLowerCase();
-        }
-        // Handle enum values
-        if (imgType?.value) {
-          return imgType.value.toLowerCase() === type.toLowerCase();
-        }
-        return false;
-      })
-      .filter(img => !img.parent_image_id) // Only original images, not variants
-      .map(img => ({
-        id: img.id,
-        url: img.storage_url || img.url,
-        thumbnail: img.thumbnail_url || img.storage_url || img.url,
-        alt: img.alt_text || `${type} photo`,
-        caption: img.caption
-      }))
-      .filter(img => img.url); // Only include images with valid URLs
-  };
-
-  // Get primary category
-  const primaryCategory = poi.categories?.[0]?.name || '';
-
-  return (
-    <div className="bd-page">
-      <LocalBusinessJsonLd poi={poi} />
-
-      <div className="bd-container">
-        <button type="button" onClick={() => navigate('/')} className="bd-back-link">
-          ← Back to Search
-        </button>
-
-        {/* Header Section - Two Column Layout */}
-        <header className="bd-header">
-          <div className="bd-header__left">
-            {/* Status Row */}
-            <div className="bd-status-row">
-              <span className="bd-status-label">STATUS:</span>
-              <span className="bd-status-value">
-                {poi.status || 'Fully Open'}
-                {poi.status_message && ` - ${poi.status_message}`}
-              </span>
-            </div>
-
-            {/* Title */}
-            <h1 className="bd-title">{poi.name}</h1>
-
-            {/* Category */}
-            {primaryCategory && (
-              <p className="bd-category-line">{primaryCategory}</p>
-            )}
-
-            {/* Location */}
-            <p className="bd-location-line">
-              {[poi.address_city, poi.address_county ? `${poi.address_county} County` : null, poi.address_state].filter(Boolean).join(', ')}
-            </p>
-
-            {/* Hours */}
-            {poi.hours && (() => {
-              const isOpeningSoon = !openStatus?.isOpen && openStatus?.status?.startsWith('Opens at');
-              return (
-                <div className="bd-hours-inline">
-                  <span className={`bd-hours-dot ${openStatus?.isOpen ? 'bd-hours-dot--open' : isOpeningSoon ? 'bd-hours-dot--soon' : 'bd-hours-dot--closed'}`}></span>
-                  <span className={`bd-hours-status ${openStatus?.isOpen ? '' : isOpeningSoon ? 'bd-hours-status--soon' : 'bd-hours-status--closed'}`}>
-                    {openStatus?.isOpen ? 'Open Now' : isOpeningSoon ? 'Opening Soon' : 'Closed'}
-                  </span>
-                  <span className="bd-hours-time">- {openStatus?.status}</span>
-                </div>
-              );
-            })()}
-
-            {/* Action Buttons — inside header per template poi_button_group_1 */}
-            <div className="bd-actions">
-              <button type="button" className="bd-action-btn" onClick={handleDirections}>
-                <Navigation size={16} /> Directions
-              </button>
-              {getCoordinates() && (
-                <button type="button" className="bd-action-btn" onClick={handleCopyCoords}>
-                  {copiedCoords ? <Check size={16} /> : <Copy size={16} />}
-                  {copiedCoords ? 'Copied!' : 'Lat + Long'}
-                </button>
-              )}
-              {poi.phone_number && (
-                <button type="button" className="bd-action-btn" onClick={handleCall}>
-                  <Phone size={16} /> Call
-                </button>
-              )}
-              {poi.website_url && (
-                <button type="button" className="bd-action-btn" onClick={handleWebsite}>
-                  <Globe size={16} /> Website
-                </button>
-              )}
-              <button type="button" className="bd-action-btn" onClick={scrollToNearby}>
-                <MapPin size={16} /> View Nearby
-              </button>
-              <div className="bd-share-wrapper">
-                <button
-                  type="button"
-                  className="bd-action-btn"
-                  onClick={() => navigator.share ? handleShare('native') : setShowShareMenu(!showShareMenu)}
-                >
-                  <Share2 size={16} /> Share
-                </button>
-                {showShareMenu && (
-                  <div className="bd-share-menu">
-                    <button type="button" onClick={() => handleShare('facebook')}>
-                      <ExternalLink size={14} /> Facebook
-                    </button>
-                    <button type="button" onClick={() => handleShare('twitter')}>
-                      <ExternalLink size={14} /> Twitter/X
-                    </button>
-                    <button type="button" onClick={() => handleShare('email')}>
-                      <ExternalLink size={14} /> Email
-                    </button>
-                    <button type="button" onClick={() => handleShare('copy')}>
-                      {copiedLink ? <Check size={14} /> : <Copy size={14} />}
-                      {copiedLink ? 'Copied!' : 'Copy Link'}
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div className="bd-header__right">
-            {/* Verified Badge — nn-templates .poi_verified_box */}
-            <div className="poi_verified_box">
-              <div className="poi_verified_badge button">
-                <svg className="poi_button_icon" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg" style={{fillRule:'evenodd',clipRule:'evenodd',strokeLinejoin:'round',strokeMiterlimit:2}}>
-                  <g transform="matrix(0.0176433,0,0,0.0176433,-4.586,-4.58602)">
-                    <path d="M600,259.93C634.012,259.93 643.281,307.055 676.133,315.856C708.984,324.661 740.582,288.489 770.039,305.497C799.492,322.501 783.953,367.954 808,392.005C832.051,416.052 877.504,400.513 894.508,429.966C911.516,459.419 875.344,491.02 884.149,523.872C892.95,556.72 940.075,565.993 940.075,600.001C940.075,634.013 892.95,643.282 884.149,676.134C875.344,708.985 911.516,740.583 894.508,770.04C877.504,799.493 832.051,783.954 808,808.001C783.953,832.052 799.492,877.505 770.039,894.509C740.582,911.517 708.985,875.345 676.133,884.15C643.281,892.951 634.012,940.076 600,940.076C565.992,940.076 556.719,892.951 523.871,884.15C491.02,875.345 459.418,911.517 429.965,894.509C400.512,877.505 416.051,832.052 392.004,808.001C367.953,783.954 322.5,799.493 305.496,770.04C288.488,740.583 324.66,708.986 315.855,676.134C307.054,643.282 259.929,634.013 259.929,600.001C259.929,565.993 307.054,556.72 315.855,523.872C324.66,491.021 288.488,459.419 305.496,429.966C322.5,400.513 367.953,416.052 392.004,392.005C416.051,367.954 400.512,322.501 429.965,305.497C459.418,288.489 491.019,324.661 523.871,315.856C556.719,307.055 565.992,259.93 600,259.93ZM600,373.293C539.87,373.293 482.206,397.178 439.69,439.698C397.171,482.218 373.288,539.883 373.288,600.008C373.288,660.138 397.17,717.802 439.69,760.318C482.21,802.833 539.875,826.72 600,826.72C639.798,826.72 678.896,816.247 713.36,796.349C747.824,776.451 776.446,747.83 796.344,713.365C816.242,678.9 826.715,639.806 826.715,600.005C826.715,560.204 816.242,521.11 796.344,486.645C776.446,452.181 747.825,423.559 713.36,403.661C678.895,383.763 639.797,373.293 600,373.293ZM600,392.18C704.34,392.18 807.82,495.66 807.82,600C807.82,704.34 704.34,807.82 600,807.82C495.66,807.82 392.18,704.34 392.18,600C392.18,495.66 495.66,392.18 600,392.18ZM695.168,505.45C688.941,505.275 683.024,508.181 679.356,513.216L579.066,646.926L518.906,586.762C501.101,568.227 473.656,595.668 492.191,613.477L567.761,689.047C575.89,697.172 589.336,696.219 596.234,687.024L709.594,535.884C719.031,523.661 710.609,505.888 695.168,505.45Z"/>
-                  </g>
-                </svg>
-                <span className="poi_verified_badge_title">Verified</span>
-              </div>
-              <button className="btn_reset button poi_verified_badge_about" onClick={() => setShowWhatsThis(v => !v)}>What's This</button>
-              <div className={`poi_verified_tooltip${showWhatsThis ? ' is_open' : ''}`}>
-                This place has been checked and confirmed as accurate by a Nearby Nearby Team member.
-              </div>
-            </div>
-
-            {/* Sponsor — nn-templates .poi_sponsor_box */}
-            <div className="poi_sponsor_box">
-              <svg className="poi_sponsor_icon" viewBox="0 0 23 35" xmlns="http://www.w3.org/2000/svg" style={{fillRule:'evenodd',clipRule:'evenodd',strokeLinejoin:'round',strokeMiterlimit:2}}>
-                <g transform="matrix(1.02578,0,0,1.02578,-39.9559,-28.7337)">
-                  <path d="M61,36.001C61.134,36.412 60.986,36.865 60.637,37.119L55.015,41.205L57.162,47.815C57.296,48.226 57.149,48.679 56.799,48.933C56.449,49.186 55.973,49.186 55.623,48.933L50,44.848L44.377,48.933C44.206,49.057 44,49.124 43.789,49.124C43.24,49.124 42.789,48.673 42.789,48.124C42.789,48.019 42.806,47.915 42.838,47.815L44.985,41.205L39.364,37.119C39.105,36.931 38.952,36.63 38.952,36.31C38.952,35.761 39.403,35.31 39.952,35.31L46.902,35.31L49.048,28.701C49.183,28.291 49.568,28.012 50,28.012C50.432,28.012 50.817,28.291 50.952,28.701L53.099,35.31L60.049,35.31C60.481,35.31 60.866,35.59 61,36.001ZM53.251,40.014L56.972,37.31L52.372,37.31C51.94,37.31 51.555,37.03 51.421,36.619L50,32.246L48.58,36.619C48.445,37.032 48.061,37.31 47.628,37.31L43.028,37.31L46.749,40.014C47.098,40.268 47.246,40.721 47.112,41.132L45.69,45.506L49.412,42.802C49.762,42.549 50.238,42.549 50.588,42.802L54.309,45.506L52.888,41.132C52.754,40.721 52.901,40.268 53.251,40.014ZM50.595,57.416L50.546,57.608C50.427,57.85 50.302,57.925 50.229,57.955C50.156,57.985 50.079,58.001 50.001,58.001C49.673,57.999 49.404,57.731 49.402,57.403L49.402,48.598C49.402,48.27 49.672,48 50,48C50.328,48 50.598,48.27 50.598,48.598L50.595,57.416ZM55.418,61.415L55.369,61.608C55.25,61.85 55.125,61.925 55.052,61.955C54.979,61.986 54.902,62.001 54.824,62.001C54.496,62 54.227,61.731 54.225,61.403L54.225,50.598C54.225,50.27 54.495,50 54.823,50C55.151,50 55.421,50.27 55.421,50.598L55.418,61.415ZM45.772,61.415L45.723,61.608C45.604,61.85 45.479,61.925 45.406,61.955C45.333,61.986 45.256,62.001 45.178,62.001C44.85,62 44.581,61.731 44.579,61.403L44.579,50.598C44.579,50.27 44.849,50 45.177,50C45.505,50 45.775,50.27 45.775,50.598L45.772,61.415Z" />
-                </g>
-              </svg>
-              <span className="poi_sponsor_text">Supporting Local Discovery in Chatham County</span>
-            </div>
-
-            {/* Last Updated — nn-templates .poi_last_updated */}
-            {poi.updated_at && (
-              <div className="poi_last_updated">
-                Last Updated: {new Date(poi.updated_at).toLocaleDateString('en-US', { month: 'long', day: '2-digit', year: 'numeric' })}
-              </div>
-            )}
-
-            {/* Suggest Edit Button — nn-templates .btn_outline_teal.btn_poi_button_1 */}
-            <button type="button" className="bd-suggest-update" onClick={() => suggestEditRef.current?.open()}>
-              <svg className="poi_button_icon" width="12" height="12" viewBox="0 0 12 13" xmlns="http://www.w3.org/2000/svg" style={{fillRule:'evenodd',clipRule:'evenodd',strokeLinejoin:'round',strokeMiterlimit:2}}>
-                <g transform="matrix(0.0102972,0,0,0.0102972,-0.17807,-0.178307)">
-                  <path d="M1090.3,632.008C1090.3,606.495 1110.98,585.776 1136.43,585.776C1162,585.776 1182.66,606.501 1182.66,632.005L1182.66,1031.71C1182.66,1114.9 1114.82,1182.7 1031.67,1182.7L168.28,1182.7C85.09,1182.7 17.293,1114.91 17.293,1031.71L17.293,168.325C17.293,85.135 85.081,17.338 168.28,17.338L570.94,17.338C596.512,17.338 617.169,38.012 617.169,63.521C617.169,89.089 596.444,109.75 570.94,109.75L168.28,109.75C136.059,109.75 109.697,136.112 109.697,168.333L109.697,1031.67C109.697,1063.89 136.059,1090.26 168.28,1090.26L1031.72,1090.3C1063.87,1090.3 1090.3,1063.94 1090.3,1031.72L1090.3,632.008ZM781.123,147.183L866.861,61.445C925.754,2.603 1021.55,2.608 1080.38,61.449L1138.56,119.625C1197.04,178.163 1197.3,274.002 1138.66,332.839L643.14,830.132C609.408,863.962 571.432,885.707 525.222,897.493L302.978,954.213C269.902,962.642 237.214,933.17 247.277,896.522L303.089,676.226C314.825,630.019 336.527,591.705 370.159,558.077L781.123,147.183ZM879.083,179.829L1020.31,321.056L1073.29,267.838C1096.07,245.017 1096.13,207.934 1073.19,184.957L1014.94,126.792C992.161,104.018 954.86,104.01 932.127,126.784L879.083,179.829ZM955.093,386.497L813.8,245.203L435.477,623.527C413.338,645.666 400.283,668.546 392.628,698.819L355.437,845.609L502.48,808.079C532.709,800.38 555.807,787.248 577.772,765.196L955.093,386.497Z" />
-                </g>
-              </svg>
-              <span className="poi_button_title">Suggest an Edit</span>
+  const addrCol1 = !hideExact && (addressLine || coords) ? [(
+    <ContentGroup key="addr" title="Address">
+      <div className="acc_content_text">
+        {addressLine && <div>{addressLine}</div>}
+        <div className="pd-addr__actions" style={{ marginTop: 10 }}>
+          <button type="button" className="btn_reset button btn_outline_teal btn_poi_button_1" onClick={() => openDirections(poi, coords)}>
+            <SvgDirections /> <span className="poi_button_title">Directions</span>
+          </button>
+          {coords && (
+            <button type="button" className="btn_reset button btn_outline_teal btn_poi_button_1" onClick={async () => { await copyToClipboard(`${coords.lat}, ${coords.lng}`); }}>
+              <SvgLatLong /> <span className="poi_button_title">Lat + Long</span>
             </button>
-          </div>
-        </header>
-
-        {/* Two Cards Row: Info Card + Photo Card */}
-        <div className="bd-cards-row">
-          {/* Info Card - full width if no images */}
-          <div className={`bd-info-card ${images.length === 0 ? 'bd-info-card--full' : ''}`}>
-            {/* Teaser/Description - render as HTML since it may contain tags */}
-            {(poi.teaser_paragraph || poi.description_short) && (
-              <div
-                className="bd-info-card__teaser"
-                dangerouslySetInnerHTML={{ __html: poi.teaser_paragraph || poi.description_short }}
-              />
-            )}
-
-            {/* Quick Info Grid */}
-            <div className="bd-quick-info">
-              <InfoItem label="Category" value={primaryCategory} />
-              <InfoItem label="Cost" value={poi.price_range_per_person || poi.business?.price_range} />
-              <InfoItem label="Good For" value={poi.ideal_for} />
-              <InfoItem label="Pets" value={formatPetOptions()} />
-              <InfoItem label="Parking" value={
-                Array.isArray(poi.parking_types) ? poi.parking_types.join(', ')
-                : typeof poi.parking_types === 'string' ? poi.parking_types
-                : null
-              } />
-            </div>
-          </div>
-
-          {/* Photo Card - only show if images exist */}
-          {images.length > 0 && (
-            <div className="bd-photo-card">
-              <div className="bd-photo-grid">
-                {gridImages.map((img, idx) => (
-                  <button
-                    key={img.id || idx}
-                    className="bd-photo-grid__item"
-                    onClick={() => openLightbox(idx)}
-                    type="button"
-                  >
-                    <img
-                      src={img.thumbnail_url}
-                      alt={img.alt_text || `${poi.name} photo`}
-                      loading="lazy"
-                      onError={(e) => { e.target.style.display = 'none'; }}
-                    />
-                  </button>
-                ))}
-              </div>
-              <button
-                type="button"
-                className="bd-see-all-photos"
-                onClick={() => openLightbox(0)}
-              >
-                See All Photos ({images.length})
-              </button>
-            </div>
           )}
         </div>
+      </div>
+    </ContentGroup>
+  )] : [];
 
-        {/* Amenities Section - combine all amenity sources */}
-        {(() => {
-          // Collect amenities from multiple possible sources
-          const allAmenities = [];
+  const addrCol2 = [
+    hasVal(poi?.parking_types) && <ContentGroup key="parking" title="Parking"><ChipList items={poi.parking_types} /></ContentGroup>,
+    (hasVal(poi?.parking_notes) || hasVal(poi?.parking_paid)) && (
+      <ContentGroup key="pnotes">
+        <div className="acc_content_text">
+          {hasVal(poi?.parking_paid) && <p><strong>Expect to pay for parking?</strong> {poi.parking_paid === true ? 'Yes' : String(poi.parking_paid)}</p>}
+          {hasVal(poi?.parking_notes) && <p>{poi.parking_notes}</p>}
+        </div>
+      </ContentGroup>
+    ),
+  ].filter(Boolean);
 
-          // Helper to add amenities from various formats
-          const addAmenities = (source) => {
-            if (!source) return;
-            if (Array.isArray(source)) {
-              allAmenities.push(...source.filter(a => a && typeof a === 'string'));
-            } else if (typeof source === 'string') {
-              // Could be comma-separated or single value
-              allAmenities.push(...source.split(',').map(s => s.trim()).filter(Boolean));
-            } else if (typeof source === 'object') {
-              // Could be object with name/value pairs
-              Object.values(source).forEach(v => {
-                if (typeof v === 'string') allAmenities.push(v);
-              });
+  const pricingCol1 = [
+    hasVal(costLabel) && <ContentGroup key="price" title="Average Price"><div className="acc_content_text">{costLabel}</div></ContentGroup>,
+    hasVal(poi?.description_pricing) && <ContentGroup key="pricing" title="Pricing Details"><div className="acc_content_text" dangerouslySetInnerHTML={{ __html: sanitizeHtml(poi.description_pricing) }} /></ContentGroup>,
+  ].filter(Boolean);
+  const pricingCol2 = [
+    hasVal(poi?.discounts) && (
+      <ContentGroup key="disc" title="Discounts + Offers">
+        <div className="acc_content_text"><ul>{asArray(poi.discounts).map((d, i) => <li key={i}>{typeof d === 'object' ? (d.title || d.label || d.name || '') : d}</li>)}</ul></div>
+      </ContentGroup>
+    ),
+  ].filter(Boolean);
+
+  const menuCol1 = [buildLinkGroup('Menu', menuLinks), buildLinkGroup('Reservations', poi?.reservation_links)].filter(Boolean);
+  const menuCol2 = [buildLinkGroup('Delivery + Takeout', poi?.delivery_links)].filter(Boolean);
+
+  const alcSmokCol1 = [
+    hasVal(alcoholLabel) && <ContentGroup key="alc" title="Alcohol"><div className="acc_content_text">{alcoholLabel}</div></ContentGroup>,
+    hasVal(poi?.alcohol_policy_details) && <ContentGroup key="alcp" title="Alcohol Policy"><div className="acc_content_text">{poi.alcohol_policy_details}</div></ContentGroup>,
+  ].filter(Boolean);
+  const alcSmokCol2 = [
+    hasVal(poi?.smoking_policy) && <ContentGroup key="smoke" title="Smoking Policy"><div className="acc_content_text">{poi.smoking_policy}</div></ContentGroup>,
+  ].filter(Boolean);
+
+  const restroomCol1 = [
+    hasVal(poi?.public_toilets) && <ContentGroup key="pt" title="Restrooms"><ChipList items={poi.public_toilets} /></ContentGroup>,
+    hasVal(poi?.toilet_description) && <ContentGroup key="td" title="Details"><div className="acc_content_text">{poi.toilet_description}</div></ContentGroup>,
+  ].filter(Boolean);
+  const restroomCol2 = [
+    poi?.accessible_restroom === true && hasVal(poi?.accessible_restroom_details) && <ContentGroup key="ard" title="Accessible Restroom Details"><ChipList items={poi.accessible_restroom_details} /></ContentGroup>,
+  ].filter(Boolean);
+
+  const wheelchairCol1 = [
+    hasVal(poi?.wheelchair_accessible) && <ContentGroup key="wa" title="Wheelchair Accessible"><ChipList items={poi.wheelchair_accessible} /></ContentGroup>,
+    hasVal(poi?.wheelchair_details) && <ContentGroup key="wd" title="Details"><div className="acc_content_text">{poi.wheelchair_details}</div></ContentGroup>,
+  ].filter(Boolean);
+  const wheelchairCol2 = [
+    hasVal(poi?.amenities?.mobility_access) && <ContentGroup key="ma" title="Mobility Access"><ChipList items={poi.amenities.mobility_access} /></ContentGroup>,
+  ].filter(Boolean);
+
+  const petCol1 = [hasVal(poi?.pet_options) && <ContentGroup key="pets" title="Pet Policy"><ChipList items={poi.pet_options} /></ContentGroup>].filter(Boolean);
+  const petCol2 = [hasVal(poi?.pet_options) && <ContentGroup key="sa"><ServiceAnimalAlert /></ContentGroup>].filter(Boolean);
+
+  const playgroundCol1 = [
+    hasVal(poi?.playground_types) && <ContentGroup key="pt" title="Playground Types"><ChipList items={poi.playground_types} /></ContentGroup>,
+    hasVal(poi?.playground_surface) && <ContentGroup key="ps" title="Surface"><div className="acc_content_text">{poi.playground_surface}</div></ContentGroup>,
+  ].filter(Boolean);
+  const playgroundCol2 = [
+    hasVal(poi?.playground_age_groups) && <ContentGroup key="pag" title="Age Groups"><ChipList items={poi.playground_age_groups} /></ContentGroup>,
+    poi?.inclusive_playground === true && hasVal(poi?.playground_ada_checklist) && <ContentGroup key="pad" title="Inclusive Playground Checklist"><ChipList items={poi.playground_ada_checklist} /></ContentGroup>,
+  ].filter(Boolean);
+
+  const contactCol1 = [
+    phoneHref && <ContentGroup key="phone" title="Phone"><div className="acc_list_group_1"><a href={phoneHref}>{poi.phone_number}</a></div></ContentGroup>,
+    webHref && <ContentGroup key="web" title="Website"><div className="acc_list_group_1"><a href={webHref} target="_blank" rel="noreferrer">Visit Website</a></div></ContentGroup>,
+  ].filter(Boolean);
+  const contactCol2 = [
+    hasVal(poi?.email) && <ContentGroup key="email" title="Email"><div className="acc_list_group_1"><a href={`mailto:${poi.email}`}>{poi.email}</a></div></ContentGroup>,
+    socialLinks.length > 0 && (
+      <ContentGroup key="soc" title="Social Media">
+        <div className="acc_list_group_1">{socialLinks.map((s, i) => <a key={i} href={s.url} target="_blank" rel="noreferrer">{s.label}</a>)}</div>
+      </ContentGroup>
+    ),
+  ].filter(Boolean);
+
+  const PAID_SECTIONS = [
+    { key: 'about', title: 'About + Details', open: true, col1: aboutCol1, col2: aboutCol2 },
+    { key: 'addr', title: 'Address + Parking', open: true, col1: addrCol1, col2: addrCol2 },
+    { key: 'price', title: 'Pricing + Offers', open: false, col1: pricingCol1, col2: pricingCol2 },
+    { key: 'menu', title: 'Menu + Ordering', open: false, col1: menuCol1, col2: menuCol2 },
+    { key: 'alc', title: 'Alcohol + Smoking', open: false, col1: alcSmokCol1, col2: alcSmokCol2 },
+    { key: 'rest', title: 'Public Restrooms', open: false, col1: restroomCol1, col2: restroomCol2 },
+    { key: 'wc', title: 'Wheelchair Accessible', open: false, col1: wheelchairCol1, col2: wheelchairCol2 },
+    { key: 'pet', title: 'Pet Policy', open: false, col1: petCol1, col2: petCol2 },
+    { key: 'play', title: 'Playground', open: false, col1: playgroundCol1, col2: playgroundCol2 },
+    { key: 'contact', title: 'Contact', open: false, col1: contactCol1, col2: contactCol2 },
+  ];
+  const FREE_SECTIONS = [
+    { key: 'about', title: 'About + Details', open: false, col1: aboutCol1, col2: aboutCol2 },
+    { key: 'addr', title: 'Address + Parking', open: false, col1: addrCol1, col2: addrCol2 },
+    { key: 'price', title: 'Pricing + Offers', open: false, col1: pricingCol1, col2: pricingCol2 },
+    { key: 'rest', title: 'Public Restrooms', open: false, col1: restroomCol1, col2: restroomCol2 },
+    { key: 'wc', title: 'Wheelchair Accessible', open: false, col1: wheelchairCol1, col2: wheelchairCol2 },
+    { key: 'pet', title: 'Pet Policy', open: false, col1: petCol1, col2: petCol2 },
+    { key: 'contact', title: 'Contact', open: false, col1: contactCol1, col2: contactCol2 },
+  ];
+  const sections = (paid ? PAID_SECTIONS : FREE_SECTIONS).filter((s) => s.col1.length > 0 || s.col2.length > 0);
+
+  const statusOpen = openStatus?.isOpen;
+  const statusVariant = statusOpen ? 'open' : (openStatus?.status && /opens? at/i.test(openStatus.status) ? 'opensoon' : 'closed');
+  const statusLabel = openStatus
+    ? (statusOpen ? `Open Now${openStatus.status ? ` – ${openStatus.status}` : ''}` : (openStatus.status || 'Closed'))
+    : null;
+
+  return (
+    <POIDetailLayout
+      poi={poi}
+      mainCategory={primaryCategory}
+      statusVariant={openStatus ? statusVariant : undefined}
+      statusLabel={statusLabel}
+      seoComponent={<LocalBusinessJsonLd poi={poi} />}
+    >
+      {({ images: imgs, openLightbox }) => (
+        <>
+          <QuickInfoPhotosBox
+            title={hasVal(poi?.description_short) ? poi.description_short : undefined}
+            quickInfoRows={
+              <>
+                <QuickInfoRow title="Category:" value={primaryCategory} />
+                <QuickInfoRow title="Cost:" value={costLabel} />
+                <QuickInfoRow title="Good For:" value={goodForLabel} />
+                <QuickInfoRow title="Pets:" value={petsLabel} />
+                <QuickInfoRow title="Parking:" value={parkingLabel} />
+              </>
             }
-          };
+            images={imgs}
+            onOpenLightbox={openLightbox}
+          />
 
-          addAmenities(poi.amenities);
-          addAmenities(poi.business_amenities);
-          addAmenities(poi.youth_amenities);
+          {paid && amenitiesFlat.length > 0 && (
+            <AmenitiesBox title="Amenities" amenitiesList={amenitiesFlat} />
+          )}
 
-          // Map amenity names to icons
-          const getAmenityIcon = (name) => {
-            const lower = name.toLowerCase();
-            if (lower.includes('restroom') || lower.includes('bathroom') || lower.includes('toilet')) return <Bath size={16} />;
-            if (lower.includes('wifi') || lower.includes('wi-fi')) return <Wifi size={16} />;
-            if (lower.includes('parking')) return <Car size={16} />;
-            if (lower.includes('playground') || lower.includes('play')) return <Users size={16} />;
-            if (lower.includes('bike') || lower.includes('bicycle')) return <Bike size={16} />;
-            if (lower.includes('water') || lower.includes('fountain')) return <Droplets size={16} />;
-            if (lower.includes('dog') || lower.includes('pet')) return <Dog size={16} />;
-            if (lower.includes('picnic') || lower.includes('dining')) return <UtensilsCrossed size={16} />;
-            if (lower.includes('park') || lower.includes('tree') || lower.includes('garden')) return <TreePine size={16} />;
-            return <CirclePlus size={16} />;
-          };
-
-          // Remove duplicates
-          const uniqueAmenities = [...new Set(allAmenities)];
-
-          if (uniqueAmenities.length === 0) return null;
-
-          return (
-            <div className="bd-amenities">
-              <h3 className="bd-amenities__title">Amenities</h3>
-              <div className="bd-amenities__grid">
-                {uniqueAmenities.map((amenity, idx) => (
-                  <a
-                    key={idx}
-                    href={`/explore?amenity=${encodeURIComponent(amenity)}`}
-                    className="bd-amenities__tag"
-                    onClick={(e) => { e.preventDefault(); navigate(`/explore?amenity=${encodeURIComponent(amenity)}`); }}
-                  >
-                    {getAmenityIcon(amenity)} {amenity}
-                  </a>
+          {sections.length > 0 && (
+            <div id="accordion_1_box" className="poi_accordion_box">
+              <div id="accordion_1_parent" className="poi_accordion_parent">
+                {sections.map((s) => (
+                  <AccSection key={s.key} title={s.title} defaultOpen={s.open} col1={s.col1.length > 0 ? s.col1 : null} col2={s.col2.length > 0 ? s.col2 : null} />
                 ))}
               </div>
             </div>
-          );
-        })()}
-
-        {/* Accordion Sections — ordered per template */}
-        <div className="bd-accordions">
-          <Accordion closeOther closeAble scrollOffset={120}>
-
-          {/* 1. About + Details (renamed from "About + Hours") */}
-          <AccordionSection
-            title="About + Details"
-            show={hasContent(poi.description_long) || hasContent(poi.hours) || hasContent(poi.categories)}
-          >
-            <div className="bd-about-hours">
-              <div className="bd-about-hours__left">
-                {hasContent(poi.description_long) && (
-                  <div className="bd-about-description" dangerouslySetInnerHTML={{ __html: poi.description_long }} />
-                )}
-                {poi.categories && poi.categories.length > 0 && (
-                  <div className="bd-tags-section">
-                    <span className="bd-tags-section__label">Categories</span>
-                    <div className="bd-tags-grid">
-                      {poi.categories.map((cat, idx) => (
-                        <a
-                          key={cat.id || idx}
-                          href={`/explore?category=${encodeURIComponent(cat.slug || cat.name)}`}
-                          className="bd-tag bd-tag--link"
-                          onClick={(e) => { e.preventDefault(); navigate(`/explore?category=${encodeURIComponent(cat.slug || cat.name)}`); }}
-                        >
-                          {cat.name}
-                        </a>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                {hasContent(poi.ideal_for) && (
-                  <div className="bd-tags-section">
-                    <span className="bd-tags-section__label">Ideal For</span>
-                    <div className="bd-tags-grid">
-                      {(Array.isArray(poi.ideal_for) ? poi.ideal_for : poi.ideal_for.split(',').map(s => s.trim())).map((item, idx) => (
-                        <span key={idx} className="bd-tag">{item}</span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-              <div className="bd-about-hours__right">
-                <HoursDisplay
-                  hours={poi.hours}
-                  holidayHours={poi.holiday_hours}
-                  appointmentLinks={poi.appointment_links}
-                  appointmentBookingUrl={poi.appointment_booking_url || poi.appointment_url}
-                  appointmentRequired={poi.hours_but_appointment_required}
-                  hoursNotes={poi.hours_notes}
-                />
-              </div>
-            </div>
-          </AccordionSection>
-
-          {/* 2. Address + Parking */}
-          <AccordionSection
-            title="Address + Parking"
-            show={hasContent(poi.address_street) || hasContent(poi.parking_types) || hasContent(poi.parking_notes)}
-          >
-            <div className="bd-address-parking">
-              <div className="bd-address-parking__left">
-                <div className="bd-address-header">
-                  <span className="bd-address-header__label">ADDRESS</span>
-                  <button type="button" className="bd-address-btn" onClick={handleDirections}>
-                    <Navigation size={14} /> Get Directions
-                  </button>
-                </div>
-                {hasContent(poi.address_street) && (
-                  <div className="bd-address-row">
-                    <span className="bd-address-row__icon"><MapPin size={14} /></span>
-                    <span className="bd-address-row__text">
-                      {[poi.address_street, poi.address_city, poi.address_state, poi.address_zip].filter(Boolean).join(', ')}
-                    </span>
-                    <button type="button" className="bd-address-btn bd-address-btn--small" onClick={handleCopyAddress}>
-                      {copiedAddress ? <Check size={12} /> : <Copy size={12} />}
-                      {copiedAddress ? 'Copied!' : 'Copy'}
-                    </button>
-                  </div>
-                )}
-                {getCoordinates() && (
-                  <button type="button" className="bd-address-btn bd-address-btn--outline" onClick={handleCopyCoords}>
-                    {copiedCoords ? <Check size={14} /> : <Copy size={14} />}
-                    {copiedCoords ? 'Copied!' : 'Copy Latitude + Longitude'}
-                  </button>
-                )}
-                {(() => {
-                  const entryPhotos = getPhotosByType('entry');
-                  const parkingPhotos = getPhotosByType('parking');
-                  const allLookForPhotos = [...entryPhotos, ...parkingPhotos].slice(0, 5);
-                  if (allLookForPhotos.length === 0 && !hasContent(poi.business_entry_notes)) return null;
-                  return (
-                    <div className="bd-look-for-this">
-                      <span className="bd-look-for-this__label">LOOK FOR THIS</span>
-                      {allLookForPhotos.length > 0 && (
-                        <div className="bd-look-for-this__grid">
-                          {allLookForPhotos.map((photo, idx) => (
-                            <div key={photo.id || idx} className="bd-look-for-this__item">
-                              <img src={photo.thumbnail} alt={photo.alt} loading="lazy" />
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                      {hasContent(poi.business_entry_notes) && (
-                        <div className="bd-look-for-this__notes" dangerouslySetInnerHTML={{ __html: poi.business_entry_notes }} />
-                      )}
-                    </div>
-                  );
-                })()}
-              </div>
-              <div className="bd-address-parking__right">
-                <span className="bd-parking-header">PARKING</span>
-                {hasContent(poi.parking_types) && (
-                  <div className="bd-tags-grid">
-                    {(Array.isArray(poi.parking_types)
-                      ? poi.parking_types
-                      : typeof poi.parking_types === 'string'
-                        ? poi.parking_types.split(',').map(s => s.trim())
-                        : []
-                    ).filter(Boolean).map((type, idx) => (
-                      <span key={idx} className="bd-tag">{type}</span>
-                    ))}
-                  </div>
-                )}
-                {hasContent(poi.expect_to_pay_parking) && (
-                  <div className="bd-parking-info">
-                    <span className="bd-parking-info__label">Expect to pay for parking?</span>
-                    <span className="bd-parking-info__value">{poi.expect_to_pay_parking}</span>
-                  </div>
-                )}
-                {hasContent(poi.parking_notes) && (
-                  <div className="bd-parking-notes" dangerouslySetInnerHTML={{ __html: poi.parking_notes }} />
-                )}
-                {hasContent(poi.public_transit_info) && (
-                  <div className="bd-parking-info">
-                    <span className="bd-parking-info__label">Public Transit</span>
-                    <div className="bd-parking-notes" dangerouslySetInnerHTML={{ __html: poi.public_transit_info }} />
-                  </div>
-                )}
-              </div>
-            </div>
-          </AccordionSection>
-
-          {/* 3. Pricing + Offers */}
-          <AccordionSection
-            title="Pricing + Offers"
-            show={hasContent(poi.price_range_per_person) || hasContent(poi.payment_methods) || hasContent(poi.pricing_description) || hasContent(poi.discounts_offered) || hasContent(poi.gift_cards_available)}
-          >
-            <div className="bd-pricing-offers">
-              <div className="bd-pricing-offers__left">
-                {hasContent(poi.price_range_per_person) && (
-                  <div className="bd-pricing-section">
-                    <span className="bd-pricing-section__label">AVERAGE PRICE RANGE PER PERSON</span>
-                    <span className="bd-pricing-section__value">{poi.price_range_per_person}</span>
-                  </div>
-                )}
-                {hasContent(poi.payment_methods) && (
-                  <div className="bd-pricing-section">
-                    <span className="bd-pricing-section__label">PAYMENTS METHODS</span>
-                    <span className="bd-pricing-section__value">
-                      {Array.isArray(poi.payment_methods) ? poi.payment_methods.join(', ') : poi.payment_methods}
-                    </span>
-                  </div>
-                )}
-                {hasContent(poi.pricing_description) && (
-                  <div className="bd-pricing-description" dangerouslySetInnerHTML={{ __html: poi.pricing_description }} />
-                )}
-              </div>
-              <div className="bd-pricing-offers__right">
-                {hasContent(poi.discounts_offered) && (
-                  <div className="bd-discounts-section">
-                    <span className="bd-discounts-section__label">DISCOUNTS</span>
-                    <div className="bd-discounts-section__content">
-                      {poi.discount_description && (
-                        <p className="bd-discounts-intro">{poi.discount_description}</p>
-                      )}
-                      {Array.isArray(poi.discounts_offered) && poi.discounts_offered.length > 0 && (
-                        <ul className="bd-discounts-list">
-                          {poi.discounts_offered.map((discount, idx) => (
-                            <li key={idx}>{typeof discount === 'string' ? discount : discount.name || discount.type}</li>
-                          ))}
-                        </ul>
-                      )}
-                    </div>
-                  </div>
-                )}
-                {hasContent(poi.gift_cards_available) && (
-                  <div className="bd-gift-cards">
-                    <span className="bd-gift-cards__label">GIFT CARDS</span>
-                    <span className="bd-gift-cards__value">
-                      {typeof poi.gift_cards_available === 'boolean'
-                        ? (poi.gift_cards_available ? 'for this business only.' : 'Not available')
-                        : poi.gift_cards_available}
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
-          </AccordionSection>
-
-          {/* 4. Menu + Ordering */}
-          <AccordionSection
-            title="Menu + Ordering"
-            show={hasContent(poi.menu_link) || hasContent(poi.reservation_links) || hasContent(poi.delivery_links) || hasContent(poi.online_ordering_links)}
-          >
-            <div className="bd-menu-ordering">
-              <div className="bd-menu-ordering__left">
-                {hasContent(poi.reservation_links) && (
-                  <div className="bd-service-section">
-                    <span className="bd-service-section__label">RESERVATIONS</span>
-                    <div className="bd-service-links">
-                      {(() => {
-                        const links = Array.isArray(poi.reservation_links)
-                          ? poi.reservation_links
-                          : typeof poi.reservation_links === 'string'
-                            ? [{ url: poi.reservation_links, name: 'Reserve' }]
-                            : [];
-                        return links.map((link, idx) => (
-                          <a key={idx} href={typeof link === 'string' ? link : link.url || link.link} target="_blank" rel="noopener noreferrer" className="bd-service-link">
-                            {typeof link === 'string' ? 'Reserve' : link.name || link.label || 'Reserve'}
-                          </a>
-                        ));
-                      })()}
-                    </div>
-                  </div>
-                )}
-                {hasContent(poi.delivery_links) && (
-                  <div className="bd-service-section">
-                    <span className="bd-service-section__label">DELIVERY SERVICES</span>
-                    <div className="bd-service-links">
-                      {(() => {
-                        const links = Array.isArray(poi.delivery_links)
-                          ? poi.delivery_links
-                          : typeof poi.delivery_links === 'string'
-                            ? [{ url: poi.delivery_links, name: 'Order Delivery' }]
-                            : [];
-                        return links.map((link, idx) => (
-                          <a key={idx} href={typeof link === 'string' ? link : link.url || link.link} target="_blank" rel="noopener noreferrer" className="bd-service-link">
-                            {typeof link === 'string' ? 'Order Delivery' : link.name || link.label || 'Order'}
-                          </a>
-                        ));
-                      })()}
-                    </div>
-                  </div>
-                )}
-                {hasContent(poi.online_ordering_links) && (
-                  <div className="bd-service-section">
-                    <span className="bd-service-section__label">ONLINE ORDERING</span>
-                    <div className="bd-service-links">
-                      {(() => {
-                        const links = Array.isArray(poi.online_ordering_links)
-                          ? poi.online_ordering_links
-                          : typeof poi.online_ordering_links === 'string'
-                            ? [{ url: poi.online_ordering_links, name: 'Order Online' }]
-                            : [];
-                        return links.map((link, idx) => (
-                          <a key={idx} href={typeof link === 'string' ? link : link.url || link.link} target="_blank" rel="noopener noreferrer" className="bd-service-link">
-                            {typeof link === 'string' ? 'Order Online' : link.name || link.label || 'Order'}
-                          </a>
-                        ));
-                      })()}
-                    </div>
-                  </div>
-                )}
-              </div>
-              <div className="bd-menu-ordering__right">
-                {poi.menu_link && (
-                  <a href={poi.menu_link} target="_blank" rel="noopener noreferrer" className="bd-view-menu-btn">
-                    <Globe size={14} /> View Menu
-                  </a>
-                )}
-                {(() => {
-                  const menuImages = images.filter(img =>
-                    img.type === 'menu' ||
-                    (img.alt_text && img.alt_text.toLowerCase().includes('menu'))
-                  ).slice(0, 4);
-                  if (menuImages.length === 0) return null;
-                  return (
-                    <div className="bd-menu-images">
-                      {menuImages.map((img, idx) => (
-                        <button key={img.id || idx} className="bd-menu-images__item" onClick={() => openLightbox(images.indexOf(img))} type="button">
-                          <img src={img.thumbnail_url || img.url} alt={img.alt_text || 'Menu'} />
-                        </button>
-                      ))}
-                    </div>
-                  );
-                })()}
-              </div>
-            </div>
-          </AccordionSection>
-
-          {/* 5. Alcohol + Smoking (moved up per template) */}
-          <AccordionSection
-            title="Alcohol + Smoking"
-            show={hasContent(poi.alcohol_options) || hasContent(poi.alcohol_description) || hasContent(poi.smoking_options) || hasContent(poi.smoking_details)}
-          >
-            <div className="bd-alcohol-smoking">
-              {(hasContent(poi.alcohol_options) || hasContent(poi.alcohol_description)) && (
-                <div className="bd-alcohol-smoking__section">
-                  <h4 className="bd-alcohol-smoking__header">ALCOHOL</h4>
-                  {hasContent(poi.alcohol_options) && (
-                    <div className="bd-tags-grid">
-                      {(Array.isArray(poi.alcohol_options) ? poi.alcohol_options : typeof poi.alcohol_options === 'string' ? poi.alcohol_options.split(',').map(s => s.trim()) : []).filter(Boolean).map((option, idx) => (
-                        <span key={idx} className="bd-tag">{option}</span>
-                      ))}
-                    </div>
-                  )}
-                  {hasContent(poi.alcohol_description) && (
-                    <div className="bd-alcohol-smoking__description" dangerouslySetInnerHTML={{ __html: poi.alcohol_description }} />
-                  )}
-                </div>
-              )}
-              {(hasContent(poi.smoking_options) || hasContent(poi.smoking_details)) && (
-                <div className="bd-alcohol-smoking__section">
-                  <h4 className="bd-alcohol-smoking__header">SMOKING</h4>
-                  {hasContent(poi.smoking_options) && (
-                    <div className="bd-tags-grid">
-                      {(Array.isArray(poi.smoking_options) ? poi.smoking_options : typeof poi.smoking_options === 'string' ? poi.smoking_options.split(',').map(s => s.trim()) : []).filter(Boolean).map((option, idx) => (
-                        <span key={idx} className="bd-tag">{option}</span>
-                      ))}
-                    </div>
-                  )}
-                  {hasContent(poi.smoking_details) && (
-                    <div className="bd-alcohol-smoking__description" dangerouslySetInnerHTML={{ __html: poi.smoking_details }} />
-                  )}
-                </div>
-              )}
-            </div>
-          </AccordionSection>
-
-          {/* 6. Public Restrooms */}
-          {(() => {
-            const restroomPhotos = getPhotosByType('restroom');
-            return (
-              <AccordionSection
-                title="Public Restrooms"
-                show={hasContent(poi.public_toilets) || hasContent(poi.toilet_description) || restroomPhotos.length > 0}
-              >
-                <div className="bd-restrooms">
-                  <div className="bd-accordion__grid">
-                    <InfoItem label="Available" value={poi.public_toilets} />
-                    <InfoItem label="Locations" value={poi.toilet_locations} />
-                    <InfoItem label="Details" value={poi.toilet_description} isHTML={true} />
-                  </div>
-                  {restroomPhotos.length > 0 && (
-                    <div className="bd-section-photos">
-                      <span className="bd-section-photos__label">RESTROOM PHOTOS</span>
-                      <div className="bd-section-photos__grid">
-                        {restroomPhotos.slice(0, 4).map((photo, idx) => (
-                          <div key={photo.id || idx} className="bd-section-photos__item">
-                            <img src={photo.thumbnail} alt={photo.alt} loading="lazy" />
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </AccordionSection>
-            );
-          })()}
-
-          {/* 7. Wheelchair Accessible (renamed from "Accessibility") */}
-          <AccordionSection
-            title="Wheelchair Accessible"
-            show={hasContent(poi.wheelchair_accessible) || hasContent(poi.wheelchair_details)}
-          >
-            <div className="bd-accordion__grid">
-              <InfoItem label="Wheelchair Accessible" value={poi.wheelchair_accessible} />
-              <InfoItem label="Accessibility Details" value={poi.wheelchair_details} isHTML={true} />
-            </div>
-          </AccordionSection>
-
-          {/* 8. Pet Policy */}
-          <AccordionSection
-            title="Pet Policy"
-            show={hasContent(poi.pet_options) || hasContent(poi.pet_policy)}
-          >
-            <div className="bd-accordion__grid">
-              <InfoItem label="Pets Allowed" value={poi.pet_options} />
-              <InfoItem label="Pet Policy" value={poi.pet_policy} isHTML={true} />
-            </div>
-          </AccordionSection>
-
-          {/* 9. Playground */}
-          {(() => {
-            const playgroundPhotos = getPhotosByType('playground');
-            return (
-              <AccordionSection
-                title="Playground"
-                show={poi.playground_available || hasContent(poi.playground_types) || hasContent(poi.playground_notes) || playgroundPhotos.length > 0}
-              >
-                <div className="bd-playground">
-                  <div className="bd-accordion__grid">
-                    <InfoItem label="Available" value={poi.playground_available ? "Yes" : "No"} />
-                    <InfoItem label="Playground Types" value={poi.playground_types} />
-                    <InfoItem label="Surface Types" value={poi.playground_surface_types} />
-                    <InfoItem label="Location" value={poi.playground_location} />
-                    <InfoItem label="Notes" value={poi.playground_notes} isHTML={true} />
-                  </div>
-                  {playgroundPhotos.length > 0 && (
-                    <div className="bd-section-photos">
-                      <span className="bd-section-photos__label">PLAYGROUND PHOTOS</span>
-                      <div className="bd-section-photos__grid">
-                        {playgroundPhotos.slice(0, 4).map((photo, idx) => (
-                          <div key={photo.id || idx} className="bd-section-photos__item">
-                            <img src={photo.thumbnail} alt={photo.alt} loading="lazy" />
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </AccordionSection>
-            );
-          })()}
-
-          {/* 10. Contact (moved up per template) */}
-          <AccordionSection
-            title="Contact"
-            show={hasContent(poi.phone_number) || hasContent(poi.email) || hasContent(poi.website_url) || hasContent(poi.instagram_username) || hasContent(poi.facebook_username) || hasContent(poi.x_username) || hasContent(poi.tiktok_username) || hasContent(poi.youtube_url)}
-          >
-            <div className="bd-contact">
-              <div className="bd-contact__row">
-                {hasContent(poi.website_url) && (
-                  <div className="bd-contact__item">
-                    <span className="bd-contact__label">WEBSITE</span>
-                    <a href={poi.website_url.startsWith('http') ? poi.website_url : `https://${poi.website_url}`} target="_blank" rel="noopener noreferrer" className="bd-contact__link">
-                      <Globe size={16} />
-                      <span>{poi.website_url.replace(/^https?:\/\//, '').replace(/\/$/, '')}</span>
-                    </a>
-                  </div>
-                )}
-                {hasContent(poi.phone_number) && (
-                  <div className="bd-contact__item">
-                    <span className="bd-contact__label">PHONE</span>
-                    <a href={`tel:${poi.phone_number}`} className="bd-contact__link">
-                      <Phone size={16} />
-                      <span>{poi.phone_number}</span>
-                    </a>
-                  </div>
-                )}
-                {hasContent(poi.email) && (
-                  <div className="bd-contact__item">
-                    <span className="bd-contact__label">QUESTIONS / FEEDBACK</span>
-                    <a href={`mailto:${poi.email}`} className="bd-contact__link">
-                      <Mail size={16} />
-                      <span>Drop us a message here</span>
-                    </a>
-                  </div>
-                )}
-              </div>
-              {(hasContent(poi.x_username) || hasContent(poi.facebook_username) || hasContent(poi.instagram_username) || hasContent(poi.youtube_url) || hasContent(poi.tiktok_username)) && (
-                <div className="bd-contact__social">
-                  <span className="bd-contact__social-label">FOLLOW US ON</span>
-                  <div className="bd-contact__social-icons">
-                    {poi.x_username && (
-                      <a href={`https://x.com/${poi.x_username}`} target="_blank" rel="noopener noreferrer" className="bd-social-icon" aria-label="X/Twitter">
-                        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-                      </a>
-                    )}
-                    {poi.facebook_username && (
-                      <a href={`https://facebook.com/${poi.facebook_username}`} target="_blank" rel="noopener noreferrer" className="bd-social-icon" aria-label="Facebook">
-                        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z"/></svg>
-                      </a>
-                    )}
-                    {poi.instagram_username && (
-                      <a href={`https://instagram.com/${poi.instagram_username}`} target="_blank" rel="noopener noreferrer" className="bd-social-icon" aria-label="Instagram">
-                        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
-                      </a>
-                    )}
-                    {poi.youtube_url && (
-                      <a href={poi.youtube_url} target="_blank" rel="noopener noreferrer" className="bd-social-icon" aria-label="YouTube">
-                        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 00-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 00.502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 002.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 002.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
-                      </a>
-                    )}
-                    {poi.tiktok_username && (
-                      <a href={`https://tiktok.com/@${poi.tiktok_username}`} target="_blank" rel="noopener noreferrer" className="bd-social-icon" aria-label="TikTok">
-                        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/></svg>
-                      </a>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-          </AccordionSection>
-
-          {/* 11. WiFi (app-specific, after template sections) */}
-          <AccordionSection
-            title="WiFi"
-            show={hasContent(poi.wifi_options)}
-          >
-            <div className="bd-accordion__grid">
-              <InfoItem label="WiFi Available" value={poi.wifi_options} />
-            </div>
-          </AccordionSection>
-
-          {/* 12. Events */}
-          <AccordionSection
-            title="Events"
-            show={hasContent(poi.event)}
-          >
-            <div className="bd-accordion__grid">
-              <InfoItem label="Start Date" value={poi.event?.start_datetime ? new Date(poi.event.start_datetime).toLocaleString() : null} />
-              <InfoItem label="End Date" value={poi.event?.end_datetime ? new Date(poi.event.end_datetime).toLocaleString() : null} />
-              <InfoItem label="Organizer" value={poi.event?.organizer_name} />
-              <InfoItem label="Venue" value={poi.event?.venue_settings} />
-              <InfoItem label="Entry Notes" value={poi.event?.event_entry_notes} isHTML={true} />
-              <InfoItem label="Food & Drink" value={poi.event?.food_and_drink_info} isHTML={true} />
-            </div>
-          </AccordionSection>
-
-          {/* 13. Rentals */}
-          {(() => {
-            const rentalPhotos = getPhotosByType('rental');
-            return (
-              <AccordionSection
-                title="Rentals"
-                show={poi.available_for_rent || hasContent(poi.rental_info) || hasContent(poi.rental_pricing) || rentalPhotos.length > 0}
-              >
-                <div className="bd-rentals">
-                  <div className="bd-accordion__grid">
-                    <InfoItem label="Available for Rent" value={poi.available_for_rent ? "Yes" : "No"} />
-                    <InfoItem label="Rental Info" value={poi.rental_info} isHTML={true} />
-                    <InfoItem label="Pricing" value={poi.rental_pricing} isHTML={true} />
-                    {poi.rental_link && (
-                      <InfoItem label="Booking Link" value={poi.rental_link} />
-                    )}
-                  </div>
-                  {rentalPhotos.length > 0 && (
-                    <div className="bd-section-photos">
-                      <span className="bd-section-photos__label">RENTAL PHOTOS</span>
-                      <div className="bd-section-photos__grid">
-                        {rentalPhotos.slice(0, 4).map((photo, idx) => (
-                          <div key={photo.id || idx} className="bd-section-photos__item">
-                            <img src={photo.thumbnail} alt={photo.alt} loading="lazy" />
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </AccordionSection>
-            );
-          })()}
-
-          {/* 14. Locally Found + History */}
-          <AccordionSection
-            title="Locally Found + History"
-            show={hasContent(poi.article_links) || hasContent(poi.community_impact) || hasContent(poi.history_paragraph)}
-          >
-            <div className="bd-locally-found">
-              {hasContent(poi.article_links) && (
-                <div className="bd-locally-found__section">
-                  <span className="bd-locally-found__label">ARTICLES AND MENTIONS</span>
-                  <div className="bd-articles-list">
-                    {(Array.isArray(poi.article_links) ? poi.article_links : []).map((article, idx) => (
-                      <a key={idx} href={article.url || article.link} target="_blank" rel="noopener noreferrer" className="bd-article-link">
-                        <ExternalLink size={14} />
-                        <span>{article.title || article.name || `Article ${idx + 1}`}</span>
-                      </a>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {hasContent(poi.community_impact) && (
-                <div className="bd-locally-found__section">
-                  <span className="bd-locally-found__label">COMMUNITY IMPACT</span>
-                  <div className="bd-locally-found__content" dangerouslySetInnerHTML={{ __html: poi.community_impact }} />
-                </div>
-              )}
-              {hasContent(poi.history_paragraph) && (
-                <div className="bd-locally-found__section">
-                  <span className="bd-locally-found__label">HISTORY</span>
-                  <div className="bd-locally-found__content" dangerouslySetInnerHTML={{ __html: poi.history_paragraph }} />
-                </div>
-              )}
-            </div>
-          </AccordionSection>
-
-          </Accordion>
-        </div>
-      </div>
-
-      {/* Nearby Section */}
-      <NearbySection currentPOI={poi} />
-
-      {/* Photo Lightbox */}
-      <PhotoLightbox
-        images={images}
-        isOpen={lightboxOpen}
-        onClose={() => setLightboxOpen(false)}
-        initialIndex={lightboxIndex}
-      />
-
-      {/* Suggest Edit Overlay */}
-      <SuggestEditOverlay
-        poiName={poi.name}
-        poiId={poi.id}
-        triggerRef={suggestEditRef}
-      />
-    </div>
+          )}
+        </>
+      )}
+    </POIDetailLayout>
   );
 }
-
-export default BusinessDetail;

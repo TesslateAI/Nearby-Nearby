@@ -2,6 +2,11 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import * as Sentry from '@sentry/react'
+// nn-templates stylesheets — imported FIRST so local styles can intentionally override
+import './styles/nn/fonts.css'
+import './styles/nn/stylez.css'
+import './styles/nn/accessible-menu.css'
+import './styles/nn/overlay.css'
 import './index.css'
 import App from './App.jsx'
 

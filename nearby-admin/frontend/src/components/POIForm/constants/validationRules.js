@@ -1,4 +1,4 @@
-import { getFieldsForListingType } from '../../../utils/constants';
+import { getLegacyFieldsForListingType } from '../../../utils/constants';
 
 export const getValidationRules = () => ({
   name: (value) => (!value ? 'Name is required' : null),
@@ -13,7 +13,7 @@ export const getValidationRules = () => ({
     if (values?.poi_type === 'BUSINESS') {
       return null;
     }
-    const fieldConfig = getFieldsForListingType(values?.listing_type, values?.poi_type);
+    const fieldConfig = getLegacyFieldsForListingType(values?.listing_type, values?.poi_type);
     const maxCategories = fieldConfig?.maxCategories || 3;
     return value?.length > maxCategories ? `Maximum ${maxCategories} categories allowed` : null;
   },

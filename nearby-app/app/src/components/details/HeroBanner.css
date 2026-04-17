@@ -1,0 +1,24 @@
+/* HeroBanner — full-width image-only hero for POI detail pages */
+
+.poi_hero_banner {
+  position: relative;
+  width: 100%;
+  height: clamp(320px, 40vw, 480px);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  overflow: hidden;
+}
+
+.poi_hero_banner_overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(26, 33, 40, 0.0) 0%, rgba(26, 33, 40, 0.55) 100%);
+  pointer-events: none;
+}
+
+@media (max-width: 480px) {
+  .poi_hero_banner {
+    height: 320px;
+  }
+}

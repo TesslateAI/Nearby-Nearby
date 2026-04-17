@@ -37,7 +37,9 @@ class PointOfInterest(Base):
     # Front door coordinates (separate from main location for map pin)
     front_door_latitude = Column(Numeric(precision=10, scale=7))
     front_door_longitude = Column(Numeric(precision=10, scale=7))
-    
+    arrival_methods    = Column(JSONB, server_default='[]')
+    what3words_address = Column(String(100))
+
     # Location (PostGIS)
     location = Column(Geometry(geometry_type='POINT', srid=4326), nullable=False)
     
@@ -47,10 +49,15 @@ class PointOfInterest(Base):
     is_verified = Column(Boolean, default=False)
     is_disaster_hub = Column(Boolean, default=False)
     lat_long_most_accurate = Column(Boolean, default=False)
+    icon_free_wifi             = Column(Boolean, nullable=False, server_default='false', default=False)
+    icon_pet_friendly          = Column(Boolean, nullable=False, server_default='false', default=False)
+    icon_public_restroom       = Column(Boolean, nullable=False, server_default='false', default=False)
+    icon_wheelchair_accessible = Column(Boolean, nullable=False, server_default='false', default=False)
 
     # Publication status (draft, published, archived)
     publication_status = Column(String(20), default='draft', nullable=False)
-    
+    has_been_published = Column(Boolean, nullable=False, server_default='false', default=False)
+
     # Contact info
     website_url = Column(String)
     phone_number = Column(String)
@@ -66,6 +73,9 @@ class PointOfInterest(Base):
     
     # Listing type for all POIs
     listing_type = Column(String(50), default='free')  # 'free', 'paid', 'paid_founding', 'sponsor', 'community_comped'
+    is_sponsor    = Column(Boolean, nullable=False, server_default='false', default=False)
+    sponsor_level = Column(String(30))
+    admin_notes   = Column(Text)
     
     # Main category (required)
     # Main category is now handled through poi_categories table with is_main=True
@@ -73,8 +83,7 @@ class PointOfInterest(Base):
     # Cost fields (for Events, Parks, Trails)
     cost = Column(String(100))  # Flexible format: "$1000" or "$0.00-$1000.00" or "0" (shows as Free)
     pricing_details = Column(Text)  # Additional pricing details like "Kids Under 2 are Free"
-    ticket_link = Column(String)  # For Events - link to buy tickets
-    
+
     # Parking Information (will be in Location accordion on frontend)
     parking_types = Column(JSONB)  # List of parking types selected
     parking_locations = Column(JSONB)  # [{"lat": 0, "lng": 0, "name": "Main lot"}]
@@ -89,8 +98,12 @@ class PointOfInterest(Base):
     key_facilities = Column(JSONB)  # For Events, Parks, Trails
     alcohol_options = Column(JSONB)  # List of alcohol availability options
     alcohol_policy_details = Column(Text)  # Additional alcohol policy details
+    alcohol_available = Column(String(50))
     wheelchair_accessible = Column(JSONB)  # List of accessibility options
     wheelchair_details = Column(Text)
+    accessible_parking_details  = Column(JSONB)
+    accessible_restroom         = Column(Boolean, nullable=False, server_default='false', default=False)
+    accessible_restroom_details = Column(JSONB)
     smoking_options = Column(JSONB)  # List of smoking options
     smoking_details = Column(Text)
     wifi_options = Column(JSONB)  # For Events only
@@ -173,6 +186,9 @@ class PointOfInterest(Base):
     playground_notes = Column(Text)
     # playground_photos moved to Images table (image_type='playground')
     playground_location = Column(JSONB)  # {"lat": 0, "lng": 0}
+    playground_age_groups    = Column(JSONB)
+    playground_ada_checklist = Column(JSONB)
+    inclusive_playground     = Column(Boolean, nullable=False, server_default='false', default=False)
     
     # Parks & Trails Additional Info
     payphone_location = Column(JSONB)  # {"lat": 0, "lng": 0}
@@ -344,7 +360,15 @@ class Trail(Base):
     
     # Trail Experience
     trail_experiences = Column(JSONB)  # List of experience types
-    
+
+    mile_markers          = Column(Boolean, nullable=False, server_default='false', default=False)
+    trailhead_signage     = Column(Boolean, nullable=False, server_default='false', default=False)
+    audio_guide_available = Column(Boolean, nullable=False, server_default='false', default=False)
+    qr_trail_guide        = Column(Boolean, nullable=False, server_default='false', default=False)
+    trail_guide_notes     = Column(Text)
+    trail_lighting        = Column(String(30))
+    access_points         = Column(JSONB)
+
     poi = relationship("PointOfInterest", back_populates="trail")
 
 

@@ -1,6 +1,8 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import NNLogo from './NNLogo';
 import InstallButton from './InstallButton';
+import { getApiUrl } from '../config';
 import './Footer.css';
 
 /**
@@ -10,6 +12,32 @@ import './Footer.css';
  * Layer 3: Main footer (4 columns + copyright bar)
  */
 export default function Footer() {
+  // Footer newsletter mirrors SignupBar — both POST to /api/waitlist.
+  const [status, setStatus] = useState({ state: 'idle', message: '' }); // idle | submitting | success | error
+
+  const handleSubscribe = async (e) => {
+    e.preventDefault();
+    const email = new FormData(e.currentTarget).get('email');
+    if (!email || typeof email !== 'string') return;
+    setStatus({ state: 'submitting', message: '' });
+    try {
+      const res = await fetch(getApiUrl('api/waitlist'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim() }),
+      });
+      if (res.ok) {
+        setStatus({ state: 'success', message: "Thanks! You're on the list." });
+        e.currentTarget.reset();
+      } else {
+        const body = await res.json().catch(() => ({}));
+        setStatus({ state: 'error', message: body?.detail || 'Subscription failed. Please try again.' });
+      }
+    } catch {
+      setStatus({ state: 'error', message: 'Network error. Please try again.' });
+    }
+  };
+
   return (
     <>
       {/* ── Layer 1: Email newsletter ─────────────────────────── */}
@@ -28,7 +56,7 @@ export default function Footer() {
           </div>
 
           <div className="email_form_box">
-            <form id="email_form_header" aria-label="Email newsletter subscription">
+            <form id="email_form_header" aria-label="Email newsletter subscription" onSubmit={handleSubscribe} noValidate>
               <div className="email_container">
                 <label htmlFor="email_subscribe" className="visually_hidden">
                   Email address
@@ -43,14 +71,24 @@ export default function Footer() {
                     aria-describedby="email_hint"
                     aria-required="true"
                     required
+                    disabled={status.state === 'submitting'}
                   />
                 </div>
-                <button type="submit" className="button btn_subscribe">Subscribe</button>
+                <button type="submit" className="button btn_subscribe" disabled={status.state === 'submitting'}>
+                  {status.state === 'submitting' ? 'Subscribing…' : 'Subscribe'}
+                </button>
               </div>
               <span id="email_hint" className="visually_hidden">
                 Enter your email address to subscribe to email updates
               </span>
-              <div id="email_status" role="status" aria-live="polite" className="visually_hidden" />
+              <div
+                id="email_status"
+                role="status"
+                aria-live="polite"
+                className={`email_status ${status.state}`}
+              >
+                {status.message}
+              </div>
             </form>
           </div>
         </div>

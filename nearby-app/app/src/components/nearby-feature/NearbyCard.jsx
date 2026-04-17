@@ -1,4 +1,7 @@
 import { forwardRef } from 'react';
+import { getDisplayableLocation } from '../../utils/getDisplayableLocation';
+import { isPaidTier } from '../../utils/poiTier';
+import AmenityPillStrip from '../details/AmenityPillStrip';
 import './NearbyCard.css';
 
 // Helper to convert meters to miles
@@ -43,6 +46,56 @@ function getHoursForDay(hours, dayName) {
   return null;
 }
 
+// Build the template-style hours line: "Open now - Until 9:00 PM" / "Closed - Opens 8:00 AM" / "Closed today"
+// When `selectedDate` is set, we don't try to compute "now" — just show the day's hours.
+function getStatusLine(hours, selectedDate) {
+  if (!hours || typeof hours !== 'object') return null;
+  const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+  const refDate = selectedDate ? new Date(selectedDate + 'T12:00:00') : new Date();
+  const dayName = days[refDate.getDay()];
+  const reg = hours.regular && typeof hours.regular === 'object' ? hours.regular : null;
+  if (!reg) return getHoursForDay(hours, dayName);
+
+  const today = reg[dayName] || reg[dayName.charAt(0).toUpperCase() + dayName.slice(1)];
+  if (!today) return null;
+  if (today.status === 'closed' || today.status === 'Closed') return 'Closed today';
+
+  const periods = Array.isArray(today.periods) ? today.periods : [];
+  if (today.status !== 'open' || periods.length === 0) return null;
+
+  // For a future date, just show the first period range — "now" doesn't apply.
+  if (selectedDate) {
+    const p = periods[0];
+    if (p.open?.time && p.close?.time) return `${formatTime(p.open.time)} - ${formatTime(p.close.time)}`;
+    return null;
+  }
+
+  const now = new Date();
+  const nowMins = now.getHours() * 60 + now.getMinutes();
+  const toMins = (t) => {
+    if (!t) return null;
+    const [h, m] = t.split(':').map(Number);
+    return h * 60 + (m || 0);
+  };
+
+  for (const p of periods) {
+    const openM = toMins(p.open?.time);
+    const closeM = toMins(p.close?.time);
+    if (openM == null || closeM == null) continue;
+    if (nowMins >= openM && nowMins < closeM) {
+      return `Open now - Until ${formatTime(p.close.time)}`;
+    }
+  }
+  // Not open right now — surface next open slot today, otherwise generic "Closed".
+  for (const p of periods) {
+    const openM = toMins(p.open?.time);
+    if (openM != null && nowMins < openM) {
+      return `Closed - Opens ${formatTime(p.open.time)}`;
+    }
+  }
+  return 'Closed';
+}
+
 // Format 24h time to 12h
 function formatTime(time24) {
   if (!time24) return '';
@@ -69,15 +122,15 @@ function getDayNameFromDate(dateStr) {
 }
 
 // Amenity icon components — nn-templates custom filled SVGs
-const RestroomIcon = () => (
-  <svg width="19" height="19" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg" style={{fillRule:'evenodd',clipRule:'evenodd',strokeLinejoin:'round',strokeMiterlimit:2}}>
-    <g transform="matrix(0.0107514,0,0,0.0107514,-0.628472,-0.311391)">
-      <path d="M600,28.963C613.972,28.963 624.951,39.941 624.951,53.914L624.951,1120.14C624.951,1134.12 613.972,1145.1 600,1145.1C586.028,1145.1 575.049,1134.12 575.049,1120.14L575.049,53.914C575.049,39.941 586.028,28.963 600,28.963ZM1111.63,705.722L1095.33,705.722L1101.98,745.287C1105.31,763.619 1100.32,781.952 1088.26,796.126C1076.58,810.284 1059.09,818.222 1040.75,818.222L1034.95,818.221L1034.95,1018.28C1034.95,1032.25 1023.97,1043.23 1010,1043.23L860.001,1043.23C853.573,1043.23 848.047,1040.46 843.103,1036.02C838.028,1031.45 835.425,1024.88 835.425,1018.28L835.424,818.222L829.626,818.222C810.904,818.222 793.813,810.274 781.748,796.129C770.12,782.009 765.099,763.669 768.006,745.396L774.671,705.722L758.376,705.722C738.838,705.722 720.961,697.001 708.897,681.631C696.824,666.623 693.022,647.037 697.606,628.285L739.614,459.881C755.32,398.63 810.304,355.826 873.126,355.826L997.626,355.826C1060.46,355.826 1115.06,398.625 1130.77,459.881L1172.78,628.316C1177.34,647.064 1173.19,666.208 1161.13,681.597C1149.07,696.989 1131.18,705.722 1111.63,705.722ZM859.965,768.321C866.32,768.321 872.39,771.888 877.279,776.287C882.354,780.855 884.956,787.424 884.956,794.021L884.956,994.081L985.055,994.082L985.055,794.021C985.055,780.049 996.037,769.071 1010.01,769.071L1040.75,769.071C1044.49,769.071 1047.69,767.262 1050.28,764.48C1052.49,761.396 1053.49,757.837 1052.99,754.026L1022.65,572.736C1020.16,558.791 1029.57,546.286 1043.02,543.796C1057.03,541.294 1070.01,550.855 1072,564.252L1087.26,655.821L1112,655.821C1116.05,655.821 1119.58,654.053 1122.13,651.057C1124.4,647.952 1125,643.818 1123.97,639.456L1081.99,471.164C1072.19,432.296 1037.17,404.977 997.256,404.977L872.756,404.977C832.471,404.977 797.801,431.962 787.636,471.195L745.634,639.571C744.642,643.294 745.671,647.294 747.871,650.298C750.426,653.299 753.962,655.071 758.008,655.071L782.753,655.071L798.024,563.447C800.514,550 813.044,540.555 826.99,543.046C840.448,545.538 849.845,558.567 847.371,571.92L816.996,753.42L816.961,753.612C816.231,757.262 817.161,760.924 819.594,763.6L819.966,764.051C822.154,766.969 825.611,768.321 829.258,768.321L859.965,768.321ZM935.056,330.712C879.883,330.712 835.105,285.934 835.105,230.761C835.105,175.589 879.883,130.811 935.056,130.811C990.228,130.811 1035.01,175.589 1035.01,230.761C1035.01,285.934 990.228,330.712 935.056,330.712ZM935.056,180.712C907.362,180.712 885.006,203.067 885.006,230.761C885.006,258.455 907.362,280.811 935.056,280.811C962.75,280.811 985.105,258.455 985.105,230.761C985.105,203.067 962.75,180.712 935.056,180.712ZM270.916,330.712C215.743,330.712 170.965,285.934 170.965,230.761C170.965,175.589 215.743,130.811 270.916,130.811C326.088,130.811 370.866,175.589 370.866,230.761C370.866,285.934 326.088,330.712 270.916,330.712ZM270.916,180.712C243.222,180.712 220.866,203.067 220.866,230.761C220.866,258.455 243.222,280.811 270.916,280.811C298.609,280.811 320.965,258.455 320.965,230.761C320.965,203.067 298.609,180.712 270.916,180.712ZM345.906,355.831C421.71,355.831 483.356,417.497 483.356,493.291L483.356,643.291C483.356,677.847 455.462,705.742 420.906,705.742L405.457,705.742L374.197,987.821C370.865,1019.48 344.229,1043.25 312.156,1043.25L229.281,1043.25C197.623,1043.25 170.571,1019.48 167.243,987.854L135.98,705.742L120.906,705.742C86.349,705.742 58.455,677.847 58.455,643.291L58.455,493.291C58.455,417.487 120.122,355.831 195.916,355.831L345.906,355.831ZM312.162,993.346C318.729,993.346 323.997,988.253 324.758,981.94L358.465,679.327L358.465,568.291C358.465,554.319 369.443,543.341 383.416,543.341C397.388,543.341 408.366,554.319 408.366,568.291L408.366,655.841L420.913,655.841C427.939,655.841 433.463,650.319 433.465,643.293L433.465,493.296C433.465,444.969 394.243,405.747 345.916,405.747L195.916,405.747C147.588,405.747 108.366,444.969 108.366,493.296L108.366,643.296C108.366,650.324 113.889,655.846 120.917,655.846L133.465,655.846L133.465,568.296C133.465,554.289 144.033,543.346 158.041,543.346C172.013,543.346 182.991,554.324 182.991,568.296L182.991,679.703L216.698,982.315C217.455,988.597 222.757,993.346 229.292,993.346L245.965,993.346L245.965,755.806C245.965,741.834 256.943,730.856 270.916,730.856C284.888,730.856 295.866,741.834 295.866,755.806L295.866,993.346L312.162,993.346Z" style={{fill:'rgb(86,37,86)'}} />
+export const RestroomIcon = () => (
+  <svg width="19" height="19" viewBox="0 0 15 15" xmlns="http://www.w3.org/2000/svg" style={{fillRule:'evenodd',clipRule:'evenodd',strokeLinejoin:'round',strokeMiterlimit:2}}>
+    <g transform="matrix(0.0194034,0,0,0.0194034,-4.14708,-4.14471)">
+      <path d="M824.29,409.92C770.524,409.92 726.837,365.858 726.837,311.764C726.837,257.623 770.525,213.608 824.29,213.608C878.055,213.608 921.743,257.67 921.743,311.764C921.743,365.905 878.055,409.92 824.29,409.92ZM824.29,249.61C790.446,249.61 762.837,277.454 762.837,311.766C762.837,346.078 790.446,373.922 824.29,373.922C858.134,373.922 885.743,346.078 885.743,311.766C885.743,277.454 858.134,249.61 824.29,249.61ZM898.587,975.61L750.037,975.61C740.1,975.61 732.037,967.548 732.037,957.61L732.037,760.55L680.334,760.55C670.397,760.55 662.334,752.487 662.334,742.55L662.334,525C662.334,477.844 700.725,439.453 747.881,439.453L900.641,439.453C947.797,439.453 986.188,477.844 986.188,525L986.188,742.55C986.188,752.487 978.126,760.55 968.188,760.55L916.485,760.55L916.485,957.61C916.485,967.547 908.423,975.61 898.485,975.61L898.587,975.61ZM768.037,939.61L880.587,939.61L880.587,742.55C880.587,732.612 888.65,724.55 898.587,724.55L950.29,724.55L950.29,525C950.29,497.625 928.071,475.453 900.743,475.453L747.983,475.453C720.608,475.453 698.436,497.672 698.436,525L698.436,724.55L750.139,724.55C760.076,724.55 768.139,732.612 768.139,742.55L768.139,939.61L768.037,939.61ZM389.567,409.92C335.801,409.92 292.114,365.858 292.114,311.764C292.114,257.623 335.802,213.608 389.567,213.608C443.332,213.608 487.02,257.67 487.02,311.764C487.02,365.905 443.332,409.92 389.567,409.92ZM389.567,249.61C355.723,249.61 328.114,277.454 328.114,311.766C328.114,346.078 355.723,373.922 389.567,373.922C423.411,373.922 451.02,346.078 451.02,311.766C451.02,277.454 423.411,249.61 389.567,249.61ZM429.645,986.67L334.583,986.67C325.114,986.67 317.192,979.357 316.583,969.889L302.802,760.729L231.646,760.729C226.115,760.729 220.865,758.198 217.49,753.791C214.115,749.338 212.943,743.713 214.256,738.322L269.709,520.772C284.1,469.069 315.084,439.631 354.787,439.631L424.256,439.631C466.865,439.631 495.412,466.865 509.334,520.772L564.787,738.322C566.24,743.713 565.021,749.478 561.552,753.791C558.083,758.104 552.927,760.729 547.396,760.729L461.334,760.729L447.553,969.889C446.944,979.358 439.022,986.67 429.553,986.67L429.645,986.67ZM351.411,950.67L412.864,950.67L426.645,741.51C427.254,732.041 435.176,724.729 444.645,724.729L524.333,724.729L474.552,529.589C462.177,481.73 441.318,475.448 424.396,475.448L354.927,475.448C323.239,475.448 309.224,513.51 304.63,529.917L254.942,724.677L319.723,724.677C329.192,724.677 337.114,731.989 337.723,741.458L351.504,950.618L351.411,950.67Z" style={{fill:'rgb(86,37,86)',fillRule:'nonzero'}} />
     </g>
   </svg>
 );
 
-const WheelchairIcon = () => (
+export const WheelchairIcon = () => (
   <svg width="19" height="19" viewBox="0 0 16 15" xmlns="http://www.w3.org/2000/svg" style={{fillRule:'evenodd',clipRule:'evenodd',strokeLinejoin:'round',strokeMiterlimit:2}}>
     <g transform="matrix(0.0181731,0,0,0.0181731,-2.99945,-3.67413)">
       <path d="M1012.5,839.684C1025.06,839.684 1035.33,849.966 1035.33,862.52C1035.33,875.074 1025.06,885.346 1012.5,885.346L936.755,885.346C928.744,885.346 921.21,880.964 917.089,874.098L815.845,704.978C813.195,700.551 808.415,697.841 803.255,697.841L599.995,697.841C587.441,697.841 577.169,687.569 577.169,675.015L577.169,450.015C577.169,437.461 587.441,427.189 599.995,427.189L862.495,427.189C875.049,427.189 885.321,437.461 885.321,450.015C885.321,462.569 875.049,472.841 862.495,472.841L637.495,472.841C629.391,472.841 622.821,479.411 622.821,487.515L622.821,637.885C622.821,645.989 629.391,652.559 637.495,652.559L824.343,652.559C832.388,652.831 839.777,656.908 843.918,663.81L945.168,832.55C947.82,836.969 952.596,839.674 957.75,839.674L1012.5,839.684ZM418.378,525.389C417.783,525.426 417.188,525.465 416.594,525.507C416.589,525.334 416.586,525.158 416.586,524.981C416.586,524.225 417.285,524.499 418.378,525.389ZM431.26,510.316C309.541,510.316 210.326,609.526 210.326,731.24C210.326,852.959 309.557,952.174 431.26,952.174C520.856,952.174 600.803,898.723 634.952,816.364C639.751,804.708 653.272,799.279 664.928,804.078C676.584,808.878 681.99,822.407 677.191,834.063C636.324,933.918 539.653,998.221 431.635,998.221C284.475,998.221 165.049,878.795 165.049,731.635C165.049,584.475 284.475,465.049 431.635,465.049C438.484,465.049 445.34,465.416 451.828,465.777C464.287,466.456 473.781,477.352 472.875,489.811L472.858,490.076C472.196,502.22 462.311,511.856 449.832,511.188L449.294,511.149C443.539,510.376 437.401,510.316 431.26,510.316ZM660.326,262.5C660.326,295.831 633.331,322.826 600,322.826C566.669,322.826 539.674,295.831 539.674,262.5C539.674,229.169 566.669,202.174 600,202.174C633.331,202.174 660.326,229.169 660.326,262.5Z" style={{fill:'rgb(86,37,86)'}} />
@@ -85,7 +138,7 @@ const WheelchairIcon = () => (
   </svg>
 );
 
-const WifiIcon = () => (
+export const WifiIcon = () => (
   <svg width="19" height="19" viewBox="0 0 20 15" xmlns="http://www.w3.org/2000/svg" style={{fillRule:'evenodd',clipRule:'evenodd',strokeLinejoin:'round',strokeMiterlimit:2}}>
     <g transform="matrix(0.0183176,0,0,0.0183176,-1.03009,-3.69054)">
       <path d="M99.348,459.02C75.999,482.369 40.525,446.904 63.874,423.555C359.98,127.449 840.057,127.448 1136.13,423.554C1159.48,446.904 1124.02,482.369 1100.67,459.02C824.144,182.495 375.852,182.495 99.348,459.02ZM557.25,980.846C533.67,957.226 533.65,918.95 557.268,895.361C595.227,857.402 660.422,884.392 660.422,938.068C660.422,991.343 595.55,1018.92 557.316,980.734L557.25,980.846ZM421.053,780.769C397.703,804.119 362.235,768.653 385.584,745.304C504,626.888 695.968,626.888 814.383,745.304C837.733,768.653 802.268,804.118 778.919,780.769C680.109,681.91 519.867,681.909 421.053,780.769ZM260.233,619.899C236.88,643.253 201.374,607.79 224.725,584.435C432.003,377.198 768.029,377.197 975.265,584.434C998.615,607.783 963.15,643.248 939.801,619.898C752.147,432.214 447.867,432.214 260.233,619.899Z" style={{fill:'rgb(86,37,86)'}} />
@@ -93,7 +146,7 @@ const WifiIcon = () => (
   </svg>
 );
 
-const PetIcon = () => (
+export const PetIcon = () => (
   <svg width="19" height="19" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg" style={{fillRule:'evenodd',clipRule:'evenodd',strokeLinejoin:'round',strokeMiterlimit:2}}>
     <g transform="matrix(0.0114137,0,0,0.0113986,-0.847809,-0.846194)">
       <path d="M601.917,529.969C633.438,529.969 665.369,544.113 697.74,571.206C744.67,610.064 784.929,669.036 815.061,721.835C868.594,815.534 909.553,923.952 909.553,974.29C909.553,1037.61 878.104,1082.61 818.702,1104.49C766.329,1123.77 696.122,1125.32 628.733,1125.69L574.36,1125.69C506.97,1125.33 436.763,1123.77 384.403,1104.5C324.988,1082.61 293.539,1037.61 293.539,974.29C293.539,923.952 334.498,815.534 388.031,721.835C418.162,669.036 458.422,610.064 505.352,571.206C537.723,544.113 569.654,529.969 601.175,529.969L601.917,529.969ZM371.577,905.676C371.555,905.738 371.534,905.799 371.513,905.861L367.585,899.755L366.904,901.219L370.928,907.575C370.727,908.164 370.529,908.751 370.332,909.336C369.177,908.94 368.156,908.191 367.43,907.17C366.322,905.613 366.036,903.615 366.663,901.809C355.068,935.221 349.108,961.482 349.108,974.47C349.108,994.982 352.863,1011.78 363.251,1025.5C373.344,1038.82 390.07,1049.65 418.07,1056.99C450.636,1065.52 500.12,1069.81 574.589,1070.15L628.503,1070.15C702.972,1069.81 752.456,1065.52 785.022,1056.99C813.022,1049.65 829.748,1038.82 839.841,1025.5C850.229,1011.78 853.984,994.982 853.984,974.47C853.984,961.482 848.024,935.221 836.429,901.809L836.033,902.366L835.996,901.522L836.188,901.219L835.506,899.756L835.207,899.182C834.337,897.721 833.589,896.16 832.98,894.508C806.795,822.857 767.375,746.261 727.737,689.431C696.712,645.059 665.361,613.25 639.133,597.78C625.596,589.848 612.908,585.987 601.928,585.891L601.607,585.875L601.195,585.866L599.086,585.905C588.594,586.435 576.661,590.337 563.959,597.78C537.731,613.25 506.38,645.059 475.355,689.431C435.717,746.261 396.297,822.857 370.096,894.552C369.502,896.163 368.754,897.722 367.885,899.182L371.577,905.676Z" style={{fill:'rgb(86,37,86)'}} />
@@ -101,39 +154,26 @@ const PetIcon = () => (
   </svg>
 );
 
+// Treat any non-empty list whose entries aren't outright "No"-style denials as
+// presence of that amenity. The admin schema uses many vocabularies
+// ("Dog Friendly", "Accessible Bathrooms", "Free WiFi", etc.) and a strict
+// allowlist of literals reliably misses real data.
+function hasAmenity(values) {
+  if (!Array.isArray(values) || values.length === 0) return false;
+  const negatives = new Set(['no', 'none', 'not available', 'unavailable']);
+  return values.some((v) => {
+    const s = String(v || '').trim().toLowerCase();
+    return s && !negatives.has(s);
+  });
+}
+
 // Get amenity icons for a POI
 function getAmenities(poi) {
   const amenities = [];
-
-  // Public restrooms
-  if (poi.public_toilets?.length > 0 && !poi.public_toilets.includes('No')) {
-    amenities.push({ icon: <RestroomIcon />, title: 'Public Restrooms', key: 'restroom' });
-  }
-
-  // Wheelchair accessible
-  if (poi.wheelchair_accessible?.length > 0 &&
-      (poi.wheelchair_accessible.includes('Yes') ||
-       poi.wheelchair_accessible.includes('Fully') ||
-       poi.wheelchair_accessible.includes('Partially'))) {
-    amenities.push({ icon: <WheelchairIcon />, title: 'Wheelchair Accessible', key: 'wheelchair' });
-  }
-
-  // WiFi
-  if (poi.wifi_options?.length > 0 &&
-      (poi.wifi_options.includes('Free WiFi') ||
-       poi.wifi_options.includes('WiFi Available') ||
-       poi.wifi_options.includes('Free'))) {
-    amenities.push({ icon: <WifiIcon />, title: 'Free WiFi', key: 'wifi' });
-  }
-
-  // Pet friendly
-  if (poi.pet_options?.length > 0 &&
-      (poi.pet_options.includes('Pet Friendly') ||
-       poi.pet_options.includes('Dogs Welcome') ||
-       poi.pet_options.includes('Pets Allowed'))) {
-    amenities.push({ icon: <PetIcon />, title: 'Pet Friendly', key: 'pet' });
-  }
-
+  if (hasAmenity(poi.public_toilets))        amenities.push({ icon: <RestroomIcon />,  title: 'Public Restrooms',     key: 'restroom' });
+  if (hasAmenity(poi.wheelchair_accessible)) amenities.push({ icon: <WheelchairIcon />, title: 'Wheelchair Accessible', key: 'wheelchair' });
+  if (hasAmenity(poi.wifi_options))          amenities.push({ icon: <WifiIcon />,       title: 'WiFi Available',        key: 'wifi' });
+  if (hasAmenity(poi.pet_options))           amenities.push({ icon: <PetIcon />,        title: 'Pet Friendly',          key: 'pet' });
   return amenities;
 }
 
@@ -148,7 +188,7 @@ function formatEventDate(dateStr) {
   });
 }
 
-const NearbyCard = forwardRef(function NearbyCard({ poi, index, onDetailsClick, onDirectionsClick, isHighlighted, selectedDate }, ref) {
+const NearbyCard = forwardRef(function NearbyCard({ poi, index, totalCount = 0, onDetailsClick, onDirectionsClick, isHighlighted, selectedDate }, ref) {
   const poiType = poi.poi_type?.toLowerCase();
   const isEvent = poiType === 'event';
   const isPark = poiType === 'park';
@@ -158,13 +198,20 @@ const NearbyCard = forwardRef(function NearbyCard({ poi, index, onDetailsClick, 
   // Get distance display
   const distance = formatDistance(poi.distance_meters);
 
-  // Get hours display based on selected date or today
-  const dayName = selectedDate ? getDayNameFromDate(selectedDate) : getCurrentDayName();
-  const hoursDisplay = !isEvent ? getHoursForDay(poi.hours, dayName) : null;
+  // Status line — "Open now - Until 9:00 PM" / "Closed today" / etc. Events use their own date row.
+  const statusLine = !isEvent ? getStatusLine(poi.hours, selectedDate) : null;
 
-  // Get primary category
+  // City, ST line ("Pittsboro, NC")
+  const city = poi.address_city;
+  const stateAbbr = poi.address_state;
+  const cityLine = [city, stateAbbr].filter((s) => s && String(s).trim()).join(', ');
+
+  // Get primary category — falls back through main_category, the joined categories array,
+  // and finally the first plain `categories` entry the API returns for nearby results.
   const primaryCategory = poi.main_category?.name ||
-    (poi.categories?.find(c => c.is_main)?.category?.name) ||
+    poi.categories?.find(c => c.is_main)?.category?.name ||
+    poi.categories?.[0]?.category?.name ||
+    poi.categories?.[0]?.name ||
     null;
 
   // Get amenities
@@ -173,10 +220,82 @@ const NearbyCard = forwardRef(function NearbyCard({ poi, index, onDetailsClick, 
   // Card class based on POI type
   const cardClass = `nearby-card nearby-card--${poiType} ${isHighlighted ? 'nearby-card--highlighted' : ''}`;
 
+  // Location display gating - hide exact location for POIs that opt out
+  const displayLoc = getDisplayableLocation(poi);
+
+  // Paid-tier listing cards get the yellow quick-facts pad + amenity pills
+  const paid = isPaidTier(poi);
+
+  // Build per-type quick-facts rows (omit empty values).
+  const buildQuickFacts = () => {
+    const fmtList = (v) => (Array.isArray(v) && v.length > 0 ? v.join(', ') : (v || null));
+    if (isBusiness) {
+      return [
+        { label: 'Price Range', value: poi.business?.price_range || poi.price_range || null },
+        { label: 'Good For', value: fmtList(poi.ideal_for?.age_group || poi.ideal_for) },
+        { label: 'Pets', value: fmtList(poi.pet_options) },
+      ];
+    }
+    if (isEvent) {
+      return [
+        { label: 'Cost', value: poi.event?.cost || poi.cost || null },
+        { label: 'At-A-Glance', value: poi.description_short || null },
+        { label: 'Pets', value: fmtList(poi.pet_options) },
+      ];
+    }
+    if (isTrail) {
+      const rows = [
+        { label: 'Cost', value: poi.trail?.cost || poi.cost || null },
+        { label: 'At-A-Glance', value: poi.description_short || null },
+        { label: 'Pets', value: fmtList(poi.pet_options) },
+      ];
+      if (poi.trail?.payphone) rows.push({ label: 'PayPhone', value: poi.trail.payphone });
+      return rows;
+    }
+    if (isPark) {
+      return [
+        { label: 'Cost', value: poi.park?.cost || poi.cost || null },
+        { label: 'At-A-Glance', value: poi.description_short || null },
+        { label: 'Pets', value: fmtList(poi.pet_options) },
+      ];
+    }
+    return [];
+  };
+
+  const quickFacts = paid
+    ? buildQuickFacts().filter((r) => r.value != null && r.value !== '')
+    : [];
+
+  // Stop card-level navigation when interacting with inner controls (buttons, links, badge).
+  const stop = (e) => e.stopPropagation();
+  const handleCardKey = (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onDetailsClick?.();
+    }
+  };
+
   return (
-    <div className={cardClass} ref={ref}>
-      {/* Number badge - centered */}
-      <div className="nearby-card__number">{index + 1}</div>
+    <div
+      className={`${cardClass} nearby-card--clickable`}
+      ref={ref}
+      role="link"
+      tabIndex={0}
+      onClick={onDetailsClick}
+      onKeyDown={handleCardKey}
+      aria-label={`View details for ${poi.name}`}
+    >
+      {/* Number badge - centered; hidden when only 1 result */}
+      {totalCount > 1 && (
+        <button
+          type="button"
+          className="nearby-card__number"
+          onClick={(e) => { stop(e); onDetailsClick?.(); }}
+          aria-label={`View details for ${poi.name}`}
+        >
+          {index + 1}
+        </button>
+      )}
 
       <div className="nearby-card__content">
         {/* Distance — .one_search_map_result_distance */}
@@ -190,6 +309,11 @@ const NearbyCard = forwardRef(function NearbyCard({ poi, index, onDetailsClick, 
           {poi.name}
         </h3>
 
+        {/* City, ST — .one_search_map_single_city */}
+        {cityLine && (
+          <div className="nearby-card__city">{cityLine}</div>
+        )}
+
         {/* Event status badge for non-Scheduled events */}
         {isEvent && poi.event?.event_status && poi.event.event_status !== 'Scheduled' && (
           <span className={`nearby-card__status-badge nearby-card__status-badge--${poi.event.event_status.toLowerCase().replace(/\s+/g, '-')}`}>
@@ -202,20 +326,20 @@ const NearbyCard = forwardRef(function NearbyCard({ poi, index, onDetailsClick, 
           <span className="nearby-card__status-badge nearby-card__status-badge--past">Past</span>
         )}
 
+        {/* Hours status line — "Open now - Until 9:00 PM" */}
+        {statusLine && (
+          <div className="nearby-card__hours">
+            {statusLine.startsWith('Open') ? (
+              <span className="nearby-card__hours--open">{statusLine}</span>
+            ) : (
+              <span className="nearby-card__hours--closed">{statusLine}</span>
+            )}
+          </div>
+        )}
+
         {/* Primary Category */}
         {primaryCategory && (
           <div className="nearby-card__category">{primaryCategory}</div>
-        )}
-
-        {/* Hours - for non-events */}
-        {hoursDisplay && (
-          <div className="nearby-card__hours">
-            {hoursDisplay === 'Closed' ? (
-              <span className="nearby-card__hours--closed">Closed</span>
-            ) : (
-              <span className="nearby-card__hours--open">{hoursDisplay}</span>
-            )}
-          </div>
         )}
 
         {/* Event-specific: Date */}
@@ -275,13 +399,33 @@ const NearbyCard = forwardRef(function NearbyCard({ poi, index, onDetailsClick, 
             </div>
           )}
         </div>
+
+        {/* Paid-tier quick facts (yellow-bordered mini-QuickFacts) */}
+        {paid && quickFacts.length > 0 && (
+          <div className="nearby-card__quick-facts">
+            {quickFacts.map(({ label, value }) => (
+              <div className="nearby-card__quick-facts-row" key={label}>
+                <div className="nearby-card__quick-facts-label">{label}</div>
+                <div className="nearby-card__quick-facts-value">{value}</div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Paid-tier amenity pill strip (horizontal scroll within card) */}
+        {paid && (
+          <div className="nearby-card__amenity-strip-wrap">
+            <AmenityPillStrip poi={poi} />
+          </div>
+        )}
       </div>
 
       {/* Action Buttons — nn-templates btn_outline_teal btn_poi_button_1 */}
-      <div className="nearby-card__actions">
+      <div className="nearby-card__actions" onClick={stop}>
+        {!displayLoc.hideExact && (
         <button
           type="button"
-          onClick={() => onDirectionsClick(poi)}
+          onClick={(e) => { stop(e); onDirectionsClick(poi); }}
           className="nearby-card__btn nearby-card__btn--directions"
         >
           <svg className="poi_button_icon" width="12" height="12" viewBox="0 0 13 12" xmlns="http://www.w3.org/2000/svg" style={{fillRule:'evenodd',clipRule:'evenodd',strokeLinejoin:'round',strokeMiterlimit:2}}>
@@ -291,9 +435,10 @@ const NearbyCard = forwardRef(function NearbyCard({ poi, index, onDetailsClick, 
           </svg>
           <span className="poi_button_title">Directions</span>
         </button>
+        )}
         <button
           type="button"
-          onClick={onDetailsClick}
+          onClick={(e) => { stop(e); onDetailsClick?.(); }}
           className="nearby-card__btn nearby-card__btn--details"
         >
           Details

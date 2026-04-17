@@ -15,6 +15,7 @@ import { useAutoSave } from './hooks/useAutoSave';
 
 // Components
 import { FormActions } from './components/FormActions';
+import { SaveStatus } from './components/SaveStatus';
 import { CoreInformationSection } from './sections/CoreInformationSection';
 import { CategoriesSection } from './sections/CategoriesSection';
 import { ContactSection } from './sections/ContactSection';
@@ -63,6 +64,23 @@ import {
   CorporateComplianceSection
 } from './sections/MiscellaneousSections';
 
+// Phase 1 — layout dispatcher
+import BusinessPaidLayout from './layouts/BusinessPaidLayout';
+import BusinessFreeLayout from './layouts/BusinessFreeLayout';
+import EventLayout from './layouts/EventLayout';
+import ParkLayout from './layouts/ParkLayout';
+import TrailLayout from './layouts/TrailLayout';
+import { useAuth } from '../../utils/AuthContext';
+
+const PAID_LISTING_TYPES = ['paid', 'paid_founding', 'community_comped'];
+function selectLayout(t, lt, spons) {
+  if (t === 'EVENT') return EventLayout;
+  if (t === 'PARK') return ParkLayout;
+  if (t === 'TRAIL') return TrailLayout;
+  if (t === 'BUSINESS') return (spons || PAID_LISTING_TYPES.includes(lt)) ? BusinessPaidLayout : BusinessFreeLayout;
+  return BusinessFreeLayout;
+}
+
 // Lazy load the map component to improve performance
 const LocationMap = lazy(() => import('../LocationMap'));
 import { LocationMapSkeleton } from '../LocationMap';
@@ -81,10 +99,12 @@ export default function POIForm() {
 
   // Custom hooks for form management
   const { form, isBusiness, isPark, isTrail, isEvent, isPaidListing, isFreeListing } = usePOIForm();
+  const { user } = useAuth();
+  const userRole = user?.role || 'user';
   const { loading, handleSubmit, handleDelete, handleSilentDelete, handleAutoCreate } = usePOIHandlers(poiId, isEditing, form, setPoiId);
 
   // Auto-save hook (only when editing existing POI)
-  const { isSaving, lastSaved, triggerAutoSave } = useAutoSave(form, poiId, isEditing);
+  const { status: saveStatus, lastSaved, errorMsg: saveError, triggerAutoSave } = useAutoSave(form, poiId, isEditing);
 
   // Simple navigation - no complex draft checks
   const handleNavigation = (path) => {
@@ -144,16 +164,13 @@ export default function POIForm() {
               <Title order={2} c="deep-purple.7">
                 {isEditing ? `Editing: ${form.values.name || 'New POI'}` : 'Create New Point of Interest'}
               </Title>
-              {isSaving && (
-                <Group gap="xs">
-                  <Loader size="sm" />
-                  <Text size="sm" c="dimmed">Saving...</Text>
-                </Group>
-              )}
-              {!isSaving && lastSaved && isEditing && (
-                <Text size="sm" c="dimmed">
-                  Last saved: {lastSaved.toLocaleTimeString()}
-                </Text>
+              {isEditing && (
+                <SaveStatus
+                  status={saveStatus}
+                  lastSaved={lastSaved}
+                  errorMsg={saveError}
+                  onRetry={triggerAutoSave}
+                />
               )}
             </Group>
             <Text size="sm" c="dimmed">Fields marked with * are required</Text>
@@ -173,12 +190,20 @@ export default function POIForm() {
             }
             form.onSubmit(handleSubmit)(e);
           }}>
-            <Accordion
-              defaultValue={['core', 'categories', 'location', 'hours']}
-              multiple
-              variant="separated"
-            >
-              {/* Core Information Section */}
+            {(() => {
+              const Layout = selectLayout(form.values.poi_type, form.values.listing_type, form.values.is_sponsor);
+              return (
+                <Accordion
+                  defaultValue="s1-identity"
+                  chevronPosition="right"
+                  variant="separated"
+                >
+                  <Layout form={form} userRole={userRole} poiId={poiId} />
+                </Accordion>
+              );
+            })()}
+            {false && (<Accordion defaultValue="_disabled" variant="separated">
+              {/* Legacy sections retained (hidden) to keep imports alive until cleanup */}
               <Accordion.Item value="core">
                 <Accordion.Control>
                   <Group>
@@ -589,7 +614,7 @@ export default function POIForm() {
                   />
                 </Accordion.Panel>
               </Accordion.Item>
-            </Accordion>
+            </Accordion>)}
 
             {/* Form Actions */}
             <FormActions

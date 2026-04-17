@@ -83,7 +83,10 @@ class TestEventBasePoiFields:
             ideal_for=["All Ages", "Families"],
             cost="$15",
             pricing_details="Kids under 5 free",
-            ticket_link="https://tickets.example.com",
+            event={
+                "start_datetime": "2026-06-15T18:00:00Z",
+                "ticket_links": [{"platform": "Eventbrite", "url": "https://tickets.example.com"}],
+            },
         )
         assert data["name"] == "Full POI Event"
         assert data["description_long"] is not None
@@ -92,9 +95,12 @@ class TestEventBasePoiFields:
         assert data["parking_types"] == ["Public Parking Lot", "Street Parking"]
         assert data["wheelchair_accessible"] == ["Accessible Bathrooms", "Paved Paths"]
         assert data["pet_options"] == ["Dog Friendly"]
-        assert data["ideal_for"] == ["All Ages", "Families"]
+        # Phase 1: ideal_for is a grouped dict. "All Ages" -> age_group, "Families" -> age_group.
+        assert isinstance(data["ideal_for"], dict)
+        assert "All Ages" in data["ideal_for"].get("age_group", [])
+        assert "Families" in data["ideal_for"].get("age_group", [])
         assert data["cost"] == "$15"
-        assert data["ticket_link"] == "https://tickets.example.com"
+        assert data["event"]["ticket_links"] == [{"platform": "Eventbrite", "url": "https://tickets.example.com"}]
 
     def test_event_with_social_media(self, admin_client):
         """Event with social media fields."""

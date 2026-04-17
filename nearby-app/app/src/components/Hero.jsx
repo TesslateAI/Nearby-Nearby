@@ -22,8 +22,8 @@ export default function Hero({ children }) {
       <header id="home_layer_search">
         <div className="wrapper_default text_align_center">
           <h1 className="page_title">What's Nearby</h1>
-          <p className="page_excerpt text_color_white">
-            One Search shows local businesses, events, parks, trails and more. No Ads. No Clutter.
+          <p className="page_excerpt pb40px">
+            One Search shows local businesses, events, parks, trails and more. <span className="text_color_white">No Ads. No Clutter.</span>
           </p>
         </div>
       </header>

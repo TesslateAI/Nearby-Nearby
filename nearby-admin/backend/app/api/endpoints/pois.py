@@ -1,6 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Body
 from sqlalchemy.orm import Session
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from pydantic import BaseModel
 from datetime import datetime
 import uuid
@@ -10,6 +10,8 @@ from app import crud, schemas, models
 from app.database import get_db
 from app.core.security import get_current_user
 from app.core.permissions import require_admin_or_editor
+from app.utils.autosave_whitelist import AUTOSAVE_ALLOWED_FIELDS, AUTOSAVE_DENIED_FIELDS
+from app.crud.crud_poi import apply_phase1_computed
 
 router = APIRouter()
 
@@ -120,10 +122,96 @@ def delete_poi(
     db: Session = Depends(get_db),
     current_user = Depends(require_admin_or_editor())
 ):
+    db_poi = crud.get_poi(db, poi_id=poi_id)
+    if db_poi is None:
+        raise HTTPException(status_code=404, detail="Point of Interest not found")
+    if db_poi.has_been_published:
+        raise HTTPException(status_code=409, detail={
+            "detail": "POI has been published; archive instead of deleting.",
+            "action": "archive"
+        })
     db_poi = crud.delete_poi(db, poi_id=poi_id)
     if db_poi is None:
         raise HTTPException(status_code=404, detail="Point of Interest not found")
     return db_poi
+
+
+@router.patch("/pois/{poi_id}/autosave")
+def autosave_poi(
+    poi_id: uuid.UUID,
+    payload: Dict[str, Any] = Body(...),
+    db: Session = Depends(get_db),
+    current_user = Depends(require_admin_or_editor())
+):
+    """
+    Partial autosave: whitelist-filter the payload, setattr onto the POI (and
+    its Trail/Event subtype if applicable), run the computed-field helper, and
+    commit. Anything outside AUTOSAVE_ALLOWED_FIELDS (or inside
+    AUTOSAVE_DENIED_FIELDS) is silently dropped.
+    """
+    poi = db.query(models.PointOfInterest).filter(
+        models.PointOfInterest.id == poi_id
+    ).first()
+    if not poi:
+        raise HTTPException(status_code=404, detail="POI not found")
+
+    filtered = {
+        k: v for k, v in (payload or {}).items()
+        if k in AUTOSAVE_ALLOWED_FIELDS and k not in AUTOSAVE_DENIED_FIELDS
+    }
+
+    # Build a merged snapshot so the computed helper can read current values.
+    merged: Dict[str, Any] = {c.name: getattr(poi, c.name) for c in poi.__table__.columns}
+    for sub_attr in ('business', 'park', 'trail', 'event'):
+        sub = getattr(poi, sub_attr, None)
+        if sub is not None:
+            for c in sub.__table__.columns:
+                if c.name == 'poi_id':
+                    continue
+                merged[c.name] = getattr(sub, c.name)
+    merged.update(filtered)
+
+    apply_phase1_computed(merged)
+
+    # Fields the computed helper may mutate, in addition to whatever was passed.
+    computed_fields = {
+        'icon_free_wifi', 'icon_pet_friendly', 'icon_public_restroom',
+        'icon_wheelchair_accessible', 'accessible_restroom',
+        'inclusive_playground', 'listing_type', 'amenities',
+    }
+    allow = set(filtered.keys()) | computed_fields
+
+    poi_cols = {c.name for c in poi.__table__.columns}
+    subtype_objs = {
+        'business': getattr(poi, 'business', None),
+        'park':     getattr(poi, 'park', None),
+        'trail':    getattr(poi, 'trail', None),
+        'event':    getattr(poi, 'event', None),
+    }
+
+    for k in allow:
+        if k not in merged:
+            continue
+        if k in AUTOSAVE_DENIED_FIELDS:
+            continue
+        if k in poi_cols:
+            setattr(poi, k, merged[k])
+            continue
+        # Fall through to subtype tables
+        for sub in subtype_objs.values():
+            if sub is None:
+                continue
+            sub_cols = {c.name for c in sub.__table__.columns}
+            if k in sub_cols and k != 'poi_id':
+                setattr(sub, k, merged[k])
+                break
+
+    db.commit()
+    return {
+        "status": "ok",
+        "id": str(poi.id),
+        "saved_at": datetime.utcnow().isoformat(),
+    }
 
 
 @router.get("/pois/venues/list", response_model=List[schemas.PointOfInterest])
@@ -135,13 +223,13 @@ def get_available_venues(
     current_user = Depends(require_admin_or_editor())
 ):
     """
-    Get all POIs that can be used as venues (BUSINESS and PARK types).
+    Get all POIs that can be used as venues (BUSINESS, PARK, and TRAIL types).
     Used for venue selection when creating events.
     """
     from app.models.poi import PointOfInterest, POIType
 
     query = db.query(PointOfInterest).filter(
-        PointOfInterest.poi_type.in_([POIType.BUSINESS, POIType.PARK])
+        PointOfInterest.poi_type.in_([POIType.BUSINESS, POIType.PARK, POIType.TRAIL])
     )
 
     if search:
@@ -170,12 +258,12 @@ def get_venue_data_for_event(
     if db_poi is None:
         raise HTTPException(status_code=404, detail="POI not found")
 
-    # Validate POI type - only BUSINESS and PARK can be venues
+    # Validate POI type - BUSINESS, PARK, and TRAIL can be venues
     poi_type = db_poi.poi_type.value if hasattr(db_poi.poi_type, 'value') else str(db_poi.poi_type)
-    if poi_type not in ['BUSINESS', 'PARK']:
+    if poi_type not in ['BUSINESS', 'PARK', 'TRAIL']:
         raise HTTPException(
             status_code=400,
-            detail=f"POI type '{poi_type}' cannot be used as a venue. Only BUSINESS and PARK are valid."
+            detail=f"POI type '{poi_type}' cannot be used as a venue. Only BUSINESS, PARK, and TRAIL are valid."
         )
 
     # Get copyable images (entry, parking, restroom)

@@ -1,0 +1,59 @@
+/* QuickFacts — yellow-outlined label/value box in every Figma detail header */
+
+.poi_quick_facts {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 16px 20px;
+  border: 1.5px solid var(--nn-gold);
+  border-radius: 10px;
+  background: #fff;
+}
+
+.poi_quick_facts_row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 4px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--gray-e);
+}
+
+.poi_quick_facts_row:last-child {
+  border-bottom: none;
+}
+
+.poi_quick_facts_label {
+  font-family: var(--font-poppins);
+  font-weight: 600;
+  color: var(--nn-dark);
+  font-size: 0.95em;
+}
+
+.poi_quick_facts_divider {
+  display: none;
+}
+
+.poi_quick_facts_value {
+  color: var(--color-text);
+  font-size: 0.95em;
+  line-height: 1.4;
+}
+
+@media (min-width: 700px) {
+  .poi_quick_facts_row {
+    grid-template-columns: 1fr 1px 1.2fr;
+    gap: 14px;
+    align-items: center;
+  }
+  .poi_quick_facts_divider {
+    display: block;
+    align-self: stretch;
+    background: var(--gray-d);
+  }
+}
+
+@media (min-width: 980px) {
+  .poi_quick_facts_row {
+    grid-template-columns: 1fr 1px 1.4fr;
+  }
+}

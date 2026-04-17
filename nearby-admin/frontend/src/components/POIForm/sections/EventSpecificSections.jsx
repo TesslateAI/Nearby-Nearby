@@ -553,18 +553,11 @@ export const EventCostSection = React.memo(function EventCostSection({ form }) {
         clearable
       />
 
-      <SimpleGrid cols={{ base: 1, sm: 2 }}>
-        <TextInput
-          label="Cost"
-          placeholder="e.g., $10 or $0-$50 or 0 (for free)"
-          {...form.getInputProps('cost')}
-        />
-        <TextInput
-          label="Single Ticket Link"
-          placeholder="URL to purchase tickets"
-          {...form.getInputProps('ticket_link')}
-        />
-      </SimpleGrid>
+      <TextInput
+        label="Cost"
+        placeholder="e.g., $10 or $0-$50 or 0 (for free)"
+        {...form.getInputProps('cost')}
+      />
 
       <RichTextEditor
         label="Pricing Details"

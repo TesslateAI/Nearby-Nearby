@@ -41,7 +41,7 @@ function NearbySection({ currentPOI }) {
   const [selectedFilter, setSelectedFilter] = useState('All');
   const [radiusMiles, setRadiusMiles] = useState(5);
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(6);
+  const [itemsPerPage, setItemsPerPage] = useState(8);
   const [showDirectionsModal, setShowDirectionsModal] = useState(false);
   const [selectedPOI, setSelectedPOI] = useState(null);
   const [selectedDate, setSelectedDate] = useState(''); // New date state
@@ -49,6 +49,17 @@ function NearbySection({ currentPOI }) {
   const [copiedText, setCopiedText] = useState(null); // Track what was copied
   const [searchFilteredIds, setSearchFilteredIds] = useState(null); // IDs from hybrid search filter
   const cardRefs = useRef({}); // Refs for card scrolling
+  const resultsTopRef = useRef(null); // Top of cards section — used to scroll on pagination
+
+  // Wrap setCurrentPage so a click also scrolls the freshly-rendered cards into view.
+  // Without this the user is sitting at the pagination row and the new page renders above —
+  // visually it looks like the click did nothing.
+  const goToPage = (num) => {
+    setCurrentPage(num);
+    requestAnimationFrame(() => {
+      resultsTopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  };
 
   useEffect(() => {
     if (currentPOI) {
@@ -73,6 +84,7 @@ function NearbySection({ currentPOI }) {
 
   const handleFilterChange = (filter) => {
     setSelectedFilter(filter);
+    setCurrentPage(1);
   };
 
   const handleClear = () => {
@@ -80,6 +92,7 @@ function NearbySection({ currentPOI }) {
     setRadiusMiles(5);
     setSelectedDate('');
     setSearchFilteredIds(null);
+    setCurrentPage(1);
   };
 
   // Handle search filter callback from SearchBar
@@ -255,7 +268,7 @@ function NearbySection({ currentPOI }) {
   };
 
   const renderPagination = () => {
-    if (totalPages <= 1) return null;
+    if (totalPages <= 1 || filteredNearbyPOIs.length <= 1) return null;
 
     const pageNumbers = [];
     const maxVisible = 6;
@@ -274,7 +287,8 @@ function NearbySection({ currentPOI }) {
     return (
       <div className="nearby-pagination">
         <button
-          onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+          type="button"
+          onClick={() => goToPage(Math.max(1, currentPage - 1))}
           disabled={currentPage === 1}
           className="nearby-pagination__btn"
         >
@@ -282,15 +296,17 @@ function NearbySection({ currentPOI }) {
         </button>
         {pageNumbers.map(num => (
           <button
+            type="button"
             key={num}
-            onClick={() => setCurrentPage(num)}
+            onClick={() => goToPage(num)}
             className={`nearby-pagination__num ${currentPage === num ? 'active' : ''}`}
           >
             {num}
           </button>
         ))}
         <button
-          onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+          type="button"
+          onClick={() => goToPage(Math.min(totalPages, currentPage + 1))}
           disabled={currentPage === totalPages}
           className="nearby-pagination__btn"
         >
@@ -393,7 +409,7 @@ function NearbySection({ currentPOI }) {
       />
 
       {/* Nearby Results — nn-templates .one_search_map_results_group */}
-      <div className="nearby-results wrapper_wide">
+      <div className="nearby-results wrapper_wide" ref={resultsTopRef}>
         {nearbyLoading ? (
           <div className="nearby-results__loading">Loading nearby locations...</div>
         ) : paginatedPOIs.length > 0 ? (
@@ -404,6 +420,7 @@ function NearbySection({ currentPOI }) {
                 ref={(el) => cardRefs.current[nearbyPoi.id] = el}
                 poi={nearbyPoi}
                 index={startIndex + index}
+                totalCount={filteredNearbyPOIs.length}
                 onDetailsClick={() => handleDetailsClick(nearbyPoi)}
                 onDirectionsClick={handleDirectionsClick}
                 isHighlighted={highlightedCardId === nearbyPoi.id}
@@ -435,17 +452,26 @@ function NearbySection({ currentPOI }) {
 
             <h3 className="directions-modal__title">{selectedPOI.name}</h3>
 
-            {/* Address display */}
-            {selectedPOI.address_street && (
-              <p className="directions-modal__address">
-                {selectedPOI.address_street}
-                {selectedPOI.address_city && `, ${selectedPOI.address_city}`}
-                {selectedPOI.address_state && ` ${selectedPOI.address_state}`}
-                {selectedPOI.address_zip && ` ${selectedPOI.address_zip}`}
-              </p>
+            {/* Address display - show city/state only when exact is hidden */}
+            {selectedPOI.dont_display_location ? (
+              (selectedPOI.address_city || selectedPOI.address_state) && (
+                <p className="directions-modal__address">
+                  {[selectedPOI.address_city, selectedPOI.address_state].filter(Boolean).join(', ')}
+                </p>
+              )
+            ) : (
+              selectedPOI.address_street && (
+                <p className="directions-modal__address">
+                  {selectedPOI.address_street}
+                  {selectedPOI.address_city && `, ${selectedPOI.address_city}`}
+                  {selectedPOI.address_state && ` ${selectedPOI.address_state}`}
+                  {selectedPOI.address_zip && ` ${selectedPOI.address_zip}`}
+                </p>
+              )
             )}
 
-            {/* Copy buttons */}
+            {/* Copy buttons - hidden when POI opts out of exact location */}
+            {!selectedPOI.dont_display_location && (
             <div className="directions-modal__copy-section">
               <button onClick={handleCopyLatLong} className="directions-modal__copy-btn">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -462,9 +488,13 @@ function NearbySection({ currentPOI }) {
                 {copiedText === 'address' ? 'Copied!' : 'Copy Address'}
               </button>
             </div>
+            )}
 
+            {!selectedPOI.dont_display_location && (
             <p className="directions-modal__subtitle">Open in:</p>
+            )}
 
+            {!selectedPOI.dont_display_location && (
             <div className="directions-modal__buttons">
               <button
                 onClick={() => handleMappingService('google')}
@@ -498,6 +528,12 @@ function NearbySection({ currentPOI }) {
                 Waze
               </button>
             </div>
+            )}
+            {selectedPOI.dont_display_location && (
+              <p className="directions-modal__address" style={{ marginTop: '1rem' }}>
+                Exact location for this listing is not publicly shown.
+              </p>
+            )}
           </div>
         </div>
       )}

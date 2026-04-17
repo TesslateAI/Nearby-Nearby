@@ -6,7 +6,7 @@ import { MainCategorySelector } from '../../MainCategorySelector';
 import { TreeCategorySelector } from '../../TreeCategorySelector';
 import { IdealForSelector } from '../../IdealForSelector';
 import { PrimaryTypeSelector } from '../../PrimaryTypeSelector';
-import { getFieldsForListingType, IDEAL_FOR_KEY_OPTIONS } from '../../../utils/constants';
+import { getLegacyFieldsForListingType as getFieldsForListingType, IDEAL_FOR_KEY_OPTIONS } from '../../../utils/constants';
 
 export const CategoriesSection = React.memo(function CategoriesSection({
   form,

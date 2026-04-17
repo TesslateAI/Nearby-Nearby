@@ -72,7 +72,7 @@ export default function Navbar({ navOverlay, searchOverlay }) {
                   <li role="none" className="aaa_menu_1_list_item search_link_parent_header">
                     <button
                       id="btn_search_nav_header"
-                      className="btn_reset btn_trigger btn_nav_icon_style_2"
+                      className={`btn_reset btn_trigger btn_nav_icon_style_2${searchOverlay.isOpen ? ' is_active' : ''}`}
                       type="button"
                       onClick={() => { navOverlay.close(); searchOverlay.toggle(); }}
                       aria-expanded={searchOverlay.isOpen}
@@ -111,16 +111,17 @@ export default function Navbar({ navOverlay, searchOverlay }) {
                     onMouseEnter={handleMouseEnter}
                     onMouseLeave={handleMouseLeave}
                   >
-                    <button
-                      type="button"
+                    <a
                       role="menuitem"
-                      className="aaa_menu_1_link aaa_menu_1_link--btn"
+                      href="#"
+                      className="aaa_menu_1_link"
                       aria-haspopup="true"
-                      onClick={() => setMoreOpen(v => !v)}
+                      onClick={(e) => { e.preventDefault(); setMoreOpen(v => !v); }}
                     >
                       More
-                    </button>
+                    </a>
                     <button
+                      type="button"
                       className="aaa_menu_1_dd_button"
                       aria-expanded={moreOpen}
                       aria-label="show submenu"

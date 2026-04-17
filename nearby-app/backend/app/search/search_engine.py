@@ -6,6 +6,7 @@ Pulls candidates from multiple PostgreSQL queries, scores each signal
 independently, then merges and re-ranks in Python.
 """
 
+import re
 from typing import List, Optional
 from sqlalchemy.orm import Session
 from sqlalchemy import text
@@ -17,6 +18,19 @@ from .constants import (
     RELATIVE_SCORE_THRESHOLD,
     TRIGRAM_SIMILARITY_THRESHOLD,
 )
+
+# Defense-in-depth: any field name we interpolate into raw SQL must be a plain
+# identifier. Even though the per-signal allowlists already enforce a closed
+# set, this guards against a future code change that adds a new field without
+# whitelisting it. If a non-identifier ever reaches the SQL builder, drop it.
+_IDENT_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+
+
+def _safe_ident(name: str) -> Optional[str]:
+    """Return name only if it's a bare SQL identifier; otherwise None."""
+    if not isinstance(name, str):
+        return None
+    return name if _IDENT_RE.fullmatch(name) else None
 
 
 def multi_signal_search(
@@ -296,8 +310,9 @@ def _signal_structured_filters(
         params["poi_type"] = poi_type
 
     for i, filt in enumerate(filters):
-        field_name = filt.field
-        # Validate field name against known columns to prevent SQL injection
+        # Two-layer guard: (1) closed allowlist of known column names, then
+        # (2) regex sanity-check on the identifier so a future entry can't
+        # accidentally inject something like "name; DROP TABLE x".
         allowed_fields = {
             "pet_options", "wifi_options", "wheelchair_accessible", "public_toilets",
             "entertainment_options", "business_amenities", "youth_amenities",
@@ -305,7 +320,10 @@ def _signal_structured_filters(
             "playground_available", "fishing_allowed", "hunting_fishing_allowed",
             "cost", "camping_lodging",
         }
-        if field_name not in allowed_fields:
+        if filt.field not in allowed_fields:
+            continue
+        field_name = _safe_ident(filt.field)
+        if field_name is None:
             continue
 
         if filt.values is None:

@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-  Stack, SimpleGrid, Select, TextInput, Divider, Checkbox, Group, ActionIcon, Button
+  Stack, SimpleGrid, Select, TextInput, Divider, Checkbox, Group, ActionIcon, Button, Text
 } from '@mantine/core';
 import { IconPlus, IconTrash } from '@tabler/icons-react';
 import {

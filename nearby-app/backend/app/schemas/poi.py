@@ -84,6 +84,15 @@ class Event(BaseModel):
     sponsors: Optional[list] = None
     model_config = ConfigDict(from_attributes=True)
 
+    @field_validator(
+        'venue_poi_id', 'series_id', 'parent_event_id',
+        'rescheduled_from_event_id', 'organizer_poi_id',
+        mode='before',
+    )
+    @classmethod
+    def _uuid_to_str(cls, v):
+        return str(v) if isinstance(v, uuid.UUID) else v
+
 
 # --- Image Schema for S3 URLs ---
 class POIImage(BaseModel):
@@ -105,6 +114,7 @@ class POISearchResult(BaseModel):
     poi_type: Optional[str] = None  # For generating SEO URLs
     address_city: Optional[str] = None
     address_state: Optional[str] = None
+    address_county: Optional[str] = None
     address_street: Optional[str] = None
     description_short: Optional[str] = None
     location: Optional[Any] = None
@@ -133,9 +143,10 @@ class POINearbyResult(POISearchResult):
     wheelchair_accessible: Optional[list] = None
     wifi_options: Optional[list] = None
     pet_options: Optional[list] = None
+    public_toilets: Optional[list] = None
     categories: Optional[List[dict]] = None
     model_config = ConfigDict(from_attributes=True, arbitrary_types_allowed=True)
-    
+
 class POIDetail(BaseModel):
     id: uuid.UUID
     name: str

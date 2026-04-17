@@ -34,9 +34,11 @@ const createNumberedIcon = (number, isHighlighted = false) => {
   const size = isHighlighted ? 40 : 32;
   const fontSize = isHighlighted ? 16 : 14;
 
+  const textEl = number != null
+    ? `<text x="${size/2}" y="${size/2 + fontSize/3}" text-anchor="middle" font-family="Arial,sans-serif" font-size="${fontSize}" font-weight="bold" fill="white">${number}</text>`
+    : '';
   const svg = `<svg width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg">
-    <circle cx="${size/2}" cy="${size/2}" r="${size/2 - 2}" fill="${bgColor}" stroke="white" stroke-width="3"/>
-    <text x="${size/2}" y="${size/2 + fontSize/3}" text-anchor="middle" font-family="Arial,sans-serif" font-size="${fontSize}" font-weight="bold" fill="white">${number}</text>
+    <circle cx="${size/2}" cy="${size/2}" r="${size/2 - 2}" fill="${bgColor}" stroke="white" stroke-width="3"/>${textEl}
   </svg>`;
   const svgUrl = 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg);
 
@@ -69,7 +71,7 @@ function AutoFitBounds({ bounds, radiusMiles }) {
           // Single marker — center on it at a reasonable zoom
           map.setView(bounds[0], Math.min(maxZoom, 14));
         } else {
-          map.fitBounds(bounds, { padding: [50, 50], maxZoom });
+          map.fitBounds(bounds, { padding: [70, 70], maxZoom });
         }
       } catch (e) {
         console.warn('Map fitBounds failed:', e.message);
@@ -94,16 +96,26 @@ function Map({ currentPOI, nearbyPOIs = [], radiusMiles, onMarkerClick, highligh
     currentPOI.location.coordinates[0]  // longitude
   ];
 
+  // If the current POI has opted out of exact location display, we don't show its pin.
+  const hideCurrentExact = Boolean(currentPOI?.dont_display_location);
+
   // Calculate bounds to fit all markers
-  const allCoords = [currentCoords];
+  const allCoords = [];
+  if (!hideCurrentExact) {
+    allCoords.push(currentCoords);
+  }
   nearbyPOIs.forEach(poi => {
-    if (poi.location) {
+    if (poi.location && !poi.dont_display_location) {
       allCoords.push([
         poi.location.coordinates[1],
         poi.location.coordinates[0]
       ]);
     }
   });
+  // Ensure the map always has at least one bound reference so it doesn't crash.
+  if (allCoords.length === 0) {
+    allCoords.push(currentCoords);
+  }
 
   return (
     <div className="map-container">
@@ -125,7 +137,8 @@ function Map({ currentPOI, nearbyPOIs = [], radiusMiles, onMarkerClick, highligh
 
         <AutoFitBounds bounds={allCoords} radiusMiles={radiusMiles} />
 
-        {/* Current POI marker */}
+        {/* Current POI marker - hidden when POI opts out of showing exact location */}
+        {!hideCurrentExact && (
         <Marker position={currentCoords} icon={createCurrentIcon()}>
           <Popup className="custom-popup">
             <div className="popup-content">
@@ -134,10 +147,13 @@ function Map({ currentPOI, nearbyPOIs = [], radiusMiles, onMarkerClick, highligh
             </div>
           </Popup>
         </Marker>
+        )}
 
         {/* Nearby POI markers - PURPLE NUMBERED CIRCLES */}
         {nearbyPOIs.map((poi, index) => {
           if (!poi.location) return null;
+          // Hide pin for POIs that opted out of exact-location display
+          if (poi.dont_display_location) return null;
 
           const coords = [
             poi.location.coordinates[1],
@@ -146,12 +162,13 @@ function Map({ currentPOI, nearbyPOIs = [], radiusMiles, onMarkerClick, highligh
 
           const number = index + 1;
           const isHighlighted = highlightedId === poi.id;
+          const showNumber = nearbyPOIs.length > 1;
 
           return (
             <Marker
               key={poi.id}
               position={coords}
-              icon={createNumberedIcon(number, isHighlighted)}
+              icon={createNumberedIcon(showNumber ? number : null, isHighlighted)}
               eventHandlers={{
                 click: () => {
                   if (onMarkerClick) {
