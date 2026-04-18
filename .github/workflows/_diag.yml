@@ -1,0 +1,77 @@
+name: Prod diagnostic (throwaway)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: us-east-1
+
+      - name: ECS admin service summary
+        run: |
+          echo "::group::describe-services (status + deployments)"
+          aws ecs describe-services \
+            --cluster nearbynearby-prod \
+            --services nearbynearby-prod-admin \
+            --query 'services[0].{running:runningCount,desired:desiredCount,pending:pendingCount,deployments:deployments[].{id:id,status:status,rollout:rolloutState,rolloutReason:rolloutStateReason,taskDef:taskDefinition,desired:desiredCount,running:runningCount,pending:pendingCount,failedTasks:failedTasks,createdAt:createdAt,updatedAt:updatedAt}}'
+          echo "::endgroup::"
+
+          echo "::group::service events (last 15)"
+          aws ecs describe-services \
+            --cluster nearbynearby-prod \
+            --services nearbynearby-prod-admin \
+            --query 'services[0].events[0:15]'
+          echo "::endgroup::"
+
+      - name: List running/stopped admin tasks
+        run: |
+          echo "::group::running tasks"
+          aws ecs list-tasks --cluster nearbynearby-prod --service-name nearbynearby-prod-admin --desired-status RUNNING
+          echo "::endgroup::"
+          echo "::group::stopped tasks (last 5)"
+          aws ecs list-tasks --cluster nearbynearby-prod --service-name nearbynearby-prod-admin --desired-status STOPPED --max-results 5
+          echo "::endgroup::"
+
+      - name: Describe stopped tasks (reason for failure)
+        run: |
+          STOPPED=$(aws ecs list-tasks --cluster nearbynearby-prod --service-name nearbynearby-prod-admin --desired-status STOPPED --max-results 5 --query 'taskArns' --output text)
+          if [ -n "$STOPPED" ]; then
+            echo "::group::describe stopped tasks"
+            aws ecs describe-tasks --cluster nearbynearby-prod --tasks $STOPPED \
+              --query 'tasks[].{taskArn:taskArn,lastStatus:lastStatus,stoppedReason:stoppedReason,stopCode:stopCode,containers:containers[].{name:name,lastStatus:lastStatus,reason:reason,exitCode:exitCode}}'
+            echo "::endgroup::"
+          else
+            echo "no stopped tasks"
+          fi
+
+      - name: Recent admin backend logs (full, last 20 min)
+        run: |
+          echo "::group::CloudWatch /ecs/nearbynearby-prod/admin (last 20m)"
+          aws logs tail '/ecs/nearbynearby-prod/admin' --since 20m --format short || true
+          echo "::endgroup::"
+
+      - name: Grep for migration/alembic/error signals
+        run: |
+          echo "::group::ERROR/alembic/Traceback/CRITICAL"
+          aws logs tail '/ecs/nearbynearby-prod/admin' --since 25m --filter-pattern "?ERROR ?Traceback ?CRITICAL ?alembic ?migration ?psycopg2 ?OperationalError" --format short || true
+          echo "::endgroup::"
+
+      - name: Target group health (ALB)
+        run: |
+          TG_ARN=$(aws elbv2 describe-target-groups --query 'TargetGroups[?contains(TargetGroupName, `admin`)].TargetGroupArn' --output text | head -1)
+          echo "TargetGroup: $TG_ARN"
+          if [ -n "$TG_ARN" ]; then
+            echo "::group::target health"
+            aws elbv2 describe-target-health --target-group-arn "$TG_ARN"
+            echo "::endgroup::"
+          fi
