@@ -17,61 +17,61 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
           aws-region: us-east-1
 
-      - name: ECS admin service summary
+      - name: Task definition (look for image tag + secret refs)
+        shell: bash
         run: |
-          echo "::group::describe-services (status + deployments)"
-          aws ecs describe-services \
-            --cluster nearbynearby-prod \
-            --services nearbynearby-prod-admin \
-            --query 'services[0].{running:runningCount,desired:desiredCount,pending:pendingCount,deployments:deployments[].{id:id,status:status,rollout:rolloutState,rolloutReason:rolloutStateReason,taskDef:taskDefinition,desired:desiredCount,running:runningCount,pending:pendingCount,failedTasks:failedTasks,createdAt:createdAt,updatedAt:updatedAt}}'
+          set +e
+          echo "::group::current task def for admin service"
+          TD_ARN=$(aws ecs describe-services --cluster nearbynearby-prod --services nearbynearby-prod-admin --query 'services[0].taskDefinition' --output text)
+          echo "taskDefinition: $TD_ARN"
+          aws ecs describe-task-definition --task-definition "$TD_ARN" \
+            --query 'taskDefinition.{family:family,revision:revision,cpu:cpu,memory:memory,containers:containerDefinitions[].{name:name,image:image,essential:essential,env:environment,secrets:secrets,logConfiguration:logConfiguration}}' || true
           echo "::endgroup::"
 
-          echo "::group::service events (last 15)"
-          aws ecs describe-services \
-            --cluster nearbynearby-prod \
-            --services nearbynearby-prod-admin \
-            --query 'services[0].events[0:15]'
+      - name: Latest admin backend image in ECR
+        shell: bash
+        run: |
+          set +e
+          echo "::group::ECR images for admin backend (last 5)"
+          aws ecr describe-images --repository-name nearbynearby/nearby-admin-backend \
+            --query 'reverse(sort_by(imageDetails,&imagePushedAt))[:5].{pushedAt:imagePushedAt,tags:imageTags,sizeMB:to_string(imageSizeInBytes)}' || true
           echo "::endgroup::"
 
-      - name: List running/stopped admin tasks
+      - name: Describe failing tasks from service events
+        shell: bash
         run: |
-          echo "::group::running tasks"
-          aws ecs list-tasks --cluster nearbynearby-prod --service-name nearbynearby-prod-admin --desired-status RUNNING
-          echo "::endgroup::"
-          echo "::group::stopped tasks (last 5)"
-          aws ecs list-tasks --cluster nearbynearby-prod --service-name nearbynearby-prod-admin --desired-status STOPPED --max-results 5
+          set +e
+          echo "::group::extract task ids from recent service events"
+          EVENTS=$(aws ecs describe-services --cluster nearbynearby-prod --services nearbynearby-prod-admin --query 'services[0].events[0:25]' --output json)
+          echo "$EVENTS" | grep -oE 'task [a-f0-9]{32}' | awk '{print $2}' | sort -u | head -6 > /tmp/tasks.txt
+          cat /tmp/tasks.txt
           echo "::endgroup::"
 
-      - name: Describe stopped tasks (reason for failure)
-        run: |
-          STOPPED=$(aws ecs list-tasks --cluster nearbynearby-prod --service-name nearbynearby-prod-admin --desired-status STOPPED --max-results 5 --query 'taskArns' --output text)
-          if [ -n "$STOPPED" ]; then
-            echo "::group::describe stopped tasks"
-            aws ecs describe-tasks --cluster nearbynearby-prod --tasks $STOPPED \
-              --query 'tasks[].{taskArn:taskArn,lastStatus:lastStatus,stoppedReason:stoppedReason,stopCode:stopCode,containers:containers[].{name:name,lastStatus:lastStatus,reason:reason,exitCode:exitCode}}'
+          for t in $(cat /tmp/tasks.txt); do
+            echo "::group::task $t"
+            aws ecs describe-tasks --cluster nearbynearby-prod --tasks "$t" \
+              --query 'tasks[0].{taskArn:taskArn,lastStatus:lastStatus,stoppedReason:stoppedReason,stopCode:stopCode,startedAt:startedAt,stoppingAt:stoppingAt,stoppedAt:stoppedAt,containers:containers[].{name:name,lastStatus:lastStatus,reason:reason,exitCode:exitCode,healthStatus:healthStatus}}' 2>&1 || true
             echo "::endgroup::"
-          else
-            echo "no stopped tasks"
-          fi
+          done
 
-      - name: Recent admin backend logs (full, last 20 min)
+      - name: CloudWatch logs (admin log group)
+        shell: bash
         run: |
-          echo "::group::CloudWatch /ecs/nearbynearby-prod/admin (last 20m)"
-          aws logs tail '/ecs/nearbynearby-prod/admin' --since 20m --format short || true
+          set +e
+          echo "::group::list log streams in /ecs/nearbynearby-prod/admin"
+          aws logs describe-log-streams --log-group-name '/ecs/nearbynearby-prod/admin' \
+            --order-by LastEventTime --descending --max-items 8 \
+            --query 'logStreams[].{name:logStreamName,lastEvent:lastEventTimestamp}' 2>&1 || true
           echo "::endgroup::"
 
-      - name: Grep for migration/alembic/error signals
-        run: |
-          echo "::group::ERROR/alembic/Traceback/CRITICAL"
-          aws logs tail '/ecs/nearbynearby-prod/admin' --since 25m --filter-pattern "?ERROR ?Traceback ?CRITICAL ?alembic ?migration ?psycopg2 ?OperationalError" --format short || true
+          echo "::group::tail admin logs (last 30m)"
+          aws logs tail '/ecs/nearbynearby-prod/admin' --since 30m --format short 2>&1 | tail -300 || true
           echo "::endgroup::"
 
-      - name: Target group health (ALB)
+      - name: Stopped tasks list (direct query)
+        shell: bash
         run: |
-          TG_ARN=$(aws elbv2 describe-target-groups --query 'TargetGroups[?contains(TargetGroupName, `admin`)].TargetGroupArn' --output text | head -1)
-          echo "TargetGroup: $TG_ARN"
-          if [ -n "$TG_ARN" ]; then
-            echo "::group::target health"
-            aws elbv2 describe-target-health --target-group-arn "$TG_ARN"
-            echo "::endgroup::"
-          fi
+          set +e
+          echo "::group::list stopped tasks"
+          aws ecs list-tasks --cluster nearbynearby-prod --service-name nearbynearby-prod-admin --desired-status STOPPED --max-results 10 2>&1 || true
+          echo "::endgroup::"
