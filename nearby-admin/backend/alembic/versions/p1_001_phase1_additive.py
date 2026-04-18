@@ -13,8 +13,6 @@ park_entry_notes is intentionally NOT re-added here (already present via an
 earlier migration on the points_of_interest model).
 """
 
-import json
-
 from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects.postgresql import JSONB
@@ -61,45 +59,46 @@ IDEAL_FOR_GROUP_MAP = {
 }
 
 
-def regroup_ideal_for(flat_list):
-    out = {
-        'atmosphere': [], 'age_group': [], 'social_settings': [],
-        'local_special': [], '_legacy': [],
-    }
-    for item in (flat_list or []):
-        out[IDEAL_FOR_GROUP_MAP.get(item, '_legacy')].append(item)
-    return out
+def _pg_quote(s: str) -> str:
+    """Escape a string for inline use in a SQL VALUES clause."""
+    return "'" + s.replace("'", "''") + "'"
 
 
 def upgrade():
-    # --- points_of_interest: 17 additive columns (park_entry_notes already exists) ---
-    op.add_column('points_of_interest', sa.Column('has_been_published', sa.Boolean(), nullable=False, server_default=sa.false()))
-    op.add_column('points_of_interest', sa.Column('arrival_methods', JSONB(), server_default=sa.text("'[]'::jsonb"), nullable=True))
-    op.add_column('points_of_interest', sa.Column('what3words_address', sa.String(length=100), nullable=True))
-    op.add_column('points_of_interest', sa.Column('icon_free_wifi', sa.Boolean(), nullable=False, server_default=sa.false()))
-    op.add_column('points_of_interest', sa.Column('icon_pet_friendly', sa.Boolean(), nullable=False, server_default=sa.false()))
-    op.add_column('points_of_interest', sa.Column('icon_public_restroom', sa.Boolean(), nullable=False, server_default=sa.false()))
-    op.add_column('points_of_interest', sa.Column('icon_wheelchair_accessible', sa.Boolean(), nullable=False, server_default=sa.false()))
-    op.add_column('points_of_interest', sa.Column('is_sponsor', sa.Boolean(), nullable=False, server_default=sa.false()))
-    op.add_column('points_of_interest', sa.Column('sponsor_level', sa.String(length=30), nullable=True))
-    op.add_column('points_of_interest', sa.Column('admin_notes', sa.Text(), nullable=True))
-    op.add_column('points_of_interest', sa.Column('accessible_parking_details', JSONB(), nullable=True))
-    op.add_column('points_of_interest', sa.Column('accessible_restroom', sa.Boolean(), nullable=False, server_default=sa.false()))
-    op.add_column('points_of_interest', sa.Column('accessible_restroom_details', JSONB(), nullable=True))
-    op.add_column('points_of_interest', sa.Column('playground_age_groups', JSONB(), nullable=True))
-    op.add_column('points_of_interest', sa.Column('playground_ada_checklist', JSONB(), nullable=True))
-    op.add_column('points_of_interest', sa.Column('inclusive_playground', sa.Boolean(), nullable=False, server_default=sa.false()))
-    op.add_column('points_of_interest', sa.Column('alcohol_available', sa.String(length=50), nullable=True))
+    # Column adds are idempotent via IF NOT EXISTS so a previously-failed
+    # partial migration attempt doesn't wedge the next retry.
+    op.execute(sa.text("""
+        ALTER TABLE points_of_interest
+            ADD COLUMN IF NOT EXISTS has_been_published BOOLEAN NOT NULL DEFAULT false,
+            ADD COLUMN IF NOT EXISTS arrival_methods JSONB DEFAULT '[]'::jsonb,
+            ADD COLUMN IF NOT EXISTS what3words_address VARCHAR(100),
+            ADD COLUMN IF NOT EXISTS icon_free_wifi BOOLEAN NOT NULL DEFAULT false,
+            ADD COLUMN IF NOT EXISTS icon_pet_friendly BOOLEAN NOT NULL DEFAULT false,
+            ADD COLUMN IF NOT EXISTS icon_public_restroom BOOLEAN NOT NULL DEFAULT false,
+            ADD COLUMN IF NOT EXISTS icon_wheelchair_accessible BOOLEAN NOT NULL DEFAULT false,
+            ADD COLUMN IF NOT EXISTS is_sponsor BOOLEAN NOT NULL DEFAULT false,
+            ADD COLUMN IF NOT EXISTS sponsor_level VARCHAR(30),
+            ADD COLUMN IF NOT EXISTS admin_notes TEXT,
+            ADD COLUMN IF NOT EXISTS accessible_parking_details JSONB,
+            ADD COLUMN IF NOT EXISTS accessible_restroom BOOLEAN NOT NULL DEFAULT false,
+            ADD COLUMN IF NOT EXISTS accessible_restroom_details JSONB,
+            ADD COLUMN IF NOT EXISTS playground_age_groups JSONB,
+            ADD COLUMN IF NOT EXISTS playground_ada_checklist JSONB,
+            ADD COLUMN IF NOT EXISTS inclusive_playground BOOLEAN NOT NULL DEFAULT false,
+            ADD COLUMN IF NOT EXISTS alcohol_available VARCHAR(50)
+    """))
     # park_entry_notes SKIPPED — already exists on the model/table.
 
-    # --- trails: 7 additive columns ---
-    op.add_column('trails', sa.Column('mile_markers', sa.Boolean(), nullable=False, server_default=sa.false()))
-    op.add_column('trails', sa.Column('trailhead_signage', sa.Boolean(), nullable=False, server_default=sa.false()))
-    op.add_column('trails', sa.Column('audio_guide_available', sa.Boolean(), nullable=False, server_default=sa.false()))
-    op.add_column('trails', sa.Column('qr_trail_guide', sa.Boolean(), nullable=False, server_default=sa.false()))
-    op.add_column('trails', sa.Column('trail_guide_notes', sa.Text(), nullable=True))
-    op.add_column('trails', sa.Column('trail_lighting', sa.String(length=30), nullable=True))
-    op.add_column('trails', sa.Column('access_points', JSONB(), nullable=True))
+    op.execute(sa.text("""
+        ALTER TABLE trails
+            ADD COLUMN IF NOT EXISTS mile_markers BOOLEAN NOT NULL DEFAULT false,
+            ADD COLUMN IF NOT EXISTS trailhead_signage BOOLEAN NOT NULL DEFAULT false,
+            ADD COLUMN IF NOT EXISTS audio_guide_available BOOLEAN NOT NULL DEFAULT false,
+            ADD COLUMN IF NOT EXISTS qr_trail_guide BOOLEAN NOT NULL DEFAULT false,
+            ADD COLUMN IF NOT EXISTS trail_guide_notes TEXT,
+            ADD COLUMN IF NOT EXISTS trail_lighting VARCHAR(30),
+            ADD COLUMN IF NOT EXISTS access_points JSONB
+    """))
 
     # ------------------------------------------------------------------
     # Backfills (order matters)
@@ -156,49 +155,79 @@ def upgrade():
           AND (events.ticket_links IS NULL OR events.ticket_links = '[]'::jsonb)
     """))
 
-    # 5) Ideal For: flat list -> grouped dict (Python row-by-row).
-    conn = op.get_bind()
-    rows = conn.execute(sa.text(
-        "SELECT id, ideal_for FROM points_of_interest WHERE ideal_for IS NOT NULL"
-    )).fetchall()
-    for r in rows:
-        val = r.ideal_for
-        if isinstance(val, dict):
-            continue
-        new_val = regroup_ideal_for(val)
-        conn.execute(
-            sa.text("UPDATE points_of_interest SET ideal_for = CAST(:v AS jsonb) WHERE id = :i"),
-            {'v': json.dumps(new_val), 'i': str(r.id)},
+    # 5) Ideal For: flat list -> grouped dict.
+    # Previously a Python row-by-row UPDATE loop — too slow for prod (exceeded
+    # ECS health check grace period). Now one set-based SQL statement, with
+    # the group map inlined as a VALUES table.
+    values_rows = ",\n              ".join(
+        f"({_pg_quote(item)}, {_pg_quote(grp)})"
+        for item, grp in IDEAL_FOR_GROUP_MAP.items()
+    )
+    op.execute(sa.text(f"""
+        WITH group_map(item, grp) AS (
+            VALUES
+              {values_rows}
+        ),
+        expanded AS (
+            SELECT p.id, elem.value AS item,
+                   COALESCE(gm.grp, '_legacy') AS grp
+            FROM points_of_interest p
+            CROSS JOIN LATERAL jsonb_array_elements_text(p.ideal_for) AS elem(value)
+            LEFT JOIN group_map gm ON gm.item = elem.value
+            WHERE p.ideal_for IS NOT NULL
+              AND jsonb_typeof(p.ideal_for) = 'array'
+        ),
+        grouped AS (
+            SELECT id,
+                   jsonb_build_object(
+                       'atmosphere',      COALESCE(jsonb_agg(item) FILTER (WHERE grp = 'atmosphere'),      '[]'::jsonb),
+                       'age_group',       COALESCE(jsonb_agg(item) FILTER (WHERE grp = 'age_group'),       '[]'::jsonb),
+                       'social_settings', COALESCE(jsonb_agg(item) FILTER (WHERE grp = 'social_settings'), '[]'::jsonb),
+                       'local_special',   COALESCE(jsonb_agg(item) FILTER (WHERE grp = 'local_special'),   '[]'::jsonb),
+                       '_legacy',         COALESCE(jsonb_agg(item) FILTER (WHERE grp = '_legacy'),         '[]'::jsonb)
+                   ) AS regrouped
+            FROM expanded
+            GROUP BY id
         )
+        UPDATE points_of_interest p
+        SET ideal_for = g.regrouped
+        FROM grouped g
+        WHERE p.id = g.id
+    """))
 
     # 6) Icon booleans backfill (SQL mirror of compute_icon_booleans).
-    #    wifi_options / public_toilets / pet_options are already JSONB;
-    #    no ::jsonb cast needed on those columns.
+    # Each expression is wrapped in COALESCE(..., false) because JSONB key
+    # access returns NULL for missing keys, which can propagate through AND
+    # into a NULL boolean — and these columns are NOT NULL.
     op.execute(sa.text("""
         UPDATE points_of_interest SET
-            icon_free_wifi = (
+            icon_free_wifi = COALESCE(
                 (wifi_options @> '["Free Public Wifi"]'::jsonb) OR
                 (wifi_options @> '["Free Wifi"]'::jsonb) OR
-                (COALESCE(amenities, '{}'::jsonb) ->> 'wifi' = 'Free Wifi')
+                (COALESCE(amenities, '{}'::jsonb) ->> 'wifi' = 'Free Wifi'),
+                false
             ),
-            icon_public_restroom = (
+            icon_public_restroom = COALESCE(
                 public_toilets IS NOT NULL
                 AND jsonb_array_length(public_toilets) > 0
                 AND NOT (public_toilets = '["No Public Restroom"]'::jsonb)
-                AND NOT (public_toilets = '["No"]'::jsonb)
+                AND NOT (public_toilets = '["No"]'::jsonb),
+                false
             ),
-            icon_pet_friendly = (
+            icon_pet_friendly = COALESCE(
                 pet_options IS NOT NULL
                 AND jsonb_array_length(pet_options) > 0
-                AND NOT (pet_options <@ '["Not Allowed","No Dogs","No Pets Allowed","No Dogs Allowed","No Cats Allowed"]'::jsonb)
+                AND NOT (pet_options <@ '["Not Allowed","No Dogs","No Pets Allowed","No Dogs Allowed","No Cats Allowed"]'::jsonb),
+                false
             ),
-            icon_wheelchair_accessible = (
+            icon_wheelchair_accessible = COALESCE(
                 accessible_restroom = true
                 OR inclusive_playground = true
                 OR (accessible_parking_details IS NOT NULL
                     AND jsonb_array_length(accessible_parking_details) > 0)
                 OR (jsonb_typeof(COALESCE(amenities, '{}'::jsonb) -> 'mobility_access') = 'array'
-                    AND jsonb_array_length(COALESCE(amenities, '{}'::jsonb) -> 'mobility_access') > 0)
+                    AND jsonb_array_length(COALESCE(amenities, '{}'::jsonb) -> 'mobility_access') > 0),
+                false
             )
     """))
 
