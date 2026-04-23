@@ -31,6 +31,19 @@ def normalize_titled_links(links: Optional[List[TitledLink]]) -> Optional[List[D
             result.append(link)
     return result
 
+
+def coerce_amenities_dict(v):
+    # Migration p1_001 used JSONB || on rows whose amenities was already an
+    # array, producing shapes like [None, {"wifi": null}]. Collapse to dict so
+    # response validation succeeds; keep the malformed value out of the API.
+    if isinstance(v, list):
+        merged: Dict[str, Any] = {}
+        for item in v:
+            if isinstance(item, dict):
+                merged.update(item)
+        return merged or None
+    return v
+
 # Helper for slug generation
 def generate_slug(value: str) -> str:
     s = value.lower().strip()
@@ -493,6 +506,11 @@ class PointOfInterestBase(BaseModel):
     compliance: Optional[Dict[str, Any]] = None
     custom_fields: Optional[Dict[str, Any]] = None
 
+    @field_validator('amenities', mode='before')
+    @classmethod
+    def _coerce_amenities(cls, v):
+        return coerce_amenities_dict(v)
+
 class PointOfInterestCreate(PointOfInterestBase):
     location: PointGeometry
     business: Optional[BusinessCreate] = None
@@ -784,6 +802,11 @@ class VenueDataForEvent(BaseModel):
 
     # Amenities
     amenities: Optional[Dict[str, Any]] = None
+
+    @field_validator('amenities', mode='before')
+    @classmethod
+    def _coerce_amenities(cls, v):
+        return coerce_amenities_dict(v)
 
     # Photos that can be copied (metadata only, not binary)
     copyable_images: List[Dict[str, Any]] = []
