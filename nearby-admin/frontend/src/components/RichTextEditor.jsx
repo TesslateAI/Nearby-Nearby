@@ -42,7 +42,7 @@ const CustomRichTextEditor = forwardRef(({
       protocols: ['http', 'https', 'mailto'],
       validate: href => /^https?:\/\//.test(href) || /^mailto:/.test(href),
     }),
-    CharacterCount.configure({ limit: maxLength || null }),
+    CharacterCount.configure({}),
   ], [maxLength]);
 
   // Debounced onChange - only updates form state after user stops typing
@@ -69,7 +69,22 @@ const CustomRichTextEditor = forwardRef(({
     editorProps: {
       attributes: {
         style: 'height: 96px !important; max-height: 96px !important; overflow-y: auto !important;'
-      }
+      },
+      handlePaste: maxLength ? (view, event, slice) => {
+        const currentLength = view.state.doc.textContent.length;
+        const pastedText = slice.content.textBetween(0, slice.content.size, ' ');
+        const remaining = maxLength - currentLength;
+        if (remaining <= 0) {
+          return true; // block paste if already at limit
+        }
+        if (pastedText.length > remaining) {
+          // Truncate pasted text to fit
+          const truncated = pastedText.substring(0, remaining);
+          view.dispatch(view.state.tr.insertText(truncated));
+          return true; // handled
+        }
+        return false; // let TipTap handle normally
+      } : undefined
     }
   });
 

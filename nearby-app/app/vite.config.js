@@ -7,6 +7,7 @@ export default defineConfig({
   build: {
     outDir: '../backend/static',
     emptyOutDir: true,
+    sourcemap: 'hidden',
   },
   server: {
     host: '0.0.0.0',
@@ -14,9 +15,37 @@ export default defineConfig({
     watch: {
       usePolling: true,  // Required for Docker file watching on Windows/Mac
     },
+    hmr: {
+      host: 'localhost',
+      port: 8003,        // Client-facing port (mapped from 5173 in docker-compose)
+    },
     proxy: {
       '/api': {
         target: 'http://nearby-app-backend-1:8000',  // Use explicit container name to avoid DNS collision
+        changeOrigin: true,
+      },
+      '/sitemap.xml': {
+        target: 'http://nearby-app-backend-1:8000',
+        changeOrigin: true,
+      },
+      '/sitemap-pages.xml': {
+        target: 'http://nearby-app-backend-1:8000',
+        changeOrigin: true,
+      },
+      '/sitemap-places.xml': {
+        target: 'http://nearby-app-backend-1:8000',
+        changeOrigin: true,
+      },
+      '/sitemap-parks.xml': {
+        target: 'http://nearby-app-backend-1:8000',
+        changeOrigin: true,
+      },
+      '/sitemap-trails.xml': {
+        target: 'http://nearby-app-backend-1:8000',
+        changeOrigin: true,
+      },
+      '/sitemap-events.xml': {
+        target: 'http://nearby-app-backend-1:8000',
         changeOrigin: true,
       },
     },

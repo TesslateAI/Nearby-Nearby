@@ -21,7 +21,7 @@ The platform's namesake and flagship feature. When viewing any POI detail page, 
 
 1. **Shows nearby POIs** - Fetches and displays businesses, parks, trails, and events near the current POI
 2. **Interactive map** - Leaflet map with Carto Voyager tiles and numbered markers that link to result cards
-3. **Smart filtering** - Filter by type (All, Businesses, Events, Parks, Trails, Youth Events) and by date
+3. **Smart filtering** - Filter by type (All, Businesses, Events, Parks, Trails) and by date
 4. **Hybrid AI search** - Search within nearby results using keyword + semantic understanding
 5. **Directions** - One-click navigation to Google Maps, Apple Maps, or Waze
 6. **Rich POI cards** - Shows distance, hours, amenities, trail difficulty, event dates
@@ -38,7 +38,7 @@ The platform's namesake and flagship feature. When viewing any POI detail page, 
 ### Key Features
 
 **Filtering & Search:**
-- **Type filter pills**: All, Businesses, Events, Parks, Trails, Youth Events (with lucide icons)
+- **Type filter pills**: All, Businesses, Events, Parks, Trails (with lucide icons)
 - **Horizontal scroll**: Filter pills scroll horizontally on mobile
 - **Hybrid AI search**: Uses `/api/pois/hybrid-search` filtered to nearby results only
 - **Date presets**: Today, Tomorrow, This Weekend, or pick a custom date
@@ -417,11 +417,10 @@ const filterIcons = {
   'Events': Calendar,
   'Parks': Trees,
   'Trails': Mountain,
-  'Youth Events': Users
 };
 
 function NearbyFilters({ selectedFilter, onFilterChange }) {
-  const filters = ['All', 'Businesses', 'Events', 'Parks', 'Trails', 'Youth Events'];
+  const filters = ['All', 'Businesses', 'Events', 'Parks', 'Trails'];
 
   return (
     <div className="nearby-filters">

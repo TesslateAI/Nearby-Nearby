@@ -10,6 +10,114 @@ from app import models, schemas
 from app.crud.crud_category import get_category
 from app.utils.html_sanitizer import sanitize_poi_fields
 from geoalchemy2.types import Geography
+from shared.constants.field_options import EVENT_STATUS_EXPLANATION_REQUIRED
+from shared.utils.event_status import validate_status_transition
+
+
+def compute_icon_booleans(poi: dict) -> dict:
+    wifi_opts = poi.get('wifi_options') or []
+    amenities = poi.get('amenities') or {}
+    poi['icon_free_wifi'] = (
+        'Free Public Wifi' in wifi_opts or 'Free Wifi' in wifi_opts
+        or amenities.get('wifi') == 'Free Wifi'
+    )
+    pets = poi.get('pet_options') or []
+    negatives = {'No Pets Allowed','No Dogs Allowed','No Cats Allowed','Not Allowed','No Dogs'}
+    poi['icon_pet_friendly'] = bool(pets) and any(p not in negatives for p in pets)
+    toilets = poi.get('public_toilets') or []
+    poi['icon_public_restroom'] = bool(toilets) and toilets != ['No Public Restroom'] and toilets != ['No']
+    acc_parking = poi.get('accessible_parking_details') or []
+    mobility = (amenities.get('mobility_access') or amenities.get('accessibility') or [])
+    poi['icon_wheelchair_accessible'] = (
+        bool(poi.get('accessible_restroom'))
+        or bool(acc_parking)
+        or bool(poi.get('inclusive_playground'))
+        or (isinstance(mobility, list) and len(mobility) > 0)
+        or (isinstance(mobility, bool) and mobility)
+    )
+    return poi
+
+def compute_accessible_restroom(poi: dict) -> dict:
+    cl = poi.get('accessible_restroom_details') or {}
+    if isinstance(cl, dict):
+        poi['accessible_restroom'] = any(bool(v) for v in cl.values())
+    elif isinstance(cl, list):
+        poi['accessible_restroom'] = len(cl) > 0
+    else:
+        poi['accessible_restroom'] = False
+    return poi
+
+def compute_inclusive_playground(poi: dict) -> dict:
+    cl = poi.get('playground_ada_checklist') or []
+    required = {'Accessible route to play area','Ground-level play components accessible',
+                'Unitary surface (poured-rubber/tiles)'}
+    if isinstance(cl, list):
+        poi['inclusive_playground'] = required.issubset(set(cl))
+    elif isinstance(cl, dict):
+        flat = {item for items in cl.values() for item in (items or [])}
+        poi['inclusive_playground'] = required.issubset(flat)
+    else:
+        poi['inclusive_playground'] = False
+    return poi
+
+def compute_wifi_mirror(poi: dict) -> dict:
+    amenities = poi.get('amenities') or {}
+    if amenities.get('wifi'):
+        return poi
+    wifi_opts = poi.get('wifi_options') or []
+    mapping = {'Free Public Wifi':'Free Wifi','Paid Public Wifi':'Paid Wifi',
+               'No Public Wifi':'No Public Wifi'}
+    for src, dst in mapping.items():
+        if src in wifi_opts:
+            amenities['wifi'] = dst
+            break
+    poi['amenities'] = amenities
+    return poi
+
+def apply_sponsor_rule(poi: dict) -> dict:
+    if poi.get('is_sponsor'):
+        poi['listing_type'] = 'paid'
+    return poi
+
+
+_IDEAL_FOR_GROUP_MAP = None
+
+def _get_ideal_for_map():
+    global _IDEAL_FOR_GROUP_MAP
+    if _IDEAL_FOR_GROUP_MAP is None:
+        from shared.constants.field_options import (
+            IDEAL_FOR_ATMOSPHERE, IDEAL_FOR_AGE_GROUP,
+            IDEAL_FOR_SOCIAL_SETTINGS, IDEAL_FOR_LOCAL_SPECIAL,
+        )
+        m = {}
+        for v in IDEAL_FOR_ATMOSPHERE: m[v] = 'atmosphere'
+        for v in IDEAL_FOR_AGE_GROUP: m[v] = 'age_group'
+        for v in IDEAL_FOR_SOCIAL_SETTINGS: m[v] = 'social_settings'
+        for v in IDEAL_FOR_LOCAL_SPECIAL: m[v] = 'local_special'
+        _IDEAL_FOR_GROUP_MAP = m
+    return _IDEAL_FOR_GROUP_MAP
+
+def normalize_ideal_for(poi: dict) -> dict:
+    val = poi.get('ideal_for')
+    if val is None or isinstance(val, dict):
+        return poi
+    if isinstance(val, list):
+        m = _get_ideal_for_map()
+        out = {'atmosphere': [], 'age_group': [], 'social_settings': [],
+               'local_special': [], '_legacy': []}
+        for item in val:
+            out[m.get(item, '_legacy')].append(item)
+        poi['ideal_for'] = out
+    return poi
+
+def apply_phase1_computed(poi: dict) -> dict:
+    normalize_ideal_for(poi)
+    compute_wifi_mirror(poi)
+    compute_accessible_restroom(poi)
+    compute_inclusive_playground(poi)
+    compute_icon_booleans(poi)
+    apply_sponsor_rule(poi)
+    return poi
 
 
 def generate_slug(name: str, city: str = None) -> str:
@@ -181,6 +289,10 @@ def create_poi(db: Session, poi: schemas.PointOfInterestCreate):
         base_slug = generate_slug(poi_data.get('name', ''), poi_data.get('address_city'))
         poi_data['slug'] = ensure_unique_slug(db, base_slug)
 
+    # Apply Phase 1 computed fields (icon booleans, accessible_restroom,
+    # inclusive_playground, amenities.wifi mirror, sponsor listing_type)
+    apply_phase1_computed(poi_data)
+
     db_poi = models.PointOfInterest(**poi_data)
 
     # Set the location geometry
@@ -240,6 +352,22 @@ def create_poi(db: Session, poi: schemas.PointOfInterestCreate):
     elif poi.poi_type == 'EVENT' and poi.event:
         event_data = poi.event.model_dump()
         event_data = sanitize_poi_fields({'event': event_data}).get('event', {})
+        # Duplicate prevention: check same venue + date + name
+        venue_id = event_data.get('venue_poi_id')
+        start_dt = event_data.get('start_datetime')
+        if venue_id and start_dt:
+            existing = db.query(models.PointOfInterest).join(
+                models.Event, models.PointOfInterest.id == models.Event.poi_id
+            ).filter(
+                func.lower(models.PointOfInterest.name) == func.lower(poi_data.get('name', '')),
+                models.Event.venue_poi_id == venue_id,
+                models.Event.start_datetime == start_dt,
+            ).first()
+            if existing:
+                raise HTTPException(
+                    status_code=409,
+                    detail=f"Duplicate event: an event with the same name, venue, and start time already exists (ID: {existing.id})."
+                )
         db_poi.event = models.Event(**event_data)
 
     try:
@@ -270,6 +398,11 @@ def update_poi(db: Session, *, db_obj: models.PointOfInterest, obj_in: schemas.P
 
     # Sanitize HTML content in the update data
     update_data = sanitize_poi_fields(update_data)
+
+    # Apply Phase 1 computed fields (icon booleans, accessible_restroom,
+    # inclusive_playground, amenities.wifi mirror, sponsor listing_type).
+    # Only touches keys the helpers know about; safe for partial updates.
+    apply_phase1_computed(update_data)
 
     # Regenerate slug if name or city changed
     name_changed = 'name' in update_data and update_data['name'] != db_obj.name
@@ -321,6 +454,28 @@ def update_poi(db: Session, *, db_obj: models.PointOfInterest, obj_in: schemas.P
 
     if 'event' in update_data and poi_type_str == 'EVENT':
         event_data = update_data.pop('event')
+        # Task 157: Date Change Guard
+        date_changing = event_data.get('start_datetime') or event_data.get('end_datetime')
+        current_status = getattr(db_obj.event, 'event_status', None) if db_obj.event else None
+        new_status = event_data.get('event_status', current_status)
+        if date_changing and current_status == 'Updated Date and/or Time' and new_status != 'Rescheduled':
+            raise HTTPException(
+                400,
+                "Changing event dates when status is 'Updated Date and/or Time' requires selecting 'Rescheduled' status first."
+            )
+        # Validate status transition
+        if new_status and current_status and new_status != current_status:
+            valid, msg = validate_status_transition(current_status, new_status)
+            if not valid:
+                raise HTTPException(400, msg)
+        # Require status_explanation for certain status transitions
+        if new_status and new_status != current_status and new_status in EVENT_STATUS_EXPLANATION_REQUIRED:
+            explanation = event_data.get('status_explanation')
+            if not explanation:
+                raise HTTPException(
+                    400,
+                    f"status_explanation is required when setting event_status to '{new_status}'."
+                )
         if db_obj.event:
             for key, value in event_data.items():
                 setattr(db_obj.event, key, value)
@@ -401,47 +556,13 @@ def update_poi(db: Session, *, db_obj: models.PointOfInterest, obj_in: schemas.P
                 ))
         db.flush()
 
-    # Update remaining fields
+    # Update remaining fields (subtype dicts already popped above when type matches)
+    # Skip any subtype relationship fields that weren't popped (e.g. type mismatch)
+    subtype_fields = {"event", "business", "park", "trail"}
     for field, value in update_data.items():
-        # For relationship fields, ensure we assign model instances, not dicts
-        if field == "event" and poi_type_str == "EVENT":
-            if isinstance(value, dict):
-                if db_obj.event:
-                    for k, v in value.items():
-                        setattr(db_obj.event, k, v)
-                else:
-                    db_obj.event = models.Event(**value)
-            else:
-                db_obj.event = value
-        elif field == "business" and poi_type_str == "BUSINESS":
-            if isinstance(value, dict):
-                if db_obj.business:
-                    for k, v in value.items():
-                        setattr(db_obj.business, k, v)
-                else:
-                    db_obj.business = models.Business(**value)
-            else:
-                db_obj.business = value
-        elif field == "park" and poi_type_str == "PARK":
-            if isinstance(value, dict):
-                if db_obj.park:
-                    for k, v in value.items():
-                        setattr(db_obj.park, k, v)
-                else:
-                    db_obj.park = models.Park(**value)
-            else:
-                db_obj.park = value
-        elif field == "trail" and poi_type_str == "TRAIL":
-            if isinstance(value, dict):
-                if db_obj.trail:
-                    for k, v in value.items():
-                        setattr(db_obj.trail, k, v)
-                else:
-                    db_obj.trail = models.Trail(**value)
-            else:
-                db_obj.trail = value
-        else:
-            setattr(db_obj, field, value)
+        if field in subtype_fields:
+            continue
+        setattr(db_obj, field, value)
 
     try:
         db.add(db_obj)

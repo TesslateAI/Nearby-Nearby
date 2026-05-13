@@ -1,550 +1,330 @@
 /* ==========================================================================
-   Explore page — category grid + filtered results
+   Explore page — minimal page chrome only.
+
+   Everything structural (#one_search_magic, .one_search_1/_2/_wrapper,
+   .one_search_button, .one_search_controls, .search_container,
+   .search_input_wrapper, .search_icon, .search_input, .btn_search,
+   .btn_search_gold, .add_location_link, .btn_clear, .btn_show_radius_options,
+   .btn_show_event_options, .dropdown_show_*, .radius_dropdown_*,
+   .date_dropdown_*, .one_search_amenity_chip, #map_results_layout_1,
+   .map_results_layout_1_left_col, .map_results_layout_1_right_col,
+   .map_result_single_*, .box_style_1, .wrapper_default, .visually_hidden)
+   is owned by src/styles/nn/stylez.css (the template). No overrides here.
+
+   This file only styles Explore-specific page chrome: the results title
+   band, loading/empty/error states, and amenity chip theming.
    ========================================================================== */
 
-.explore {
-  min-height: 100vh;
-  background: var(--color-bg);
-  padding: 60px 20px 80px;
+.explore-page {
+  display: flex;
+  flex-direction: column;
+  min-height: 60vh;
+  background: #eee;
 }
 
-.explore__container {
-  max-width: 1200px;
-  margin: 0 auto;
+/* ── Results title band ──────────────────────────────────────────────── */
+.explore__title-band {
+  background: #fff;
+  border-bottom: 3px solid var(--nn-gold, #fec764);
 }
 
-.explore__header {
-  text-align: center;
-  margin-bottom: 48px;
+.explore__title-inner {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 22px 0;
+  flex-wrap: wrap;
+}
+
+.explore__back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 999px;
+  background: var(--nn-purple1, #562556);
+  color: #fff;
+  text-decoration: none;
+  flex-shrink: 0;
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+.explore__back:hover {
+  background: #6b2e6b;
+  transform: scale(1.05);
+}
+.explore__back:focus-visible {
+  outline: 3px solid var(--nn-gold, #fec764);
+  outline-offset: 2px;
 }
 
 .explore__title {
-  font-family: var(--font-poppins);
-  font-size: 40px;
+  font-family: var(--font-poppins, "Poppins", sans-serif);
+  font-size: 24px;
   font-weight: 700;
-  color: var(--nn-dark);
+  color: var(--nn-dark, #1a2128);
   margin: 0;
+  padding: 0;
   line-height: 1.2;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
-/* ── Category cards grid ─────────────────────────────────────── */
-.explore__categories {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 24px;
+.explore__title-q {
+  color: var(--nn-purple1, #562556);
+  font-style: italic;
 }
 
-.category-card {
-  background: white;
-  border: 2px solid var(--gray-d);
-  border-radius: 16px;
-  padding: 40px 24px 24px;
+.explore__count {
+  font-family: var(--font-poppins, "Poppins", sans-serif);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--nn-purple1, #562556);
+  background: #f3ecf3;
+  padding: 8px 14px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+@media (min-width: 700px)  { .explore__title { font-size: 28px; } }
+@media (min-width: 1200px) { .explore__title { font-size: 32px; } }
+
+/* ── Amenity chips (template class has no visual rules) ──────────────── */
+.one_search_amenity_chip {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #f3ecf3;
+  color: var(--nn-purple1, #562556);
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: capitalize;
+  line-height: 1.4;
+}
+
+/* ── Result card (template: .one_search_map_result_single.box_style_1) ─
+   All base typography/layout comes from the template. We only add:
+   - hover lift
+   - numbered-badge centering fallback (template rule cut off mid-translate)
+   - text-transform on the type line
+   - margin-top to clear the absolute-positioned number badge. */
+.one_search_map_result_single {
+  margin-top: 28px;  /* space for the half-overlapping number badge */
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+.one_search_map_result_single:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(86, 37, 86, 0.12);
+  border-color: #f0b84a;
+}
+.one_search_map_result_number {
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+}
+.one_search_map_result_type {
+  text-transform: capitalize;
+  color: #555;
+}
+.one_search_map_single_city {
+  color: #555;
+}
+.one_search_map_result_hours {
+  color: var(--nn-teal1, #328170);
+  font-weight: 500;
+}
+.one_search_map_result_single_buttons .btn_poi_button_1 {
+  text-decoration: none !important;
+}
+
+/* Whole-card click target — inner buttons stop propagation. */
+.one_search_map_result_single--clickable { cursor: pointer; }
+.one_search_map_result_single--clickable:focus-visible {
+  outline: 3px solid var(--nn-gold, #fec764);
+  outline-offset: 2px;
+}
+
+/* Amenity icon chips — match NearbyCard treatment so the same vocabulary reads
+   identically across Explore and the in-detail Nearby section. */
+.one_search_map_result_amenities {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.one_search_amenity_icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--nn-purple-soft, #f3e8f3);
+  transition: background-color .2s, transform .2s;
+}
+.one_search_amenity_icon svg {
+  width: 22px !important;
+  height: 22px !important;
+}
+.one_search_amenity_icon:hover {
+  background: var(--nn-purple1, #562556);
+  transform: translateY(-1px);
+}
+.one_search_amenity_icon:hover svg path {
+  fill: #fff !important;
+}
+
+/* ── Loading / error / empty states ──────────────────────────────────── */
+.explore__state {
   display: flex;
   flex-direction: column;
   align-items: center;
-  text-align: center;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  position: relative;
-  width: 100%;
-}
-.category-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 24px rgba(86, 37, 86, 0.15);
-  border-color: var(--nn-purple1);
-}
-
-.category-card__icon {
-  color: var(--nn-purple1);
-  margin-bottom: 20px;
-  display: flex;
-  align-items: center;
   justify-content: center;
-}
-
-.category-card__title {
-  font-family: var(--font-poppins);
-  font-size: 22px;
-  font-weight: 700;
-  color: var(--nn-dark);
-  margin: 0 0 16px;
-  line-height: 1.3;
-}
-
-.category-card__count {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--nn-gray);
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.category-card__count-number {
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--nn-teal2);
-}
-
-.category-card__arrow {
-  transition: transform 0.2s ease;
-}
-.category-card:hover .category-card__arrow {
-  transform: translateX(4px);
-}
-
-/* Loading / error */
-.explore__loading,
-.explore__error,
-.explore__empty {
-  text-align: center;
-  padding: 60px 20px;
+  gap: 14px;
+  padding: 80px 20px 120px;
+  font-family: var(--font-poppins, "Poppins", sans-serif);
   font-size: 16px;
-  color: var(--nn-gray);
-}
-.explore__error { color: var(--nn-red); }
-
-/* ── Filtered results view ───────────────────────────────────── */
-.explore--filtered {
-  padding: 0;
-  background: white;
+  color: #555;
+  text-align: center;
+  background: #eee;
 }
 
-.filtered__location-bar {
-  background: white;
-  border-bottom: 1px solid var(--gray-d);
-  padding: 12px 20px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 14px;
-}
-
-.location-address {
-  flex: 1;
-  color: var(--nn-dark);
+.explore__state--error { color: #b00020; }
+.explore__state--empty .explore__state-msg {
+  font-size: 18px;
+  color: var(--nn-dark, #1a2128);
   font-weight: 500;
-}
-
-.filtered__header {
-  background: white;
-  border-bottom: 1px solid var(--gray-d);
-  padding: 16px 20px;
-}
-
-.filtered__header-content {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 16px;
-}
-
-.filtered__back {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  border: 1px solid var(--gray-d);
-  background: white;
-  color: var(--nn-dark);
-  cursor: pointer;
-  transition: background 0.2s;
-}
-.filtered__back:hover { background: var(--light-yellow1); }
-
-.filtered__title {
-  font-family: var(--font-poppins);
-  font-size: 28px;
-  font-weight: 700;
-  color: var(--nn-dark);
   margin: 0;
 }
 
-.filtered__search {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 16px;
-}
-
-.search-input-wrapper {
-  flex: 1;
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.search-icon {
-  position: absolute;
-  left: 16px;
-  color: var(--nn-gray);
-}
-
-.search-input {
-  width: 100%;
-  padding: 12px 40px 12px 48px;
-  border: 2px solid var(--gray-d);
-  border-radius: 12px;
-  font-size: 15px;
-  outline: none;
-  transition: border-color 0.2s;
-  background: white;
-  color: var(--nn-dark);
-  font-family: var(--font-roboto);
-}
-.search-input:focus {
-  border-color: var(--nn-purple1);
-}
-
-.search-clear {
-  position: absolute;
-  right: 12px;
-  background: transparent;
-  border: none;
-  color: var(--nn-gray);
-  cursor: pointer;
-  padding: 4px;
-  display: flex;
-  align-items: center;
-}
-
-.cancel-button {
-  padding: 12px 24px;
-  background: white;
-  border: none;
-  color: var(--nn-dark);
-  font-weight: 600;
-  cursor: pointer;
-  border-radius: 12px;
-  transition: background 0.2s;
-  font-family: var(--font-poppins);
-}
-.cancel-button:hover { background: var(--light-yellow1); }
-
-.filtered__filters-row {
-  margin-bottom: 12px;
-}
-.filtered__filters-row .nearby-filters {
-  padding: 0;
-}
-
-/* POI result cards */
-.filtered__content {
-  display: grid;
-  grid-template-columns: 400px 1fr;
-  height: calc(100vh - 200px);
-}
-
-.filtered__list {
-  overflow-y: auto;
-  padding: 20px;
-  border-right: 1px solid var(--gray-d);
-  background: var(--color-bg);
-}
-
-.poi-card {
-  display: flex;
-  gap: 16px;
-  background: white;
-  border: 2px solid var(--gray-d);
-  border-radius: 12px;
-  padding: 16px;
-  margin-bottom: 12px;
-  text-decoration: none;
-  color: inherit;
-  transition: all 0.2s ease;
-  position: relative;
-}
-.poi-card:hover {
-  border-color: var(--nn-purple1);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(86, 37, 86, 0.1);
-}
-
-.poi-card__image {
-  width: 80px;
-  height: 80px;
-  background: var(--light-yellow1);
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  color: var(--nn-purple1);
-}
-
-.poi-card__content { flex: 1; }
-
-.poi-card__title {
-  font-family: var(--font-poppins);
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--nn-dark);
-  margin: 0 0 8px;
-}
-
-.poi-card__date {
-  font-size: 14px;
-  color: var(--nn-gray);
-  margin: 0 0 4px;
-}
-
-.poi-card__address {
-  font-size: 13px;
-  color: var(--nn-gray);
-  margin: 0 0 4px;
-}
-
-.poi-card__distance {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--nn-teal2);
-  margin: 0;
-}
-
-.poi-card__heart {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  background: white;
-  border: none;
-  color: var(--nn-gray);
-  cursor: pointer;
-  padding: 8px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
-  z-index: 10;
-}
-.poi-card__heart:hover {
-  background: var(--light-yellow1);
-  color: var(--nn-purple1);
-  transform: scale(1.1);
-}
-
-.filtered__map {
-  background: #e5e3e8;
-  position: relative;
-  height: 100%;
-  min-height: 500px;
-}
-.filtered__map .map-container {
-  height: 100%;
-  min-height: 500px;
-}
-
-.filtered__empty {
-  text-align: center;
-  padding: 40px 20px;
-  color: var(--nn-gray);
-}
-
-.filtered__suggest-link {
+.explore__suggest {
   display: inline-block;
-  color: var(--nn-teal2);
-  font-weight: 600;
+  margin-top: 4px;
+  padding: 12px 22px;
+  border-radius: 999px;
+  background: var(--nn-teal1, #328170);
+  color: #fff !important;
+  font-family: var(--font-poppins, "Poppins", sans-serif);
   font-size: 14px;
-  text-decoration: underline;
-  margin-top: 8px;
-}
-.filtered__suggest-link:hover { color: var(--nn-teal1); }
-
-/* ── Location modal ──────────────────────────────────────────── */
-.location-modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  padding: 20px;
-}
-
-.location-modal {
-  background: white;
-  border-radius: 16px;
-  max-width: 500px;
-  width: 100%;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-}
-
-.location-modal__header {
-  padding: 24px;
-  border-bottom: 1px solid var(--gray-d);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.location-modal__title {
-  font-family: var(--font-poppins);
-  font-size: 24px;
-  font-weight: 700;
-  color: var(--nn-dark);
-  margin: 0;
-}
-
-.location-modal__close {
-  background: transparent;
-  border: none;
-  color: var(--nn-gray);
-  cursor: pointer;
-  padding: 4px;
-  display: flex;
-  align-items: center;
-  border-radius: 4px;
-  transition: background 0.2s;
-}
-.location-modal__close:hover { background: var(--light-yellow1); }
-
-.location-modal__content { padding: 24px; }
-
-.location-modal__current-btn {
-  width: 100%;
-  padding: 16px;
-  background: var(--nn-purple1);
-  color: white;
-  border: none;
-  border-radius: 12px;
-  font-size: 16px;
   font-weight: 600;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  transition: all 0.2s ease;
-  font-family: var(--font-poppins);
+  text-decoration: none !important;
+  letter-spacing: 0.03em;
+  transition: background 0.15s ease, transform 0.15s ease;
 }
-.location-modal__current-btn:hover {
-  background: var(--nn-purple2);
+.explore__suggest:hover {
+  background: #245b4e;
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(86, 37, 86, 0.3);
 }
 
-.location-modal__divider {
-  margin: 24px 0;
-  text-align: center;
-  position: relative;
-}
-.location-modal__divider::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 50%;
-  height: 1px;
-  background: var(--gray-d);
-}
-.location-modal__divider span {
-  background: white;
-  padding: 0 16px;
-  color: var(--nn-gray);
-  font-size: 14px;
-  font-weight: 600;
-  position: relative;
-  z-index: 1;
-}
-
-.location-modal__search {
+/* ── Map fallback when no mapped locations ───────────────────────────── */
+.explore__map-empty {
   display: flex;
-  gap: 12px;
-}
-
-.location-modal__input {
-  flex: 1;
-  padding: 12px 16px;
-  border: 2px solid var(--gray-d);
-  border-radius: 12px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  height: 100%;
+  min-height: 300px;
+  color: #fff;
+  font-family: var(--font-poppins, "Poppins", sans-serif);
   font-size: 15px;
-  outline: none;
-  transition: border-color 0.2s;
-  background: white;
-  color: var(--nn-dark);
-  font-family: var(--font-roboto);
-}
-.location-modal__input:focus { border-color: var(--nn-purple1); }
-
-.location-modal__search-btn {
-  padding: 12px 24px;
-  background: var(--nn-teal2);
-  color: white;
-  border: none;
-  border-radius: 12px;
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  white-space: nowrap;
-  font-family: var(--font-poppins);
-}
-.location-modal__search-btn:hover:not(:disabled) { background: var(--nn-teal1); }
-.location-modal__search-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
-/* ── Responsive ──────────────────────────────────────────────── */
-@media (max-width: 1024px) {
-  .explore__categories { grid-template-columns: repeat(2, 1fr); gap: 20px; }
-  .filtered__content { grid-template-columns: 350px 1fr; }
+  padding: 40px 20px;
 }
 
-@media (max-width: 768px) {
-  .explore { padding: 40px 16px 60px; }
-  .explore__title { font-size: 32px; }
-  .explore__header { margin-bottom: 32px; }
-  .explore__categories { grid-template-columns: 1fr; gap: 16px; }
-  .category-card { padding: 32px 20px 20px; }
-  .category-card__icon svg { width: 40px; height: 40px; }
-  .category-card__title { font-size: 20px; }
-  .category-card__count { font-size: 14px; }
+/* Template's .map_results_layout_1_right_col has 200px placeholder padding
+   designed for a static SVG. Our Leaflet map fills the column, so the
+   padding just creates a big green band. Replace with explicit heights
+   per breakpoint (template switches to side-by-side at 1200px). */
+.map_results_layout_1_right_col {
+  padding: 0 !important;
+  height: 380px;
+  min-height: 380px;
+}
+.map_results_layout_1_right_col .map-container,
+.map_results_layout_1_right_col .leaflet-container {
+  width: 100%;
+  height: 100%;
+  min-height: inherit;
+}
+@media (min-width: 768px) {
+  .map_results_layout_1_right_col { height: 440px; min-height: 440px; }
+}
+@media (min-width: 1200px) {
+  .map_results_layout_1_right_col { height: 100%; min-height: 800px; }
+}
+@media (min-width: 1600px) {
+  .map_results_layout_1_right_col { min-height: 900px; }
+}
 
-  .filtered__content { grid-template-columns: 1fr; height: auto; }
-  .filtered__list {
-    border-right: none;
-    border-bottom: 1px solid var(--gray-d);
-    max-height: 60vh;
+/* Left column: cards have a number-badge that protrudes above their top
+   edge, so they need breathing room. Keep tighter than template's 35px. */
+.map_results_layout_1_left_col {
+  gap: 28px !important;
+  align-items: start !important;
+}
+@media (max-width: 767px) {
+  .map_results_layout_1_left_col {
+    padding: 28px 16px !important;
+    gap: 28px !important;
+    overflow-y: visible !important;
   }
-  .filtered__map { height: 400px; }
-  .filtered__search { flex-direction: column; gap: 8px; }
-  .cancel-button { width: 100%; }
-  .filtered__location-bar { padding: 10px 16px; font-size: 13px; }
-  .filtered__header { padding: 12px 16px; }
-  .filtered__title { font-size: 24px; }
-  .poi-card { padding: 12px; gap: 12px; }
-  .poi-card__image { width: 64px; height: 64px; }
-  .poi-card__image svg { width: 24px; height: 24px; }
-  .poi-card__title { font-size: 16px; }
-  .poi-card__heart { top: 12px; right: 12px; padding: 6px; }
-  .poi-card__heart svg { width: 18px; height: 18px; }
+}
+@media (min-width: 768px) and (max-width: 1199px) {
+  .map_results_layout_1_left_col {
+    padding: 28px 5% !important;
+    gap: 28px !important;
+    overflow-y: visible !important;
+  }
+}
+@media (min-width: 1200px) {
+  .map_results_layout_1_left_col {
+    padding: 32px 20px !important;
+    gap: 28px !important;
+  }
 }
 
-@media (max-width: 480px) {
-  .explore { padding: 30px 12px 50px; }
-  .explore__title { font-size: 28px; }
-  .category-card { padding: 28px 16px 16px; }
-  .category-card__icon svg { width: 36px; height: 36px; }
-  .category-card__title { font-size: 18px; margin-bottom: 12px; }
-  .filtered__header-content { margin-bottom: 12px; }
-  .filtered__title { font-size: 20px; }
-  .search-input { font-size: 14px; padding: 10px 36px 10px 44px; }
-  .poi-card__image { width: 56px; height: 56px; }
-  .poi-card__title { font-size: 15px; }
-  .poi-card__address, .poi-card__distance { font-size: 12px; }
-  .location-modal { margin: 0 16px; }
-  .location-modal__header { padding: 20px; }
-  .location-modal__title { font-size: 20px; }
-  .location-modal__content { padding: 20px; }
-  .location-modal__search { flex-direction: column; }
-  .location-modal__search-btn { width: 100%; }
+/* Template's .btn_clear uses the template's .button rule (teal #245b4e)
+   for its background. Our app-wide restored .button is purple, so scope
+   the purple band's CLEAR back to teal to match the template exactly. */
+#one_search_magic .btn_clear {
+  background-color: #245b4e !important;
+  color: #fff !important;
+  border: 1px solid #fff !important;
+  border-radius: 3px !important;
+}
+#one_search_magic .btn_clear:hover {
+  background-color: #1a4238 !important;
 }
 
-/* Mobile nav spacing */
+/* Directions / Details pill buttons on each card — template uses
+   .btn_outline_teal + .btn_poi_button_1. Reset the purple-filled
+   app-wide .button so the teal outline shows. */
+.one_search_map_result_single_buttons .btn_poi_button_1 {
+  background-color: #fff !important;
+  color: #245b4e !important;
+  border: 2px solid #245b4e !important;
+  text-decoration: none !important;
+}
+.one_search_map_result_single_buttons .btn_poi_button_1:hover {
+  background-color: #245b4e !important;
+  color: #fff !important;
+}
+.one_search_map_result_single_buttons .btn_poi_button_1 .poi_button_icon,
+.one_search_map_result_single_buttons .btn_poi_button_1 svg {
+  color: inherit;
+  stroke: currentColor;
+}
+
+/* ── Bottom padding for mobile fixed nav ─────────────────────────────── */
 @media (max-width: 1199px) {
-  .explore { padding-bottom: calc(80px + var(--mobile-nav-height)); }
+  .explore-page {
+    padding-bottom: var(--mobile-nav-height, 75px);
+  }
+}
+
+/* ── Responsive title band tweaks ────────────────────────────────────── */
+@media (max-width: 640px) {
+  .explore__title-inner { padding: 16px 0; gap: 12px; }
+  .explore__count { font-size: 11px; padding: 6px 12px; }
+  .explore__state { padding: 60px 16px 100px; }
 }

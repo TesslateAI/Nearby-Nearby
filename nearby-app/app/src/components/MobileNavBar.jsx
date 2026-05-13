@@ -10,7 +10,7 @@ export default function MobileNavBar({ searchOverlay, navOverlay }) {
       {/* Search button */}
       <button
         id="btn_search_nav"
-        className="btn_reset btn_nav_icon_style_1"
+        className={`btn_reset btn_trigger btn_nav_icon_style_1${searchOverlay.isOpen ? ' is_active' : ''}`}
         type="button"
         onClick={searchOverlay.toggle}
         aria-expanded={searchOverlay.isOpen}
@@ -33,7 +33,7 @@ export default function MobileNavBar({ searchOverlay, navOverlay }) {
       {/* Menu button */}
       <button
         id="btn_overlay_navigation"
-        className="btn_reset btn_nav_icon_style_1"
+        className={`btn_reset btn_trigger btn_nav_icon_style_1${navOverlay.isOpen ? ' is_active' : ''}`}
         type="button"
         onClick={navOverlay.toggle}
         aria-expanded={navOverlay.isOpen}

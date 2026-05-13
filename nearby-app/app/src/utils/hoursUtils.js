@@ -491,7 +491,52 @@ function getExceptionForDate(date, exceptionsData) {
  * Get the effective hours for a specific date
  * Returns { hours, source, label } where source indicates override type
  */
+/**
+ * Convert the backend's flat hours shape
+ *   { monday: [{open:"06:30", close:"17:00"}], tuesday: {closed:true}, ... }
+ * into the structured shape these helpers expect
+ *   { regular: { monday: { status:'open', periods:[{open:{type:'fixed',time}, close:{type:'fixed',time}}] }, ... } }
+ * Pass-through if already in the structured shape (has `regular` key).
+ */
+function normalizeHoursData(hoursData) {
+  if (!hoursData || typeof hoursData !== 'object') return hoursData;
+  if (hoursData.regular) return hoursData;
+
+  const dayKeys = ['monday','tuesday','wednesday','thursday','friday','saturday','sunday'];
+  const hasDayKey = dayKeys.some((d) => d in hoursData);
+  if (!hasDayKey) return hoursData;
+
+  const regular = {};
+  for (const day of dayKeys) {
+    const v = hoursData[day];
+    if (v == null) continue;
+    if (Array.isArray(v)) {
+      const periods = v
+        .filter((p) => p && p.open && p.close)
+        .map((p) => ({
+          open: { type: 'fixed', time: p.open },
+          close: { type: 'fixed', time: p.close },
+        }));
+      regular[day] = periods.length ? { status: 'open', periods } : { status: 'closed' };
+    } else if (typeof v === 'object') {
+      if (v.closed === true || v.status === 'closed') regular[day] = { status: 'closed' };
+      else if (v.status === '24hours') regular[day] = { status: '24hours' };
+      else if (v.status === 'appointment') regular[day] = { status: 'appointment' };
+      else if (v.status === 'open' && Array.isArray(v.periods)) regular[day] = v;
+    } else if (typeof v === 'string' && v.toLowerCase() === 'closed') {
+      regular[day] = { status: 'closed' };
+    }
+  }
+  return {
+    regular,
+    exceptions: hoursData.exceptions,
+    holidays: hoursData.holidays,
+    seasonal: hoursData.seasonal,
+  };
+}
+
 export function getEffectiveHoursForDate(hoursData, date) {
+  hoursData = normalizeHoursData(hoursData);
   if (!hoursData) {
     return { hours: null, source: 'none', label: null };
   }

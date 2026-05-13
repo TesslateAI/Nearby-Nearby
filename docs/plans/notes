@@ -1,0 +1,90 @@
+Testing plan
+
+ Tasks Completed
+
+  Task 42: Set Default City/County/State
+
+  - initialValues.js: City defaults to "Pittsboro"
+  - LocationSection.jsx: City field replaced with searchable/creatable Select dropdown with 15 Chatham County
+   area cities
+  - 8 tests in test_admin_poi_defaults.py — all pass
+
+  Task 43: Improve Map Default Zoom Level
+
+  - LocationMap.jsx: Added MapRecenter component that calls map.setView() when coordinates change, so the map
+   re-centers automatically
+  - Tests in test_admin_poi_defaults.py cover coordinate persistence
+
+  Task 44: Address Entry Moves Map Pin — SKIPPED (per plan)
+
+  Task 45: Venue Data Inheritance
+
+  - Added venue_poi_id (FK to points_of_interest) and venue_inheritance (JSONB) to Event model + schemas     
+  - Mirrored in app models/schemas
+  - Alembic migration: e5f6g7h8i9j0
+  - 7 tests in test_event_venue_inheritance.py — all pass
+
+  Task 46: Remove Military Time from Events
+
+  - Backend returns ISO 8601 datetimes (frontend handles 12h display)
+  - Audit confirmed all time displays already use 12-hour format
+  - 3 tests in test_event_time_format.py — all pass
+
+  Task 47: Add Food and Drink Description Field
+
+  - Field already existed on Event model; expanded app Event schema to expose food_and_drink_info and all    
+  other event fields
+  - 3 tests in test_event_food_drink.py (including cross-app test) — all pass
+
+  Task 48: Add Map Download PDF Option to Events
+
+  - Existing downloadable_maps JSONB and downloadable_map ImageType work for events
+  - 4 tests in test_event_maps.py — all pass
+
+  Task 49: Add Payphone Lat/Long to Events
+
+  - Existing payphone_location and payphone_locations fields work for EVENT POIs
+  - 4 tests in test_event_payphone.py — all pass
+
+  Task 50: Recurring Events Support
+
+  - Added series_id, parent_event_id (FK), excluded_dates, recurrence_end_date, manual_dates to Event model +
+   schemas
+  - repeat_pattern JSONB now supports daily/weekly/monthly/yearly frequencies
+  - Mirrored in app models/schemas
+  - 10 tests in test_recurring_events.py — all pass
+
+  Task 51: Photo Tagging by Function
+
+  - Added function_tags JSONB column to Image model + schemas (admin + app)
+  - Upload endpoint accepts function_tags form field
+  - GET endpoint supports function_tag query parameter for filtering
+  - Update endpoint handles function_tags
+  - Added IMAGE_FUNCTION_TAGS (20 tags) to shared/constants/field_options.py
+  - Alembic migration: d4e5f6g7h8i9
+  - 5 tests in test_image_function_tags.py — all pass
+
+  ---
+  Total: 44 new tests, 269 total tests passing, 0 failures, 0 regressions.
+
+  Admin is running at:
+  - Frontend: http://localhost:5175
+  - Backend API docs: http://localhost:8001/docs
+
+  NEW - Can’t Login on Safari Browser to admin - when I hit login it takes me back to the login page, just keeps cycling. Works fine on chrome - Fix after launch
+Task #2 - Still Doesn’t work, as soon as I click event, it goes to a white page - updated on google sheets to Doesn't Work
+Task #3 - Still Doesn't work, I still can’t click on anything for Corporate Requirements - updated google sheet to Doesn’t work - Fix after Launch
+For Parks and Trails for all Listing Type - When Task #4 was completed for the Add Another Parking Location, it left out a few important parking details, The Parking Types Available, Parking Notes, Expect to pay for Parking  - Fix after Launch
+For Parks and Trails for all Listing Type for the Template Parking Information can we add the Parking Lat and Longitude and Parking Area Name as its set up in the Additional Parking fields. - Fix after Launch
+Task #5 - NN31- When you copy the address on the POI pages on the Address + Parking accordion we need something signaling that the address was copied, similar to the function when you click the lat and long button on the POI pages, it copies fine but I had no idea it actually worked - Launch fix
+Native Share button on POI pages, mistakenly removed from design and needs to be reimplemented, Barry is updating design for Robert to be able to re-add to the design. - Launch Fix  
+Task #11 - Not seeing this added to any POI type for the LAT and Long added to the first set of Parking Lot Fields, they are in the add parking - Moved back to In Progress - Fix after Launch
+In Parks for public restroom the Public Toilet Options (Family, Porta, etc) Needs to be in with the restroom location itself and in the add another bathroom location for each time as it can vary - Fix after launch
+Missing Parking Lot Photos on all POI type in the first set of Parking Lot Fields, they are in the add additional parking - Fix after launch
+On Free Business Listing Short Description, if you try to paste something that is too long it doesn't even try to paste and then just cuts it off at character limit. It will paste if it is the exact - Fix after launch
+In Free Business Listing, remove restroom photos - fix after launch
+The added selections for Wheelchair Accessibility entered in Jira as NM-20 make sure that is also added to Free Business listings 
+Task #33 - Trials still only lets you upload 1 image for Trail Head Photo - fix after launch
+Task #34 - Trails still only lets you upload 1 image for Trail Exit Photo - fix after launch
+
+

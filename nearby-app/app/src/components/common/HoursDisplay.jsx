@@ -6,6 +6,7 @@ import {
   getUpcomingHolidays,
   formatHolidayStatus
 } from '../../utils/hoursUtils';
+import { sanitizeHtml } from '../../utils/sanitize';
 import './HoursDisplay.css';
 
 /**
@@ -104,7 +105,7 @@ function HoursDisplay({
             {hoursNotes && (
               <div
                 className="hours-display__notes-text"
-                dangerouslySetInnerHTML={{ __html: hoursNotes }}
+                dangerouslySetInnerHTML={{ __html: sanitizeHtml(hoursNotes) }}
               />
             )}
           </div>

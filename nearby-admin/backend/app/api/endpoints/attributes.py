@@ -2,12 +2,14 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
 import uuid
+import logging
 
 from app import crud, schemas
 from app.database import get_db
 from app.core.security import get_current_user
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 @router.post("/attributes/", response_model=schemas.Attribute, status_code=201)
@@ -73,24 +75,31 @@ def read_attribute(attribute_id: uuid.UUID, db: Session = Depends(get_db)):
 
 @router.put("/attributes/{attribute_id}", response_model=schemas.Attribute)
 def update_attribute(
-    attribute_id: uuid.UUID, 
-    attribute_in: schemas.AttributeUpdate, 
-    db: Session = Depends(get_db)
+    attribute_id: uuid.UUID,
+    attribute_in: schemas.AttributeUpdate,
+    db: Session = Depends(get_db),
+    current_user: str = Depends(get_current_user),
 ):
     db_attribute = crud.get_attribute(db, attribute_id=attribute_id)
     if not db_attribute:
         raise HTTPException(status_code=404, detail="Attribute not found")
-    
+
     updated_attribute = crud.update_attribute(db=db, db_obj=db_attribute, obj_in=attribute_in)
     return updated_attribute
 
 
 @router.delete("/attributes/{attribute_id}", response_model=schemas.Attribute)
-def delete_attribute(attribute_id: uuid.UUID, db: Session = Depends(get_db)):
+def delete_attribute(
+    attribute_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: str = Depends(get_current_user),
+):
     try:
         db_attribute = crud.delete_attribute(db, attribute_id=attribute_id)
         if db_attribute is None:
             raise HTTPException(status_code=404, detail="Attribute not found")
         return db_attribute
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e)) 
+        # Surface the validation reason but don't leak arbitrary internals.
+        logger.warning("Attribute delete rejected: %s", e)
+        raise HTTPException(status_code=400, detail="Cannot delete attribute (in use or invalid).")

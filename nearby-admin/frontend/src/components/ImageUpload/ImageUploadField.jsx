@@ -42,8 +42,8 @@ const IMAGE_TYPE_CONFIG = {
   rental: { maxCount: 10, maxSizeMB: 5, label: 'Rental Photos' },
   playground: { maxCount: 10, maxSizeMB: 5, label: 'Playground Photos' },
   menu: { maxCount: 10, maxSizeMB: 10, label: 'Menu Photos' },
-  trail_head: { maxCount: 1, maxSizeMB: 5, label: 'Trail Head Photo' },
-  trail_exit: { maxCount: 1, maxSizeMB: 5, label: 'Trail Exit Photo' },
+  trail_head: { maxCount: 10, maxSizeMB: 5, label: 'Trail Head Photos' },
+  trail_exit: { maxCount: 10, maxSizeMB: 5, label: 'Trail Exit Photos' },
   map: { maxCount: 5, maxSizeMB: 20, label: 'Maps' },
   downloadable_map: { maxCount: 5, maxSizeMB: 50, label: 'Downloadable Maps' }
 };

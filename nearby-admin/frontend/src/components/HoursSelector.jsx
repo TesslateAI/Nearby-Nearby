@@ -117,20 +117,21 @@ function TimePeriod({ period, onChange, onRemove, showRemove }) {
     return timeData.type;
   };
 
+  const flexItem = { flex: '1 1 110px', minWidth: 0 };
   return (
-    <Group>
+    <Group wrap="wrap" gap="xs" align="flex-end">
       <Select
         size="xs"
-        w={120}
+        style={flexItem}
         data={TIME_TYPES}
         value={period.open?.type || 'fixed'}
         onChange={(value) => handleTimeTypeChange('open', value)}
       />
-      
+
       {period.open?.type === 'fixed' && (
         <TimeInput
           size="xs"
-          w={100}
+          style={flexItem}
           value={period.open?.time || '09:00'}
           onChange={(event) => onChange({
             ...period,
@@ -138,12 +139,12 @@ function TimePeriod({ period, onChange, onRemove, showRemove }) {
           })}
         />
       )}
-      
+
       {(period.open?.type === 'dawn' || period.open?.type === 'dusk') && (
-        <Group gap={5}>
+        <Group gap={5} style={flexItem}>
           <NumberInput
             size="xs"
-            w={80}
+            style={{ flex: 1, minWidth: 0 }}
             value={period.open?.offset || 0}
             onChange={(value) => onChange({
               ...period,
@@ -158,20 +159,20 @@ function TimePeriod({ period, onChange, onRemove, showRemove }) {
         </Group>
       )}
 
-      <Text size="sm">to</Text>
+      <Text size="sm" px={4}>to</Text>
 
       <Select
         size="xs"
-        w={120}
+        style={flexItem}
         data={TIME_TYPES}
         value={period.close?.type || 'fixed'}
         onChange={(value) => handleTimeTypeChange('close', value)}
       />
-      
+
       {period.close?.type === 'fixed' && (
         <TimeInput
           size="xs"
-          w={100}
+          style={flexItem}
           value={period.close?.time || '17:00'}
           onChange={(event) => onChange({
             ...period,
@@ -179,12 +180,12 @@ function TimePeriod({ period, onChange, onRemove, showRemove }) {
           })}
         />
       )}
-      
+
       {(period.close?.type === 'dawn' || period.close?.type === 'dusk') && (
-        <Group gap={5}>
+        <Group gap={5} style={flexItem}>
           <NumberInput
             size="xs"
-            w={80}
+            style={{ flex: 1, minWidth: 0 }}
             value={period.close?.offset || 0}
             onChange={(value) => onChange({
               ...period,
@@ -205,12 +206,12 @@ function TimePeriod({ period, onChange, onRemove, showRemove }) {
           placeholder="Note (e.g., 'Kitchen closes at 9pm')"
           value={period.note}
           onChange={(e) => onChange({ ...period, note: e.target.value })}
-          w={200}
+          style={{ flex: '1 1 100%', minWidth: 0 }}
         />
       )}
 
       {showRemove && (
-        <ActionIcon color="red" size="sm" onClick={onRemove}>
+        <ActionIcon color="red" size="md" onClick={onRemove} aria-label="Remove time period">
           <IconTrash size={16} />
         </ActionIcon>
       )}
@@ -590,7 +591,7 @@ const HoursSelector = memo(({ value = {}, onChange, poiType }) => {
               You can use predefined seasons OR specify exact date ranges (e.g., "Summer hours: June 1 - Aug 15").
             </Alert>
 
-            <SimpleGrid cols={2}>
+            <SimpleGrid cols={{ base: 1, sm: 2 }}>
               {SEASON_DEFINITIONS.map(season => {
                 const SeasonIcon = season.icon;
                 const hasHours = hours.seasonal[season.value];

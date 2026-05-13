@@ -40,6 +40,7 @@ class ImageUpdate(BaseModel):
     alt_text: Optional[str] = None
     caption: Optional[str] = None
     display_order: Optional[int] = None
+    function_tags: Optional[List[str]] = None
 
 
 class ImageResponse(ImageBase):
@@ -55,6 +56,7 @@ class ImageResponse(ImageBase):
     uploaded_by: Optional[UUID]
     created_at: datetime
     updated_at: Optional[datetime]
+    function_tags: Optional[List[str]] = None
 
     # Computed URLs
     url: str

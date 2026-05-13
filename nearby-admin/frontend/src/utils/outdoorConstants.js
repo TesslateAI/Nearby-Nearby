@@ -1,26 +1,65 @@
 // Outdoor and Recreation Constants
 
-// Playground Types
+// Playground Types — Phase 1 replaced (16 values)
 export const PLAYGROUND_TYPES = [
-  'Art & Play Sculptures',
-  'Toddler (6-23 months)',
-  'Pre School (2-5 years)',
-  'Grade School (5-12 years)',
-  'Inclusive (ADA Accessible)',
-  'Natural Playground (uses natural materials like logs/rocks)',
-  'Sand Pit',
-  'Fence Around Playground',
-  'Separate Areas by Age Group'
+  'Traditional Structure',
+  'Nature Play',
+  'Adventure / Ropes',
+  'Inclusive / Universal',
+  'Splash Pad',
+  'Water Play',
+  'Sensory Play',
+  'Musical Play',
+  'Swings',
+  'Slides',
+  'Climbing Structure',
+  'Zip Line',
+  'Sandbox',
+  'Spinners',
+  'Seesaw',
+  'Ninja Course'
 ];
 
-// Playground Surface Types
+// Playground Surface Types — Phase 1 replaced (9 values)
 export const PLAYGROUND_SURFACES = [
-  'Rubber (poured or tiles)',
-  'Wood Chips',
+  'Engineered Wood Fiber',
+  'Poured-in-Place Rubber',
+  'Rubber Tiles',
   'Sand',
+  'Pea Gravel',
   'Grass',
+  'Artificial Turf',
   'Concrete',
-  'Dirt/Natural'
+  'Mulch'
+];
+
+// Alias used by Phase 1 frontend layouts
+export const PLAYGROUND_SURFACE_TYPES = PLAYGROUND_SURFACES;
+
+// Phase 1 — playground age groups
+export const PLAYGROUND_AGE_GROUPS = [
+  '6–23 months',
+  '2–5 years',
+  '5–12 years',
+  'All Ages'
+];
+
+// Phase 1 — playground ADA checklist
+export const PLAYGROUND_ADA_CHECKLIST = [
+  'Accessible route to play area',
+  'Accessible route onto play surface',
+  'Unitary surface (poured-rubber/tiles)',
+  'Ground-level play components accessible',
+  'Elevated play components with transfer system',
+  'Ramp access to composite structure',
+  'Accessible swing (bucket/harness)',
+  'Sensory play components',
+  'Quiet / retreat space',
+  'Shade over play area',
+  'Accessible seating for caregivers',
+  'Accessible drinking fountain nearby',
+  'Accessible restroom nearby',
+  'Signage with braille / tactile'
 ];
 
 // Natural Features
@@ -45,34 +84,10 @@ export const NATURAL_FEATURES = [
   'Wooded'
 ];
 
-// Outdoor Types
-export const OUTDOOR_TYPES = [
-  'Arboretum',
-  'Boat Launch Parking',
-  'Botanical Garden',
-  'Byway',
-  'City Park',
-  'Community Park',
-  'County Park',
-  'Dog Park',
-  'Historical',
-  'Marine Sanctuaries',
-  'Memorial',
-  'National Park',
-  'National Forest',
-  'Nature Preserve',
-  'Neighborhood Park',
-  'Open Land',
-  'Pocket Park',
-  'Public Square & Plaza',
-  'Recreational Park & Facilities',
-  'Roadside Park',
-  'Sculpture Garden',
-  'State Park',
-  'Trailhead Parking',
-  'Wilderness Area',
-  'Wildlife Refuges'
-];
+// Outdoor Types — Phase 1: consumer is now the categories API
+// (GET /api/categories?applicable_to=PARK|TRAIL). Kept as empty export so
+// existing importers don't crash.
+export const OUTDOOR_TYPES = [];
 
 // Things to Do (Parks Categories)
 export const THINGS_TO_DO = [
@@ -205,12 +220,28 @@ Weather, altitude, and navigation skills can be critical`
   }
 ];
 
-// Trail Route Types
+// Trail Route Types — Phase 1 replaced (7 values)
 export const TRAIL_ROUTE_TYPES = [
   { value: 'loop', label: 'Loop' },
   { value: 'out_and_back', label: 'Out and Back' },
   { value: 'point_to_point', label: 'Point to Point' },
-  { value: 'connecting_network', label: 'Connecting Network' }
+  { value: 'lollipop', label: 'Lollipop' },
+  { value: 'stacked_loops', label: 'Stacked Loops' },
+  { value: 'thru_trail', label: 'Thru-Trail' },
+  { value: 'water_trail', label: 'Water Trail' }
+];
+
+// Grandfathered — surfaced in a Select only when the current row value matches.
+export const GRANDFATHERED_ROUTE_TYPES = [
+  { value: 'connecting_network', label: 'Connecting Network (Legacy)' }
+];
+
+// Phase 1 — trail lighting
+export const TRAIL_LIGHTING_OPTIONS = [
+  { value: 'partial', label: 'Partial' },
+  { value: 'full', label: 'Full' },
+  { value: 'seasonal', label: 'Seasonal' },
+  { value: 'dusk_to_dawn', label: 'Dusk-to-Dawn' }
 ];
 
 // Trail Surfaces
