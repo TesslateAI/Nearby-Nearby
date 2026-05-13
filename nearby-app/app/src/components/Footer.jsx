@@ -99,10 +99,10 @@ export default function Footer() {
         <div id="footer_layer_community_wrapper" className="wrapper_default">
           <h3 className="footer_layer_community_title">Want Nearby Nearby in Your Community?</h3>
           <p className="footer_layer_community_excerpt">We're just getting started!</p>
-          <p>Tell us if you want us in your community. If you're outside North Carolina, don't worry, we're coming nationwide soon, including rural towns and urban communities!</p>
+          <p className="footer_layer_community_text">Tell us if you want us in your community. If you're outside North Carolina, don't worry, we're coming nationwide soon, including rural towns and urban communities!</p>
           <p>
             <Link
-              className="button btn_community"
+              className="button"
               to="/community-interest"
               title="link to community interest page"
             >
@@ -165,6 +165,7 @@ export default function Footer() {
             <ul className="list_footer">
               <li><Link to="/">Home</Link></li>
               <li><Link to="/explore">Explore</Link></li>
+              <li><Link to="/help">Help / FAQ's</Link></li>
               <li><Link to="/suggest-event">Suggest an Event</Link></li>
               <li><Link to="/disaster-network">Disaster Network</Link></li>
             </ul>
@@ -175,7 +176,7 @@ export default function Footer() {
           <div className="end_item copyright_date">&copy; {new Date().getFullYear()} Nearby Nearby. Patent Pending.</div>
           <div className="end_item"><Link to="/privacy-policy">Privacy Policy</Link></div>
           <div className="end_item"><Link to="/terms-of-service">Terms &amp; Conditions</Link></div>
-          <div className="end_item"><Link to="/sitemap">Sitemap</Link></div>
+          <div className="end_item"><a href="/sitemap.xml" target="_blank" rel="noopener noreferrer">Sitemap</a></div>
         </div>
       </footer>
     </>

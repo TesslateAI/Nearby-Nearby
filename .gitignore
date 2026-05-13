@@ -74,6 +74,9 @@ token.json
 client_secret*.json
 *.credentials.json
 
+# Local SCSS source files (Barry's editing companions — not part of the build)
+*.scss
+
 # Claude Code
 .claude/
 

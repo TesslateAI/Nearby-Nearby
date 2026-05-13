@@ -10,9 +10,9 @@
   align-items: center;
 }
 
-/* Content wrapper — 90% width, centered (on .overlay_content via contentClassName) */
+/* Content wrapper — full width, centered (on .overlay_content via contentClassName) */
 .search_overlay_box {
-  width: 90%;
+  width: 100%;
   margin: 0 auto;
 }
 

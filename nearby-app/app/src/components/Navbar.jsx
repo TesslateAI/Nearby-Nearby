@@ -97,7 +97,7 @@ export default function Navbar({ navOverlay, searchOverlay }) {
                     <Link role="menuitem" to="/explore?type=EVENT" className="aaa_menu_1_link" onClick={navOverlay.close}>Events</Link>
                   </li>
                   <li role="none" className="aaa_menu_1_list_item">
-                    <a role="menuitem" href="/disaster-network/" className="aaa_menu_1_link" title="link to Disaster Network page">Disaster</a>
+                    <Link role="menuitem" to="/disaster-network" className="aaa_menu_1_link" onClick={navOverlay.close}>Disaster</Link>
                   </li>
                   <li role="none" className="aaa_menu_1_list_item">
                     <a role="menuitem" href="https://blog.nearbynearby.com/" className="aaa_menu_1_link" target="_blank" rel="noopener noreferrer">Updates</a>
@@ -131,7 +131,7 @@ export default function Navbar({ navOverlay, searchOverlay }) {
                     </button>
                     <ul role="menu" className={`aaa_menu_1_sub_menu${moreOpen ? ' aaa_menu_open' : ''}`}>
                       <li role="none" className="aaa_menu_1_list_item">
-                        <a role="menuitem" href="/help/" className="aaa_menu_1_link" onClick={navOverlay.close}>Help / FAQ's</a>
+                        <Link role="menuitem" to="/help" className="aaa_menu_1_link" onClick={navOverlay.close}>Help / FAQ's</Link>
                       </li>
                       <li role="none" className="aaa_menu_1_list_item">
                         <Link role="menuitem" to="/contact" className="aaa_menu_1_link" onClick={navOverlay.close}>Contact</Link>
