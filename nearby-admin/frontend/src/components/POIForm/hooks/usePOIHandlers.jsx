@@ -116,6 +116,10 @@ export const usePOIHandlers = (id, isEditing, form, setPoiId) => {
             formData.mobility_access = {};
           }
 
+          // Normalize radio fields that default to 'no' — null from API breaks !== 'no' conditionals
+          if (!formData.hunting_fishing_allowed) formData.hunting_fishing_allowed = 'no';
+          if (!formData.fishing_allowed) formData.fishing_allowed = 'no';
+
           // Derive UI control fields from actual data arrays
           // These fields don't exist in backend - they're derived from the actual data
           formData.alcohol_available = (formData.alcohol_options && formData.alcohol_options.length > 0) ? 'yes' : 'no';

@@ -25,7 +25,7 @@ import ServiceAnimalAlert from '../components/ServiceAnimalAlert';
 import {
   AdminOnlyAccordionItem, IdealForGrouped, ArrivalMethodsGroup, What3WordsInput,
   AccessibleParkingChecklist, AccessibleRestroomChecklist, FullAmenitiesBlock,
-  ConnectivityRow, AlcoholAvailableSelect
+  ConnectivityRow
 } from './_shared';
 import { PLAYGROUND_AGE_GROUPS, PLAYGROUND_ADA_CHECKLIST } from '../../../utils/outdoorConstants';
 import { api } from '../../../utils/api';
@@ -183,7 +183,6 @@ export default function ParkLayout({ form, userRole, poiId }) {
             <FacilitiesSection form={form} isPark id={poiId} />
             <FullAmenitiesBlock form={form} />
             <ConnectivityRow form={form} />
-            <AlcoholAvailableSelect form={form} />
           </Stack>
         </Accordion.Panel>
       </Accordion.Item>

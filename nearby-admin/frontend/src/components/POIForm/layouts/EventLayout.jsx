@@ -28,7 +28,7 @@ import { VenueSelector } from '../components/VenueSelector';
 import {
   AdminOnlyAccordionItem, IdealForGrouped, ArrivalMethodsGroup, What3WordsInput,
   AccessibleParkingChecklist, AccessibleRestroomChecklist, FullAmenitiesBlock,
-  ConnectivityRow, AlcoholAvailableSelect
+  ConnectivityRow
 } from './_shared';
 import { SPONSOR_LEVEL_OPTIONS } from '../../../utils/constants';
 import { api } from '../../../utils/api';
@@ -291,7 +291,6 @@ export default function EventLayout({ form, userRole, poiId }) {
             <EventAmenitiesSection form={form} id={poiId} />
             <FullAmenitiesBlock form={form} />
             <ConnectivityRow form={form} />
-            <AlcoholAvailableSelect form={form} />
           </Stack>
         </Accordion.Panel>
       </Accordion.Item>
