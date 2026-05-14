@@ -2,6 +2,22 @@ import { memo, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from 'react-leaflet';
 import { Box, Skeleton, Paper, Text, Group } from '@mantine/core';
 
+// Calls invalidateSize() when the accordion panel opens (container goes from 0 to full size)
+function MapInvalidator() {
+  const map = useMap();
+  useEffect(() => {
+    const container = map.getContainer();
+    const observer = new ResizeObserver(() => {
+      if (container.offsetWidth > 0 && container.offsetHeight > 0) {
+        map.invalidateSize();
+      }
+    });
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, [map]);
+  return null;
+}
+
 // Map helper components
 function DraggableMarker({ position, onPositionChange }) {
   const map = useMap();
@@ -81,6 +97,7 @@ const LocationMap = memo(({ latitude, longitude, onLocationChange }) => {
           zoomControl={true}
           preferCanvas={true}
         >
+          <MapInvalidator />
           <TileLayer
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'

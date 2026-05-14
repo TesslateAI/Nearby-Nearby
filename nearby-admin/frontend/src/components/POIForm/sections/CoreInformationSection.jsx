@@ -156,6 +156,7 @@ export const CoreInformationSection = React.memo(function CoreInformationSection
               label="Start Date & Time"
               placeholder="Select start date and time"
               valueFormat="MM/DD/YYYY hh:mm A"
+              timePickerProps={{ format: '12h' }}
               value={form.values.event?.start_datetime instanceof Date ? form.values.event.start_datetime : (form.values.event?.start_datetime ? new Date(form.values.event.start_datetime) : null)}
               onChange={(val) => form.setFieldValue('event.start_datetime', val)}
               error={form.errors['event.start_datetime']}
@@ -164,6 +165,7 @@ export const CoreInformationSection = React.memo(function CoreInformationSection
               label="End Date & Time"
               placeholder="Select end date and time"
               valueFormat="MM/DD/YYYY hh:mm A"
+              timePickerProps={{ format: '12h' }}
               value={form.values.event?.end_datetime instanceof Date ? form.values.event.end_datetime : (form.values.event?.end_datetime ? new Date(form.values.event.end_datetime) : null)}
               onChange={(val) => form.setFieldValue('event.end_datetime', val)}
               error={form.errors['event.end_datetime']}
