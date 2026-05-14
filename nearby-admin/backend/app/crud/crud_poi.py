@@ -325,6 +325,15 @@ def create_poi(db: Session, poi: schemas.PointOfInterestCreate):
     # inclusive_playground, amenities.wifi mirror, sponsor listing_type)
     apply_phase1_computed(poi_data)
 
+    # Validate: seasonal-only mode requires at least one seasonal period
+    hours_data = poi_data.get('hours') or {}
+    if isinstance(hours_data, dict) and hours_data.get('seasonal_only'):
+        if not (hours_data.get('seasonal') or {}):
+            raise HTTPException(
+                status_code=422,
+                detail="Cannot save listing with seasonal-only mode and no seasonal periods defined."
+            )
+
     db_poi = models.PointOfInterest(**poi_data)
 
     # Set the location geometry
@@ -436,6 +445,16 @@ def update_poi(db: Session, *, db_obj: models.PointOfInterest, obj_in: schemas.P
     # inclusive_playground, amenities.wifi mirror, sponsor listing_type).
     # Only touches keys the helpers know about; safe for partial updates.
     apply_phase1_computed(update_data)
+
+    # Validate: seasonal-only mode requires at least one seasonal period
+    if 'hours' in update_data:
+        hours_data = update_data.get('hours') or {}
+        if isinstance(hours_data, dict) and hours_data.get('seasonal_only'):
+            if not (hours_data.get('seasonal') or {}):
+                raise HTTPException(
+                    status_code=422,
+                    detail="Cannot save listing with seasonal-only mode and no seasonal periods defined."
+                )
 
     # Regenerate slug if name or city changed
     name_changed = 'name' in update_data and update_data['name'] != db_obj.name

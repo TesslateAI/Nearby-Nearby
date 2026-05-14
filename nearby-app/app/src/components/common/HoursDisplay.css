@@ -88,6 +88,13 @@
   border: 1px solid #ffeeba;
 }
 
+.hours-display__notice--seasonal {
+  background-color: #e8f4fd;
+  color: #0c5460;
+  border: 1px solid #bee5eb;
+  font-size: 0.875rem;
+}
+
 .hours-display__notes-text {
   color: var(--nn-gray);
 }

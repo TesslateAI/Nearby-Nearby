@@ -32,6 +32,8 @@ function HoursDisplay({
   const [showAllHolidays, setShowAllHolidays] = useState(false);
   const INITIAL_HOLIDAY_COUNT = 4;
 
+  const seasonalOnly = !!hours?.seasonal_only;
+
   // Get week hours using the utility function
   const weekHours = hours ? getWeekHours(hours) : [];
 
@@ -60,10 +62,19 @@ function HoursDisplay({
 
   return (
     <div className="hours-display">
+      {/* Seasonal-only notice */}
+      {seasonalOnly && (
+        <div className="hours-display__section">
+          <p className="hours-display__notice hours-display__notice--seasonal">
+            This location operates on seasonal hours only. Hours shown reflect the currently active season.
+          </p>
+        </div>
+      )}
+
       {/* Regular Hours Section */}
       {hasHours && (
         <div className="hours-display__section">
-          <h4 className="hours-display__header">HOURS</h4>
+          <h4 className="hours-display__header">{seasonalOnly ? 'SEASONAL HOURS' : 'HOURS'}</h4>
           <div className="hours-display__days">
             {weekHours.length > 0 ? (
               // New format hours

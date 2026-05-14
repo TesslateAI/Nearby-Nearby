@@ -570,6 +570,7 @@ function normalizeHoursData(hoursData) {
     exceptions: hoursData.exceptions,
     holidays: hoursData.holidays,
     seasonal: hoursData.seasonal,
+    seasonal_only: hoursData.seasonal_only,
   };
 }
 
@@ -626,7 +627,12 @@ export function getEffectiveHoursForDate(hoursData, date) {
     }
   }
 
-  // 4. Fall back to regular hours
+  // 4. Seasonal-only mode with no active season → closed for the current period
+  if (hoursData.seasonal_only) {
+    return { hours: { status: 'closed' }, source: 'seasonal', label: 'Out of season' };
+  }
+
+  // 5. Fall back to regular hours
   const regularHours = hoursData.regular?.[dayName];
   return { hours: regularHours, source: 'regular', label: null };
 }
