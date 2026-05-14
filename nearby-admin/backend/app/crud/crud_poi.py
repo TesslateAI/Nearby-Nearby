@@ -40,8 +40,7 @@ def compute_icon_booleans(poi: dict) -> dict:
         or amenities.get('wifi') == 'Free Wifi'
     )
     pets = poi.get('pet_options') or []
-    negatives = {'No Pets Allowed','No Dogs Allowed','No Cats Allowed','Not Allowed','No Dogs'}
-    poi['icon_pet_friendly'] = bool(pets) and any(p not in negatives for p in pets)
+    poi['icon_pet_friendly'] = bool(pets)
     toilets = poi.get('public_toilets') or []
     poi['icon_public_restroom'] = bool(toilets) and toilets != ['No Public Restroom'] and toilets != ['No']
     acc_parking = poi.get('accessible_parking_details') or []
