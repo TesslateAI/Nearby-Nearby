@@ -315,10 +315,9 @@ def _signal_structured_filters(
         # accidentally inject something like "name; DROP TABLE x".
         allowed_fields = {
             "pet_options", "wifi_options", "wheelchair_accessible", "public_toilets",
-            "entertainment_options", "business_amenities", "youth_amenities",
             "alcohol_options", "parking_types", "facilities_options",
             "playground_available", "fishing_allowed", "hunting_fishing_allowed",
-            "cost", "camping_lodging",
+            "cost",
         }
         if filt.field not in allowed_fields:
             continue

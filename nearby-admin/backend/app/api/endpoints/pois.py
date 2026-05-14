@@ -311,7 +311,6 @@ def get_venue_data_for_event(
         parking_types=db_poi.parking_types,
         parking_notes=db_poi.parking_notes,
         parking_locations=db_poi.parking_locations,
-        expect_to_pay_parking=db_poi.expect_to_pay_parking,
         wheelchair_accessible=db_poi.wheelchair_accessible,
         wheelchair_details=db_poi.wheelchair_details,
         public_toilets=db_poi.public_toilets,

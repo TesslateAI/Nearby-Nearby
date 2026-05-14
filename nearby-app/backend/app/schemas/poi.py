@@ -208,7 +208,6 @@ class POIDetail(BaseModel):
     parking_locations: Optional[Any] = None
     parking_notes: Optional[str] = None
     parking_photos: Optional[Any] = None
-    expect_to_pay_parking: Optional[str] = None
     parking_lot_photo: Optional[str] = None
 
     # Accessibility
@@ -223,10 +222,6 @@ class POIDetail(BaseModel):
     alcohol_options: Optional[Any] = None
     smoking_options: Optional[Any] = None
     smoking_details: Optional[str] = None
-    youth_amenities: Optional[Any] = None
-    business_amenities: Optional[Any] = None
-    entertainment_options: Optional[Any] = None
-
     # Pets and Animals
     pet_options: Optional[Any] = None
     pet_policy: Optional[str] = None
@@ -268,7 +263,6 @@ class POIDetail(BaseModel):
     fishing_types: Optional[Any] = None
     licenses_required: Optional[Any] = None
     hunting_fishing_info: Optional[str] = None
-    camping_lodging: Optional[str] = None
     associated_trails: Optional[Any] = None
 
     # Membership

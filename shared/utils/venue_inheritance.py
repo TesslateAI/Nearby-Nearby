@@ -11,7 +11,7 @@ from typing import Optional
 
 # Map section names to the fields they control
 _SECTION_FIELDS = {
-    "parking": ["parking_types", "parking_locations", "parking_notes", "expect_to_pay_parking"],
+    "parking": ["parking_types", "parking_locations", "parking_notes"],
     "restrooms": ["public_toilets", "toilet_locations", "toilet_description"],
     "accessibility": ["wheelchair_accessible", "wheelchair_details"],
     "hours": ["hours"],

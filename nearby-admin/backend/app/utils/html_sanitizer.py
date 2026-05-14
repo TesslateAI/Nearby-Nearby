@@ -68,7 +68,7 @@ def sanitize_poi_fields(data: dict) -> dict:
         'drone_policy', 'pet_policy', 'toilet_description', 'rental_info',
         'rental_pricing', 'playground_notes', 'night_sky_viewing',
         'birding_wildlife', 'hunting_fishing_info', 'membership_details',
-        'camping_lodging', 'community_impact', 'pricing_details'
+        'community_impact', 'pricing_details'
     ]
 
     # Sanitize main POI fields

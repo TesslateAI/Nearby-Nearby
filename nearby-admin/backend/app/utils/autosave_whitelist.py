@@ -79,7 +79,6 @@ AUTOSAVE_ALLOWED_FIELDS: set[str] = {
     'parking_types',
     'parking_locations',
     'parking_notes',
-    'expect_to_pay_parking',
 
     # Additional info
     'downloadable_maps',
@@ -130,9 +129,6 @@ AUTOSAVE_ALLOWED_FIELDS: set[str] = {
     'pricing',
     'discounts',
     'gift_cards',
-    'youth_amenities',
-    'business_amenities',
-    'entertainment_options',
 
     # Menu / booking
     'menu_photos',
@@ -194,7 +190,6 @@ AUTOSAVE_ALLOWED_FIELDS: set[str] = {
     'membership_passes',
     'membership_details',
     'associated_trails',
-    'camping_lodging',
 
     # JSONB flexible
     'photos',
