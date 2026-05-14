@@ -210,7 +210,6 @@ class POIDetail(BaseModel):
     parking_photos: Optional[Any] = None
     expect_to_pay_parking: Optional[str] = None
     parking_lot_photo: Optional[str] = None
-    public_transit_info: Optional[str] = None
 
     # Accessibility
     wheelchair_accessible: Optional[Any] = None

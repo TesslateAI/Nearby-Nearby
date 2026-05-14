@@ -79,7 +79,6 @@ AUTOSAVE_ALLOWED_FIELDS: set[str] = {
     'parking_types',
     'parking_locations',
     'parking_notes',
-    'public_transit_info',
     'expect_to_pay_parking',
 
     # Additional info

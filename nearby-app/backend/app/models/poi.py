@@ -86,7 +86,6 @@ class PointOfInterest(Base):
     parking_notes = Column(Text)
     # parking_photos moved to Images table (image_type='parking')
     # parking_lot_photo moved to Images table (image_type='parking')
-    public_transit_info = Column(Text)
     expect_to_pay_parking = Column(String)
     amenities = Column(JSONB)
     ideal_for = Column(JSONB)
