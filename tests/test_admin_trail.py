@@ -36,11 +36,6 @@ class TestCreateTrailAllFields:
                 "trailhead_location": {"lat": 35.70, "lng": -79.20},
                 "trailhead_latitude": 35.7000,
                 "trailhead_longitude": -79.2000,
-                "trailhead_entrance_photo": "https://example.com/trailhead.jpg",
-                "trailhead_exit_location": {"lat": 35.71, "lng": -79.21},
-                "trail_exit_latitude": 35.7100,
-                "trail_exit_longitude": -79.2100,
-                "trailhead_exit_photo": "https://example.com/exit.jpg",
                 "trail_markings": "Blue blazes throughout. Yellow blazes at summit spur junction.",
                 "trailhead_access_details": "Gravel parking lot off of Hwy 64",
                 "downloadable_trail_map": "https://example.com/trail-map.pdf",
@@ -78,21 +73,6 @@ class TestCreateTrailCoordinates:
         assert trail["trailhead_location"]["lat"] == 35.72
         assert float(trail["trailhead_latitude"]) == pytest.approx(35.72, abs=0.001)
         assert float(trail["trailhead_longitude"]) == pytest.approx(-79.18, abs=0.001)
-
-    def test_create_trail_exit_coordinates(self, admin_client):
-        """Test exit coordinates."""
-        data = create_trail(
-            admin_client,
-            name="Exit Coord Trail",
-            trail={
-                "trailhead_exit_location": {"lat": 35.73, "lng": -79.19},
-                "trail_exit_latitude": 35.7300,
-                "trail_exit_longitude": -79.1900,
-            },
-        )
-        trail = data["trail"]
-        assert trail["trailhead_exit_location"]["lat"] == 35.73
-        assert float(trail["trail_exit_latitude"]) == pytest.approx(35.73, abs=0.001)
 
 
 class TestCreateTrailSurfaceExperience:

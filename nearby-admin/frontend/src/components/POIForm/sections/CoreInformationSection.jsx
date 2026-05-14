@@ -44,8 +44,10 @@ export const CoreInformationSection = React.memo(function CoreInformationSection
           data={[
             { value: 'free', label: 'Free' },
             { value: 'paid', label: 'Paid' },
-            { value: 'paid_founding', label: 'Paid Founding' },
-            { value: 'sponsor', label: 'Sponsor' },
+            { value: 'sponsor_platform', label: 'Sponsor – Platform' },
+            { value: 'sponsor_state', label: 'Sponsor – State' },
+            { value: 'sponsor_county', label: 'Sponsor – County' },
+            { value: 'sponsor_town', label: 'Sponsor – Town' },
             { value: 'community_comped', label: 'Community Comped' }
           ]}
           {...form.getInputProps('listing_type')}
@@ -130,15 +132,6 @@ export const CoreInformationSection = React.memo(function CoreInformationSection
         )}
       </SimpleGrid>
 
-      {/* Key Facilities - available for all POI types */}
-      <CheckboxGroupSection
-        label="Key Facilities"
-        fieldName="key_facilities"
-        options={KEY_FACILITIES}
-        cols={{ base: 2, sm: 3 }}
-        form={form}
-      />
-
       {isEvent && (
         <>
           <Divider my="md" label="Event Details" />
@@ -154,13 +147,19 @@ export const CoreInformationSection = React.memo(function CoreInformationSection
               label="Start Date & Time"
               placeholder="Select start date and time"
               valueFormat="MM/DD/YYYY hh:mm A"
-              {...form.getInputProps('event.start_datetime')}
+              timePickerProps={{ format: '12h' }}
+              value={form.values.event?.start_datetime instanceof Date ? form.values.event.start_datetime : (form.values.event?.start_datetime ? new Date(form.values.event.start_datetime) : null)}
+              onChange={(val) => form.setFieldValue('event.start_datetime', val)}
+              error={form.errors['event.start_datetime']}
             />
             <DateTimePicker
               label="End Date & Time"
               placeholder="Select end date and time"
               valueFormat="MM/DD/YYYY hh:mm A"
-              {...form.getInputProps('event.end_datetime')}
+              timePickerProps={{ format: '12h' }}
+              value={form.values.event?.end_datetime instanceof Date ? form.values.event.end_datetime : (form.values.event?.end_datetime ? new Date(form.values.event.end_datetime) : null)}
+              onChange={(val) => form.setFieldValue('event.end_datetime', val)}
+              error={form.errors['event.end_datetime']}
             />
           </SimpleGrid>
           <Button
@@ -175,33 +174,9 @@ export const CoreInformationSection = React.memo(function CoreInformationSection
         </>
       )}
 
-      {isEvent && (
-        <>
-          <Divider my="md" label="Cost Information" />
-          <SimpleGrid cols={{ base: 1, sm: 2 }}>
-            <DebouncedTextInput
-              label="Cost"
-              placeholder="e.g., $10 or $0-$50 or 0 (for free)"
-              {...getDebouncedInputProps(form, 'cost')}
-            />
-            <DebouncedTextInput
-              label="Ticket Link"
-              placeholder="URL to purchase tickets"
-              {...getDebouncedInputProps(form, 'ticket_link')}
-            />
-          </SimpleGrid>
-          <RichTextEditor
-            label="Pricing Details"
-            placeholder="Additional pricing info (e.g., Kids under 2 are free)"
-            value={form.values.pricing_details || ''}
-            onChange={(html) => form.setFieldValue('pricing_details', html)}
-            error={form.errors.pricing_details}
-            minRows={3}
-          />
-        </>
-      )}
+      {/* Event cost moved to EventCostSection (Task 139) */}
 
-      {(isPaidListing || isPark || isTrail) && (
+      {(isPaidListing || isPark || isTrail || isEvent) && (
         <>
           <Divider my="md" label="History" />
           <RichTextEditor

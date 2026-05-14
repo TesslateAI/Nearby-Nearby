@@ -2,7 +2,7 @@
 
 ## Overview
 
-The platform provides 5 public form endpoints for user engagement. These forms are accessible without authentication and are designed with defense-in-depth security.
+The platform provides 6 public form endpoints for user engagement. These forms are accessible without authentication and are designed with defense-in-depth security.
 
 **Key Files:**
 
@@ -10,16 +10,16 @@ The platform provides 5 public form endpoints for user engagement. These forms a
 |-------|-------|
 | Migration | `nearby-admin/backend/alembic/versions/c3f4g5h6i7j8_create_form_tables.py` |
 | Database | `nearby-app/backend/app/database.py` (forms_engine, get_forms_db) |
-| Models | `nearby-app/backend/app/models/{community_interest,contact,feedback,business_claim}.py` |
-| Schemas | `nearby-app/backend/app/schemas/{community_interest,contact,feedback,business_claim}.py` |
-| Endpoints | `nearby-app/backend/app/api/endpoints/{waitlist,community_interest,contact,feedback,business_claims}.py` |
+| Models | `nearby-app/backend/app/models/{community_interest,contact,feedback,business_claim,event_suggestion}.py` |
+| Schemas | `nearby-app/backend/app/schemas/{community_interest,contact,feedback,business_claim,event_suggestion}.py` |
+| Endpoints | `nearby-app/backend/app/api/endpoints/{waitlist,community_interest,contact,feedback,business_claims,event_suggestions}.py` |
 | S3 Client | `nearby-app/backend/app/core/s3.py` |
-| Frontend | `nearby-app/app/src/pages/{CommunityInterest,Contact,Feedback,ClaimBusiness}.jsx` |
+| Frontend | `nearby-app/app/src/pages/{CommunityInterest,Contact,Feedback,ClaimBusiness,SuggestEvent}.jsx` |
 | Tests | `tests/test_form_endpoints.py` (23 tests) |
 
 ---
 
-## The 5 Forms
+## The 6 Forms
 
 ### 1. Email Waitlist (SignupBar)
 
@@ -106,6 +106,27 @@ Business owner registration. Replaces the old "Suggest a Place" form. Chatham Co
 
 **Note**: `/suggest-place` redirects to `/claim-business` for backward compatibility.
 
+### 6. Suggest an Event
+
+For users who want to suggest a local event to be added to the platform. Two fieldsets: "Event Details" and "Your Contact Information."
+
+| Field | Type | Required | Validation |
+|-------|------|----------|------------|
+| event_name | string | **Yes** | min 1, max 255 |
+| event_description | text | No | — |
+| event_date | string | No | max 100, free-text (e.g. "Saturday, March 15, 2026 — 9 AM to 1 PM") |
+| event_location | string | No | max 255 |
+| organizer_name | string | No | max 100 |
+| organizer_email | EmailStr | **Yes** | max 255 |
+| organizer_phone | string | No | max 50 |
+| additional_info | text | No | — (used for details link / URL) |
+| status | string | — | Server-set, default `'pending'` |
+
+**Endpoint**: `POST /api/event-suggestions`
+**Rate limit**: 5/min
+**Frontend**: `/suggest-event` page with CalendarPlus icon header
+**Notification**: Sends ntfy.sh push to `nearbynearbyadmin` topic on each submission (best-effort, non-blocking)
+
 ---
 
 ## Security Architecture (Defense in Depth)
@@ -179,6 +200,7 @@ All form pages follow a consistent pattern:
 | `/contact` | `Contact.jsx` | New page |
 | `/feedback` | `Feedback.jsx` | Google Form link in footer |
 | `/claim-business` | `ClaimBusiness.jsx` | `/suggest-place` (SuggestPlace.jsx) |
+| `/suggest-event` | `SuggestEvent.jsx` | New page |
 | `/suggest-place` | Redirect → `/claim-business` | Backward compatibility |
 
 ### Footer Links Updated
@@ -188,6 +210,7 @@ The footer's "Get Involved" column now uses internal `<Link>` components instead
 - "Claim Your Business" → `/claim-business`
 - "Community Interest" → `/community-interest`
 - "Contact Us" → `/contact`
+- "Suggest an Event" → `/suggest-event`
 
 ---
 
@@ -210,7 +233,7 @@ The `forms_client` fixture creates form tables via raw SQL (since they aren't in
 ## Migration
 
 The Alembic migration `c3f4g5h6i7j8_create_form_tables.py` creates:
-1. Five tables (waitlist, community_interest, contact_submissions, feedback_submissions, business_claims)
+1. Six tables (waitlist, community_interest, contact_submissions, feedback_submissions, business_claims, event_suggestions)
 2. The `nearby_forms` PostgreSQL role with restricted permissions
 3. Grants INSERT and SELECT on form tables to the role
 

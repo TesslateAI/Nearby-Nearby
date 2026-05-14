@@ -1,0 +1,48 @@
+.event-status-banner {
+  border-radius: 6px;
+  padding: 14px 16px;
+  margin-bottom: 20px;
+}
+
+.event-status-banner__label {
+  font-weight: 700;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 6px;
+}
+
+.event-status-banner__body {
+  font-size: 14px;
+  line-height: 1.55;
+  color: #374151;
+  margin-top: 4px;
+}
+
+.event-status-banner__link {
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: underline;
+  display: inline-block;
+  margin-top: 6px;
+}
+
+.event-status-banner__contact-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  padding: 7px 14px;
+  border-radius: 5px;
+  border: none;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  background: rgba(0, 0, 0, 0.08);
+  color: inherit;
+  transition: background 0.15s;
+}
+
+.event-status-banner__contact-btn:hover {
+  background: rgba(0, 0, 0, 0.14);
+}

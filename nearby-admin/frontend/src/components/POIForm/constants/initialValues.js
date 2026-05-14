@@ -16,7 +16,7 @@ export const emptyInitialValues = {
   // Address fields
   address_full: '',
   address_street: '',
-  address_city: '',
+  address_city: 'Pittsboro',
   address_state: 'NC',
   address_zip: '',
   address_county: 'Chatham',
@@ -40,7 +40,7 @@ export const emptyInitialValues = {
   // Cost fields
   cost: '',
   pricing_details: '',
-  ticket_link: '',
+  // ticket_link removed in Phase 1 — use event.ticket_links instead
   // History and featured image
   history_paragraph: '',
   featured_image: '',
@@ -57,17 +57,16 @@ export const emptyInitialValues = {
   parking_types: [],
   parking_locations: [],
   parking_notes: '',
+  primary_parking_lat: null,
+  primary_parking_lng: null,
+  primary_parking_name: '',
   // parking_photos removed - use Images table with image_type='parking'
-  public_transit_info: '',
-  expect_to_pay_parking: 'no',
   // Additional Info
   downloadable_maps: [],
   payment_methods: [],
-  key_facilities: [],
-  alcohol_available: 'no',
+  alcohol_available: null,
   alcohol_options: [],
   alcohol_policy_details: '',
-  wheelchair_accessible: [],
   wheelchair_details: '',
   smoking_options: [],
   smoking_details: '',
@@ -96,9 +95,6 @@ export const emptyInitialValues = {
   pricing: '',
   discounts: [],
   gift_cards: 'no',
-  youth_amenities: [],
-  business_amenities: [],
-  entertainment_options: [],
   // Menu & Online Booking (Business only)
   // menu_photos removed - use Images table with image_type='menu'
   menu_link: '',
@@ -138,13 +134,6 @@ export const emptyInitialValues = {
     trailhead_location: null,
     trailhead_latitude: null,
     trailhead_longitude: null,
-    trailhead_entrance_photo: '',
-    // trailhead_photo removed - use Images table with image_type='trail_head'
-    trailhead_exit_location: null,
-    trail_exit_latitude: null,
-    trail_exit_longitude: null,
-    trailhead_exit_photo: '',
-    // trail_exit_photo removed - use Images table with image_type='trail_exit'
     trail_markings: '',
     trailhead_access_details: '',
     downloadable_trail_map: '',
@@ -152,6 +141,8 @@ export const emptyInitialValues = {
     trail_conditions: [],
     trail_experiences: []
   },
+  // Trail: primary trailhead name (issue #63)
+  primary_trailhead_name: '',
   // Playground (All POIs)
   playground_available: false,
   playground_types: [],
@@ -182,17 +173,27 @@ export const emptyInitialValues = {
   membership_passes: [],
   membership_details: '',
   associated_trails: [],
-  camping_lodging: '',
+  // Primary Display Category (all POI types — issue #42)
+  primary_display_category: '',
   // Event specific
   event: {
-    start_datetime: '',
+    start_datetime: null,
     end_datetime: null,
     is_repeating: false,
     repeat_pattern: null,
+    // Venue inheritance (Task 45)
+    venue_poi_id: null,
+    venue_inheritance: null,
+    // Recurring events (Task 50)
+    series_id: null,
+    parent_event_id: null,
+    excluded_dates: [],
+    recurrence_end_date: null,
+    manual_dates: [],
+    // Event-specific fields
     organizer_name: '',
     venue_settings: [],
     event_entry_notes: '',
-    // event_entry_photo removed - use Images table with image_type='entry'
     food_and_drink_info: '',
     coat_check_options: [],
     has_vendors: false,
@@ -201,19 +202,71 @@ export const emptyInitialValues = {
     vendor_application_info: '',
     vendor_fee: '',
     vendor_requirements: '',
-    vendor_poi_links: []
+    vendor_poi_links: [],
+    // Task 134-136: Event Status
+    event_status: 'Scheduled',
+    cancellation_paragraph: '',
+    contact_organizer_toggle: false,
+    new_event_link: '',
+    rescheduled_from_event_id: null,
+    status_explanation: '',
+    online_event_url: '',
+    rescheduled_start_datetime: null,
+    rescheduled_end_datetime: null,
+    // Task 137: Primary Display Category — moved to top level (issue #42)
+    // Task 138: Extended Organizer
+    organizer_email: '',
+    organizer_phone: '',
+    organizer_website: '',
+    organizer_social_media: {},
+    organizer_poi_id: null,
+    // Task 139: Cost & Ticketing
+    cost_type: '',
+    ticket_links: [],
+    // Task 140: Sponsors
+    sponsors: [],
   },
   // Other fields
   photos: { featured: null, gallery: [] },
   hours: {},
   holiday_hours: {},
-  amenities: {},
-  ideal_for: [],
+  amenities: { wifi: null, general: [], family_youth: [], water_boating: [], dining_seating: [] },
+  // Phase 1 — ideal_for is now grouped (was flat list); special_needs added in #43
+  ideal_for: { atmosphere: [], age_group: [], social_settings: [], local_special: [], special_needs: [] },
   contact_info: {},
   compliance: {},
+  mobility_access: {},
   custom_fields: {},
   main_category_id: null,
   // Primary Type linkage (unidirectional)
   primary_type_id: null,
-  category_ids: []
+  category_ids: [],
+  // ==========================================================================
+  // Phase 1 (May Launch) defaults — new columns added by migration p1_001
+  // ==========================================================================
+  has_been_published: false,
+  arrival_methods: [],
+  what3words_address: '',
+  icon_free_wifi: false,
+  icon_pet_friendly: false,
+  icon_public_restroom: false,
+  icon_wheelchair_accessible: false,
+  is_sponsor: false,
+  sponsor_level: null,
+  admin_notes: '',
+  accessible_parking_details: [],
+  accessible_restroom: false,
+  accessible_restroom_details: [],
+  playground_age_groups: [],
+  playground_ada_checklist: [],
+  inclusive_playground: false,
+  cell_service: null,
+  // Trail — new Phase 1 columns
+  mile_markers: false,
+  trailhead_signage: false,
+  audio_guide_available: false,
+  qr_trail_guide: false,
+  trail_guide_notes: '',
+  trail_lighting: null,
+  access_points: []
 };

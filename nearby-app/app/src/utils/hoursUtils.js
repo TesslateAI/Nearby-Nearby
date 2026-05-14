@@ -7,6 +7,44 @@
  * 4. Regular hours (fallback)
  */
 
+// Approximate sunrise/sunset using the NOAA simplified algorithm
+function getSunTimes(date, lat, lng) {
+  const rad = Math.PI / 180;
+  const dayOfYear = Math.floor((date - new Date(date.getFullYear(), 0, 1)) / 86400000) + 1;
+  const declination = 23.45 * Math.sin(rad * (360 / 365) * (dayOfYear - 81));
+  const cosHourAngle = -Math.tan(lat * rad) * Math.tan(declination * rad);
+  if (cosHourAngle < -1) return { sunrise: 0, sunset: 24 };   // polar day
+  if (cosHourAngle > 1)  return { sunrise: 12, sunset: 12 };  // polar night
+  const hourAngle = Math.acos(cosHourAngle) / rad;
+  const tzOffset = -date.getTimezoneOffset() / 60;
+  const lngHour = lng / 15;
+  return {
+    sunrise: 12 - hourAngle / 15 + tzOffset - lngHour,
+    sunset:  12 + hourAngle / 15 + tzOffset - lngHour,
+  };
+}
+
+function decimalHoursToHHMM(h) {
+  const hours = Math.floor(((h % 24) + 24) % 24);
+  const minutes = Math.floor(((h % 1) + 1) % 1 * 60);
+  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+}
+
+// Resolve a period time object to an HH:MM string, handling dawn/dusk types
+function resolvePeriodTime(timeObj, date, lat, lng) {
+  if (!timeObj) return null;
+  if (timeObj.type === 'fixed') return timeObj.time || null;
+  if (timeObj.type === 'dawn' || timeObj.type === 'dusk') {
+    if (lat != null && lng != null) {
+      const { sunrise, sunset } = getSunTimes(date, lat, lng);
+      return decimalHoursToHHMM(timeObj.type === 'dawn' ? sunrise : sunset);
+    }
+    // No coordinates — use generous fallback
+    return timeObj.type === 'dawn' ? '06:00' : '20:00';
+  }
+  return null;
+}
+
 const DAYS_SHORT = {
   monday: 'Mon',
   tuesday: 'Tue',
@@ -491,7 +529,53 @@ function getExceptionForDate(date, exceptionsData) {
  * Get the effective hours for a specific date
  * Returns { hours, source, label } where source indicates override type
  */
+/**
+ * Convert the backend's flat hours shape
+ *   { monday: [{open:"06:30", close:"17:00"}], tuesday: {closed:true}, ... }
+ * into the structured shape these helpers expect
+ *   { regular: { monday: { status:'open', periods:[{open:{type:'fixed',time}, close:{type:'fixed',time}}] }, ... } }
+ * Pass-through if already in the structured shape (has `regular` key).
+ */
+function normalizeHoursData(hoursData) {
+  if (!hoursData || typeof hoursData !== 'object') return hoursData;
+  if (hoursData.regular) return hoursData;
+
+  const dayKeys = ['monday','tuesday','wednesday','thursday','friday','saturday','sunday'];
+  const hasDayKey = dayKeys.some((d) => d in hoursData);
+  if (!hasDayKey) return hoursData;
+
+  const regular = {};
+  for (const day of dayKeys) {
+    const v = hoursData[day];
+    if (v == null) continue;
+    if (Array.isArray(v)) {
+      const periods = v
+        .filter((p) => p && p.open && p.close)
+        .map((p) => ({
+          open: { type: 'fixed', time: p.open },
+          close: { type: 'fixed', time: p.close },
+        }));
+      regular[day] = periods.length ? { status: 'open', periods } : { status: 'closed' };
+    } else if (typeof v === 'object') {
+      if (v.closed === true || v.status === 'closed') regular[day] = { status: 'closed' };
+      else if (v.status === '24hours') regular[day] = { status: '24hours' };
+      else if (v.status === 'appointment') regular[day] = { status: 'appointment' };
+      else if (v.status === 'open' && Array.isArray(v.periods)) regular[day] = v;
+    } else if (typeof v === 'string' && v.toLowerCase() === 'closed') {
+      regular[day] = { status: 'closed' };
+    }
+  }
+  return {
+    regular,
+    exceptions: hoursData.exceptions,
+    holidays: hoursData.holidays,
+    seasonal: hoursData.seasonal,
+    seasonal_only: hoursData.seasonal_only,
+  };
+}
+
 export function getEffectiveHoursForDate(hoursData, date) {
+  hoursData = normalizeHoursData(hoursData);
   if (!hoursData) {
     return { hours: null, source: 'none', label: null };
   }
@@ -543,7 +627,12 @@ export function getEffectiveHoursForDate(hoursData, date) {
     }
   }
 
-  // 4. Fall back to regular hours
+  // 4. Seasonal-only mode with no active season → closed for the current period
+  if (hoursData.seasonal_only) {
+    return { hours: { status: 'closed' }, source: 'seasonal', label: 'Out of season' };
+  }
+
+  // 5. Fall back to regular hours
   const regularHours = hoursData.regular?.[dayName];
   return { hours: regularHours, source: 'regular', label: null };
 }
@@ -587,7 +676,7 @@ export function getWeekHours(hoursData, startDate = new Date()) {
 /**
  * Check if currently open based on all override rules
  */
-export function isCurrentlyOpen(hoursData) {
+export function isCurrentlyOpen(hoursData, lat = null, lng = null) {
   if (!hoursData) return { isOpen: false, status: 'unknown' };
 
   const now = new Date();
@@ -628,10 +717,10 @@ export function isCurrentlyOpen(hoursData) {
 
   if (hours.status === 'open' && hours.periods) {
     for (const period of hours.periods) {
-      if (period.open?.type === 'fixed' && period.close?.type === 'fixed') {
-        const openTime = period.open.time;
-        const closeTime = period.close.time;
+      const openTime = resolvePeriodTime(period.open, now, lat, lng);
+      const closeTime = resolvePeriodTime(period.close, now, lat, lng);
 
+      if (openTime && closeTime) {
         // Handle times that cross midnight
         if (closeTime < openTime) {
           if (currentTime >= openTime || currentTime < closeTime) {
@@ -657,7 +746,8 @@ export function isCurrentlyOpen(hoursData) {
 
     // Check if we're before opening
     const firstPeriod = hours.periods[0];
-    if (firstPeriod?.open?.type === 'fixed' && currentTime < firstPeriod.open.time) {
+    const firstOpenTime = resolvePeriodTime(firstPeriod?.open, now, lat, lng);
+    if (firstOpenTime && currentTime < firstOpenTime) {
       return {
         isOpen: false,
         status: `Opens at ${formatTime(firstPeriod.open)}`,
@@ -729,12 +819,93 @@ export function formatGroupedHours(group) {
   return { days: `${firstDay} - ${lastDay}`, hours: group.hours };
 }
 
+// Reformat formatTime() output ("8:00 PM", "Dawn") to compact lowercase ("8pm", "dawn")
+function reformatTimeTo12h(formatted) {
+  if (!formatted) return '';
+  const match = formatted.match(/^(\d+):(\d+)\s*(AM|PM)$/i);
+  if (!match) return formatted.toLowerCase();
+  const h = parseInt(match[1]);
+  const m = parseInt(match[2]);
+  const period = match[3].toLowerCase();
+  return m === 0 ? `${h}${period}` : `${h}:${String(m).padStart(2, '0')}${period}`;
+}
+
+/**
+ * Build the canonical open/closed status label for detail pages and cards.
+ * Returns { variant: 'open' | 'closed', label: string } or { variant: undefined, label: undefined }.
+ *
+ * Examples:
+ *   { variant: 'open',   label: 'Open · Closes at 8pm' }
+ *   { variant: 'closed', label: 'Closed · Opens at 5pm' }
+ *   { variant: 'closed', label: 'Closed · Opens Tuesday at 9am' }
+ */
+export function getOpenCloseStatusLabel(hoursData, lat = null, lng = null) {
+  if (!hoursData) return { variant: undefined, label: undefined };
+  const openStatus = isCurrentlyOpen(hoursData, lat, lng);
+  if (!openStatus || openStatus.status === 'Hours not set') return { variant: undefined, label: undefined };
+  if (openStatus.isOpen) {
+    if (openStatus.status === 'Open 24 Hours') return { variant: 'open', label: 'Open 24 Hours' };
+    if (openStatus.status === 'By Appointment Only') return { variant: 'open', label: 'By Appointment Only' };
+    const untilMatch = (openStatus.status || '').match(/^Open until (.+)/i);
+    if (untilMatch) return { variant: 'open', label: `Open · Closes at ${reformatTimeTo12h(untilMatch[1])}` };
+    return { variant: 'open', label: 'Open' };
+  }
+  if (openStatus.status === 'By Appointment Only') return { variant: 'closed', label: 'By Appointment Only' };
+  const nextOpen = getNextOpenTime(hoursData, lat, lng);
+  if (!nextOpen) return { variant: 'closed', label: 'Closed' };
+  const { day, time } = nextOpen;
+  if (day === 'Today') return { variant: 'closed', label: `Closed · Opens at ${time}` };
+  return { variant: 'closed', label: `Closed · Opens ${day} at ${time}` };
+}
+
+/**
+ * When a POI is currently closed, find the next time it opens.
+ * Returns { day, time } e.g. { day: 'Today', time: '5pm' }
+ * or { day: 'Mon', time: '9am' }, or null if unknown.
+ */
+export function getNextOpenTime(hoursData, lat = null, lng = null) {
+  if (!hoursData) return null;
+  const now = new Date();
+  const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+  const dowKeys = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+
+  for (let i = 0; i <= 7; i++) {
+    const date = new Date(now);
+    date.setDate(date.getDate() + i);
+    date.setHours(0, 0, 0, 0);
+
+    const { hours } = getEffectiveHoursForDate(hoursData, date);
+    if (!hours || hours.status === 'closed' || hours.status === 'appointment') continue;
+    if (hours.status === '24hours') {
+      if (i === 0) return null;
+      return { day: i === 1 ? 'Tomorrow' : DAYS_SHORT[dowKeys[date.getDay()]], time: 'all day' };
+    }
+    if (hours.status === 'open' && hours.periods) {
+      for (const period of hours.periods) {
+        const openTime = resolvePeriodTime(period.open, date, lat, lng);
+        if (!openTime) continue;
+        if (i === 0) {
+          if (openTime > currentTime) {
+            return { day: 'Today', time: formatTimeString(openTime) };
+          }
+        } else {
+          const dayStr = i === 1 ? 'Tomorrow' : DAYS_SHORT[dowKeys[date.getDay()]];
+          return { day: dayStr, time: formatTimeString(openTime) };
+        }
+      }
+    }
+  }
+  return null;
+}
+
 export default {
   formatTime,
   formatDayHours,
   getEffectiveHoursForDate,
   getWeekHours,
   isCurrentlyOpen,
+  getNextOpenTime,
+  getOpenCloseStatusLabel,
   groupHours,
   formatGroupedHours,
   getUpcomingHolidays,

@@ -3,7 +3,7 @@
 
 import uuid
 from sqlalchemy import Column, String, Integer, Boolean, Text, TIMESTAMP, Enum, ForeignKey
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.sql import func
 
 from ..database import Base
@@ -47,6 +47,7 @@ class Image(Base):
     alt_text = Column(Text, nullable=True)
     caption = Column(Text, nullable=True)
     display_order = Column(Integer, nullable=True, default=0)
+    function_tags = Column(JSONB, nullable=True)
 
     # Tracking
     uploaded_by = Column(UUID(as_uuid=True), nullable=True)  # No FK — app has no User model

@@ -1,0 +1,20 @@
+.poi_service_animal_alert {
+  margin-top: 16px;
+  padding: 14px 16px;
+  border-radius: 8px;
+  border: 1px solid #B9D8EA;
+  background: #EAF4FA;
+  color: var(--nn-dark);
+}
+.poi_service_animal_alert_title {
+  margin: 0 0 6px;
+  font-family: var(--font-poppins);
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--nn-blue);
+}
+.poi_service_animal_alert_body {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}

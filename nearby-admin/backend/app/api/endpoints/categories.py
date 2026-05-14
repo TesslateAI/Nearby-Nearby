@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
+import logging
 import uuid
 
 from app import crud, schemas
@@ -8,6 +9,7 @@ from app.database import get_db
 from app.core.security import get_current_user
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 @router.post("/", response_model=schemas.Category, status_code=201)
 def create_category(
@@ -82,9 +84,12 @@ def delete_category_endpoint(
     """
     try:
         crud.delete_category(db=db, category_id=category_id)
-    except HTTPException as e:
-        raise e
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-    
-    return None # Return 204 No Content on success
+    except HTTPException:
+        raise
+    except Exception:
+        # Log the full exception server-side; never leak internals (table/column
+        # names, SQLAlchemy/psycopg2 error text) to API consumers.
+        logger.exception("delete_category failed for category_id=%s", category_id)
+        raise HTTPException(status_code=500, detail="Internal error deleting category.")
+
+    return None  # Return 204 No Content on success

@@ -117,20 +117,21 @@ function TimePeriod({ period, onChange, onRemove, showRemove }) {
     return timeData.type;
   };
 
+  const flexItem = { flex: '1 1 110px', minWidth: 0 };
   return (
-    <Group>
+    <Group wrap="wrap" gap="xs" align="flex-end">
       <Select
         size="xs"
-        w={120}
+        style={flexItem}
         data={TIME_TYPES}
         value={period.open?.type || 'fixed'}
         onChange={(value) => handleTimeTypeChange('open', value)}
       />
-      
+
       {period.open?.type === 'fixed' && (
         <TimeInput
           size="xs"
-          w={100}
+          style={flexItem}
           value={period.open?.time || '09:00'}
           onChange={(event) => onChange({
             ...period,
@@ -138,12 +139,12 @@ function TimePeriod({ period, onChange, onRemove, showRemove }) {
           })}
         />
       )}
-      
+
       {(period.open?.type === 'dawn' || period.open?.type === 'dusk') && (
-        <Group gap={5}>
+        <Group gap={5} style={flexItem}>
           <NumberInput
             size="xs"
-            w={80}
+            style={{ flex: 1, minWidth: 0 }}
             value={period.open?.offset || 0}
             onChange={(value) => onChange({
               ...period,
@@ -158,20 +159,20 @@ function TimePeriod({ period, onChange, onRemove, showRemove }) {
         </Group>
       )}
 
-      <Text size="sm">to</Text>
+      <Text size="sm" px={4}>to</Text>
 
       <Select
         size="xs"
-        w={120}
+        style={flexItem}
         data={TIME_TYPES}
         value={period.close?.type || 'fixed'}
         onChange={(value) => handleTimeTypeChange('close', value)}
       />
-      
+
       {period.close?.type === 'fixed' && (
         <TimeInput
           size="xs"
-          w={100}
+          style={flexItem}
           value={period.close?.time || '17:00'}
           onChange={(event) => onChange({
             ...period,
@@ -179,12 +180,12 @@ function TimePeriod({ period, onChange, onRemove, showRemove }) {
           })}
         />
       )}
-      
+
       {(period.close?.type === 'dawn' || period.close?.type === 'dusk') && (
-        <Group gap={5}>
+        <Group gap={5} style={flexItem}>
           <NumberInput
             size="xs"
-            w={80}
+            style={{ flex: 1, minWidth: 0 }}
             value={period.close?.offset || 0}
             onChange={(value) => onChange({
               ...period,
@@ -205,12 +206,12 @@ function TimePeriod({ period, onChange, onRemove, showRemove }) {
           placeholder="Note (e.g., 'Kitchen closes at 9pm')"
           value={period.note}
           onChange={(e) => onChange({ ...period, note: e.target.value })}
-          w={200}
+          style={{ flex: '1 1 100%', minWidth: 0 }}
         />
       )}
 
       {showRemove && (
-        <ActionIcon color="red" size="sm" onClick={onRemove}>
+        <ActionIcon color="red" size="md" onClick={onRemove} aria-label="Remove time period">
           <IconTrash size={16} />
         </ActionIcon>
       )}
@@ -339,7 +340,10 @@ function DayHours({ day, hours, onChange, onCopy }) {
 }
 
 // Main HoursSelector component - memoized to prevent unnecessary re-renders
-const HoursSelector = memo(({ value = {}, onChange, poiType }) => {
+const HoursSelector = memo(({ value = {}, onChange, poiType,
+  appointmentRequired = false, onAppointmentRequiredChange,
+  bookingUrl = '', onBookingUrlChange
+}) => {
   const [activeTab, setActiveTab] = useState('regular');
   const [copyModalOpen, setCopyModalOpen] = useState(false);
   const [copySource, setCopySource] = useState(null);
@@ -365,11 +369,25 @@ const HoursSelector = memo(({ value = {}, onChange, poiType }) => {
     holidays: value.holidays || {},
     exceptions: value.exceptions || [],
     timezone: value.timezone || 'America/New_York',
-    notes: value.notes || ''
+    notes: value.notes || '',
+    seasonal_only: value.seasonal_only || false,
   };
 
+  const seasonalOnly = hours.seasonal_only;
+  const hasSeasonalData = Object.keys(hours.seasonal).length > 0;
+
   const updateHours = (updates) => {
-    onChange({ ...hours, ...updates });
+    const newHours = { ...hours, ...updates };
+    onChange(newHours);
+    // Auto-flip appointment flag based on per-day status
+    if (updates.regular !== undefined && onAppointmentRequiredChange) {
+      const anyAppt = Object.values(newHours.regular).some(d => d?.status === 'appointment');
+      if (!anyAppt && appointmentRequired) {
+        onAppointmentRequiredChange(false);
+      } else if (anyAppt && !appointmentRequired) {
+        onAppointmentRequiredChange(true);
+      }
+    }
   };
 
   // Copy hours from one day to others
@@ -494,7 +512,10 @@ const HoursSelector = memo(({ value = {}, onChange, poiType }) => {
             Regular Hours
           </Tabs.Tab>
           <Tabs.Tab value="seasonal" leftSection={<IconCalendar size={14} />}>
-            Seasonal Hours
+            <Group gap="xs">
+              Seasonal Hours
+              {seasonalOnly && <Badge size="xs" color="red">Required</Badge>}
+            </Group>
           </Tabs.Tab>
           <Tabs.Tab value="holidays" leftSection={<IconCalendar size={14} />}>
             Holiday Hours
@@ -506,32 +527,16 @@ const HoursSelector = memo(({ value = {}, onChange, poiType }) => {
 
         <Tabs.Panel value="regular" pt="md">
           <Stack>
-            <Alert color="blue" variant="light">
-              Set your standard operating hours. You can add multiple time periods per day for breaks.
-            </Alert>
-            
-            {DAYS_OF_WEEK.map(day => (
-              <DayHours
-                key={day.value}
-                day={day}
-                hours={hours.regular[day.value]}
-                onChange={(dayHours) => updateHours({
-                  regular: { ...hours.regular, [day.value]: dayHours }
-                })}
-                onCopy={() => handleCopyHours(day.value)}
-              />
-            ))}
-
-            <Group>
+            <Group wrap="wrap">
               <Button
                 size="sm"
                 variant="light"
                 onClick={() => {
                   const defaultHours = {
                     status: 'open',
-                    periods: [{ 
-                      open: { type: 'fixed', time: '09:00' }, 
-                      close: { type: 'fixed', time: '17:00' } 
+                    periods: [{
+                      open: { type: 'fixed', time: '09:00' },
+                      close: { type: 'fixed', time: '17:00' }
                     }]
                   };
                   const weekdays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
@@ -539,12 +544,12 @@ const HoursSelector = memo(({ value = {}, onChange, poiType }) => {
                   weekdays.forEach(day => {
                     newRegular[day] = defaultHours;
                   });
-                  updateHours({ regular: newRegular });
+                  updateHours({ regular: newRegular, seasonal_only: false });
                 }}
               >
                 Set Mon-Fri: 9am-5pm
               </Button>
-              
+
               <Button
                 size="sm"
                 variant="light"
@@ -553,7 +558,7 @@ const HoursSelector = memo(({ value = {}, onChange, poiType }) => {
                   DAYS_OF_WEEK.forEach(day => {
                     newRegular[day.value] = { status: '24hours' };
                   });
-                  updateHours({ regular: newRegular });
+                  updateHours({ regular: newRegular, seasonal_only: false });
                 }}
               >
                 Set 24/7
@@ -574,23 +579,94 @@ const HoursSelector = memo(({ value = {}, onChange, poiType }) => {
                   DAYS_OF_WEEK.forEach(day => {
                     newRegular[day.value] = appointmentHours;
                   });
-                  updateHours({ regular: newRegular });
+                  updateHours({ regular: newRegular, seasonal_only: false });
+                  if (onAppointmentRequiredChange) onAppointmentRequiredChange(true);
                 }}
               >
                 By Appointment Only
               </Button>
+
+              <Button
+                size="sm"
+                variant="light"
+                color={seasonalOnly ? 'teal' : 'gray'}
+                leftSection={<IconCalendar size={14} />}
+                onClick={() => {
+                  updateHours({ seasonal_only: true });
+                  setActiveTab('seasonal');
+                }}
+              >
+                Set to Seasonal Hours Only
+              </Button>
             </Group>
+
+            {seasonalOnly ? (
+              <Alert color="blue" variant="light">
+                <Group justify="space-between" wrap="wrap">
+                  <Text size="sm">This location operates on seasonal hours only — see Seasonal Hours below.</Text>
+                  <Text
+                    size="sm"
+                    style={{ textDecoration: 'underline', cursor: 'pointer' }}
+                    onClick={() => updateHours({ seasonal_only: false })}
+                  >
+                    Clear Seasonal-Only Mode
+                  </Text>
+                </Group>
+              </Alert>
+            ) : (
+              <Alert color="blue" variant="light">
+                Set your standard operating hours. You can add multiple time periods per day for breaks.
+              </Alert>
+            )}
+
+            <div style={seasonalOnly ? { opacity: 0.4, pointerEvents: 'none' } : undefined}>
+              {DAYS_OF_WEEK.map(day => (
+                <DayHours
+                  key={day.value}
+                  day={day}
+                  hours={hours.regular[day.value]}
+                  onChange={(dayHours) => updateHours({
+                    regular: { ...hours.regular, [day.value]: dayHours }
+                  })}
+                  onCopy={() => handleCopyHours(day.value)}
+                />
+              ))}
+            </div>
+
+            {onAppointmentRequiredChange && (
+              <>
+                <Divider my="xs" label="Appointment Settings" />
+                <Switch
+                  label="Appointments required"
+                  description="Turn on if visitors must book before arriving"
+                  checked={appointmentRequired}
+                  onChange={(e) => onAppointmentRequiredChange(e.currentTarget.checked)}
+                />
+                <TextInput
+                  label="Appointment Booking URL"
+                  placeholder="https://example.com/book"
+                  description='Where visitors should book if appointments are required (Calendly, Acuity, your own form, etc.). Optional — if empty, the public site will show "By appointment only — call to book."'
+                  value={bookingUrl}
+                  onChange={(e) => onBookingUrlChange && onBookingUrlChange(e.currentTarget.value)}
+                />
+              </>
+            )}
           </Stack>
         </Tabs.Panel>
 
         <Tabs.Panel value="seasonal" pt="md">
           <Stack>
+            {seasonalOnly && !hasSeasonalData && (
+              <Alert color="orange" variant="light">
+                Add at least one seasonal period before saving — this location operates on seasonal hours only.
+              </Alert>
+            )}
             <Alert color="blue" variant="light">
               Override regular hours during specific seasons or date ranges. Seasonal hours take precedence over regular hours.
               You can use predefined seasons OR specify exact date ranges (e.g., "Summer hours: June 1 - Aug 15").
             </Alert>
 
-            <SimpleGrid cols={2}>
+            <SimpleGrid cols={{ base: 1, sm: 2 }}>
               {SEASON_DEFINITIONS.map(season => {
                 const SeasonIcon = season.icon;
                 const hasHours = hours.seasonal[season.value];

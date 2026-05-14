@@ -11,7 +11,6 @@ import {
 } from '../../../utils/outdoorConstants';
 import {
   TrailHeadPhotoUpload,
-  TrailExitPhotoUpload,
   shouldUseImageUpload
 } from '../ImageIntegration';
 
@@ -121,26 +120,6 @@ export const TrailDetailsSection = React.memo(function TrailDetailsSection({ for
         <Text size="sm" c="dimmed">Save POI first to enable trailhead photo upload</Text>
       )}
 
-      <Divider my="md" label="Trail Exit Location" />
-      <SimpleGrid cols={{ base: 1, sm: 2 }}>
-        <NumberInput
-          label="Trail Exit Latitude"
-          placeholder="35.7128"
-          precision={6}
-          {...form.getInputProps('trail.trail_exit_latitude')}
-        />
-        <NumberInput
-          label="Trail Exit Longitude"
-          placeholder="-79.0064"
-          precision={6}
-          {...form.getInputProps('trail.trail_exit_longitude')}
-        />
-      </SimpleGrid>
-      {shouldUseImageUpload(id) ? (
-        <TrailExitPhotoUpload poiId={id} form={form} />
-      ) : (
-        <Text size="sm" c="dimmed">Save POI first to enable trail exit photo upload</Text>
-      )}
     </Stack>
   );
 });

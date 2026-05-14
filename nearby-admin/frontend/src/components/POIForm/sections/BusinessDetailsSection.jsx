@@ -1,11 +1,10 @@
 import React from 'react';
 import {
-  Stack, SimpleGrid, Select, TextInput, Divider, Checkbox, Group, ActionIcon, Button
+  Stack, SimpleGrid, Select, TextInput, Divider, Checkbox, Group, ActionIcon, Button, Text
 } from '@mantine/core';
 import { IconPlus, IconTrash } from '@tabler/icons-react';
 import {
-  PRICE_RANGE_OPTIONS, GIFT_CARD_OPTIONS, DISCOUNT_TYPES,
-  YOUTH_AMENITIES, BUSINESS_AMENITIES, ENTERTAINMENT_OPTIONS
+  PRICE_RANGE_OPTIONS, GIFT_CARD_OPTIONS, DISCOUNT_TYPES
 } from '../../../utils/constants';
 import { getCheckboxGroupProps } from '../constants/helpers';
 import { addTitledLink, removeTitledLink, updateTitledLink } from '../../../utils/fieldHelpers';
@@ -57,32 +56,6 @@ export const BusinessDetailsSection = React.memo(function BusinessDetailsSection
             </SimpleGrid>
           </Checkbox.Group>
 
-          <Divider my="md" label="Youth Amenities" />
-          <Checkbox.Group {...getCheckboxGroupProps(form, 'youth_amenities')}>
-            <SimpleGrid cols={{ base: 2, sm: 3 }}>
-              {YOUTH_AMENITIES.map(amenity => (
-                <Checkbox key={amenity} value={amenity} label={amenity} />
-              ))}
-            </SimpleGrid>
-          </Checkbox.Group>
-
-          <Divider my="md" label="Business Amenities" />
-          <Checkbox.Group {...getCheckboxGroupProps(form, 'business_amenities')}>
-            <SimpleGrid cols={{ base: 2, sm: 3 }}>
-              {BUSINESS_AMENITIES.map(amenity => (
-                <Checkbox key={amenity} value={amenity} label={amenity} />
-              ))}
-            </SimpleGrid>
-          </Checkbox.Group>
-
-          <Divider my="md" label="Entertainment Options" />
-          <Checkbox.Group {...getCheckboxGroupProps(form, 'entertainment_options')}>
-            <SimpleGrid cols={{ base: 2, sm: 3 }}>
-              {ENTERTAINMENT_OPTIONS.map(option => (
-                <Checkbox key={option} value={option} label={option} />
-              ))}
-            </SimpleGrid>
-          </Checkbox.Group>
         </>
       )}
     </Stack>

@@ -1,8 +1,8 @@
 /* Nearby Card - Base Styles */
 .nearby-card {
   background: white;
-  border-radius: 12px;
-  padding: 20px;
+  border-radius: 11px;
+  padding: 35px 25px 25px 25px;
   border: 2px solid var(--nn-gold); /* Yellow outline as per design */
   position: relative;
   display: flex;
@@ -30,21 +30,34 @@
 /* Number Badge - Centered */
 .nearby-card__number {
   position: absolute;
-  top: -12px;
+  top: -27px;
   left: 50%;
   transform: translateX(-50%);
   background: var(--nn-purple1);
   color: white;
-  min-width: 28px;
-  height: 28px;
-  padding: 0 8px;
-  border-radius: 14px;
+  width: 55px;
+  height: 55px;
+  border-radius: 50%;
+  border: 2px solid white;
   display: flex;
   align-items: center;
   justify-content: center;
+  font-family: inherit;
   font-weight: 700;
-  font-size: 14px;
+  font-size: 25px;
   box-shadow: 0 2px 6px rgba(86, 37, 86, 0.3);
+  cursor: pointer;
+  padding: 0;
+  z-index: 2;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.nearby-card__number:hover {
+  transform: translateX(-50%) scale(1.08);
+  box-shadow: 0 4px 10px rgba(86, 37, 86, 0.45);
+}
+.nearby-card__number:focus-visible {
+  outline: 3px solid var(--nn-gold);
+  outline-offset: 2px;
 }
 
 /* Content Area */
@@ -64,36 +77,58 @@
 
 .nearby-card__distance-value {
   color: var(--nn-purple1);
-  font-size: 15px;
+  font-size: 87%;
   font-weight: 600;
+  font-family: var(--font-poppins);
 }
 
 .nearby-card__distance-label {
   color: var(--nn-gray);
-  font-size: 12px;
+  font-size: 87%;
   font-weight: 500;
+  font-family: var(--font-poppins);
 }
 
 /* POI Name */
 .nearby-card__name {
   font-family: var(--font-poppins);
-  font-size: 17px;
+  font-size: 21px;
   font-weight: 700;
   color: var(--nn-dark);
   margin: 0;
-  line-height: 1.3;
+  line-height: 1;
+  padding: 5px 0;
 }
 
-/* Primary Category */
+/* Primary Category — nn-templates .one_search_map_result_type */
 .nearby-card__category {
-  font-size: 13px;
+  font-size: 90%;
   color: var(--nn-gray);
   font-weight: 500;
 }
 
-/* Hours Display */
+/* City line — nn-templates .one_search_map_single_city */
+.nearby-card__city {
+  font-size: 90%;
+  color: var(--nn-gray);
+  font-weight: 500;
+}
+
+/* Whole-card click target. Inner buttons / number badge stop propagation. */
+.nearby-card--clickable { cursor: pointer; }
+.nearby-card--clickable:focus-visible {
+  outline: 3px solid var(--nn-gold);
+  outline-offset: 2px;
+}
+.nearby-card--clickable:hover {
+  box-shadow: 0 6px 16px rgba(86, 37, 86, 0.18);
+  transform: translateY(-1px);
+  transition: box-shadow .15s ease, transform .15s ease;
+}
+
+/* Hours Display — nn-templates .one_search_map_result_hours */
 .nearby-card__hours {
-  font-size: 13px;
+  font-size: 90%;
   font-weight: 600;
 }
 
@@ -105,70 +140,91 @@
   color: var(--nn-red);
 }
 
-/* Amenity Icons */
+/* Type + Amenities Group */
+.nearby-card__type-amenities-group {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+/* Amenity Icons — nn-templates .one_search_map_result_amenities.
+   The template inlines 19px SVGs, but at our card width those read as smudges.
+   Bump to 28px and round-chip them so each amenity is unmistakable. */
 .nearby-card__amenities {
   display: flex;
-  gap: 10px;
-  margin-top: 4px;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 6px;
 }
 
 .nearby-card__amenity {
-  color: var(--nn-purple1);
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--nn-purple-soft, #f3e8f3);
   cursor: help;
-  transition: color 0.2s;
+  transition: background-color .2s, transform .2s;
 }
-
+.nearby-card__amenity svg {
+  width: 22px !important;
+  height: 22px !important;
+}
 .nearby-card__amenity:hover {
-  color: var(--nn-teal2);
+  background: var(--nn-purple1, #562556);
+  transform: translateY(-1px);
+}
+.nearby-card__amenity:hover svg path {
+  fill: #fff !important;
 }
 
-/* Action Buttons */
+/* Action Buttons — matches nn-templates .btn_outline_teal.btn_poi_button_1 */
 .nearby-card__actions {
   margin-top: auto;
   display: flex;
-  gap: 8px;
-  padding-top: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 10px;
+  padding: 15px 0 0 0;
 }
 
 .nearby-card__btn {
-  flex: 1;
-  display: flex;
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: flex-start;
   align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 10px 14px;
-  border-radius: 8px;
+  gap: 9px;
+  padding: 15px 20px;
+  border-radius: 55px;
+  font-family: var(--font-poppins);
+  font-size: 14px;
   font-weight: 600;
-  font-size: 13px;
-  cursor: pointer;
-  transition: all 0.2s ease;
+  letter-spacing: 0.1em;
+  line-height: 1;
   text-transform: uppercase;
-  letter-spacing: 0.3px;
-}
-
-.nearby-card__btn--directions {
-  background: var(--nn-purple1);
-  color: white;
-  border: 2px solid var(--nn-purple1);
-}
-
-.nearby-card__btn--directions:hover {
-  background: var(--nn-purple2);
-  border-color: var(--nn-purple2);
-}
-
-.nearby-card__btn--details {
+  text-decoration: none;
+  cursor: pointer;
+  transition: 0.3s all ease-out;
   background: white;
-  color: var(--nn-teal2);
-  border: 2px solid var(--nn-teal2);
+  color: var(--nn-teal1);
+  border: 2px solid var(--nn-teal1);
 }
 
-.nearby-card__btn--details:hover {
-  background: var(--nn-teal2);
+.nearby-card__btn:hover {
+  background-color: var(--nn-teal1);
   color: white;
+}
+
+.nearby-card__btn--directions .poi_button_icon {
+  fill: var(--nn-teal1);
+}
+
+.nearby-card__btn--directions:hover .poi_button_icon {
+  fill: white;
 }
 
 /* Event Card Specific Styles */
@@ -176,9 +232,8 @@
   border-color: var(--nn-teal2);
 }
 
-.nearby-card--event .nearby-card__number {
-  background: var(--nn-teal2);
-}
+/* Card number badges intentionally use a single color across all POI types so
+   they don't visually read as pagination state. */
 
 .nearby-card__event-date {
   display: flex;
@@ -198,10 +253,6 @@
   border-color: var(--nn-green);
 }
 
-.nearby-card--park .nearby-card__number {
-  background: var(--nn-green);
-}
-
 .nearby-card__park-type {
   display: flex;
   align-items: center;
@@ -214,10 +265,6 @@
 /* Trail Card Specific Styles */
 .nearby-card--trail {
   border-color: var(--nn-gold);
-}
-
-.nearby-card--trail .nearby-card__number {
-  background: var(--nn-gold);
 }
 
 .nearby-card__trail-info {
@@ -264,11 +311,11 @@
 /* Responsive */
 @media (max-width: 768px) {
   .nearby-card {
-    padding: 16px;
+    padding: 30px 20px 20px 20px;
   }
 
   .nearby-card__name {
-    font-size: 15px;
+    font-size: 18px;
   }
 
   .nearby-card__btn {
@@ -276,3 +323,124 @@
     font-size: 12px;
   }
 }
+
+@media (min-width: 1200px) {
+  .nearby-card {
+    padding: 35px 30px 30px 30px;
+  }
+}
+
+@media (min-width: 1600px) {
+  .nearby-card {
+    padding: 40px 35px 35px 35px;
+  }
+}
+
+@media (min-width: 1900px) {
+  .nearby-card {
+    padding: 45px 40px 40px 40px;
+  }
+}
+
+/* Status badges */
+.nearby-card__status-badge {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.nearby-card__status-badge--canceled {
+  background-color: #fef2f2;
+  color: #dc2626;
+}
+
+.nearby-card__status-badge--postponed {
+  background-color: #fffbeb;
+  color: #d97706;
+}
+
+.nearby-card__status-badge--rescheduled {
+  background-color: #eff6ff;
+  color: #2563eb;
+}
+
+.nearby-card__status-badge--moved-online {
+  background-color: #f5f3ff;
+  color: #7c3aed;
+}
+
+.nearby-card__status-badge--past {
+  background-color: #f3f4f6;
+  color: #6b7280;
+}
+
+.nearby-card__name--canceled {
+  text-decoration: line-through;
+  color: #9ca3af;
+}
+
+/* Paid-tier quick-facts pad (Figma listing-card spec) */
+.nearby-card__quick-facts {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border: 1.5px solid var(--nn-gold);
+  border-radius: 8px;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.nearby-card__quick-facts-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--gray-e, #eaeaea);
+}
+.nearby-card__quick-facts-row:last-child {
+  border-bottom: none;
+}
+
+.nearby-card__quick-facts-label {
+  font-family: var(--font-poppins);
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.2px;
+  color: var(--nn-dark);
+  text-transform: uppercase;
+}
+.nearby-card__quick-facts-value {
+  font-size: 13px;
+  line-height: 1.35;
+  color: var(--nn-slate, #475569);
+}
+
+@media (min-width: 600px) {
+  .nearby-card__quick-facts-row {
+    grid-template-columns: 0.9fr 1.4fr;
+    gap: 10px;
+    align-items: center;
+  }
+}
+
+/* Paid-tier amenity pill strip — scoped to fit the card width */
+.nearby-card__amenity-strip-wrap {
+  margin-top: 10px;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.nearby-card__amenity-strip-wrap::-webkit-scrollbar {
+  display: none;
+}
+.nearby-card__amenity-strip-wrap .poi_amenity_pill_strip {
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+

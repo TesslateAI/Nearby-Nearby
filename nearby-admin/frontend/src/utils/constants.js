@@ -1,55 +1,207 @@
 // Constants for POI system
 
-// Ideal For Key Box options (simplified list for free listings)
-// NOTE: These values MUST match the corresponding values in IDEAL_FOR_OPTIONS
-// so that Key Ideal For selections automatically select the corresponding Ideal For option
-export const IDEAL_FOR_KEY_OPTIONS = [
+// ---------------------------------------------------------------------------
+// Phase 1 (May Launch) — new Ideal For groups. Flat union is exported below
+// as IDEAL_FOR_KEY_OPTIONS so existing importers don't break.
+// ---------------------------------------------------------------------------
+export const IDEAL_FOR_ATMOSPHERE = [
+  'Authentic + Local',
   'Casual + Welcoming',
+  'Community Gathering Spot',
+  'Cozy + Intimate',
+  'Country + Rural',
+  'Fast Paced + Energetic',
   'Formal + Refined',
+  'Historic + Heritage',
   'Loud + Lively',
+  'Modern + Trendy',
+  'Nature Immersed',
+  'Off the Beaten Path',
+  'Open + Inclusive',
+  'Outdoor Seating + Open Air',
+  'Peaceful + Secluded',
+  'Pet Friendly',
   'Quiet + Reflective',
-  'Ages 18+',  // Changed from 'Adult Only (18+)' to match IDEAL_FOR_OPTIONS
-  'Ages 21+',  // Added to match IDEAL_FOR_OPTIONS
+  'Quirky + Unique',
+  'Rustic + Natural',
+  'Spiritual + Reflective',
+  'Visitor Friendly',
+  'Wide Open Spaces'
+];
+
+export const IDEAL_FOR_AGE_GROUP = [
   'All Ages',
-  'Families',  // Changed from 'Family Friendly' to match IDEAL_FOR_OPTIONS
-  'Golden Years Ages 55+',  // Changed from 'Golden Generation (55+)' to match IDEAL_FOR_OPTIONS
-  'PreK',  // Note: Does NOT auto-select because users need to choose WITH or WITHOUT adult
-  'School Age',  // Note: Does NOT auto-select because users need to choose WITH or WITHOUT adult
-  'Teens',  // Note: Does NOT auto-select because users need to choose WITH or WITHOUT adult
-  'Youth'  // Note: Does NOT auto-select because users need to choose WITH or WITHOUT adult
+  'Families',
+  'Infant + Toddler',
+  'Pre K',
+  'Stroller Friendly',
+  'Elementary School (Age 5-10)',
+  'Middle School (Age 10-14)',
+  'High School (Age 14-18)',
+  'Ages 18+',
+  'Ages 21+',
+  'College Age',
+  'Golden Years Ages 55+',
+  'Seniors 65+'
 ];
 
-// Parking options
+export const IDEAL_FOR_SOCIAL_SETTINGS = [
+  'Solo Friendly',
+  'Small Groups',
+  'School Groups + Field Trips',
+  'Corporate + Team Building',
+  'First Date',
+  'Anniversary',
+  'Birthday Celebration',
+  'Reunion',
+  'Bachelorette + Bachelor',
+  'Wedding Related',
+  'Networking'
+];
+
+export const IDEAL_FOR_LOCAL_SPECIAL = [
+  'Award Winning',
+  'By Appointment Only',
+  'Budget Friendly',
+  'Catering Available',
+  'Community Centered',
+  'Curbside Pickup',
+  'Drive Through',
+  'Eco Friendly',
+  'Leave No Trace',
+  'Local Artists',
+  'Local Delivery',
+  'Locally Sourced Ingredients',
+  'Luxury',
+  'Made in NC',
+  'Night Owls Open Late (past 10pm)',
+  'Photography Friendly',
+  'Reservations',
+  'Seasonal',
+  'Ships Nationwide',
+  'Stewardship + Conservation',
+  'Supports Local Farms',
+  'Takeout Available',
+  'Veteran Owned',
+  'Virtual Consults Available',
+  'Virtual Services Available',
+  'Walk Ins Welcome',
+  'We Come to You',
+  'Volunteer Opportunities'
+];
+
+export const IDEAL_FOR_SPECIAL_NEEDS = [
+  'Acquired Disability',
+  'ADHD',
+  'Anxiety Disorders',
+  "Asperger's Syndrome",
+  'Autism',
+  'Behavioral Issues',
+  'Blind + Low Vision',
+  'Cerebral Palsy',
+  'Chronic Illness',
+  'Deaf or Hard of Hearing',
+  'Dementia + Memory Care',
+  'Developmental Issues',
+  'Down Syndrome',
+  'Epilepsy + Seizure Disorders',
+  'Intellectual Disability',
+  'Learning Issues',
+  'Medical Issues',
+  'Mental Health',
+  'Mobility Impaired',
+  'Multiple Sclerosis',
+  'Muscular Dystrophy',
+  'Nonverbal',
+  'OCD',
+  'ODD',
+  'Processing Disorders',
+  'PTSD',
+  'Schizophrenia',
+  'Selective Mutism',
+  'Sensory Impaired',
+  'Speech + Language Disorders',
+  'Tourette Syndrome',
+  'Traumatic Brain Injury',
+];
+
+// Ideal For Key Box options — flat union of all groups so existing importers keep working.
+export const IDEAL_FOR_KEY_OPTIONS = [
+  ...IDEAL_FOR_ATMOSPHERE,
+  ...IDEAL_FOR_AGE_GROUP,
+  ...IDEAL_FOR_SOCIAL_SETTINGS,
+  ...IDEAL_FOR_LOCAL_SPECIAL,
+  ...IDEAL_FOR_SPECIAL_NEEDS,
+];
+
+// Parking options — Phase 1 replaced list (24 values)
 export const PARKING_OPTIONS = [
-  'Public Parking Lot',
-  'Dedicated Parking Lot',
-  'Private Parking Lot',
-  'Street',
-  'Valet',
+  'Accessible Parking',
+  'ATV + UTV Trailer Parking',
+  'Bike Rack + Bicycle Parking',
+  'Boat Trailer Parking',
+  'Bus + Charter Bus Parking',
+  'Carpool + Rideshare Parking',
+  'Day Use Only (no overnight parking)',
+  'Dedicated On-Site Parking Lot',
   'Garage',
-  'Validated',
-  'Oversized Vehicles',
-  'Pay to Park',
-  'Free Parking',
-  'Dedicated Motorcycle or Motorbike Parking',
-  'Dedicated Bicycle Parking',
-  'RV Parking',
-  'Big Rig Parking',
-  'Parking Garage'
+  'Horse Trailer Parking',
+  'Motorcycle + Motorbike Parking',
+  'Nearby Public Parking Lot',
+  'Overflow Parking',
+  'Overnight Parking Permitted',
+  'Oversized + Wide Load Vehicle (military, heavy equipment, double wide)',
+  'Pull-Through Parking (for RVs and large vehicles)',
+  'RV Parking (parking only — no hookups)',
+  'Seasonal Parking Only',
+  'Semi Truck + 18 Wheeler (cab and trailer)',
+  'Semi Truck Cab Only (no trailer)',
+  'Street Parking',
+  'Trailer Parking — General',
+  'Unpaved + Gravel Parking',
+  'Valet Parking'
 ];
 
-// Payment methods
+// Phase 1 — ADA parking checklist
+export const PARKING_ADA_CHECKLIST = [
+  'Dedicated accessible parking spaces on site',
+  'Accessible spaces closest to main entrance',
+  'Van accessible space available (8 foot access aisle)',
+  'Accessible parking within reasonable distance',
+  'Accessible route from parking to main entrance',
+  'Accessible parking on firm stable surface'
+];
+
+// Phase 1 — arrival methods (how users physically get to a POI)
+export const ARRIVAL_METHOD_OPTIONS = [
+  'Bike-In Access',
+  'Boat Access',
+  'Dedicated Parking On Site',
+  'Gate Access + Controlled Entry',
+  'Nearby Public Parking',
+  'Public Transit',
+  'Roadside Pull-Off',
+  'Shuttle + Drop-Off',
+  'Street Parking'
+];
+
+// Payment methods — Phase 1 replaced list (17 values)
 export const PAYMENT_METHODS = [
   'Cash',
   'Check',
   'Online Payments',
   'Credit Cards',
+  'Coin Operated',
   'Apple Pay',
   'Google Pay',
+  'Samsung Pay',
   'Cryptocurrency',
   'Contactless Payments',
+  'PayPal',
+  'Venmo',
+  'Zelle',
   'Payment Plans',
-  'Has ATM',
+  'Fee Station + Self-Pay Envelope',
   'Varies with Vendors',
   'Once Entered there is no place to spend money'
 ];
@@ -87,13 +239,6 @@ export const ALCOHOL_OPTIONS = [
   'Other'
 ];
 
-// Wheelchair accessibility
-export const WHEELCHAIR_OPTIONS = [
-  'No',
-  'Unknown',
-  'Yes'
-];
-
 // Smoking options
 export const SMOKING_OPTIONS = [
   'Yes',
@@ -110,11 +255,151 @@ export const COAT_CHECK_OPTIONS = [
   'Private Lockers'
 ];
 
-// WiFi options (Events only)
+// WiFi options — Phase 1 replaced (3 values)
 export const WIFI_OPTIONS = [
-  'Free Public Wifi',
-  'No Public Wifi',
-  'Paid Public Wifi'
+  'Free Wifi',
+  'Paid Wifi',
+  'No Public Wifi'
+];
+
+// Phase 1 — Cell service
+export const CELL_SERVICE_OPTIONS = [
+  'Good',
+  'Limited',
+  'Unknown',
+  'None'
+];
+
+// Phase 1 — Amenities (updated to current spec, issue #55)
+// Items marked PT are Parks + Trails only; items marked BE are Business + Events only.
+// Sub-option selects (Coat Check, Drinking Fountain, EV Charging, etc.) are rendered
+// conditionally in the form when the parent item is selected.
+export const AMENITIES_GENERAL = [
+  'Amphitheater',
+  'ATM',
+  'Bag Check',
+  'Bike Rack',
+  'Bike Repair Station',
+  'Caretaker On Site',
+  'Coat Check',                          // BE only — sub-select: Complimentary, Fee Based
+  'Coin Change Machine',
+  'Covered Trail Shelter',               // PT only
+  'Darts',                               // BE only
+  'Drive-Up Pickup Area',                // BE only
+  'Drinking Fountain',                   // sub-select includes PT-only At Trailhead + On Trail options
+  'Dump Station for RVs',
+  'Equestrian Facilities',               // sub-select: Tie-Up + Hitching Post, Water Trough, Trailer Parking, Staging Area
+  'Equipment Storage',
+  'EV Charging',                         // sub-select: Standard/Fast/Tesla + station count field
+  'Fire Pit',
+  'Fire Ring',
+  'First Aid Station',
+  'Gated Access',
+  'Gazebo',
+  'Gift Shop',
+  'Grill',
+  'Information Kiosk + Map Board',
+  'Laundry Facilities',
+  'Lockers + Storage',
+  'Lost + Found',
+  'Multilingual Signage',
+  'Outdoor Classroom',
+  'Overflow Parking',
+  'Performance Stage',
+  'Pool Tables',                         // BE only
+  'Public Spring Water Collection Point',
+  'Recycling Stations',
+  'Seasonal Access',
+  'Security On Site',
+  'Showers',
+  'Shuttle + Trolley Service',
+  'Sports on TV',                        // BE only
+  'Stroller Check',
+  'Vending Machines',
+  'Weather Station',
+  'Wildlife Observation Platform',
+];
+
+export const AMENITIES_FAMILY_YOUTH = [
+  'Booster Seat',
+  'Changing Table',
+  'Childcare Available',                 // BE only
+  'Cribs',                              // BE only
+  'Family Spaces',
+  'High Chair',
+  'Kids Activity Area',
+  'Kid Friendly Menus',                  // BE only
+  'Lactation Room',
+  'Play Area — Indoor',
+  'Play Area — Outdoor',
+  'Playpens',                            // BE only
+  'Stroller Parking',
+  'Stroller Rental',
+];
+
+export const AMENITIES_WATER_BOATING = [
+  'Beach Access',
+  'Boat Dock',                           // ADA checklist available when checked
+  'Boat Launch',                         // ADA checklist available when checked
+  'Boat Ramp',                           // ADA checklist available when checked
+  'Boat Storage',
+  'Fuel Station for Boats',
+  'Marina',
+  'Kayak, Canoe + Paddleboard Launch',   // ADA checklist available when checked
+];
+
+export const AMENITIES_DINING_SEATING = [
+  'Bar Seating',                         // BE only
+  'Benches + Rest Areas',
+  'Catering Pickup Area',                // BE only
+  'Concession Stand',
+  'Coworking + Work Friendly Seating',   // BE only
+  'Group Shelter',
+  'Indoor Seating',
+  'Meeting Room',                        // BE only
+  'On-Site Kitchen Facility',            // sub-select: Has Power, Has Running Water
+  'Outdoor Bar',                         // BE only
+  'Outdoor Seating',                     // sub-select: Cooled, Covered, Heated
+  'Picnic Area',                         // sub-select: Covered, Uncovered
+  'Private Event Space',
+];
+
+// Visibility flags for amenity items by POI type group.
+// 'PT' = Parks + Trails only (hidden from Business and Events).
+// 'BE' = Business + Events only (hidden from Parks and Trails).
+// Items absent from this map are visible to ALL POI types.
+export const AMENITIES_VISIBILITY = {
+  'Coat Check': 'BE',
+  'Covered Trail Shelter': 'PT',
+  'Darts': 'BE',
+  'Drive-Up Pickup Area': 'BE',
+  'Pool Tables': 'BE',
+  'Sports on TV': 'BE',
+  'Childcare Available': 'BE',
+  'Cribs': 'BE',
+  'Kid Friendly Menus': 'BE',
+  'Playpens': 'BE',
+  'Bar Seating': 'BE',
+  'Catering Pickup Area': 'BE',
+  'Coworking + Work Friendly Seating': 'BE',
+  'Meeting Room': 'BE',
+  'Outdoor Bar': 'BE',
+};
+
+export const ALCOHOL_AVAILABLE_OPTIONS = [
+  { value: 'full_bar', label: 'Full Bar' },
+  { value: 'beer_wine', label: 'Beer + Wine Only' },
+  { value: 'byob', label: 'BYOB' },
+  { value: 'no_alcohol', label: 'No Alcohol' },
+  { value: 'seasonal', label: 'Seasonal/Event Only' },
+  { value: 'nearby', label: 'Adjacent/Nearby Available' }
+];
+
+export const SPONSOR_LEVEL_OPTIONS = [
+  { value: 'platform', label: 'Platform' },
+  { value: 'state', label: 'State' },
+  { value: 'county', label: 'County' },
+  { value: 'town', label: 'Town' }
 ];
 
 // Drone usage
@@ -124,30 +409,89 @@ export const DRONE_USAGE_OPTIONS = [
   'No'
 ];
 
-// Pet options
 export const PET_OPTIONS = [
-  'Allowed',
-  'Not Allowed',
   'Any Well Behaved Pet',
+  'Breed Restriction — see notes',
   'Cats Allowed',
   'Clean Up Stations',
   'Dogs Allowed',
+  'Dogs Only',
   'Fenced in Area',
+  'Hot Surface Warning',
+  'Horse Boarding',
+  'Horses Welcome',
   'Kennels Available for Rent',
-  'Leashed',
+  'Leash Required — 6 Feet Maximum',
+  'Leash Required — Length Not Specified',
+  'Livestock Permitted',
+  'Maximum Number of Dogs Per Person — see notes',
+  'No Pets Left Unattended',
   'Off Leash',
-  'Water Source'
+  'Pet Friendly Seating Areas',
+  'Pack Out Waste — No Trash Cans Available',
+  'Pet Relief Area',
+  'Pet Waste Bags Available',
+  'Trash Cans Available for Waste Bags',
+  'Pet Fee Required',
+  'Pet Swimming Area — Beach Access',
+  'Pet Swimming Area — Designated + Marked',
+  'Pet Swimming Area — Lake or Pond Access',
+  'Pet Swimming Area — River or Creek Access',
+  'Pet Washing Station',
+  'Pets Allowed in Designated Areas Only',
+  'Small Pets Only',
+  'Size Restriction — Under 25 lbs',
+  'Size Restriction — Under 50 lbs',
+  'Size Restriction — No Size Restriction',
+  'Pets Must Stay on Trail',
+  'Pets Not Allowed in Buildings',
+  'Seasonal Restrictions Apply — see notes',
+  'Shade Available Along Route',
+  'Spayed + Neutered Required',
+  'Toxic Plant Warning',
+  'Vaccination Proof Required',
+  'Voice Control Accepted in Designated Areas',
+  'Water Source',
+  'Wildlife Hazard Area — see notes',
 ];
 
-// Public toilet options
 export const PUBLIC_TOILET_OPTIONS = [
-  'Yes',
-  'Family',
+  'Single Stall',
+  'Multi Stall',
+  'Family Restroom',
   'Baby Changing Station',
-  'Wheelchair/Handicap Accessible',
+  'Wheelchair + ADA Accessible',
+  'All Gender',
+  'Climate Controlled Restroom',
+  'Key Required',
+  'Code Required',
+  'Customers Only',
+  'Attendant on Duty',
+  'Pay Toilet',
   'Porta Potti',
-  'Porta Potti Only',
-  'No'
+  'Outdoor + Pit Toilet',
+  'Vault Toilet',
+  'Trailer Restroom',
+  'Seasonal Only',
+  '24 Hour Access',
+];
+
+export const RESTROOM_ADA_CHECKLIST = [
+  { group: 'Space + Size', label: 'Accessible stall size — minimum 60″ x 56″' },
+  { group: 'Space + Size', label: '60 inch turning radius clear floor space' },
+  { group: 'Grab Bars', label: 'Side grab bar installed' },
+  { group: 'Grab Bars', label: 'Rear grab bar installed' },
+  { group: 'Grab Bars', label: 'Grab bars mounted 33–36 inches from floor' },
+  { group: 'Door', label: 'Wide door — minimum 32 inches clear width' },
+  { group: 'Door', label: 'Outward swinging or sliding door' },
+  { group: 'Door', label: 'Lever or loop door handle' },
+  { group: 'Toilet', label: 'Accessible toilet height — 17–19 inches from floor' },
+  { group: 'Sink + Fixtures', label: 'Sink height 34 inches or lower' },
+  { group: 'Sink + Fixtures', label: 'Clear knee space under sink' },
+  { group: 'Sink + Fixtures', label: 'Lever or sensor faucet' },
+  { group: 'Sink + Fixtures', label: 'No exposed pipes under sink' },
+  { group: 'General', label: 'Level entry — no lip or step' },
+  { group: 'General', label: 'Sufficient lighting' },
 ];
 
 // Price Range Per Person (Business only)
@@ -164,21 +508,34 @@ export const PRICE_RANGE_OPTIONS = [
   'Over $101'
 ];
 
-// Discount Types (Business, Parks, Trails)
+// Discount Types — Phase 1 replaced (26 values)
 export const DISCOUNT_TYPES = [
-  'Golden Years (55+)',
-  'Military',
-  'Veteran',
-  'First Responder',
-  'Police',
-  'Fire Firefighter',
+  'AAA Members',
+  'AARP Members',
+  'Access Pass Holders',
+  'Active Duty Military',
+  'Military Veteran',
+  'Annual Pass Holder',
+  'Children Free (age specified in notes)',
   'EMT',
-  'Teacher',
-  'Student',
-  'Local Resident/In-County Discount',
-  'Healthcare Workers',
   'Farmers',
-  'Tribal Members'
+  'Fire + Firefighter',
+  'First Responder',
+  'Golden Years (55+)',
+  'Senior Discount (65+)',
+  'Group Discount (10+)',
+  'Healthcare Workers',
+  'Homeschool Groups',
+  'Local Resident + In-County Discount',
+  'National Park Pass Holders',
+  'Nonprofit + Organization Discount',
+  'Police',
+  'Season Pass Holder',
+  'State Park Pass Holders',
+  'Student',
+  'Teacher',
+  'Tribal Members',
+  'Youth Discount'
 ];
 
 // Gift Card Options
@@ -242,7 +599,7 @@ export const ENTERTAINMENT_OPTIONS = [
   'No Public Wifi'
 ];
 
-// Park Facilities Options (separate from key_facilities)
+// Park Facilities Options
 export const PARK_FACILITIES = [
   'Amphitheater',
   'Benches',
@@ -336,11 +693,11 @@ export const VENDOR_TYPES = [
   { value: 'Packaged Snacks', label: 'Packaged Snacks', group: 'Food Sales' }
 ];
 
+// Listing Types — Phase 1: sponsor levels moved to SPONSOR_LEVEL_OPTIONS + is_sponsor flag
 export const LISTING_TYPES = [
   { value: 'free', label: 'Free Listing' },
   { value: 'paid', label: 'Paid Listing' },
-  { value: 'paid_founding', label: 'Paid Founding Listing' },
-  { value: 'sponsor', label: 'Sponsor Listing' },
+  { value: 'paid_founding', label: 'Paid – Founding' },
   { value: 'community_comped', label: 'Community-Comped' }
 ];
 
@@ -474,6 +831,16 @@ export const IDEAL_FOR_OPTIONS = [
   { value: 'Youth WITHOUT Adult - Visually Impaired', label: 'Visually Impaired', group: 'Youth WITHOUT Adult' }
 ];
 
+// Event Cost Types (Task 139)
+export const EVENT_COST_TYPES = [
+  { value: 'free', label: 'Free' },
+  { value: 'single_price', label: 'Single Price' },
+  { value: 'range', label: 'Price Range' },
+];
+
+// Event Disclaimer (Task 149)
+export const EVENT_DISCLAIMER = "While we work to keep event information current and accurate, details may change. We recommend confirming directly with event organizers before making plans.";
+
 // Helper function to get status options based on POI type
 export const getStatusOptions = (poiType) => {
   if (poiType === 'EVENT') {
@@ -482,9 +849,91 @@ export const getStatusOptions = (poiType) => {
   return BUSINESS_STATUS_OPTIONS;
 };
 
-// Helper function to determine which fields to show based on listing type
-export const getFieldsForListingType = (listingType, poiType) => {
-  const isPaid = ['paid', 'paid_founding', 'sponsor', 'community_comped'].includes(listingType);
+// Venue Inheritance Sections — which venue fields an event can inherit
+export const VENUE_INHERITANCE_SECTIONS = [
+  { value: 'address', label: 'Address & Location' },
+  { value: 'parking', label: 'Parking' },
+  { value: 'accessibility', label: 'Accessibility' },
+  { value: 'restrooms', label: 'Restrooms' },
+  { value: 'contact', label: 'Contact Info' },
+  { value: 'hours', label: 'Hours' },
+  { value: 'amenities', label: 'Amenities' },
+];
+
+// Venue Inheritance Modes — how each inherited section is used
+export const VENUE_INHERITANCE_MODES = [
+  { value: 'as_is', label: 'Use As Is' },
+  { value: 'use_and_add', label: 'Use & Add' },
+  { value: 'do_not_use', label: "Don't Use" },
+];
+
+// Recurrence frequency options for recurring events
+export const REPEAT_FREQUENCY_OPTIONS = [
+  { value: 'daily', label: 'Daily' },
+  { value: 'weekly', label: 'Weekly' },
+  { value: 'biweekly', label: 'Every 2 Weeks' },
+  { value: 'monthly', label: 'Monthly' },
+  { value: 'yearly', label: 'Yearly' },
+];
+
+// Sponsor tier options for event sponsors (Tier 1 = highest, Tier 5 = lowest)
+export const SPONSOR_TIERS = [
+  { value: 'Tier 1', label: 'Tier 1' },
+  { value: 'Tier 2', label: 'Tier 2' },
+  { value: 'Tier 3', label: 'Tier 3' },
+  { value: 'Tier 4', label: 'Tier 4' },
+  { value: 'Tier 5', label: 'Tier 5' },
+];
+
+// Phase 1 helper — returns feature flags for a (poi_type, listing_type) pair.
+// Used by layout files to gate which fields/sections render.
+export function getFieldsForListingType(poi_type, listing_type) {
+  const paid = ['paid', 'paid_founding', 'community_comped'];
+  const isBusiness = poi_type === 'BUSINESS';
+  const isPaid = isBusiness && paid.includes(listing_type);
+  const isFree = isBusiness && (listing_type === 'free' || !listing_type);
+  if (isPaid) {
+    return {
+      maxCategories: null,
+      maxIdealFor: null,
+      maxIdealForKey: 3,
+      includeGallery: true,
+      includeTeaser: true,
+      includeDescriptionLong: true,
+      includeSocials: true,
+      includeMenu: true,
+      includeRentals: true,
+      includePlayground: true,
+      includeHistory: true,
+      includePaymentMethods: true,
+      includeDiscounts: true,
+      includeFullAmenities: true,
+    };
+  }
+  if (isFree) {
+    return {
+      maxCategories: 1,
+      maxIdealFor: 5,
+      maxIdealForKey: 3,
+      includeGallery: false,
+      includeTeaser: false,
+      includeDescriptionLong: false,
+      includeSocials: false,
+      includeMenu: false,
+      includeRentals: false,
+      includePlayground: false,
+      includeHistory: false,
+      includePaymentMethods: false,
+      includeDiscounts: false,
+      includeFullAmenities: false,
+    };
+  }
+  return { maxIdealForKey: 3, includeGallery: true };
+}
+
+// Legacy helper (old arg order + legacy shape) retained for CategoriesSection + validationRules.
+export const getLegacyFieldsForListingType = (listingType, poiType) => {
+  const isPaid = ['paid', 'sponsor_platform', 'sponsor_state', 'sponsor_county', 'sponsor_town', 'community_comped'].includes(listingType);
   
   if (poiType === 'BUSINESS') {
     if (listingType === 'free') {

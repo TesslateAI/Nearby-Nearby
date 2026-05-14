@@ -1,12 +1,73 @@
 import React from 'react';
 import {
-  Stack, Alert, Divider, Text, Title, SimpleGrid, Checkbox
+  Stack, Alert, Divider, Text, Title, Badge, Group
 } from '@mantine/core';
 import { MainCategorySelector } from '../../MainCategorySelector';
 import { TreeCategorySelector } from '../../TreeCategorySelector';
 import { IdealForSelector } from '../../IdealForSelector';
-import { PrimaryTypeSelector } from '../../PrimaryTypeSelector';
-import { getFieldsForListingType, IDEAL_FOR_KEY_OPTIONS } from '../../../utils/constants';
+import { getLegacyFieldsForListingType as getFieldsForListingType } from '../../../utils/constants';
+import { IDEAL_FOR_ATMOSPHERE, IDEAL_FOR_AGE_GROUP, IDEAL_FOR_SOCIAL_SETTINGS, IDEAL_FOR_LOCAL_SPECIAL, IDEAL_FOR_SPECIAL_NEEDS } from '../../../utils/constants';
+
+const ALL_IDEAL_FOR_ITEMS = [
+  ...IDEAL_FOR_ATMOSPHERE,
+  ...IDEAL_FOR_AGE_GROUP,
+  ...IDEAL_FOR_SOCIAL_SETTINGS,
+  ...IDEAL_FOR_LOCAL_SPECIAL,
+  ...IDEAL_FOR_SPECIAL_NEEDS,
+];
+
+function KeyIdealForChips({ form }) {
+  const idealFor = form.values.ideal_for || {};
+  const allSelected = [
+    ...(idealFor.atmosphere || []),
+    ...(idealFor.age_group || []),
+    ...(idealFor.social_settings || []),
+    ...(idealFor.local_special || []),
+    ...(idealFor.special_needs || []),
+  ].filter(v => ALL_IDEAL_FOR_ITEMS.includes(v));
+
+  const keySelections = (form.values.ideal_for_key || []).filter(v => allSelected.includes(v));
+  const atCap = keySelections.length >= 3;
+
+  function toggleKey(val) {
+    if (keySelections.includes(val)) {
+      form.setFieldValue('ideal_for_key', keySelections.filter(v => v !== val));
+    } else if (!atCap) {
+      form.setFieldValue('ideal_for_key', [...keySelections, val]);
+    }
+  }
+
+  if (allSelected.length === 0) return null;
+
+  return (
+    <Stack gap="xs">
+      <Title order={6}>Key Ideal For — Feature on Listing Card</Title>
+      <Text size="sm" c="dimmed">
+        Select up to 3 from your Ideal For choices to feature prominently on the listing card. Only items you've already selected above appear here.
+      </Text>
+      <Group gap="xs" wrap="wrap">
+        {allSelected.map(val => {
+          const isKey = keySelections.includes(val);
+          const disabled = atCap && !isKey;
+          return (
+            <Badge
+              key={val}
+              variant={isKey ? 'filled' : 'outline'}
+              color={isKey ? 'blue' : 'gray'}
+              style={{ cursor: disabled ? 'not-allowed' : 'pointer', opacity: disabled ? 0.4 : 1 }}
+              onClick={() => !disabled && toggleKey(val)}
+            >
+              {val}
+            </Badge>
+          );
+        })}
+      </Group>
+      <Text size="xs" c={atCap ? 'red' : 'dimmed'}>
+        {keySelections.length} / 3 featured on listing card
+      </Text>
+    </Stack>
+  );
+}
 
 export const CategoriesSection = React.memo(function CategoriesSection({
   form,
@@ -14,6 +75,9 @@ export const CategoriesSection = React.memo(function CategoriesSection({
   isFreeListing
 }) {
   const isBusiness = form.values.poi_type === 'BUSINESS';
+  const isPark = form.values.poi_type === 'PARK';
+  const isTrail = form.values.poi_type === 'TRAIL';
+  const showKeyIdealFor = !isPark && !isTrail;
 
   return (
     <Stack>
@@ -44,6 +108,7 @@ export const CategoriesSection = React.memo(function CategoriesSection({
       <MainCategorySelector
         value={form.values.main_category_id}
         onChange={(value) => form.setFieldValue('main_category_id', value)}
+        onCategoryName={(name) => form.setFieldValue('primary_display_category', name)}
         poiType={form.values.poi_type}
         selectedCategories={form.values.category_ids || []}
         error={form.errors.main_category_id}
@@ -58,41 +123,6 @@ export const CategoriesSection = React.memo(function CategoriesSection({
       {/* Ideal For */}
       <Divider my="md" label="Target Audience" />
 
-      {/* Key Ideal For - For Business listings (both free and paid) */}
-      {isBusiness && (
-        <Stack mb="md">
-          <Title order={5}>Key Ideal For</Title>
-          <Text size="sm" c="dimmed">
-            Select up to 3 primary audiences (these will be prominently displayed)
-          </Text>
-          <SimpleGrid cols={{ base: 1, sm: 2 }}>
-            {IDEAL_FOR_KEY_OPTIONS.map((option) => (
-              <Checkbox
-                key={option}
-                label={option}
-                checked={(form.values.ideal_for_key || []).includes(option)}
-                onChange={(event) => {
-                  const checked = event.currentTarget.checked;
-                  if (checked && (form.values.ideal_for_key?.length || 0) < 3) {
-                    form.setFieldValue('ideal_for_key', [...(form.values.ideal_for_key || []), option]);
-                  } else if (!checked) {
-                    form.setFieldValue('ideal_for_key', (form.values.ideal_for_key || []).filter(v => v !== option));
-                  }
-                }}
-                disabled={
-                  form.values.ideal_for_key?.length >= 3 &&
-                  !(form.values.ideal_for_key || []).includes(option)
-                }
-              />
-            ))}
-          </SimpleGrid>
-          <Text size="xs" c="dimmed">
-            {form.values.ideal_for_key?.length || 0} / 3 selected
-          </Text>
-        </Stack>
-      )}
-
-      {/* Full Ideal For */}
       <Stack>
         <Title order={5}>Ideal For</Title>
         <Text size="sm" c="dimmed">
@@ -107,6 +137,14 @@ export const CategoriesSection = React.memo(function CategoriesSection({
           showAll={true}
         />
       </Stack>
+
+      {/* Key Ideal For — chip-based, only for Business + Event (not Park/Trail) */}
+      {showKeyIdealFor && (
+        <>
+          <Divider my="sm" />
+          <KeyIdealForChips form={form} />
+        </>
+      )}
     </Stack>
   );
 });

@@ -841,7 +841,6 @@ def create_events(db: Session):
             address_county=e["address_county"],
             address_full=e["address_full"],
             cost=e.get("cost"),
-            ticket_link=e.get("ticket_link"),
             ideal_for=e.get("ideal_for"),
             pet_options=e.get("pet_options"),
         )

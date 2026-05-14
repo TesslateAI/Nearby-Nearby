@@ -1,493 +1,670 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import {
-  Briefcase,
-  TreePine,
-  Route,
-  Calendar,
-  MapPin,
-  ArrowRight,
-  X,
   Search,
-  Heart
+  X,
+  ChevronDown,
+  RotateCcw,
+  Calendar as CalendarIcon,
+  MapPin,
+  Navigation2,
 } from 'lucide-react';
 import Map from '../components/Map';
-import SearchBar from '../components/SearchBar';
-import NearbyFilters from '../components/nearby-feature/NearbyFilters';
+import {
+  RestroomIcon,
+  WheelchairIcon,
+  WifiIcon,
+  PetIcon,
+} from '../components/nearby-feature/NearbyCard';
+import { getOpenCloseStatusLabel } from '../utils/hoursUtils';
 import { getApiUrl } from '../config';
-import { getPOIUrl } from '../utils/slugify';
 import './Explore.css';
 
-const CATEGORIES = [
-  { name: 'Businesses', type: 'BUSINESS', icon: Briefcase },
-  { name: 'Parks', type: 'PARK', icon: TreePine },
-  { name: 'Trails', type: 'TRAIL', icon: Route },
-  { name: 'Events', type: 'EVENT', icon: Calendar }
+/* ------------------------------------------------------------------ */
+/* Constants                                                          */
+/* ------------------------------------------------------------------ */
+
+const FILTER_PILLS = [
+  { label: 'All',        type: null },
+  { label: 'Businesses', type: 'BUSINESS' },
+  { label: 'Events',     type: 'EVENT' },
+  { label: 'Parks',      type: 'PARK' },
+  { label: 'Trails',     type: 'TRAIL' },
 ];
 
-// Map filter labels to API poi_type values
-const FILTER_TYPE_MAP = {
-  All: null,
-  Businesses: 'BUSINESS',
-  Events: 'EVENT',
-  Parks: 'PARK',
-  Trails: 'TRAIL',
-};
-const EXPLORE_FILTERS = ['All', 'Businesses', 'Events', 'Parks', 'Trails'];
+const ALL_TYPES = ['BUSINESS', 'EVENT', 'PARK', 'TRAIL'];
+const RADIUS_OPTIONS = [1, 3, 5, 10, 15];
+const DATE_PRESETS = [
+  { value: 'any',      label: 'Any Date' },
+  { value: 'today',    label: 'Today' },
+  { value: 'tomorrow', label: 'Tomorrow' },
+  { value: 'weekend',  label: 'This Weekend' },
+];
 
-// Reverse map: API type -> filter label
-const TYPE_TO_FILTER = Object.fromEntries(
-  Object.entries(FILTER_TYPE_MAP).filter(([, v]) => v).map(([k, v]) => [v, k])
-);
+const DOWNTOWN_PITTSBORO = { lat: 35.72028984062034, lng: -79.17718140354249 };
 
-function Explore() {
+/* ------------------------------------------------------------------ */
+/* Helpers                                                            */
+/* ------------------------------------------------------------------ */
+
+function distanceMiles(lat1, lon1, lat2, lon2) {
+  const R = 3959;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a = Math.sin(dLat / 2) ** 2 +
+            Math.cos((lat1 * Math.PI) / 180) *
+            Math.cos((lat2 * Math.PI) / 180) *
+            Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function withDistance(items, origin) {
+  return items.map((poi) => {
+    const c = poi?.location?.coordinates;
+    if (Array.isArray(c) && c.length >= 2) {
+      return { ...poi, distance: distanceMiles(origin.lat, origin.lng, c[1], c[0]) };
+    }
+    return poi;
+  });
+}
+
+/** Returns {from, to} as YYYY-MM-DD strings for the active date filter, or null when the filter is "any". */
+function dateRangeForFilter(filter, customDate) {
+  const fmt = (d) => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  };
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  if (filter === 'today') {
+    return { from: fmt(today), to: fmt(today) };
+  }
+  if (filter === 'tomorrow') {
+    const t = new Date(today); t.setDate(t.getDate() + 1);
+    return { from: fmt(t), to: fmt(t) };
+  }
+  if (filter === 'weekend') {
+    // This week's Saturday + Sunday. (Sun=0, Mon=1, ..., Sat=6)
+    const dow = today.getDay();
+    const daysToSat = (6 - dow + 7) % 7; // 0 if today is Sat
+    const sat = new Date(today); sat.setDate(sat.getDate() + daysToSat);
+    const sun = new Date(sat);   sun.setDate(sun.getDate() + 1);
+    return { from: fmt(sat), to: fmt(sun) };
+  }
+  if (filter === 'custom' && customDate) {
+    return { from: customDate, to: customDate };
+  }
+  return null;
+}
+
+/* ------------------------------------------------------------------ */
+/* Result card — 1:1 port of nn-templates/explore-page-03.html         */
+/*   .one_search_map_result_single.box_style_1                         */
+/*     ├─ .one_search_map_result_number   (purple circle, top-center) */
+/*     ├─ .one_search_map_result_distance                              */
+/*     │    ├─ .one_search_map_result_calculated "0.8 miles"           */
+/*     │    └─ .one_search_map_result_frompoint "from point of interest"*/
+/*     ├─ .one_search_map_result_title                                 */
+/*     ├─ .one_search_map_single_city "Pittsboro, NC"                  */
+/*     ├─ .one_search_map_result_hours "Open now - Until 9:00PM"       */
+/*     ├─ .one_search_map_result_type_amenities_group                  */
+/*     │    ├─ .one_search_map_result_type "Restaurant"                */
+/*     │    └─ .one_search_map_result_amenities (icon row)             */
+/*     └─ .one_search_map_result_single_buttons                        */
+/*          ├─ Directions (btn_outline_teal btn_poi_button_1)          */
+/*          └─ Details    (btn_outline_teal btn_poi_button_1)          */
+/* ------------------------------------------------------------------ */
+
+
+// Same matcher as NearbyCard — accept any non-empty / non-"no" entry.
+function exploreHasAmenity(values) {
+  if (!Array.isArray(values) || values.length === 0) return false;
+  const negatives = new Set(['no', 'none', 'not available', 'unavailable']);
+  return values.some((v) => {
+    const s = String(v || '').trim().toLowerCase();
+    return s && !negatives.has(s);
+  });
+}
+
+function ResultCard({ poi, index }) {
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const slug = poi.slug || poi.id;
+  const city = poi.address_city || poi.city || '';
+  const state = poi.address_state || poi.state || '';
+  const cityLine = [city, state].filter(Boolean).join(', ');
+  const isEvent = poi.poi_type === 'EVENT';
+  // Prefer a real category name ("Restaurant") over the raw POI type ("business").
+  const categoryLabel =
+    poi.main_category?.name ||
+    poi.categories?.find((c) => c?.is_main)?.category?.name ||
+    poi.categories?.[0]?.category?.name ||
+    poi.categories?.[0]?.name ||
+    null;
+  const amenities = [];
+  if (exploreHasAmenity(poi.public_toilets))        amenities.push({ key: 'restroom',   title: 'Public Restrooms',     Icon: RestroomIcon });
+  if (exploreHasAmenity(poi.wheelchair_accessible)) amenities.push({ key: 'wheelchair', title: 'Wheelchair Accessible', Icon: WheelchairIcon });
+  if (exploreHasAmenity(poi.wifi_options))          amenities.push({ key: 'wifi',       title: 'WiFi Available',        Icon: WifiIcon });
+  if (exploreHasAmenity(poi.pet_options))           amenities.push({ key: 'pet',        title: 'Pet Friendly',          Icon: PetIcon });
+  const hasDistance = typeof poi.distance === 'number';
+  const lat = poi?.location?.coordinates?.[1] ?? poi?.front_door_latitude ?? null;
+  const lng = poi?.location?.coordinates?.[0] ?? poi?.front_door_longitude ?? null;
+  const statusInfo = !isEvent && poi.hours
+    ? getOpenCloseStatusLabel(poi.hours, lat, lng)
+    : null;
+  const directionsHref = lat && lng
+    ? `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`
+    : null;
 
-  // URL params
-  const urlQuery = searchParams.get('q') || '';
-  const urlType = searchParams.get('type') || null;
-
-  const [pois, setPois] = useState([]);
-  const [selectedCategory, setSelectedCategory] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [localSearchQuery, setLocalSearchQuery] = useState('');
-  const [categoryCounts, setCategoryCounts] = useState({});
-  const [userLocation] = useState({ lat: 35.7198, lng: -79.1772 });
-  const [locationName] = useState('Pittsboro, NC');
-
-  // Search results mode state
-  const [searchResults, setSearchResults] = useState([]);
-  const [searchLoading, setSearchLoading] = useState(false);
-  const [activeFilter, setActiveFilter] = useState(
-    urlType ? (TYPE_TO_FILTER[urlType] || 'All') : 'All'
-  );
-
-  const searchBarRef = useRef(null);
-
-  // Determine mode
-  const isSearchMode = !!urlQuery;
-  const isByTypeMode = !urlQuery && !!urlType;
-
-  useEffect(() => {
-    fetchCategoryCounts();
-  }, []);
-
-  // --- Search results mode ---
-  useEffect(() => {
-    if (isSearchMode) {
-      fetchSearchResults(urlQuery, urlType);
-      // Sync filter pill to URL type
-      setActiveFilter(urlType ? (TYPE_TO_FILTER[urlType] || 'All') : 'All');
-    }
-  }, [urlQuery, urlType]);
-
-  const fetchSearchResults = async (query, type) => {
-    setSearchLoading(true);
-    setError(null);
-    try {
-      let url = `api/pois/hybrid-search?q=${encodeURIComponent(query)}&limit=50`;
-      if (type) url += `&poi_type=${encodeURIComponent(type)}`;
-      const response = await fetch(getApiUrl(url));
-      if (response.ok) {
-        const data = await response.json();
-        setSearchResults(data);
-      } else {
-        setSearchResults([]);
-      }
-    } catch (err) {
-      console.error('Search fetch error:', err);
-      setSearchResults([]);
-    } finally {
-      setSearchLoading(false);
-    }
+  const goDetails = () => navigate(`/poi/${slug}`);
+  const stop = (e) => e.stopPropagation();
+  const handleKey = (e) => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goDetails(); }
   };
-
-  const handleExploreSearch = (query) => {
-    const params = new URLSearchParams({ q: query });
-    const apiType = FILTER_TYPE_MAP[activeFilter];
-    if (apiType) params.set('type', apiType);
-    navigate(`/explore?${params.toString()}`);
-  };
-
-  const handleFilterChange = (filter) => {
-    setActiveFilter(filter);
-    if (isSearchMode) {
-      const params = new URLSearchParams({ q: urlQuery });
-      const apiType = FILTER_TYPE_MAP[filter];
-      if (apiType) params.set('type', apiType);
-      setSearchParams(params);
-    } else {
-      // Not in search mode, just navigate to by-type
-      const apiType = FILTER_TYPE_MAP[filter];
-      if (apiType) {
-        navigate(`/explore?type=${apiType}`);
-      } else {
-        navigate('/explore');
-      }
-    }
-  };
-
-  // --- By-type mode ---
-  useEffect(() => {
-    if (isByTypeMode) {
-      const category = CATEGORIES.find(c => c.type === urlType);
-      setSelectedCategory(category || null);
-      if (category) fetchPOIsByType(urlType);
-    } else if (!isSearchMode) {
-      setSelectedCategory(null);
-      setPois([]);
-    }
-  }, [urlType, isSearchMode]);
-
-  const calculateDistance = (lat1, lon1, lat2, lon2) => {
-    const R = 3959;
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a =
-      Math.sin(dLat/2) * Math.sin(dLat/2) +
-      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-      Math.sin(dLon/2) * Math.sin(dLon/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    return R * c;
-  };
-
-  const handleHeartClick = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    alert('Saving locations is coming soon!');
-  };
-
-  const fetchCategoryCounts = async () => {
-    try {
-      const counts = {};
-      await Promise.all(
-        CATEGORIES.map(async (category) => {
-          const response = await fetch(getApiUrl(`api/pois/by-type/${category.type}`));
-          if (response.ok) {
-            const data = await response.json();
-            counts[category.type] = data.length;
-          }
-        })
-      );
-      setCategoryCounts(counts);
-    } catch (err) {
-      console.error('Failed to fetch category counts:', err);
-    }
-  };
-
-  const fetchPOIsByType = async (type) => {
-    try {
-      setLoading(true);
-      const response = await fetch(getApiUrl(`api/pois/by-type/${type}`));
-      if (response.ok) {
-        const data = await response.json();
-        setPois(data);
-      } else {
-        setError('Failed to load results');
-      }
-    } catch (err) {
-      setError('Failed to load results');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleCategoryClick = (category) => {
-    navigate(`/explore?type=${category.type}`);
-  };
-
-  const clearFilters = () => {
-    navigate('/explore');
-  };
-
-  const getFilteredPOIs = () => {
-    if (localSearchQuery) {
-      return pois.filter(poi =>
-        poi.name.toLowerCase().includes(localSearchQuery.toLowerCase())
-      );
-    }
-    return pois;
-  };
-
-  const addDistances = (items) => {
-    return items.map(poi => {
-      if (poi.location && poi.location.coordinates) {
-        const distance = calculateDistance(
-          userLocation.lat, userLocation.lng,
-          poi.location.coordinates[1],
-          poi.location.coordinates[0]
-        );
-        return { ...poi, distance };
-      }
-      return poi;
-    });
-  };
-
-  // =====================================================================
-  // RENDER: Search results mode (?q=...)
-  // =====================================================================
-  if (isSearchMode) {
-    const poisWithDistance = addDistances(searchResults);
-
-    return (
-      <div className="explore explore--filtered">
-        <div className="filtered__location-bar">
-          <MapPin size={16} />
-          <span className="location-address">{locationName}</span>
-        </div>
-
-        <div className="filtered__header">
-          <div className="filtered__header-content">
-            <Link to="/explore" className="filtered__back">
-              <X size={20} />
-            </Link>
-            <h1 className="filtered__title">Search results</h1>
-          </div>
-
-          {/* Filter pills */}
-          <div className="filtered__filters-row">
-            <NearbyFilters
-              selectedFilter={activeFilter}
-              onFilterChange={handleFilterChange}
-              variant="light"
-              filters={EXPLORE_FILTERS}
-            />
-          </div>
-
-          {/* Search bar pre-filled with query */}
-          <div className="filtered__search">
-            <div className="search-input-wrapper" style={{flex: 1}}>
-              <SearchBar
-                ref={searchBarRef}
-                placeholder="Search..."
-                initialQuery={urlQuery}
-                onSearch={handleExploreSearch}
-                selectedType={FILTER_TYPE_MAP[activeFilter]}
-              />
-            </div>
-            <button className="cancel-button" onClick={clearFilters}>Clear</button>
-          </div>
-        </div>
-
-        <div className="filtered__content">
-          <div className="filtered__list">
-            {searchLoading ? (
-              <div className="filtered__empty"><p>Searching...</p></div>
-            ) : poisWithDistance.length > 0 ? (
-              poisWithDistance.map((poi) => (
-                <Link to={getPOIUrl(poi)} key={poi.id} className="poi-card">
-                  <button
-                    className="poi-card__heart"
-                    onClick={handleHeartClick}
-                    aria-label="Save location"
-                  >
-                    <Heart size={20} />
-                  </button>
-                  <div className="poi-card__image">
-                    <MapPin size={32} />
-                  </div>
-                  <div className="poi-card__content">
-                    <h3 className="poi-card__title">{poi.name}</h3>
-                    {poi.address_city && (
-                      <p className="poi-card__address">{poi.address_city}</p>
-                    )}
-                    {poi.distance !== undefined && (
-                      <p className="poi-card__distance">
-                        {poi.distance < 1
-                          ? `${(poi.distance * 5280).toFixed(0)} ft away`
-                          : `${poi.distance.toFixed(1)} mi away`
-                        }
-                      </p>
-                    )}
-                  </div>
-                </Link>
-              ))
-            ) : (
-              <div className="filtered__empty">
-                <p>No results found for &ldquo;{urlQuery}&rdquo;</p>
-                <Link to={`/suggest-place?name=${encodeURIComponent(urlQuery)}`} className="filtered__suggest-link">
-                  Suggest this place
-                </Link>
-              </div>
-            )}
-          </div>
-
-          <div className="filtered__map">
-            {poisWithDistance.length > 0 && poisWithDistance[0].location ? (
-              <Map currentPOI={poisWithDistance[0]} nearbyPOIs={poisWithDistance.slice(1)} />
-            ) : (
-              <div className="map-placeholder">
-                <p>No location data available</p>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // =====================================================================
-  // RENDER: By-type results mode (?type=BUSINESS)
-  // =====================================================================
-  if (isByTypeMode && selectedCategory) {
-    const displayedPOIs = getFilteredPOIs();
-    const poisWithDistance = addDistances(displayedPOIs);
-
-    if (loading) {
-      return (
-        <div className="explore">
-          <div className="explore__container">
-            <div className="explore__loading">Loading...</div>
-          </div>
-        </div>
-      );
-    }
-
-    return (
-      <div className="explore explore--filtered">
-        <div className="filtered__location-bar">
-          <MapPin size={16} />
-          <span className="location-address">{locationName}</span>
-        </div>
-
-        <div className="filtered__header">
-          <div className="filtered__header-content">
-            <Link to="/explore" className="filtered__back">
-              <X size={20} />
-            </Link>
-            <h1 className="filtered__title">{selectedCategory.name}</h1>
-          </div>
-
-          <div className="filtered__search">
-            <div className="search-input-wrapper">
-              <Search size={20} className="search-icon" />
-              <input
-                type="text"
-                placeholder="Search..."
-                value={localSearchQuery}
-                onChange={(e) => setLocalSearchQuery(e.target.value)}
-                className="search-input"
-              />
-              {localSearchQuery && (
-                <button onClick={() => setLocalSearchQuery('')} className="search-clear">
-                  <X size={16} />
-                </button>
-              )}
-            </div>
-            <button className="cancel-button" onClick={clearFilters}>Cancel</button>
-          </div>
-        </div>
-
-        <div className="filtered__content">
-          <div className="filtered__list">
-            {poisWithDistance.map((poi) => (
-              <Link to={getPOIUrl(poi)} key={poi.id} className="poi-card">
-                <button
-                  className="poi-card__heart"
-                  onClick={handleHeartClick}
-                  aria-label="Save location"
-                >
-                  <Heart size={20} />
-                </button>
-                <div className="poi-card__image">
-                  <MapPin size={32} />
-                </div>
-                <div className="poi-card__content">
-                  <h3 className="poi-card__title">{poi.name}</h3>
-                  {poi.address_city && (
-                    <p className="poi-card__address">{poi.address_city}</p>
-                  )}
-                  {poi.distance !== undefined && (
-                    <p className="poi-card__distance">
-                      {poi.distance < 1
-                        ? `${(poi.distance * 5280).toFixed(0)} ft away`
-                        : `${poi.distance.toFixed(1)} mi away`
-                      }
-                    </p>
-                  )}
-                </div>
-              </Link>
-            ))}
-
-            {poisWithDistance.length === 0 && !loading && (
-              <div className="filtered__empty">
-                <p>No results found.</p>
-              </div>
-            )}
-          </div>
-
-          <div className="filtered__map">
-            {poisWithDistance.length > 0 && poisWithDistance[0].location ? (
-              <Map currentPOI={poisWithDistance[0]} nearbyPOIs={poisWithDistance.slice(1)} />
-            ) : (
-              <div className="map-placeholder">
-                <p>No location data available</p>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // =====================================================================
-  // RENDER: Category grid (default)
-  // =====================================================================
-  if (loading) {
-    return (
-      <div className="explore">
-        <div className="explore__container">
-          <div className="explore__loading">Loading categories...</div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="explore">
-        <div className="explore__container">
-          <div className="explore__error">{error}</div>
-        </div>
-      </div>
-    );
-  }
 
   return (
-    <div className="explore">
-      <div className="explore__container">
-        <div className="explore__header">
-          <h1 className="explore__title">Explore categories</h1>
-        </div>
+    <div
+      className="one_search_map_result_single box_style_1 one_search_map_result_single--clickable"
+      role="link"
+      tabIndex={0}
+      onClick={goDetails}
+      onKeyDown={handleKey}
+      aria-label={`View details for ${poi.name}`}
+    >
+      <div className="one_search_map_result_number">{index + 1}</div>
 
-        <div className="explore__categories">
-          {CATEGORIES.map((category) => {
-            const IconComponent = category.icon;
-            const count = categoryCounts[category.type] || 0;
-            return (
-              <button
-                key={category.type}
-                className="category-card"
-                onClick={() => handleCategoryClick(category)}
-                aria-label={`Explore ${category.name}`}
-              >
-                <div className="category-card__icon">
-                  <IconComponent size={48} strokeWidth={1.5} />
-                </div>
-                <h3 className="category-card__title">{category.name}</h3>
-                <div className="category-card__count">
-                  <span className="category-card__count-number">{count}</span>
-                  <ArrowRight size={16} className="category-card__arrow" />
-                </div>
-              </button>
-            );
-          })}
+      {hasDistance && (
+        <div className="one_search_map_result_distance">
+          <span className="one_search_map_result_calculated">
+            {poi.distance.toFixed(1)} {poi.distance === 1 ? 'mile' : 'miles'}
+          </span>{' '}
+          <span className="one_search_map_result_frompoint">from point of interest</span>
         </div>
+      )}
+
+      <div className="one_search_map_result_title">{poi.name}</div>
+
+      {cityLine && <div className="one_search_map_single_city">{cityLine}</div>}
+
+      {statusInfo?.label && <div className="one_search_map_result_hours">{statusInfo.label}</div>}
+
+      {(categoryLabel || amenities.length > 0) && (
+        <div className="one_search_map_result_type_amenities_group">
+          {categoryLabel && (
+            <div className="one_search_map_result_type">{categoryLabel}</div>
+          )}
+          {amenities.length > 0 && (
+            <div className="one_search_map_result_amenities" aria-label="Amenities">
+              {amenities.map(({ key, title, Icon }) => (
+                <span
+                  key={key}
+                  className="one_search_amenity_icon"
+                  title={title}
+                  aria-label={title}
+                >
+                  <Icon />
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      <div className="one_search_map_result_single_buttons" onClick={stop}>
+        {directionsHref && (
+          <a
+            className="btn_reset button btn_outline_teal btn_poi_button_1"
+            href={directionsHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={stop}
+          >
+            <Navigation2 size={14} className="poi_button_icon" aria-hidden="true" />
+            <span className="poi_button_title">Directions</span>
+          </a>
+        )}
+        <Link
+          className="btn_reset button btn_outline_teal btn_poi_button_1"
+          to={`/poi/${slug}`}
+          onClick={stop}
+        >
+          <span className="poi_button_title">Details</span>
+        </Link>
       </div>
     </div>
   );
 }
 
-export default Explore;
+/* ------------------------------------------------------------------ */
+/* Page                                                               */
+/* ------------------------------------------------------------------ */
+
+export default function Explore() {
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const urlQuery = searchParams.get('q') || '';
+  const urlType  = searchParams.get('type') || null;
+  const activePill = urlType || 'All';
+
+  /* state ---------------------------------------------------------- */
+  const [pois, setPois]         = useState([]);
+  const [loading, setLoading]   = useState(true);
+  const [error, setError]       = useState(null);
+  const [searchInput, setSearchInput] = useState(urlQuery);
+  const [radius, setRadius]     = useState(5);
+  const [radiusOpen, setRadiusOpen] = useState(false);
+  const [dateFilter, setDateFilter] = useState('any');
+  const [dateOpen, setDateOpen] = useState(false);
+  const [customDate, setCustomDate] = useState('');
+  // Set of event POI ids that match the active date filter (null = filter inactive / not yet loaded).
+  const [dateMatchedEventIds, setDateMatchedEventIds] = useState(null);
+  const [highlightedId, setHighlightedId] = useState(null);
+
+  const [userLocation, setUserLocation] = useState(DOWNTOWN_PITTSBORO);
+  const [usingActualLocation, setUsingActualLocation] = useState(false);
+
+  const radiusRef = useRef(null);
+  const dateRef   = useRef(null);
+
+  /* geolocation ---------------------------------------------------- */
+  useEffect(() => {
+    if (!('geolocation' in navigator)) return;
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        setUsingActualLocation(true);
+      },
+      () => { /* denied or unavailable — keep downtown fallback */ }
+    );
+  }, []);
+
+  /* sync search input with url ------------------------------------- */
+  useEffect(() => { setSearchInput(urlQuery); }, [urlQuery]);
+
+  /* close dropdowns on outside click / escape ---------------------- */
+  useEffect(() => {
+    const onDocClick = (e) => {
+      if (radiusRef.current && !radiusRef.current.contains(e.target)) setRadiusOpen(false);
+      if (dateRef.current   && !dateRef.current.contains(e.target))   setDateOpen(false);
+    };
+    const onKey = (e) => {
+      if (e.key === 'Escape') { setRadiusOpen(false); setDateOpen(false); }
+    };
+    document.addEventListener('mousedown', onDocClick);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDocClick);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, []);
+
+  /* data fetching -------------------------------------------------- */
+  useEffect(() => {
+    let cancelled = false;
+
+    const fetchData = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        let data = [];
+        if (urlQuery) {
+          // Search mode — hybrid search
+          let url = `api/pois/hybrid-search?q=${encodeURIComponent(urlQuery)}&limit=50`;
+          if (urlType) url += `&poi_type=${encodeURIComponent(urlType)}`;
+          const res = await fetch(getApiUrl(url));
+          data = res.ok ? await res.json() : [];
+        } else if (urlType) {
+          // Single-type mode
+          const res = await fetch(getApiUrl(`api/pois/by-type/${urlType}`));
+          data = res.ok ? await res.json() : [];
+        } else {
+          // Landing — fetch all types in parallel
+          const results = await Promise.all(
+            ALL_TYPES.map((t) =>
+              fetch(getApiUrl(`api/pois/by-type/${t}`))
+                .then((r) => (r.ok ? r.json() : []))
+                .catch(() => [])
+            )
+          );
+          data = results.flat();
+        }
+        if (!cancelled) setPois(data);
+      } catch (e) {
+        if (!cancelled) { setError('Failed to load results.'); setPois([]); }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    fetchData();
+    return () => { cancelled = true; };
+  }, [urlQuery, urlType]);
+
+  /* fetch event ids that match the active date filter -------------- */
+  useEffect(() => {
+    const range = dateRangeForFilter(dateFilter, customDate);
+    if (!range) {
+      setDateMatchedEventIds(null); // filter inactive
+      return;
+    }
+
+    let cancelled = false;
+    const params = new URLSearchParams({ date_from: range.from, date_to: range.to });
+    fetch(getApiUrl(`api/events/in-range?${params.toString()}`))
+      .then((r) => (r.ok ? r.json() : []))
+      .then((rows) => {
+        if (cancelled) return;
+        const ids = new Set((rows || []).map((r) => String(r.id)));
+        setDateMatchedEventIds(ids);
+      })
+      .catch(() => { if (!cancelled) setDateMatchedEventIds(new Set()); });
+
+    return () => { cancelled = true; };
+  }, [dateFilter, customDate]);
+
+  /* derived -------------------------------------------------------- */
+  const sortedWithDistance = useMemo(() => {
+    const d = withDistance(pois, userLocation);
+    return d.sort((a, b) => {
+      const da = typeof a.distance === 'number' ? a.distance : Infinity;
+      const db = typeof b.distance === 'number' ? b.distance : Infinity;
+      return da - db;
+    });
+  }, [pois, userLocation]);
+
+  /** Apply radius (always) + date (events only) filters. */
+  const filteredResults = useMemo(() => {
+    return sortedWithDistance.filter((poi) => {
+      // Radius filter — keep items with no distance (no coords) so they're not silently dropped.
+      if (typeof poi.distance === 'number' && poi.distance > radius) return false;
+
+      // Date filter — only constrains EVENT POIs. Non-events pass through unaffected.
+      if (dateMatchedEventIds && poi.poi_type === 'EVENT') {
+        if (!dateMatchedEventIds.has(String(poi.id))) return false;
+      }
+      return true;
+    });
+  }, [sortedWithDistance, radius, dateMatchedEventIds]);
+
+  const pageTitle = urlQuery
+    ? <>Results for <span className="explore__title-q">&ldquo;{urlQuery}&rdquo;</span></>
+    : urlType
+      ? FILTER_PILLS.find((p) => p.type === urlType)?.label || 'Results'
+      : 'Explore Nearby';
+
+  const countLabel = !loading && filteredResults.length > 0
+    ? `${filteredResults.length} ${filteredResults.length === 1 ? 'place' : 'places'}`
+    : null;
+
+  const distanceOriginLabel = usingActualLocation
+    ? 'Distances from your location'
+    : 'Distances from downtown Pittsboro';
+
+  /* handlers ------------------------------------------------------- */
+  const handlePillClick = (pillType) => {
+    const params = new URLSearchParams();
+    if (urlQuery)  params.set('q', urlQuery);
+    if (pillType)  params.set('type', pillType);
+    setSearchParams(params);
+  };
+
+  const handleSearchSubmit = (e) => {
+    e.preventDefault();
+    const q = searchInput.trim();
+    const params = new URLSearchParams();
+    if (q)       params.set('q', q);
+    if (urlType) params.set('type', urlType);
+    navigate(`/explore${params.toString() ? `?${params.toString()}` : ''}`);
+  };
+
+  const clearControls = () => {
+    setRadius(5);
+    setDateFilter('any');
+    setCustomDate('');
+    setSearchInput('');
+    navigate('/explore');
+  };
+
+  const handleRadiusSelect = useCallback((v) => { setRadius(v); setRadiusOpen(false); }, []);
+  const handleDateSelect   = useCallback((v) => {
+    setDateFilter(v);
+    if (v !== 'custom') setCustomDate('');
+    setDateOpen(false);
+  }, []);
+
+  const dateButtonLabel = dateFilter === 'custom' && customDate
+    ? customDate
+    : DATE_PRESETS.find((p) => p.value === dateFilter)?.label || 'Any Date';
+
+  /* map split ------------------------------------------------------ */
+  const mapCurrent = filteredResults.find((p) => p?.location?.coordinates) || null;
+  const mapOthers  = mapCurrent
+    ? filteredResults.filter((p) => p !== mapCurrent && p?.location?.coordinates)
+    : [];
+
+  const handleMarkerClick = useCallback((poiId) => {
+    setHighlightedId(poiId);
+    const el = document.getElementById(`explore-card-${poiId}`);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }, []);
+
+  /* render --------------------------------------------------------- */
+  return (
+    <div className="explore-page">
+      {/* ── Controls band (purple) ─────────────────────────────── */}
+      <div id="one_search_magic">
+        <div className="wrapper_default one_search_wrapper">
+          {/* Filter pills */}
+          <div className="one_search_1" role="tablist" aria-label="Filter by category">
+            {FILTER_PILLS.map((pill) => {
+              const isActive = (pill.type || 'All') === activePill;
+              return (
+                <button
+                  key={pill.label}
+                  type="button"
+                  className={`btn_reset one_search_button one_search_button_style_1${isActive ? ' selected' : ''}`}
+                  aria-label={`Filter by ${pill.label.toLowerCase()}`}
+                  aria-pressed={isActive}
+                  onClick={() => handlePillClick(pill.type)}
+                >
+                  {pill.label}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Search + controls */}
+          <div className="one_search_2">
+            <form className="search_container" onSubmit={handleSearchSubmit} role="search">
+              <label htmlFor="one_search_inpage" className="visually_hidden">
+                Search for locations or interests
+              </label>
+              <div className="search_input_wrapper">
+                <span className="search_icon" aria-hidden="true">
+                  <Search size={20} />
+                </span>
+                <input
+                  type="search"
+                  id="one_search_inpage"
+                  className="search_input"
+                  placeholder="What's nearby? Search for locations or interests..."
+                  autoComplete="off"
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                />
+              </div>
+              <button type="submit" className="button btn_search btn_search_gold">
+                Search
+              </button>
+            </form>
+
+            <div className="one_search_controls">
+              {/* Radius */}
+              <div className="one_search_group">
+                <div className="radius_dropdown_wrapper" ref={radiusRef}>
+                  <button
+                    type="button"
+                    className="btn_show_radius_options"
+                    aria-haspopup="true"
+                    aria-expanded={radiusOpen}
+                    onClick={() => setRadiusOpen((p) => !p)}
+                  >
+                    <MapPin size={16} aria-hidden="true" />
+                    <span>{radius} {radius === 1 ? 'mile' : 'miles'}</span>
+                    <ChevronDown size={14} className="lucide_chevron_down" aria-hidden="true" />
+                  </button>
+                  {radiusOpen && (
+                    <div className="dropdown_show_radius_options" role="menu">
+                      {RADIUS_OPTIONS.map((r) => (
+                        <button
+                          key={r}
+                          type="button"
+                          className={`radius_dropdown_option${r === radius ? ' radius_dropdown_option_active' : ''}`}
+                          role="menuitem"
+                          onClick={() => handleRadiusSelect(r)}
+                        >
+                          {r} {r === 1 ? 'mile' : 'miles'}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Date */}
+              <div className="one_search_group">
+                <div className="date_dropdown_wrapper" ref={dateRef}>
+                  <button
+                    type="button"
+                    className="btn_show_event_options"
+                    aria-haspopup="true"
+                    aria-expanded={dateOpen}
+                    onClick={() => setDateOpen((p) => !p)}
+                  >
+                    <CalendarIcon size={16} aria-hidden="true" />
+                    <span>{dateButtonLabel}</span>
+                    <ChevronDown size={14} className="lucide_chevron_down" aria-hidden="true" />
+                  </button>
+                  {dateOpen && (
+                    <div className="dropdown_show_event_options" role="menu">
+                      {DATE_PRESETS.map((preset) => (
+                        <button
+                          key={preset.value}
+                          type="button"
+                          className={`date_dropdown_option${dateFilter === preset.value ? ' date_dropdown_option_active' : ''}`}
+                          role="menuitem"
+                          onClick={() => handleDateSelect(preset.value)}
+                        >
+                          {preset.label}
+                        </button>
+                      ))}
+                      <div className="date_dropdown_divider" role="separator" />
+                      <div className="date_dropdown_custom">
+                        <label className="date_dropdown_date_label">
+                          <span>Pick a date</span>
+                          <input
+                            type="date"
+                            className="date_dropdown_date_input"
+                            value={customDate}
+                            onChange={(e) => {
+                              setCustomDate(e.target.value);
+                              setDateFilter('custom');
+                              setDateOpen(false);
+                            }}
+                          />
+                        </label>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <button
+                type="button"
+                className="btn_reset button btn_clear"
+                aria-label="Clear all filters"
+                onClick={clearControls}
+              >
+                <RotateCcw size={16} aria-hidden="true" />
+                <span>Clear</span>
+              </button>
+
+              <Link to="/claim-business" className="add_location_link">
+                Add Location
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Results title band ─────────────────────────────────── */}
+      <div className="explore__title-band">
+        <div className="wrapper_default explore__title-inner">
+          {(urlQuery || urlType) && (
+            <Link to="/explore" className="explore__back" aria-label="Back to all places">
+              <X size={18} aria-hidden="true" />
+            </Link>
+          )}
+          <h1 className="explore__title">{pageTitle}</h1>
+          {countLabel && <span className="explore__count">{countLabel}</span>}
+          {countLabel && <span className="explore__distance-origin">{distanceOriginLabel}</span>}
+        </div>
+      </div>
+
+      {/* ── Results + map ─────────────────────────────────────── */}
+      {error ? (
+        <div className="explore__state explore__state--error">{error}</div>
+      ) : loading ? (
+        <div className="explore__state">Loading places…</div>
+      ) : filteredResults.length === 0 ? (
+        <div className="explore__state explore__state--empty">
+          <p className="explore__state-msg">
+            {urlQuery
+              ? <>No results found for &ldquo;{urlQuery}&rdquo;.</>
+              : <>No places match these filters.</>}
+          </p>
+          {urlQuery && (
+            <Link
+              to={`/claim-business?name=${encodeURIComponent(urlQuery)}`}
+              className="explore__suggest"
+            >
+              Suggest this place
+            </Link>
+          )}
+        </div>
+      ) : (
+        <div id="map_results_layout_1">
+          <div className="map_results_layout_1_left_col">
+            {filteredResults.map((poi, idx) => (
+              <div
+                key={poi.id}
+                id={`explore-card-${poi.id}`}
+                className={highlightedId === poi.id ? 'explore-card-highlighted' : undefined}
+              >
+                <ResultCard poi={poi} index={idx} />
+              </div>
+            ))}
+          </div>
+          <div className="map_results_layout_1_right_col">
+            {mapCurrent ? (
+              <Map
+                currentPOI={mapCurrent}
+                nearbyPOIs={mapOthers}
+                highlightedId={highlightedId}
+                onMarkerClick={handleMarkerClick}
+              />
+            ) : (
+              <div className="explore__map-empty">
+                <MapPin size={32} aria-hidden="true" />
+                <span>No mapped locations</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

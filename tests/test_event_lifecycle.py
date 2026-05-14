@@ -78,23 +78,27 @@ class TestEventBasePoiFields:
             },
             parking_types=["Public Parking Lot", "Street Parking"],
             parking_notes="Free parking in the courthouse lot.",
-            wheelchair_accessible=["Accessible Bathrooms", "Paved Paths"],
             pet_options=["Dog Friendly"],
             ideal_for=["All Ages", "Families"],
             cost="$15",
             pricing_details="Kids under 5 free",
-            ticket_link="https://tickets.example.com",
+            event={
+                "start_datetime": "2026-06-15T18:00:00Z",
+                "ticket_links": [{"platform": "Eventbrite", "url": "https://tickets.example.com"}],
+            },
         )
         assert data["name"] == "Full POI Event"
         assert data["description_long"] is not None
         assert data["address_city"] == "Pittsboro"
         assert data["hours"]["saturday"][0]["open"] == "10:00"
         assert data["parking_types"] == ["Public Parking Lot", "Street Parking"]
-        assert data["wheelchair_accessible"] == ["Accessible Bathrooms", "Paved Paths"]
         assert data["pet_options"] == ["Dog Friendly"]
-        assert data["ideal_for"] == ["All Ages", "Families"]
+        # Phase 1: ideal_for is a grouped dict. "All Ages" -> age_group, "Families" -> age_group.
+        assert isinstance(data["ideal_for"], dict)
+        assert "All Ages" in data["ideal_for"].get("age_group", [])
+        assert "Families" in data["ideal_for"].get("age_group", [])
         assert data["cost"] == "$15"
-        assert data["ticket_link"] == "https://tickets.example.com"
+        assert data["event"]["ticket_links"] == [{"platform": "Eventbrite", "url": "https://tickets.example.com"}]
 
     def test_event_with_social_media(self, admin_client):
         """Event with social media fields."""
@@ -286,7 +290,6 @@ class TestEventCrossApp:
             published=True,
             parking_types=["Public Parking Lot"],
             parking_notes="Free lot behind the venue.",
-            wheelchair_accessible=["Accessible Bathrooms", "Ramp Entry"],
         )
         db_session.commit()
 
@@ -295,7 +298,6 @@ class TestEventCrossApp:
         data = resp.json()
         assert data["parking_types"] == ["Public Parking Lot"]
         assert data["parking_notes"] == "Free lot behind the venue."
-        assert "Accessible Bathrooms" in data["wheelchair_accessible"]
 
 
 # ---------------------------------------------------------------------------
@@ -420,7 +422,7 @@ class TestPastEventBehavior:
         assert "2025-01-01" in data["event"]["start_datetime"]
 
     def test_past_event_in_nearby_results(self, db_session, app_client):
-        """Past events still appear in backend nearby results (frontend filters them)."""
+        """Past events excluded by default, included with include_past_events flag."""
         biz = orm_create_business(
             db_session,
             name="Anchor Biz Past",
@@ -439,13 +441,22 @@ class TestPastEventBehavior:
         )
         db_session.commit()
 
+        # Default: past events are excluded
         resp = app_client.get(
             f"/api/pois/{str(biz.id)}/nearby",
             params={"radius_miles": "5"},
         )
         assert resp.status_code == 200
         names = [p["name"] for p in resp.json()]
-        # Backend does NOT filter past events — verify it's present
+        assert "Expired Festival" not in names
+
+        # With flag: past events are included
+        resp = app_client.get(
+            f"/api/pois/{str(biz.id)}/nearby",
+            params={"radius_miles": "5", "include_past_events": "true"},
+        )
+        assert resp.status_code == 200
+        names = [p["name"] for p in resp.json()]
         assert "Expired Festival" in names
 
     def test_past_event_searchable(self, db_session, app_client):

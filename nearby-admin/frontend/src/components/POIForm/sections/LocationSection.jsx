@@ -25,6 +25,7 @@ export const LocationSection = React.memo(function LocationSection({
   isTrail,
   isEvent,
   isFreeListing,
+  hideParking,
   id
 }) {
   return (
@@ -75,10 +76,18 @@ export const LocationSection = React.memo(function LocationSection({
       </SimpleGrid>
 
       <SimpleGrid cols={{ base: 1, sm: 4 }}>
-        <DebouncedTextInput
+        <Select
           label="City"
-          placeholder="City name"
-          {...getDebouncedInputProps(form, 'address_city')}
+          placeholder="Select or type city"
+          data={[
+            'Pittsboro', 'Siler City', 'Chapel Hill', 'Carrboro', 'Goldston',
+            'Bear Creek', 'Bennett', 'Bonlee', 'Bynum', 'Gulf', 'Moncure',
+            'Sanford', 'Apex', 'Holly Springs', 'Fuquay-Varina'
+          ]}
+          searchable
+          allowDeselect
+          nothingFoundMessage="Type to enter a custom city"
+          {...form.getInputProps('address_city')}
         />
         <DebouncedTextInput
           label="County"
@@ -224,6 +233,7 @@ export const LocationSection = React.memo(function LocationSection({
         </>
       )}
 
+      {!hideParking && <>
       <Divider my="md" label="Parking Information" />
 
       <Checkbox.Group
@@ -246,24 +256,38 @@ export const LocationSection = React.memo(function LocationSection({
         error={form.errors.parking_notes}
       />
 
-      <RichTextEditor
-        label="Public Transit Information"
-        placeholder="Bus routes, train stations, etc."
-        value={form.values.public_transit_info || ''}
-        onChange={(html) => form.setFieldValue('public_transit_info', html)}
-        error={form.errors.public_transit_info}
+      {/* Primary Parking Location - lat/long and photos for main parking area */}
+      <Divider my="md" label="Primary Parking Location" />
+      <Text size="sm" c="dimmed" mb="sm">
+        Set the coordinates and photos for the main parking area. Use "Add Another Parking Location" below for additional lots.
+      </Text>
+      <SimpleGrid cols={{ base: 1, sm: 2 }}>
+        <NumberInput
+          label="Primary Parking Latitude"
+          placeholder="35.7128"
+          precision={6}
+          value={form.values.primary_parking_lat || ''}
+          onChange={(value) => form.setFieldValue('primary_parking_lat', value)}
+        />
+        <NumberInput
+          label="Primary Parking Longitude"
+          placeholder="-79.0064"
+          precision={6}
+          value={form.values.primary_parking_lng || ''}
+          onChange={(value) => form.setFieldValue('primary_parking_lng', value)}
+        />
+      </SimpleGrid>
+      <TextInput
+        label="Primary Parking Area Name"
+        placeholder="e.g., Main Lot, Front Parking"
+        value={form.values.primary_parking_name || ''}
+        onChange={(e) => form.setFieldValue('primary_parking_name', e.target.value)}
       />
-
-      <Radio.Group
-        label="Expect to Pay for Parking?"
-        {...form.getInputProps('expect_to_pay_parking')}
-      >
-        <Stack mt="xs">
-          <Radio value="yes" label="Yes" />
-          <Radio value="no" label="No" />
-          <Radio value="sometimes" label="Sometimes" />
-        </Stack>
-      </Radio.Group>
+      {shouldUseImageUpload(id) ? (
+        <ParkingPhotosUpload poiId={id} parkingName={form.values.primary_parking_name || 'Primary'} form={form} />
+      ) : (
+        <Text size="sm" c="dimmed">Save POI first to enable parking photo upload</Text>
+      )}
 
       {/* Parking Locations for Parks, Trails, and Events */}
       {(isPark || isTrail || isEvent) && (
@@ -339,6 +363,7 @@ export const LocationSection = React.memo(function LocationSection({
           </Button>
         </>
       )}
+      </>}
     </Stack>
   );
 });

@@ -13,6 +13,7 @@ export default function SearchOverlay({ isOpen, onClose, panelRef }) {
   const searchBarRef = useRef(null);
 
   const handleSearch = (query) => {
+    searchBarRef.current?.closeDropdown?.();
     onClose();
     navigate(`/explore?q=${encodeURIComponent(query)}`);
   };
@@ -23,11 +24,16 @@ export default function SearchOverlay({ isOpen, onClose, panelRef }) {
     if (query) handleSearch(query);
   };
 
+  const handleClose = () => {
+    searchBarRef.current?.closeDropdown?.();
+    onClose();
+  };
+
   return (
     <Overlay
       id="search_overlay"
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={handleClose}
       panelRef={panelRef}
       className="search_overlay_box"
     >
