@@ -388,6 +388,9 @@ class PointOfInterestBase(BaseModel):
     publication_status: PUBLICATION_STATUS = 'draft'
     has_been_published: Optional[bool] = False
 
+    # Primary Display Category — single category badge shown on cards (all POI types, issue #42)
+    primary_display_category: Optional[str] = None
+
     # Phase 1 additions
     arrival_methods: Optional[List[str]] = []
     what3words_address: Optional[str] = None
@@ -679,6 +682,7 @@ class PointOfInterestUpdate(BaseModel):
 
     # Phase 1 additions
     has_been_published: Optional[bool] = None
+    primary_display_category: Optional[str] = None
     arrival_methods: Optional[List[str]] = None
     what3words_address: Optional[str] = None
     icon_free_wifi: Optional[bool] = None

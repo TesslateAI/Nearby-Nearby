@@ -44,6 +44,7 @@ export const CategoriesSection = React.memo(function CategoriesSection({
       <MainCategorySelector
         value={form.values.main_category_id}
         onChange={(value) => form.setFieldValue('main_category_id', value)}
+        onCategoryName={(name) => form.setFieldValue('primary_display_category', name)}
         poiType={form.values.poi_type}
         selectedCategories={form.values.category_ids || []}
         error={form.errors.main_category_id}

@@ -179,6 +179,8 @@ export const emptyInitialValues = {
   membership_passes: [],
   membership_details: '',
   associated_trails: [],
+  // Primary Display Category (all POI types — issue #42)
+  primary_display_category: '',
   // Event specific
   event: {
     start_datetime: null,
@@ -217,8 +219,7 @@ export const emptyInitialValues = {
     online_event_url: '',
     rescheduled_start_datetime: null,
     rescheduled_end_datetime: null,
-    // Task 137: Primary Display Category
-    primary_display_category: '',
+    // Task 137: Primary Display Category — moved to top level (issue #42)
     // Task 138: Extended Organizer
     organizer_email: '',
     organizer_phone: '',

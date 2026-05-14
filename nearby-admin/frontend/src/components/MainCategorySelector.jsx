@@ -6,6 +6,7 @@ import api from '../utils/api';
 export const MainCategorySelector = React.memo(function MainCategorySelector({
   value,
   onChange,
+  onCategoryName,
   poiType,
   selectedCategories = [],
   error
@@ -80,7 +81,13 @@ export const MainCategorySelector = React.memo(function MainCategorySelector({
             placeholder={selectedCategories.length === 0 ? "First select categories above" : "Choose primary display category"}
             data={availableCategories}
             value={value}
-            onChange={onChange}
+            onChange={(val) => {
+              onChange(val);
+              if (onCategoryName) {
+                const chosen = availableCategories.find(c => c.value === val);
+                onCategoryName(chosen ? chosen.label : '');
+              }
+            }}
             searchable
             clearable
             error={error}

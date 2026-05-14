@@ -120,6 +120,11 @@ export const usePOIHandlers = (id, isEditing, form, setPoiId) => {
           if (!formData.hunting_fishing_allowed) formData.hunting_fishing_allowed = 'no';
           if (!formData.fishing_allowed) formData.fishing_allowed = 'no';
 
+          // Normalize top-level primary_display_category (issue #42 — moved from event subobject)
+          if (formData.primary_display_category === null || formData.primary_display_category === undefined) {
+            formData.primary_display_category = '';
+          }
+
           // Derive UI control fields from actual data arrays
           // These fields don't exist in backend - they're derived from the actual data
           formData.alcohol_available = (formData.alcohol_options && formData.alcohol_options.length > 0) ? 'yes' : 'no';
@@ -166,8 +171,6 @@ export const usePOIHandlers = (id, isEditing, form, setPoiId) => {
               'event_entry_notes',
               // Task 134-136
               'event_status', 'cancellation_paragraph', 'new_event_link',
-              // Task 137
-              'primary_display_category',
               // Task 138
               'organizer_email', 'organizer_phone', 'organizer_website',
               // Task 139

@@ -80,6 +80,9 @@ class PointOfInterest(Base):
     # Main category (required)
     # Main category is now handled through poi_categories table with is_main=True
     
+    # Primary Display Category — the single category badge shown on cards (all POI types)
+    primary_display_category = Column(String(100))
+
     # Cost fields (for Events, Parks, Trails)
     cost = Column(String(100))  # Flexible format: "$1000" or "$0.00-$1000.00" or "0" (shows as Free)
     pricing_details = Column(Text)  # Additional pricing details like "Kids Under 2 are Free"
