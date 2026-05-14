@@ -41,7 +41,7 @@ const DATE_PRESETS = [
   { value: 'weekend',  label: 'This Weekend' },
 ];
 
-const USER_LOCATION = { lat: 35.72028984062034, lng: -79.17718140354249 };
+const DOWNTOWN_PITTSBORO = { lat: 35.72028984062034, lng: -79.17718140354249 };
 
 /* ------------------------------------------------------------------ */
 /* Helpers                                                            */
@@ -58,11 +58,11 @@ function distanceMiles(lat1, lon1, lat2, lon2) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-function withDistance(items) {
+function withDistance(items, origin) {
   return items.map((poi) => {
     const c = poi?.location?.coordinates;
     if (Array.isArray(c) && c.length >= 2) {
-      return { ...poi, distance: distanceMiles(USER_LOCATION.lat, USER_LOCATION.lng, c[1], c[0]) };
+      return { ...poi, distance: distanceMiles(origin.lat, origin.lng, c[1], c[0]) };
     }
     return poi;
   });
@@ -263,8 +263,23 @@ export default function Explore() {
   const [dateMatchedEventIds, setDateMatchedEventIds] = useState(null);
   const [highlightedId, setHighlightedId] = useState(null);
 
+  const [userLocation, setUserLocation] = useState(DOWNTOWN_PITTSBORO);
+  const [usingActualLocation, setUsingActualLocation] = useState(false);
+
   const radiusRef = useRef(null);
   const dateRef   = useRef(null);
+
+  /* geolocation ---------------------------------------------------- */
+  useEffect(() => {
+    if (!('geolocation' in navigator)) return;
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        setUsingActualLocation(true);
+      },
+      () => { /* denied or unavailable — keep downtown fallback */ }
+    );
+  }, []);
 
   /* sync search input with url ------------------------------------- */
   useEffect(() => { setSearchInput(urlQuery); }, [urlQuery]);
@@ -352,13 +367,13 @@ export default function Explore() {
 
   /* derived -------------------------------------------------------- */
   const sortedWithDistance = useMemo(() => {
-    const d = withDistance(pois);
+    const d = withDistance(pois, userLocation);
     return d.sort((a, b) => {
       const da = typeof a.distance === 'number' ? a.distance : Infinity;
       const db = typeof b.distance === 'number' ? b.distance : Infinity;
       return da - db;
     });
-  }, [pois]);
+  }, [pois, userLocation]);
 
   /** Apply radius (always) + date (events only) filters. */
   const filteredResults = useMemo(() => {
@@ -383,6 +398,10 @@ export default function Explore() {
   const countLabel = !loading && filteredResults.length > 0
     ? `${filteredResults.length} ${filteredResults.length === 1 ? 'place' : 'places'}`
     : null;
+
+  const distanceOriginLabel = usingActualLocation
+    ? 'Distances from your location'
+    : 'Distances from downtown Pittsboro';
 
   /* handlers ------------------------------------------------------- */
   const handlePillClick = (pillType) => {
@@ -591,6 +610,7 @@ export default function Explore() {
           )}
           <h1 className="explore__title">{pageTitle}</h1>
           {countLabel && <span className="explore__count">{countLabel}</span>}
+          {countLabel && <span className="explore__distance-origin">{distanceOriginLabel}</span>}
         </div>
       </div>
 

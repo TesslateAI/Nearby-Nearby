@@ -88,6 +88,15 @@
   flex-shrink: 0;
 }
 
+.explore__distance-origin {
+  font-family: var(--font-poppins, "Poppins", sans-serif);
+  font-size: 11px;
+  color: var(--nn-text-muted, #777);
+  flex-shrink: 0;
+  margin-left: auto;
+  align-self: center;
+}
+
 @media (min-width: 700px)  { .explore__title { font-size: 28px; } }
 @media (min-width: 1200px) { .explore__title { font-size: 32px; } }
 
