@@ -76,8 +76,11 @@ def compute_accessible_restroom(poi: dict) -> dict:
 
 def compute_inclusive_playground(poi: dict) -> dict:
     cl = poi.get('playground_ada_checklist') or []
-    required = {'Accessible route to play area','Ground-level play components accessible',
-                'Unitary surface (poured-rubber/tiles)'}
+    required = {
+        'Accessible route from parking to playground (firm stable surface)',
+        'Ground level play components (activities reachable without climbing)',
+        'Accessible surfacing connects directly to all equipment',
+    }
     if isinstance(cl, list):
         poi['inclusive_playground'] = required.issubset(set(cl))
     elif isinstance(cl, dict):

@@ -1,65 +1,68 @@
 // Outdoor and Recreation Constants
 
-// Playground Types — Phase 1 replaced (16 values)
+// Playground Types — updated 16-item spec list
 export const PLAYGROUND_TYPES = [
-  'Traditional Structure',
-  'Nature Play',
-  'Adventure / Ropes',
-  'Inclusive / Universal',
-  'Splash Pad',
-  'Water Play',
-  'Sensory Play',
-  'Musical Play',
-  'Swings',
-  'Slides',
+  'Art + Play Sculptures',
+  'Adaptive Swing (bucket seats and harness swings)',
   'Climbing Structure',
+  'Covered Playground',
+  'Fence Around Playground',
+  'Fitness + Obstacle Course',
+  'Inclusive (ADA Accessible)',
+  'Lit Playground',
+  'Musical Playground (instruments and sound elements built in)',
+  'Natural Playground (uses natural materials like logs/rocks)',
+  'Sand Pit',
+  'Sensory Playground (designed for children with sensory needs)',
+  'Separate Areas by Age Group',
+  'Swing Set',
+  'Water Play Area',
   'Zip Line',
-  'Sandbox',
-  'Spinners',
-  'Seesaw',
-  'Ninja Course'
 ];
 
-// Playground Surface Types — Phase 1 replaced (9 values)
+// Playground Surface Types — updated 11-item list
 export const PLAYGROUND_SURFACES = [
   'Engineered Wood Fiber',
-  'Poured-in-Place Rubber',
+  'Poured Rubber',
   'Rubber Tiles',
   'Sand',
-  'Pea Gravel',
+  'Gravel',
   'Grass',
   'Artificial Turf',
   'Concrete',
-  'Mulch'
+  'Mulch',
+  'Dirt',
+  'Mixed Surface',
 ];
 
 // Alias used by Phase 1 frontend layouts
 export const PLAYGROUND_SURFACE_TYPES = PLAYGROUND_SURFACES;
 
-// Phase 1 — playground age groups
+// Playground age groups — updated 4-item list
 export const PLAYGROUND_AGE_GROUPS = [
-  '6–23 months',
-  '2–5 years',
-  '5–12 years',
-  'All Ages'
+  'Toddler (6–23 months)',
+  'Pre School (2–5 years)',
+  'Grade School (5–12 years)',
+  'Teen Area (12+)',
 ];
 
-// Phase 1 — playground ADA checklist (grouped: { group, label })
+// Playground ADA checklist — 14-item grouped structure (4 categories)
+// accessible_surfacing + ground_level + accessible_route = inclusive_playground TRUE
 export const PLAYGROUND_ADA_CHECKLIST = [
-  { group: 'Arrival + Access', label: 'Accessible route to play area' },
-  { group: 'Arrival + Access', label: 'Accessible route onto play surface' },
-  { group: 'Arrival + Access', label: 'Unitary surface (poured-rubber/tiles)' },
-  { group: 'Play Structure',   label: 'Ground-level play components accessible' },
-  { group: 'Play Structure',   label: 'Elevated play components with transfer system' },
-  { group: 'Play Structure',   label: 'Ramp access to composite structure' },
-  { group: 'Play Structure',   label: 'Accessible swing (bucket/harness)' },
-  { group: 'Sensory + Inclusive', label: 'Sensory play components' },
-  { group: 'Sensory + Inclusive', label: 'Quiet / retreat space' },
-  { group: 'Sensory + Inclusive', label: 'Shade over play area' },
-  { group: 'Facilities + Support', label: 'Accessible seating for caregivers' },
-  { group: 'Facilities + Support', label: 'Accessible drinking fountain nearby' },
-  { group: 'Facilities + Support', label: 'Accessible restroom nearby' },
-  { group: 'Facilities + Support', label: 'Signage with braille / tactile' },
+  { group: 'Access + Entry', label: 'Accessible route from parking to playground (firm stable surface)' },
+  { group: 'Access + Entry', label: 'Accessible path throughout playground — firm, stable surface' },
+  { group: 'Access + Entry', label: 'Level entry to playground — no step or raised curb' },
+  { group: 'Access + Entry', label: 'Entrance gate or opening at least 32 inches wide' },
+  { group: 'Equipment',      label: 'Ground level play components (activities reachable without climbing)' },
+  { group: 'Equipment',      label: 'Accessible swing — bucket seat or harness swing available' },
+  { group: 'Equipment',      label: 'Transfer platform or ramp access to elevated play structure' },
+  { group: 'Equipment',      label: 'Clear turning radius — minimum 60 inches around accessible equipment' },
+  { group: 'Surfacing',      label: 'Accessible surfacing connects directly to all equipment' },
+  { group: 'Surfacing',      label: 'Unitary surfacing — poured rubber or rubber tiles' },
+  { group: 'Surfacing',      label: 'Surfacing extends at least 6 feet from all equipment' },
+  { group: 'Amenities',      label: 'Accessible seating for caregivers adjacent to play area' },
+  { group: 'Amenities',      label: 'Shade over accessible play areas' },
+  { group: 'Amenities',      label: 'Accessible restroom within 300 feet of playground' },
 ];
 
 // Flat label array for backend comparisons and backward compat
