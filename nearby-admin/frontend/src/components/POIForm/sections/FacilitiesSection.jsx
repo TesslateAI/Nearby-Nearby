@@ -7,9 +7,9 @@ import { IconPlus } from '@tabler/icons-react';
 import RichTextEditor from '../../RichTextEditor';
 import { getCheckboxGroupProps } from '../constants/helpers';
 import {
-  KEY_FACILITIES, PAYMENT_METHODS, ALCOHOL_OPTIONS, WHEELCHAIR_OPTIONS,
+  PAYMENT_METHODS, ALCOHOL_OPTIONS, WHEELCHAIR_OPTIONS,
   SMOKING_OPTIONS, WIFI_OPTIONS, DRONE_USAGE_OPTIONS, PET_OPTIONS,
-  PUBLIC_TOILET_OPTIONS, ENTERTAINMENT_OPTIONS, PARK_FACILITIES
+  PUBLIC_TOILET_OPTIONS, PARK_FACILITIES
 } from '../../../utils/constants';
 import {
   RestroomPhotosUpload,
@@ -101,25 +101,15 @@ export const FacilitiesSection = React.memo(function FacilitiesSection({
         </>
       )}
 
-      {/* Entertainment and Facilities Options - Parks and Trails */}
+      {/* Facilities Options - Parks and Trails */}
       {(isPark || isTrail) && (
-        <>
-          <CheckboxGroupSection
-            label="Entertainment"
-            fieldName="entertainment_options"
-            options={ENTERTAINMENT_OPTIONS}
-            cols={{ base: 2, sm: 3 }}
-            form={form}
-          />
-
-          <CheckboxGroupSection
-            label="Facilities"
-            fieldName="facilities_options"
-            options={PARK_FACILITIES}
-            cols={{ base: 2, sm: 3 }}
-            form={form}
-          />
-        </>
+        <CheckboxGroupSection
+          label="Facilities"
+          fieldName="facilities_options"
+          options={PARK_FACILITIES}
+          cols={{ base: 2, sm: 3 }}
+          form={form}
+        />
       )}
 
       {/* Payment Methods - only for Business and Events (Parks/Trails don't need this) */}

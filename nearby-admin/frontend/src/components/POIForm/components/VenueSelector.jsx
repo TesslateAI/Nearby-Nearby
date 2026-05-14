@@ -125,8 +125,6 @@ export function VenueSelector({ form, poiId, types = ['BUSINESS', 'PARK', 'TRAIL
         if (venueData.parking_types) form.setFieldValue('parking_types', venueData.parking_types);
         if (venueData.parking_notes) form.setFieldValue('parking_notes', venueData.parking_notes);
         if (venueData.parking_locations) form.setFieldValue('parking_locations', venueData.parking_locations);
-        if (venueData.expect_to_pay_parking) form.setFieldValue('expect_to_pay_parking', venueData.expect_to_pay_parking);
-        if (venueData.public_transit_info) form.setFieldValue('public_transit_info', venueData.public_transit_info);
       }
 
       // Copy accessibility fields

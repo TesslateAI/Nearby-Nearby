@@ -43,10 +43,9 @@ export const usePOIHandlers = (id, isEditing, form, setPoiId) => {
 
           // Ensure all array fields are arrays, not null
           const arrayFields = [
-            'ideal_for', 'ideal_for_key', 'parking_types', 'payment_methods', 'key_facilities',
+            'ideal_for', 'ideal_for_key', 'parking_types', 'payment_methods',
             'alcohol_options', 'wheelchair_accessible', 'smoking_options', 'wifi_options',
-            'pet_options', 'public_toilets', 'youth_amenities', 'business_amenities',
-            'entertainment_options', 'natural_features', 'outdoor_types', 'things_to_do',
+            'pet_options', 'public_toilets', 'natural_features', 'outdoor_types', 'things_to_do',
             'hunting_types', 'fishing_types', 'licenses_required', 'playground_types',
             'playground_surface_types', 'downloadable_maps', 'parking_locations',
             'toilet_locations', 'delivery_links',
@@ -90,11 +89,11 @@ export const usePOIHandlers = (id, isEditing, form, setPoiId) => {
             'tiktok_username', 'linkedin_username', 'main_contact_name', 'main_contact_email',
             'main_contact_phone', 'offsite_emergency_contact', 'emergency_protocols',
             'cost', 'pricing_details', 'history_paragraph', 'featured_image',
-            'parking_notes', 'public_transit_info', 'wheelchair_details', 'smoking_details',
+            'parking_notes', 'wheelchair_details', 'smoking_details',
             'drone_usage', 'drone_policy', 'pet_policy', 'toilet_description', 'rental_info',
             'rental_pricing', 'rental_link', 'price_range_per_person', 'pricing', 'gift_cards',
             'menu_link', 'community_impact', 'night_sky_viewing', 'birding_wildlife',
-            'hunting_fishing_info', 'membership_details', 'camping_lodging', 'playground_notes',
+            'hunting_fishing_info', 'membership_details', 'playground_notes',
             'pets_allowed', 'alcohol_available', 'public_toilets_available', 'toilet_photos',
             'park_entry_notes', 'business_entry_notes', 'appointment_booking_url',
             'primary_parking_name'

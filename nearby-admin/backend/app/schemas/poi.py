@@ -326,10 +326,7 @@ class PointOfInterestBase(BaseModel):
     pricing: Optional[str] = None
     discounts: Optional[List[str]] = None
     gift_cards: Optional[str] = None
-    youth_amenities: Optional[List[str]] = None
-    business_amenities: Optional[List[str]] = None
-    entertainment_options: Optional[List[str]] = None
-    
+
     # Menu & Online Booking (Business only)
     # menu_photos - DEPRECATED: moved to Images table (image_type='menu')
     menu_link: Optional[str] = None
@@ -428,13 +425,10 @@ class PointOfInterestBase(BaseModel):
     parking_locations: Optional[List[Dict[str, Any]]] = None
     parking_notes: Optional[str] = None
     # parking_photos - DEPRECATED: moved to Images table (image_type='parking')
-    public_transit_info: Optional[str] = None
-    expect_to_pay_parking: Optional[Literal['yes', 'no', 'sometimes']] = None
 
     # Additional Info
     downloadable_maps: Optional[List[Dict[str, str]]] = None
     payment_methods: Optional[List[str]] = None
-    key_facilities: Optional[List[str]] = None
     alcohol_options: Optional[List[str]] = None
     alcohol_policy_details: Optional[str] = None
     wheelchair_accessible: Optional[List[str]] = None
@@ -494,8 +488,7 @@ class PointOfInterestBase(BaseModel):
     
     # Trail connections
     associated_trails: Optional[List[uuid.UUID]] = None
-    camping_lodging: Optional[str] = None
-    
+
     # JSONB fields
     photos: Optional[Dict[str, Any]] = None
     hours: Optional[Dict[str, Any]] = None  # Complex hours with multiple periods, seasonal
@@ -577,9 +570,6 @@ class PointOfInterestUpdate(BaseModel):
     pricing: Optional[str] = None
     discounts: Optional[List[str]] = None
     gift_cards: Optional[str] = None
-    youth_amenities: Optional[List[str]] = None
-    business_amenities: Optional[List[str]] = None
-    entertainment_options: Optional[List[str]] = None
     # menu_photos - DEPRECATED: moved to Images table (image_type='menu')
     menu_link: Optional[str] = None
     delivery_links: Optional[List[TitledLink]] = None
@@ -631,11 +621,8 @@ class PointOfInterestUpdate(BaseModel):
     parking_locations: Optional[List[Dict[str, Any]]] = None
     parking_notes: Optional[str] = None
     # parking_photos - DEPRECATED: moved to Images table (image_type='parking')
-    public_transit_info: Optional[str] = None
-    expect_to_pay_parking: Optional[Literal['yes', 'no', 'sometimes']] = None
     downloadable_maps: Optional[List[Dict[str, str]]] = None
     payment_methods: Optional[List[str]] = None
-    key_facilities: Optional[List[str]] = None
     alcohol_options: Optional[List[str]] = None
     alcohol_policy_details: Optional[str] = None
     wheelchair_accessible: Optional[List[str]] = None
@@ -681,7 +668,6 @@ class PointOfInterestUpdate(BaseModel):
     membership_passes: Optional[List[uuid.UUID]] = None
     membership_details: Optional[str] = None
     associated_trails: Optional[List[uuid.UUID]] = None
-    camping_lodging: Optional[str] = None
     photos: Optional[Dict[str, Any]] = None
     hours: Optional[Dict[str, Any]] = None
     holiday_hours: Optional[Dict[str, Any]] = None
@@ -785,8 +771,6 @@ class VenueDataForEvent(BaseModel):
     parking_types: Optional[List[str]] = None
     parking_notes: Optional[str] = None
     parking_locations: Optional[List[Dict[str, Any]]] = None
-    expect_to_pay_parking: Optional[str] = None
-    public_transit_info: Optional[str] = None
 
     # Accessibility
     wheelchair_accessible: Optional[List[str]] = None

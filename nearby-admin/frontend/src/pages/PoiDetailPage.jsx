@@ -339,9 +339,6 @@ const PoiDetailPage = () => {
                 return {
                     priceRange: poi.business?.price_range || poi.price_range_per_person,
                     listingTier: poi.listing_type,
-                    businessAmenities: poi.business_amenities,
-                    entertainmentOptions: poi.entertainment_options,
-                    youthAmenities: poi.youth_amenities,
                     menuLink: poi.menu_link,
                     deliveryLinks: poi.delivery_links,
                     reservationLinks: poi.reservation_links,
@@ -614,8 +611,6 @@ const PoiDetailPage = () => {
                                 <DetailItem label="ZIP Code" value={poi.address_zip} icon={{ type: IconMapPin, props: {} }} />
                                 <DetailItem label="Parking Options" value={poi.parking_types} icon={{ type: IconCar, props: {} }} />
                                 <DetailItem label="Parking Notes" value={poi.parking_notes} icon={{ type: IconCar, props: {} }} />
-                                <DetailItem label="Expected Parking Cost" value={poi.expect_to_pay_parking} icon={{ type: IconCar, props: {} }} />
-                                <DetailItem label="Public Transit" value={poi.public_transit_info} icon={{ type: IconCar, props: {} }} />
                                 <DetailItem label="Wheelchair Accessible" value={poi.wheelchair_accessible} icon={{ type: IconInfoCircle, props: {} }} />
                                 <DetailItem label="Accessibility Details" value={poi.wheelchair_details} icon={{ type: IconInfoCircle, props: {} }} />
                             </Stack>
@@ -636,7 +631,6 @@ const PoiDetailPage = () => {
                                 <DetailItem label="Pet Policy" value={poi.pet_policy} icon={{ type: IconInfoCircle, props: {} }} />
                                 <DetailItem label="Alcohol Available" value={poi.alcohol_options} icon={{ type: IconInfoCircle, props: {} }} />
                                 <DetailItem label="WiFi Available" value={poi.wifi_options} icon={{ type: IconInfoCircle, props: {} }} />
-                                <DetailItem label="Key Facilities" value={poi.key_facilities} icon={{ type: IconCheck, props: {} }} />
                                 {poiTypeData.dronePolicy && (
                                     <DetailItem label="Drone Policy" value={poiTypeData.dronePolicy} icon={{ type: IconTree, props: {} }} />
                                 )}

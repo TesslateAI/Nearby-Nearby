@@ -61,12 +61,9 @@ export const emptyInitialValues = {
   primary_parking_lng: null,
   primary_parking_name: '',
   // parking_photos removed - use Images table with image_type='parking'
-  public_transit_info: '',
-  expect_to_pay_parking: 'no',
   // Additional Info
   downloadable_maps: [],
   payment_methods: [],
-  key_facilities: [],
   alcohol_available: null,
   alcohol_options: [],
   alcohol_policy_details: '',
@@ -99,9 +96,6 @@ export const emptyInitialValues = {
   pricing: '',
   discounts: [],
   gift_cards: 'no',
-  youth_amenities: [],
-  business_amenities: [],
-  entertainment_options: [],
   // Menu & Online Booking (Business only)
   // menu_photos removed - use Images table with image_type='menu'
   menu_link: '',
@@ -185,7 +179,6 @@ export const emptyInitialValues = {
   membership_passes: [],
   membership_details: '',
   associated_trails: [],
-  camping_lodging: '',
   // Event specific
   event: {
     start_datetime: null,

@@ -132,15 +132,6 @@ export const CoreInformationSection = React.memo(function CoreInformationSection
         )}
       </SimpleGrid>
 
-      {/* Key Facilities - available for all POI types */}
-      <CheckboxGroupSection
-        label="Key Facilities"
-        fieldName="key_facilities"
-        options={KEY_FACILITIES}
-        cols={{ base: 2, sm: 3 }}
-        form={form}
-      />
-
       {isEvent && (
         <>
           <Divider my="md" label="Event Details" />

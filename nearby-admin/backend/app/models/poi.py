@@ -89,13 +89,10 @@ class PointOfInterest(Base):
     parking_locations = Column(JSONB)  # [{"lat": 0, "lng": 0, "name": "Main lot"}]
     parking_notes = Column(Text)
     # parking_photos moved to Images table (image_type='parking')
-    public_transit_info = Column(Text)
-    expect_to_pay_parking = Column(String)  # 'yes', 'no', 'sometimes'
-    
+
     # Additional Info
     downloadable_maps = Column(JSONB)  # [{"name": "Trail Map", "url": "..."}]
     payment_methods = Column(JSONB)  # List of accepted payment methods
-    key_facilities = Column(JSONB)  # For Events, Parks, Trails
     alcohol_options = Column(JSONB)  # List of alcohol availability options
     alcohol_policy_details = Column(Text)  # Additional alcohol policy details
     alcohol_available = Column(String(50))
@@ -147,9 +144,6 @@ class PointOfInterest(Base):
     pricing = Column(String)  # General pricing text (all POIs)
     discounts = Column(JSONB)  # List of discount types offered
     gift_cards = Column(String)  # 'yes_this_only', 'no', 'yes_select_others'
-    youth_amenities = Column(JSONB)  # List of youth amenities (Business only)
-    business_amenities = Column(JSONB)  # List of business amenities/services
-    entertainment_options = Column(JSONB)  # List of entertainment options
     
     # Menu & Online Booking (Business only)
     menu_photos = Column(JSONB)  # List of menu photo URLs
@@ -196,7 +190,7 @@ class PointOfInterest(Base):
     park_entry_notes = Column(Text)  # Park entry description/notes
     # park_entry_photo moved to Images table (image_type='entry')
     # parking_lot_photo moved to Images table (image_type='parking')
-    facilities_options = Column(JSONB)  # List of park facilities (separate from key_facilities)
+    facilities_options = Column(JSONB)  # List of park facilities
     night_sky_viewing = Column(Text)
     natural_features = Column(JSONB)  # List of natural features
     outdoor_types = Column(JSONB)  # List of outdoor space types
@@ -217,7 +211,6 @@ class PointOfInterest(Base):
     
     # Trail connections
     associated_trails = Column(JSONB)  # POI IDs of connected trails
-    camping_lodging = Column(Text)
     
     # JSONB fields for flexible attributes
     photos = Column(JSONB)  # {"featured": "url", "gallery": ["url1", "url2"]}
