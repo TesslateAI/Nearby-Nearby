@@ -96,12 +96,15 @@ export function AdminOnlyAccordionItem({ form, userRole }) {
 //   local_special, special_needs }.
 // -----------------------------------------------------------------------------
 const IDEAL_FOR_GROUPS = [
-  { key: 'atmosphere',      label: 'Atmosphere',      options: IDEAL_FOR_ATMOSPHERE },
-  { key: 'age_group',       label: 'Age Group',       options: IDEAL_FOR_AGE_GROUP },
-  { key: 'social_settings', label: 'Social Settings', options: IDEAL_FOR_SOCIAL_SETTINGS },
-  { key: 'local_special',   label: 'Local + Special', options: IDEAL_FOR_LOCAL_SPECIAL },
-  { key: 'special_needs',   label: 'Special Needs',   options: IDEAL_FOR_SPECIAL_NEEDS },
+  { key: 'atmosphere',      label: 'Atmosphere',                   options: IDEAL_FOR_ATMOSPHERE },
+  { key: 'age_group',       label: 'Age Group',                    options: IDEAL_FOR_AGE_GROUP },
+  { key: 'social_settings', label: 'Social Settings',              options: IDEAL_FOR_SOCIAL_SETTINGS },
+  { key: 'local_special',   label: 'Local + Special',              options: IDEAL_FOR_LOCAL_SPECIAL },
+  { key: 'special_needs',   label: 'Supports These Special Needs', options: IDEAL_FOR_SPECIAL_NEEDS },
 ];
+
+// Age group options excluding the "All Ages" shortcut (which is a UI trigger, not saved)
+const AGE_GROUP_ITEMS = IDEAL_FOR_AGE_GROUP.filter(o => o !== 'All Ages');
 
 export function IdealForGrouped({ form, totalCap = null }) {
   const current = form.values.ideal_for || {};
@@ -117,6 +120,22 @@ export function IdealForGrouped({ form, totalCap = null }) {
     }
   }
 
+  function toggleAllAges() {
+    const groupVals = current.age_group || [];
+    const allSelected = AGE_GROUP_ITEMS.every(o => groupVals.includes(o));
+    if (allSelected) {
+      form.setFieldValue('ideal_for.age_group', []);
+    } else {
+      if (totalCap != null) {
+        const otherTotal = currentTotal - groupVals.length;
+        const canAdd = totalCap - otherTotal;
+        form.setFieldValue('ideal_for.age_group', AGE_GROUP_ITEMS.slice(0, canAdd));
+      } else {
+        form.setFieldValue('ideal_for.age_group', [...AGE_GROUP_ITEMS]);
+      }
+    }
+  }
+
   return (
     <Stack gap="md">
       <Group>
@@ -129,21 +148,47 @@ export function IdealForGrouped({ form, totalCap = null }) {
       </Group>
       {IDEAL_FOR_GROUPS.map(g => {
         const groupVals = current[g.key] || [];
+        const isAgeGroup = g.key === 'age_group';
+        const isSpecialNeeds = g.key === 'special_needs';
+        const options = isAgeGroup ? AGE_GROUP_ITEMS : g.options;
+        const allAgesSelected = isAgeGroup && AGE_GROUP_ITEMS.every(o => groupVals.includes(o));
+
         return (
           <Stack key={g.key} gap="xs">
             <Text fw={600} size="sm" c="dimmed">{g.label}</Text>
+            {isSpecialNeeds && (
+              <Text size="xs" c="dimmed" fs="italic">
+                Select needs your location, program, service, or staff can reasonably support or accommodate. Only select items you actively serve or are equipped to handle.
+              </Text>
+            )}
+            {isAgeGroup && (
+              <Checkbox
+                label={<Text fw={600} size="sm">All Ages <Text span size="xs" c="dimmed" fs="italic">(selects every age group below)</Text></Text>}
+                checked={allAgesSelected}
+                indeterminate={!allAgesSelected && groupVals.length > 0}
+                onChange={toggleAllAges}
+                disabled={atCap && groupVals.length === 0}
+              />
+            )}
             <SimpleGrid cols={{ base: 2, sm: 3 }}>
-              {g.options.map(opt => {
+              {options.map(opt => {
                 const checked = groupVals.includes(opt);
                 const disabled = atCap && !checked;
+                const isStrollerFriendly = opt === 'Stroller Friendly';
                 return (
-                  <Checkbox
-                    key={opt}
-                    label={opt}
-                    checked={checked}
-                    disabled={disabled}
-                    onChange={() => toggle(g.key, opt)}
-                  />
+                  <Stack key={opt} gap={2}>
+                    <Checkbox
+                      label={opt}
+                      checked={checked}
+                      disabled={disabled}
+                      onChange={() => toggle(g.key, opt)}
+                    />
+                    {isStrollerFriendly && (
+                      <Text size="xs" c="dimmed" fs="italic" ml={26}>
+                        flat, paved, or firm surface suitable for strollers
+                      </Text>
+                    )}
+                  </Stack>
                 );
               })}
             </SimpleGrid>
