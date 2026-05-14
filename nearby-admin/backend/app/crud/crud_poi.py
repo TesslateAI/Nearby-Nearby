@@ -37,12 +37,22 @@ def compute_icon_booleans(poi: dict) -> dict:
     )
     return poi
 
+_ADA_REQUIRED = {
+    'Wide door — minimum 32 inches clear width',
+    'Side grab bar installed',
+    'Level entry — no lip or step',
+}
+
 def compute_accessible_restroom(poi: dict) -> dict:
-    cl = poi.get('accessible_restroom_details') or {}
+    toilets = poi.get('public_toilets') or []
+    if 'Wheelchair + ADA Accessible' not in (toilets if isinstance(toilets, list) else []):
+        poi['accessible_restroom'] = False
+        return poi
+    cl = poi.get('accessible_restroom_details') or []
     if isinstance(cl, dict):
         poi['accessible_restroom'] = any(bool(v) for v in cl.values())
     elif isinstance(cl, list):
-        poi['accessible_restroom'] = len(cl) > 0
+        poi['accessible_restroom'] = _ADA_REQUIRED.issubset(set(cl))
     else:
         poi['accessible_restroom'] = False
     return poi

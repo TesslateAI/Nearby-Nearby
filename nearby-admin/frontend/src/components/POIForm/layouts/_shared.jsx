@@ -275,28 +275,48 @@ export function AccessibleParkingChecklist({ form }) {
 
 // -----------------------------------------------------------------------------
 // Accessible Restroom ADA checklist + auto-derived boolean
+// Only renders when "Wheelchair + ADA Accessible" is selected in public_toilets
+// accessible_restroom = true when wide door + side grab bar + level entry are all checked
 // -----------------------------------------------------------------------------
+const ADA_TRIGGER = 'Wheelchair + ADA Accessible';
+const ADA_REQUIRED_LABELS = [
+  'Wide door — minimum 32 inches clear width',
+  'Side grab bar installed',
+  'Level entry — no lip or step',
+];
+
 export function AccessibleRestroomChecklist({ form }) {
-  const value = form.values.accessible_restroom_details || [];
-  const toggle = (v) => {
-    const arr = Array.isArray(value) ? value : [];
-    const next = arr.includes(v) ? arr.filter(x => x !== v) : [...arr, v];
+  const toilets = form.values.public_toilets || [];
+  if (!toilets.includes(ADA_TRIGGER)) return null;
+
+  const checked = form.values.accessible_restroom_details || [];
+  const arr = Array.isArray(checked) ? checked : [];
+
+  const toggle = (label) => {
+    const next = arr.includes(label) ? arr.filter(x => x !== label) : [...arr, label];
     form.setFieldValue('accessible_restroom_details', next);
-    form.setFieldValue('accessible_restroom', next.length > 0);
+    const allThree = ADA_REQUIRED_LABELS.every(l => next.includes(l));
+    form.setFieldValue('accessible_restroom', allThree);
   };
+
+  const groups = [...new Set(RESTROOM_ADA_CHECKLIST.map(i => i.group))];
+
   return (
-    <Stack gap="xs">
-      <Text fw={500}>Accessible Restroom Details (ADA)</Text>
-      <SimpleGrid cols={{ base: 1, sm: 2 }}>
-        {RESTROOM_ADA_CHECKLIST.map(opt => (
-          <Checkbox
-            key={opt}
-            label={opt}
-            checked={(Array.isArray(value) ? value : []).includes(opt)}
-            onChange={() => toggle(opt)}
-          />
-        ))}
-      </SimpleGrid>
+    <Stack gap="sm">
+      <Text fw={500}>ADA Restroom Checklist</Text>
+      {groups.map(group => (
+        <Stack key={group} gap="xs">
+          <Text size="sm" fw={600} c="dimmed">{group}</Text>
+          {RESTROOM_ADA_CHECKLIST.filter(i => i.group === group).map(item => (
+            <Checkbox
+              key={item.label}
+              label={item.label}
+              checked={arr.includes(item.label)}
+              onChange={() => toggle(item.label)}
+            />
+          ))}
+        </Stack>
+      ))}
     </Stack>
   );
 }

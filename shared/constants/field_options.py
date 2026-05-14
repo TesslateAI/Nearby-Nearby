@@ -281,45 +281,49 @@ PET_OPTIONS = [
     "Pets in Carriers Only",
 ]
 
-# REPLACED — 18 values
 PUBLIC_TOILET_OPTIONS = [
-    "Accessible Restroom",
-    "Men's Restroom",
-    "Women's Restroom",
-    "All-Gender / Unisex",
+    "Single Stall",
+    "Multi Stall",
     "Family Restroom",
     "Baby Changing Station",
-    "Flush Toilets",
+    "Wheelchair + ADA Accessible",
+    "All Gender",
+    "Climate Controlled Restroom",
+    "Key Required",
+    "Code Required",
+    "Customers Only",
+    "Attendant on Duty",
+    "Pay Toilet",
+    "Porta Potti",
+    "Outdoor + Pit Toilet",
     "Vault Toilet",
-    "Pit Toilet",
-    "Portable Toilet",
-    "Composting Toilet",
-    "Seasonal Restroom",
-    "Restroom at Trailhead",
-    "Restroom On Trail",
-    "Outdoor Shower",
-    "Indoor Shower",
-    "Key/Code Required",
-    "No Public Restroom",
+    "Trailer Restroom",
+    "Seasonal Only",
+    "24 Hour Access",
 ]
 
+# Each item: { "group": str, "label": str }
+# Groups: Space + Size / Grab Bars / Door / Toilet / Sink + Fixtures / General
 RESTROOM_ADA_CHECKLIST = [
-    "Accessible stall present",
-    "Stall 60 in. turning radius or greater",
-    "Grab bars installed",
-    "Accessible route to restroom",
-    "Door hardware lever or auto",
-    "Sink height 34 in. or lower",
-    "Sink knee clearance",
-    "Mirror 40 in. to bottom edge or lower",
-    "Accessible soap + towel dispenser",
-    "Accessible baby changing",
-    "Emergency pull cord",
-    "Firm stable flooring",
-    "Signage with braille",
-    "Lighting adequate",
-    "Adult changing table",
+    {"group": "Space + Size", "label": "Accessible stall size — minimum 60\" x 56\" (wall-mounted toilet) or 60\" x 59\" (floor-mounted)"},
+    {"group": "Space + Size", "label": "60 inch turning radius clear floor space"},
+    {"group": "Grab Bars", "label": "Side grab bar installed"},
+    {"group": "Grab Bars", "label": "Rear grab bar installed"},
+    {"group": "Grab Bars", "label": "Grab bars mounted 33-36 inches from floor"},
+    {"group": "Door", "label": "Wide door — minimum 32 inches clear width"},
+    {"group": "Door", "label": "Outward swinging or sliding door"},
+    {"group": "Door", "label": "Lever or loop door handle"},
+    {"group": "Toilet", "label": "Accessible toilet height — 17-19 inches from floor"},
+    {"group": "Sink + Fixtures", "label": "Sink height 34 inches or lower"},
+    {"group": "Sink + Fixtures", "label": "Clear knee space under sink"},
+    {"group": "Sink + Fixtures", "label": "Lever or sensor faucet"},
+    {"group": "Sink + Fixtures", "label": "No exposed pipes under sink"},
+    {"group": "General", "label": "Level entry — no lip or step"},
+    {"group": "General", "label": "Sufficient lighting"},
 ]
+
+# Flat label list derived from RESTROOM_ADA_CHECKLIST for backend validation
+RESTROOM_ADA_CHECKLIST_LABELS = [item["label"] for item in RESTROOM_ADA_CHECKLIST]
 
 # REPLACED — 16 values
 PLAYGROUND_TYPES = [
