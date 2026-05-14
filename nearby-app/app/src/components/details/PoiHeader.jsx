@@ -364,7 +364,7 @@ export default function PoiHeader({
                 What's This
               </button>
               <div id="poi_verified_tooltip" className={tooltipOpen ? 'is_open' : ''}>
-                This place has been checked and confirmed as accurate by a Nearby Nearby Team member.
+                {poi?.poi_type === 'EVENT' ? 'This event' : 'This place'} has been checked and confirmed as accurate by a Nearby Nearby Team member.
               </div>
             </div>
           )}
