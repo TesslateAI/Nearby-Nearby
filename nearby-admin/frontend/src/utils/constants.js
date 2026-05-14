@@ -270,100 +270,121 @@ export const CELL_SERVICE_OPTIONS = [
   'None'
 ];
 
-// Phase 1 — Amenities (grouped for new forms)
+// Phase 1 — Amenities (updated to current spec, issue #55)
+// Items marked PT are Parks + Trails only; items marked BE are Business + Events only.
+// Sub-option selects (Coat Check, Drinking Fountain, EV Charging, etc.) are rendered
+// conditionally in the form when the parent item is selected.
 export const AMENITIES_GENERAL = [
+  'Amphitheater',
   'ATM',
-  'Baby Changing Station',
-  'Benches',
+  'Bag Check',
   'Bike Rack',
   'Bike Repair Station',
-  'Bottle Filling Station',
-  'Bug Spray Station',
-  'Bulletin Board + Community Board',
-  'Campfire Ring + Fire Pit',
-  'Chargepoint Station + EV Charging',
-  'Coat Check',
-  'Covered Shelter + Pavilion',
-  'Covered Trail Shelter',
-  'Drinking Fountain',
-  'Drinking Fountain At Trailhead',
-  'Drinking Fountain On Trail',
-  'Elevator',
-  'Emergency Phone + Call Box',
+  'Caretaker On Site',
+  'Coat Check',                          // BE only — sub-select: Complimentary, Fee Based
+  'Coin Change Machine',
+  'Covered Trail Shelter',               // PT only
+  'Darts',                               // BE only
+  'Drive-Up Pickup Area',                // BE only
+  'Drinking Fountain',                   // sub-select includes PT-only At Trailhead + On Trail options
+  'Dump Station for RVs',
+  'Equestrian Facilities',               // sub-select: Tie-Up + Hitching Post, Water Trough, Trailer Parking, Staging Area
+  'Equipment Storage',
+  'EV Charging',                         // sub-select: Standard/Fast/Tesla + station count field
+  'Fire Pit',
+  'Fire Ring',
   'First Aid Station',
-  'Flag Pole',
-  'Grill + BBQ',
-  'Handicap Accessible Entrance',
-  'Hand Sanitizer Station',
-  'Information Kiosk + Visitor Center',
-  'Lactation Room',
-  'Lighting + Lit Pathways',
-  'Lockers',
-  'Lost and Found',
-  'No Drinking Water on Trail',
+  'Gated Access',
+  'Gazebo',
+  'Gift Shop',
+  'Grill',
+  'Information Kiosk + Map Board',
+  'Laundry Facilities',
+  'Lockers + Storage',
+  'Lost + Found',
+  'Multilingual Signage',
   'Outdoor Classroom',
-  'Outdoor Shower',
-  'Picnic Area - Covered',
-  'Picnic Area - Uncovered',
-  'Public Phone + Payphone',
-  'Recycling Station',
-  'Rental Equipment',
-  'Rental Space',
-  'Shade Structures',
-  'Sunscreen Station',
-  'Trash Cans',
+  'Overflow Parking',
+  'Performance Stage',
+  'Pool Tables',                         // BE only
+  'Public Spring Water Collection Point',
+  'Recycling Stations',
+  'Seasonal Access',
+  'Security On Site',
+  'Showers',
+  'Shuttle + Trolley Service',
+  'Sports on TV',                        // BE only
+  'Stroller Check',
   'Vending Machines',
-  'Water Fountain + Splash Pad',
-  'Weather Shelter'
+  'Weather Station',
+  'Wildlife Observation Platform',
 ];
 
 export const AMENITIES_FAMILY_YOUTH = [
   'Booster Seat',
-  'Childcare Available',
-  'Cribs',
+  'Changing Table',
+  'Childcare Available',                 // BE only
+  'Cribs',                              // BE only
   'Family Spaces',
   'High Chair',
-  'Kid Friendly Menus',
+  'Kids Activity Area',
+  'Kid Friendly Menus',                  // BE only
   'Lactation Room',
-  'Play Area - Indoor',
-  'Play Area - Outdoor',
-  'Playpens',
-  'Stroller Friendly',
+  'Play Area — Indoor',
+  'Play Area — Outdoor',
+  'Playpens',                            // BE only
   'Stroller Parking',
   'Stroller Rental',
-  'Youth Program'
 ];
 
 export const AMENITIES_WATER_BOATING = [
-  'Boat Dock',
-  'Boat Launch',
-  'Boat Ramp',
-  'Canoe + Kayak Access',
-  'Fishing Pier',
-  'Fishing Access',
+  'Beach Access',
+  'Boat Dock',                           // ADA checklist available when checked
+  'Boat Launch',                         // ADA checklist available when checked
+  'Boat Ramp',                           // ADA checklist available when checked
+  'Boat Storage',
+  'Fuel Station for Boats',
   'Marina',
-  'Paddle Craft Rental',
-  'Swim Area',
-  'Swim Beach'
+  'Kayak, Canoe + Paddleboard Launch',   // ADA checklist available when checked
 ];
 
 export const AMENITIES_DINING_SEATING = [
-  'Bar Seating',
-  'Booth Seating',
-  'Communal Tables',
-  'Counter Seating',
-  'Dining Room',
-  'Food Court',
+  'Bar Seating',                         // BE only
+  'Benches + Rest Areas',
+  'Catering Pickup Area',                // BE only
+  'Concession Stand',
+  'Coworking + Work Friendly Seating',   // BE only
+  'Group Shelter',
   'Indoor Seating',
-  'Outdoor Seating',
-  'Patio',
-  'Picnic Tables',
-  'Private Dining Room',
-  'Rooftop Seating',
-  'Standing Room',
-  'Sidewalk Seating',
-  'Waterfront Seating'
+  'Meeting Room',                        // BE only
+  'On-Site Kitchen Facility',            // sub-select: Has Power, Has Running Water
+  'Outdoor Bar',                         // BE only
+  'Outdoor Seating',                     // sub-select: Cooled, Covered, Heated
+  'Picnic Area',                         // sub-select: Covered, Uncovered
+  'Private Event Space',
 ];
+
+// Visibility flags for amenity items by POI type group.
+// 'PT' = Parks + Trails only (hidden from Business and Events).
+// 'BE' = Business + Events only (hidden from Parks and Trails).
+// Items absent from this map are visible to ALL POI types.
+export const AMENITIES_VISIBILITY = {
+  'Coat Check': 'BE',
+  'Covered Trail Shelter': 'PT',
+  'Darts': 'BE',
+  'Drive-Up Pickup Area': 'BE',
+  'Pool Tables': 'BE',
+  'Sports on TV': 'BE',
+  'Childcare Available': 'BE',
+  'Cribs': 'BE',
+  'Kid Friendly Menus': 'BE',
+  'Playpens': 'BE',
+  'Bar Seating': 'BE',
+  'Catering Pickup Area': 'BE',
+  'Coworking + Work Friendly Seating': 'BE',
+  'Meeting Room': 'BE',
+  'Outdoor Bar': 'BE',
+};
 
 export const ALCOHOL_AVAILABLE_OPTIONS = [
   { value: 'full_bar', label: 'Full Bar' },

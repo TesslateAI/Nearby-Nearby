@@ -558,7 +558,7 @@ export default function TrailLayout({ form, userRole, poiId }) {
                 ))}
               </SimpleGrid>
             </Checkbox.Group>
-            <FullAmenitiesBlock form={form} />
+            <FullAmenitiesBlock form={form} poiType={form.values.poi_type} />
             <ConnectivityRow form={form} />
           </Stack>
         </Accordion.Panel>

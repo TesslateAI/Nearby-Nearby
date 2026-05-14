@@ -14,7 +14,7 @@ import {
   PARKING_OPTIONS, PARKING_ADA_CHECKLIST, ARRIVAL_METHOD_OPTIONS,
   RESTROOM_ADA_CHECKLIST, PUBLIC_TOILET_OPTIONS,
   AMENITIES_GENERAL, AMENITIES_FAMILY_YOUTH, AMENITIES_WATER_BOATING, AMENITIES_DINING_SEATING,
-  WIFI_OPTIONS, CELL_SERVICE_OPTIONS,
+  AMENITIES_VISIBILITY, WIFI_OPTIONS, CELL_SERVICE_OPTIONS,
   PET_OPTIONS, PAYMENT_METHODS, DISCOUNT_TYPES,
 } from '../../../utils/constants';
 
@@ -385,20 +385,31 @@ export function AccessibleRestroomChecklist({ form }) {
 // -----------------------------------------------------------------------------
 // Grouped Amenities block (4 groups), used in Paid Business / Park / Trail / Event
 // -----------------------------------------------------------------------------
-export function FullAmenitiesBlock({ form }) {
+export function FullAmenitiesBlock({ form, poiType }) {
+  const isPT = ['PARK', 'TRAIL'].includes(poiType);
+  const isBE = ['BUSINESS', 'EVENT'].includes(poiType);
+
+  const filterItems = (items) => items.filter(item => {
+    const vis = AMENITIES_VISIBILITY[item];
+    if (!vis) return true;
+    if (vis === 'PT') return isPT;
+    if (vis === 'BE') return isBE;
+    return true;
+  });
+
   return (
     <Stack>
       <Title order={5}>Amenities</Title>
-      <MultiSelect label="General" searchable data={AMENITIES_GENERAL}
+      <MultiSelect label="General" searchable data={filterItems(AMENITIES_GENERAL)}
         value={form.values.amenities?.general || []}
         onChange={(v) => form.setFieldValue('amenities.general', v)} />
-      <MultiSelect label="Family / Youth" searchable data={AMENITIES_FAMILY_YOUTH}
+      <MultiSelect label="Family + Youth" searchable data={filterItems(AMENITIES_FAMILY_YOUTH)}
         value={form.values.amenities?.family_youth || []}
         onChange={(v) => form.setFieldValue('amenities.family_youth', v)} />
-      <MultiSelect label="Water / Boating" searchable data={AMENITIES_WATER_BOATING}
+      <MultiSelect label="Water + Boating" searchable data={filterItems(AMENITIES_WATER_BOATING)}
         value={form.values.amenities?.water_boating || []}
         onChange={(v) => form.setFieldValue('amenities.water_boating', v)} />
-      <MultiSelect label="Dining / Seating" searchable data={AMENITIES_DINING_SEATING}
+      <MultiSelect label="Dining, Seating + Gathering" searchable data={filterItems(AMENITIES_DINING_SEATING)}
         value={form.values.amenities?.dining_seating || []}
         onChange={(v) => form.setFieldValue('amenities.dining_seating', v)} />
     </Stack>
