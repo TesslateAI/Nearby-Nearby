@@ -17,7 +17,8 @@ export default function Footer() {
 
   const handleSubscribe = async (e) => {
     e.preventDefault();
-    const email = new FormData(e.currentTarget).get('email');
+    const form = e.currentTarget;
+    const email = new FormData(form).get('email');
     if (!email || typeof email !== 'string') return;
     setStatus({ state: 'submitting', message: '' });
     try {
@@ -28,7 +29,7 @@ export default function Footer() {
       });
       if (res.ok) {
         setStatus({ state: 'success', message: "Thanks! You're on the list." });
-        e.currentTarget.reset();
+        form.reset();
       } else {
         const body = await res.json().catch(() => ({}));
         setStatus({ state: 'error', message: body?.detail || 'Subscription failed. Please try again.' });
