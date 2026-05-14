@@ -35,7 +35,8 @@ import {
   TRAIL_ROUTE_TYPES, GRANDFATHERED_ROUTE_TYPES, TRAIL_LIGHTING_OPTIONS
 } from '../../../utils/outdoorConstants';
 import {
-  FeaturedImageUpload, GalleryPhotosUpload, ParkingPhotosUpload, shouldUseImageUpload
+  FeaturedImageUpload, GalleryPhotosUpload, ParkingPhotosUpload,
+  TrailHeadPhotoUpload, AccessPointPhotoUpload, shouldUseImageUpload
 } from '../ImageIntegration';
 import { addTitledLink, removeTitledLink, updateTitledLink } from '../../../utils/fieldHelpers';
 import { api } from '../../../utils/api';
@@ -94,7 +95,7 @@ export default function TrailLayout({ form, userRole, poiId }) {
 
   const accessPoints = Array.isArray(form.values.access_points) ? form.values.access_points : [];
   const addAP = () =>
-    form.setFieldValue('access_points', [...accessPoints, { name: '', type: 'access', latitude: null, longitude: null, what3words: '', notes: '' }]);
+    form.setFieldValue('access_points', [...accessPoints, { name: '', type: 'access', latitude: null, longitude: null, what3words: '', notes: '', photo_ids: [] }]);
   const removeAP = (i) =>
     form.setFieldValue('access_points', accessPoints.filter((_, idx) => idx !== i));
 
@@ -356,6 +357,18 @@ export default function TrailLayout({ form, userRole, poiId }) {
             />
             <ArrivalMethodsGroup form={form} />
 
+            {shouldUseImageUpload(poiId) ? (
+              <TrailHeadPhotoUpload poiId={poiId} form={form} />
+            ) : (
+              <Text size="sm" c="dimmed">Save POI first to enable trailhead photo upload</Text>
+            )}
+            <RichTextEditor
+              label={waterTrail ? 'Primary Put-In Notes' : 'Primary Trailhead Notes'}
+              placeholder="Access details, directions, hazards..."
+              value={form.values.trailhead_access_details || ''}
+              onChange={(html) => form.setFieldValue('trailhead_access_details', html)}
+            />
+
             <Divider my="md" label="Trail Markings + Symbols" />
             <SimpleGrid cols={{ base: 1, sm: 2 }}>
               <Checkbox
@@ -422,9 +435,17 @@ export default function TrailLayout({ form, userRole, poiId }) {
                 <TextInput label="what3words"
                   value={ap.what3words || ''}
                   onChange={(e) => form.setFieldValue(`access_points.${idx}.what3words`, e.currentTarget.value)} />
-                <Textarea label="Notes" autosize minRows={1}
+                {shouldUseImageUpload(poiId) ? (
+                  <AccessPointPhotoUpload poiId={poiId} apIndex={idx} apName={ap.name} waterTrail={waterTrail} />
+                ) : (
+                  <Text size="sm" c="dimmed">Save POI first to enable access point photo upload</Text>
+                )}
+                <RichTextEditor
+                  label={waterTrail ? 'Put-In / Take-Out Notes' : 'Access Point Notes'}
+                  placeholder="Directions, parking, hazards..."
                   value={ap.notes || ''}
-                  onChange={(e) => form.setFieldValue(`access_points.${idx}.notes`, e.currentTarget.value)} />
+                  onChange={(html) => form.setFieldValue(`access_points.${idx}.notes`, html)}
+                />
               </Stack>
             ))}
             <Button leftSection={<IconPlus size={14} />} variant="light" onClick={addAP}>

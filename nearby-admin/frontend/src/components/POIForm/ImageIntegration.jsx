@@ -140,6 +140,22 @@ export const TrailExitPhotoUpload = ({ poiId, form }) => {
   );
 };
 
+// Access Point Photos Upload (one per access point entry, indexed by apIndex)
+export const AccessPointPhotoUpload = ({ poiId, apIndex, apName, waterTrail }) => {
+  const fallback = waterTrail
+    ? `Put-In + Take-Out Point ${apIndex + 1} Photos`
+    : `Access Point ${apIndex + 1} Photos`;
+  return (
+    <ImageUploadField
+      poiId={poiId}
+      imageType="access_point"
+      context={`access_point_${apIndex + 1}`}
+      label={apName ? `${apName} Photos` : fallback}
+      description="Photos of this access point or entry location"
+    />
+  );
+};
+
 // Downloadable Maps Upload
 export const DownloadableMapsUpload = ({ poiId, form }) => {
   return (

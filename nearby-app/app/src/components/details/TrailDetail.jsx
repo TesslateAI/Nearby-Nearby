@@ -146,12 +146,14 @@ export default function TrailDetail({ poi }) {
     (coords || accessPoints.length > 0) && (
       <ContentGroup key="primary" title={labels.primary}>
         <div className="acc_content_text">
+          {poi.primary_trailhead_name && <h5>{poi.primary_trailhead_name}</h5>}
           {trail.mile_markers && <div><strong>Mile Markers:</strong> Yes</div>}
           {trail.trailhead_signage && <div><strong>Trailhead Signage:</strong> Yes</div>}
           {trail.audio_guide_available && <div><strong>Audio Guide:</strong> Yes</div>}
           {trail.qr_trail_guide && <div><strong>QR Trail Guide:</strong> Yes</div>}
           {trail.trail_lighting && <div><strong>Trail Lighting:</strong> {TRAIL_LIGHTING_LABELS[trail.trail_lighting] || trail.trail_lighting}</div>}
           {trail.trail_guide_notes && <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(trail.trail_guide_notes) }} />}
+          {poi.trailhead_access_details && <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(poi.trailhead_access_details) }} />}
         </div>
       </ContentGroup>
     ),
