@@ -226,18 +226,6 @@ export const FacilitiesSection = React.memo(function FacilitiesSection({
           value={form.values.mobility_access?.accessible_restroom || ''}
           onChange={(value) => form.setFieldValue('mobility_access.accessible_restroom', value)}
         />
-        <Select
-          label="Accessible Parking"
-          placeholder="Select..."
-          data={[
-            { value: 'dedicated_ada', label: 'Dedicated ADA Spots' },
-            { value: 'street_level', label: 'Street Level' },
-            { value: 'none', label: 'None' },
-            { value: 'unknown', label: 'Unknown' }
-          ]}
-          value={form.values.mobility_access?.accessible_parking || ''}
-          onChange={(value) => form.setFieldValue('mobility_access.accessible_parking', value)}
-        />
       </SimpleGrid>
 
       <CheckboxGroupSection
