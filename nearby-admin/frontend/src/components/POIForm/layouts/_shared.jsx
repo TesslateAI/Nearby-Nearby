@@ -390,17 +390,17 @@ export function FullAmenitiesBlock({ form }) {
     <Stack>
       <Title order={5}>Amenities</Title>
       <MultiSelect label="General" searchable data={AMENITIES_GENERAL}
-        value={form.values.amenities_general || []}
-        onChange={(v) => form.setFieldValue('amenities_general', v)} />
+        value={form.values.amenities?.general || []}
+        onChange={(v) => form.setFieldValue('amenities.general', v)} />
       <MultiSelect label="Family / Youth" searchable data={AMENITIES_FAMILY_YOUTH}
-        value={form.values.amenities_family_youth || []}
-        onChange={(v) => form.setFieldValue('amenities_family_youth', v)} />
+        value={form.values.amenities?.family_youth || []}
+        onChange={(v) => form.setFieldValue('amenities.family_youth', v)} />
       <MultiSelect label="Water / Boating" searchable data={AMENITIES_WATER_BOATING}
-        value={form.values.amenities_water_boating || []}
-        onChange={(v) => form.setFieldValue('amenities_water_boating', v)} />
+        value={form.values.amenities?.water_boating || []}
+        onChange={(v) => form.setFieldValue('amenities.water_boating', v)} />
       <MultiSelect label="Dining / Seating" searchable data={AMENITIES_DINING_SEATING}
-        value={form.values.amenities_dining_seating || []}
-        onChange={(v) => form.setFieldValue('amenities_dining_seating', v)} />
+        value={form.values.amenities?.dining_seating || []}
+        onChange={(v) => form.setFieldValue('amenities.dining_seating', v)} />
     </Stack>
   );
 }

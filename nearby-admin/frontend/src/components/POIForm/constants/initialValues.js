@@ -230,7 +230,7 @@ export const emptyInitialValues = {
   photos: { featured: null, gallery: [] },
   hours: {},
   holiday_hours: {},
-  amenities: {},
+  amenities: { wifi: null, general: [], family_youth: [], water_boating: [], dining_seating: [] },
   // Phase 1 — ideal_for is now grouped (was flat list); special_needs added in #43
   ideal_for: { atmosphere: [], age_group: [], social_settings: [], local_special: [], special_needs: [] },
   contact_info: {},
