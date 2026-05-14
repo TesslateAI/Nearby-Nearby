@@ -13,6 +13,24 @@ from geoalchemy2.types import Geography
 from shared.constants.field_options import EVENT_STATUS_EXPLANATION_REQUIRED
 from shared.utils.event_status import validate_status_transition
 
+_VALID_SPONSOR_TIERS = {'Tier 1', 'Tier 2', 'Tier 3', 'Tier 4', 'Tier 5'}
+
+
+def _validate_event_sponsor_tiers(event_data: dict) -> None:
+    sponsors = event_data.get('sponsors') or []
+    for idx, sponsor in enumerate(sponsors):
+        tier = sponsor.get('tier')
+        if not tier:
+            raise HTTPException(
+                status_code=422,
+                detail=f"Sponsor at position {idx + 1} is missing a required Tier value."
+            )
+        if tier not in _VALID_SPONSOR_TIERS:
+            raise HTTPException(
+                status_code=422,
+                detail=f"Sponsor at position {idx + 1} has invalid Tier '{tier}'. Must be one of: {sorted(_VALID_SPONSOR_TIERS)}."
+            )
+
 
 def compute_icon_booleans(poi: dict) -> dict:
     wifi_opts = poi.get('wifi_options') or []
@@ -364,6 +382,7 @@ def create_poi(db: Session, poi: schemas.PointOfInterestCreate):
     elif poi.poi_type == 'EVENT' and poi.event:
         event_data = poi.event.model_dump()
         event_data = sanitize_poi_fields({'event': event_data}).get('event', {})
+        _validate_event_sponsor_tiers(event_data)
         # Duplicate prevention: check same venue + date + name
         venue_id = event_data.get('venue_poi_id')
         start_dt = event_data.get('start_datetime')
@@ -488,6 +507,7 @@ def update_poi(db: Session, *, db_obj: models.PointOfInterest, obj_in: schemas.P
                     400,
                     f"status_explanation is required when setting event_status to '{new_status}'."
                 )
+        _validate_event_sponsor_tiers(event_data)
         if db_obj.event:
             for key, value in event_data.items():
                 setattr(db_obj.event, key, value)
