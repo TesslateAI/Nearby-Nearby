@@ -11,7 +11,7 @@ import HoursDisplay from '../common/HoursDisplay';
 import ServiceAnimalAlert from './ServiceAnimalAlert';
 import { getDisplayableLocation } from '../../utils/getDisplayableLocation';
 import { isPaidTier } from '../../utils/poiTier';
-import { isCurrentlyOpen, getNextOpenTime } from '../../utils/hoursUtils';
+import { getOpenCloseStatusLabel } from '../../utils/hoursUtils';
 import { sanitizeHtml } from '../../utils/sanitize';
 
 /* ------------------------------------------------------------------ */
@@ -346,7 +346,9 @@ export default function ParkDetail({ poi }) {
   const images = useMemo(() => getImages(poi), [poi]);
   const lat = poi?.front_door_latitude ?? coords?.lat;
   const lng = poi?.front_door_longitude ?? coords?.lng;
-  const openStatus = poi.hours ? isCurrentlyOpen(poi.hours, lat, lng) : null;
+  const { variant: statusVariant, label: statusLabel } = poi.hours
+    ? getOpenCloseStatusLabel(poi.hours, lat, lng)
+    : {};
 
   const handleDirections = () => openDirections(poi, coords);
   const handleCopyCoords = async () => {
@@ -383,14 +385,8 @@ export default function ParkDetail({ poi }) {
     <POIDetailLayout
       poi={poi}
       mainCategory={subtitle}
-      statusVariant={openStatus ? (openStatus.isOpen ? 'open' : 'closed') : undefined}
-      statusLabel={openStatus ? (openStatus.isOpen
-        ? (openStatus.status ? `Open Now – ${openStatus.status}` : 'Open Now')
-        : (() => {
-            const base = openStatus.status || 'Closed';
-            const nextOpen = getNextOpenTime(poi.hours, lat, lng);
-            return nextOpen ? `${base} · Opens ${nextOpen.day} at ${nextOpen.time}` : base;
-          })()) : undefined}
+      statusVariant={statusVariant}
+      statusLabel={statusLabel}
     >
       {({ images: imgs, openLightbox }) => (
         <>

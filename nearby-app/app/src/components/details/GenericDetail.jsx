@@ -10,13 +10,15 @@ import SEO from '../SEO';
 import { truncateText, getPOIUrl } from '../../utils/slugify';
 import { getDisplayableLocation } from '../../utils/getDisplayableLocation';
 import { isPaidTier } from '../../utils/poiTier';
-import { isCurrentlyOpen } from '../../utils/hoursUtils';
+import { getOpenCloseStatusLabel } from '../../utils/hoursUtils';
 import { sanitizeHtml } from '../../utils/sanitize';
 
 export default function GenericDetail({ poi }) {
   const paid = isPaidTier(poi);
   const displayLoc = getDisplayableLocation(poi);
-  const openStatus = poi.hours ? isCurrentlyOpen(poi.hours) : null;
+  const { variant: statusVariant, label: statusLabel } = poi.hours
+    ? getOpenCloseStatusLabel(poi.hours)
+    : {};
   const images = useMemo(() => getImages(poi), [poi]);
 
   const categoryFromPoiType = (() => {
@@ -110,8 +112,8 @@ export default function GenericDetail({ poi }) {
       <POIDetailLayout
         poi={poi}
         mainCategory={primaryCategory}
-        statusVariant={openStatus ? (openStatus.isOpen ? 'open' : 'closed') : undefined}
-        statusLabel={openStatus ? `${openStatus.isOpen ? 'Open Now' : 'Closed'}${openStatus.status ? ` – ${openStatus.status}` : ''}` : undefined}
+        statusVariant={statusVariant}
+        statusLabel={statusLabel}
       >
         {({ images: imgs, openLightbox }) => (
           <>

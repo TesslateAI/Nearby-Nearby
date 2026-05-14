@@ -1,6 +1,7 @@
 import { forwardRef } from 'react';
 import { getDisplayableLocation } from '../../utils/getDisplayableLocation';
 import { isPaidTier } from '../../utils/poiTier';
+import { getOpenCloseStatusLabel } from '../../utils/hoursUtils';
 import AmenityPillStrip from '../details/AmenityPillStrip';
 import './NearbyCard.css';
 
@@ -14,111 +15,34 @@ function formatDistance(meters) {
   return `${miles.toFixed(1)} mi`;
 }
 
-// Get hours for a specific day
-function getHoursForDay(hours, dayName) {
-  if (!hours || typeof hours !== 'object') return null;
-
-  // Check for hours.regular structure (new format)
-  if (hours.regular && typeof hours.regular === 'object') {
-    let todayHours = hours.regular[dayName] || hours.regular[dayName.charAt(0).toUpperCase() + dayName.slice(1)];
-
-    if (todayHours) {
-      if (todayHours.status === 'closed' || todayHours.status === 'Closed') {
-        return 'Closed';
-      }
-
-      if (todayHours.status === 'open' && todayHours.periods && todayHours.periods.length > 0) {
-        const firstPeriod = todayHours.periods[0];
-        if (firstPeriod.open?.time && firstPeriod.close?.time) {
-          const openTime = formatTime(firstPeriod.open.time);
-          const closeTime = formatTime(firstPeriod.close.time);
-          return `${openTime} - ${closeTime}`;
-        }
-      }
-    }
-  }
-
-  // Fallback to old direct format
-  let todayHours = hours[dayName] || hours[dayName.charAt(0).toUpperCase() + dayName.slice(1)];
-  if (todayHours === 'Closed' || todayHours === 'closed') return 'Closed';
-  if (typeof todayHours === 'string') return todayHours;
-
-  return null;
-}
-
-// Build the template-style hours line: "Open now - Until 9:00 PM" / "Closed - Opens 8:00 AM" / "Closed today"
-// When `selectedDate` is set, we don't try to compute "now" — just show the day's hours.
-function getStatusLine(hours, selectedDate) {
-  if (!hours || typeof hours !== 'object') return null;
-  const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-  const refDate = selectedDate ? new Date(selectedDate + 'T12:00:00') : new Date();
-  const dayName = days[refDate.getDay()];
-  const reg = hours.regular && typeof hours.regular === 'object' ? hours.regular : null;
-  if (!reg) return getHoursForDay(hours, dayName);
-
-  const today = reg[dayName] || reg[dayName.charAt(0).toUpperCase() + dayName.slice(1)];
-  if (!today) return null;
-  if (today.status === 'closed' || today.status === 'Closed') return 'Closed today';
-
-  const periods = Array.isArray(today.periods) ? today.periods : [];
-  if (today.status !== 'open' || periods.length === 0) return null;
-
-  // For a future date, just show the first period range — "now" doesn't apply.
-  if (selectedDate) {
-    const p = periods[0];
-    if (p.open?.time && p.close?.time) return `${formatTime(p.open.time)} - ${formatTime(p.close.time)}`;
-    return null;
-  }
-
-  const now = new Date();
-  const nowMins = now.getHours() * 60 + now.getMinutes();
-  const toMins = (t) => {
-    if (!t) return null;
-    const [h, m] = t.split(':').map(Number);
-    return h * 60 + (m || 0);
-  };
-
-  for (const p of periods) {
-    const openM = toMins(p.open?.time);
-    const closeM = toMins(p.close?.time);
-    if (openM == null || closeM == null) continue;
-    if (nowMins >= openM && nowMins < closeM) {
-      return `Open now - Until ${formatTime(p.close.time)}`;
-    }
-  }
-  // Not open right now — surface next open slot today, otherwise generic "Closed".
-  for (const p of periods) {
-    const openM = toMins(p.open?.time);
-    if (openM != null && nowMins < openM) {
-      return `Closed - Opens ${formatTime(p.open.time)}`;
-    }
-  }
-  return 'Closed';
-}
-
-// Format 24h time to 12h
-function formatTime(time24) {
+// Format 24h "HH:MM" to compact 12h "9am" / "5:30pm"
+function fmt12(time24) {
   if (!time24) return '';
-  const [hourStr, minStr] = time24.split(':');
-  let hour = parseInt(hourStr);
-  const period = hour >= 12 ? 'PM' : 'AM';
-  if (hour > 12) hour -= 12;
-  if (hour === 0) hour = 12;
-  return `${hour}:${minStr} ${period}`;
+  const [h, m] = time24.split(':').map(Number);
+  const period = h >= 12 ? 'pm' : 'am';
+  const hr = h === 0 ? 12 : h > 12 ? h - 12 : h;
+  return m === 0 ? `${hr}${period}` : `${hr}:${String(m).padStart(2, '0')}${period}`;
 }
 
-// Get current day name
-function getCurrentDayName() {
+// For a specific future date, return { variant, label } showing that day's hours range.
+// For the current-time case, use getOpenCloseStatusLabel instead.
+function getStatusForSelectedDate(hours, selectedDate) {
+  if (!hours || !selectedDate) return null;
   const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-  return days[new Date().getDay()];
-}
-
-// Get day name from date string
-function getDayNameFromDate(dateStr) {
-  if (!dateStr) return getCurrentDayName();
-  const date = new Date(dateStr + 'T12:00:00');
-  const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-  return days[date.getDay()];
+  const dayName = days[new Date(selectedDate + 'T12:00:00').getDay()];
+  const reg = hours.regular;
+  if (!reg) return null;
+  const day = reg[dayName];
+  if (!day) return null;
+  if (day.status === 'closed') return { variant: 'closed', label: 'Closed today' };
+  if (day.status === '24hours') return { variant: 'open', label: 'Open 24 Hours' };
+  if (day.status === 'open' && Array.isArray(day.periods) && day.periods.length > 0) {
+    const p = day.periods[0];
+    if (p.open?.time && p.close?.time) {
+      return { variant: 'open', label: `${fmt12(p.open.time)} – ${fmt12(p.close.time)}` };
+    }
+  }
+  return null;
 }
 
 // Amenity icon components — nn-templates custom filled SVGs
@@ -198,8 +122,14 @@ const NearbyCard = forwardRef(function NearbyCard({ poi, index, totalCount = 0, 
   // Get distance display
   const distance = formatDistance(poi.distance_meters);
 
-  // Status line — "Open now - Until 9:00 PM" / "Closed today" / etc. Events use their own date row.
-  const statusLine = !isEvent ? getStatusLine(poi.hours, selectedDate) : null;
+  // Status info — "Open · Closes at 8pm" / "Closed · Opens Tuesday at 9am". Events use their own date row.
+  const lat = poi.front_door_latitude ?? null;
+  const lng = poi.front_door_longitude ?? null;
+  const statusInfo = !isEvent && poi.hours
+    ? (selectedDate
+        ? getStatusForSelectedDate(poi.hours, selectedDate)
+        : getOpenCloseStatusLabel(poi.hours, lat, lng))
+    : null;
 
   // City, ST line ("Pittsboro, NC")
   const city = poi.address_city;
@@ -326,13 +256,13 @@ const NearbyCard = forwardRef(function NearbyCard({ poi, index, totalCount = 0, 
           <span className="nearby-card__status-badge nearby-card__status-badge--past">Past</span>
         )}
 
-        {/* Hours status line — "Open now - Until 9:00 PM" */}
-        {statusLine && (
+        {/* Hours status line — "Open · Closes at 8pm" / "Closed · Opens Tuesday at 9am" */}
+        {statusInfo?.label && (
           <div className="nearby-card__hours">
-            {statusLine.startsWith('Open') ? (
-              <span className="nearby-card__hours--open">{statusLine}</span>
+            {statusInfo.variant === 'open' ? (
+              <span className="nearby-card__hours--open">{statusInfo.label}</span>
             ) : (
-              <span className="nearby-card__hours--closed">{statusLine}</span>
+              <span className="nearby-card__hours--closed">{statusInfo.label}</span>
             )}
           </div>
         )}

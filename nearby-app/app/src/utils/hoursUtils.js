@@ -813,6 +813,45 @@ export function formatGroupedHours(group) {
   return { days: `${firstDay} - ${lastDay}`, hours: group.hours };
 }
 
+// Reformat formatTime() output ("8:00 PM", "Dawn") to compact lowercase ("8pm", "dawn")
+function reformatTimeTo12h(formatted) {
+  if (!formatted) return '';
+  const match = formatted.match(/^(\d+):(\d+)\s*(AM|PM)$/i);
+  if (!match) return formatted.toLowerCase();
+  const h = parseInt(match[1]);
+  const m = parseInt(match[2]);
+  const period = match[3].toLowerCase();
+  return m === 0 ? `${h}${period}` : `${h}:${String(m).padStart(2, '0')}${period}`;
+}
+
+/**
+ * Build the canonical open/closed status label for detail pages and cards.
+ * Returns { variant: 'open' | 'closed', label: string } or { variant: undefined, label: undefined }.
+ *
+ * Examples:
+ *   { variant: 'open',   label: 'Open · Closes at 8pm' }
+ *   { variant: 'closed', label: 'Closed · Opens at 5pm' }
+ *   { variant: 'closed', label: 'Closed · Opens Tuesday at 9am' }
+ */
+export function getOpenCloseStatusLabel(hoursData, lat = null, lng = null) {
+  if (!hoursData) return { variant: undefined, label: undefined };
+  const openStatus = isCurrentlyOpen(hoursData, lat, lng);
+  if (!openStatus || openStatus.status === 'Hours not set') return { variant: undefined, label: undefined };
+  if (openStatus.isOpen) {
+    if (openStatus.status === 'Open 24 Hours') return { variant: 'open', label: 'Open 24 Hours' };
+    if (openStatus.status === 'By Appointment Only') return { variant: 'open', label: 'By Appointment Only' };
+    const untilMatch = (openStatus.status || '').match(/^Open until (.+)/i);
+    if (untilMatch) return { variant: 'open', label: `Open · Closes at ${reformatTimeTo12h(untilMatch[1])}` };
+    return { variant: 'open', label: 'Open' };
+  }
+  if (openStatus.status === 'By Appointment Only') return { variant: 'closed', label: 'By Appointment Only' };
+  const nextOpen = getNextOpenTime(hoursData, lat, lng);
+  if (!nextOpen) return { variant: 'closed', label: 'Closed' };
+  const { day, time } = nextOpen;
+  if (day === 'Today') return { variant: 'closed', label: `Closed · Opens at ${time}` };
+  return { variant: 'closed', label: `Closed · Opens ${day} at ${time}` };
+}
+
 /**
  * When a POI is currently closed, find the next time it opens.
  * Returns { day, time } e.g. { day: 'Today', time: '5pm' }
@@ -860,6 +899,7 @@ export default {
   getWeekHours,
   isCurrentlyOpen,
   getNextOpenTime,
+  getOpenCloseStatusLabel,
   groupHours,
   formatGroupedHours,
   getUpcomingHolidays,

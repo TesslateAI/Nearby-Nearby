@@ -9,7 +9,7 @@ import {
 } from './shared';
 import HoursDisplay from '../common/HoursDisplay';
 import ServiceAnimalAlert from './ServiceAnimalAlert';
-import { isCurrentlyOpen, getNextOpenTime } from '../../utils/hoursUtils';
+import { getOpenCloseStatusLabel } from '../../utils/hoursUtils';
 import { getDisplayableLocation } from '../../utils/getDisplayableLocation';
 import { isPaidTier } from '../../utils/poiTier';
 import { sanitizeHtml } from '../../utils/sanitize';
@@ -72,16 +72,9 @@ export default function TrailDetail({ poi }) {
   if (trail.difficulty) subtitleParts.push(cap(trail.difficulty));
   const subtitleText = subtitleParts.join(', ');
 
-  const openStatus = poi.hours ? isCurrentlyOpen(poi.hours, coords?.lat, coords?.lng) : null;
-  const statusLabel = openStatus?.isOpen
-    ? (openStatus.status ? `Open Now – ${openStatus.status}` : 'Fully Open')
-    : openStatus
-      ? (() => {
-          const base = openStatus.status || 'Closed';
-          const nextOpen = getNextOpenTime(poi.hours, coords?.lat, coords?.lng);
-          return nextOpen ? `${base} · Opens ${nextOpen.day} at ${nextOpen.time}` : base;
-        })()
-      : (poi.status || 'Open');
+  const { variant: statusVariant, label: statusLabel } = poi.hours
+    ? getOpenCloseStatusLabel(poi.hours, coords?.lat, coords?.lng)
+    : {};
 
   const relList = poi.poi_relationships || poi.relationships || [];
   const trailInParkRel = Array.isArray(relList) ? relList.find((r) => (r.relationship_type || r.type) === 'trail_in_park') : null;
@@ -236,7 +229,7 @@ export default function TrailDetail({ poi }) {
     <POIDetailLayout
       poi={poi}
       mainCategory={subtitleText}
-      statusVariant={statusLabel && /open/i.test(statusLabel) ? 'open' : (statusLabel ? 'closed' : undefined)}
+      statusVariant={statusVariant}
       statusLabel={statusLabel}
     >
       {({ images: imgs, openLightbox }) => (

@@ -11,7 +11,7 @@ import ServiceAnimalAlert from './ServiceAnimalAlert';
 import { SvgDirections, SvgLatLong } from './PoiHeader';
 import { LocalBusinessJsonLd } from '../seo/index';
 
-import { isCurrentlyOpen, getNextOpenTime } from '../../utils/hoursUtils';
+import { getOpenCloseStatusLabel } from '../../utils/hoursUtils';
 import { getDisplayableLocation } from '../../utils/getDisplayableLocation';
 import { isPaidTier } from '../../utils/poiTier';
 import { copyToClipboard, getCoordinates, openDirections } from './shared/poiDetailUtils';
@@ -43,7 +43,9 @@ export default function BusinessDetail({ poi }) {
   const coords = getCoordinates(poi, hideExact);
   const lat = poi?.front_door_latitude ?? coords?.[0];
   const lng = poi?.front_door_longitude ?? coords?.[1];
-  const openStatus = poi?.hours ? isCurrentlyOpen(poi.hours, lat, lng) : null;
+  const { variant: statusVariant, label: statusLabel } = poi?.hours
+    ? getOpenCloseStatusLabel(poi.hours, lat, lng)
+    : {};
   const images = useMemo(() => getImages(poi), [poi]);
 
   const primaryCategory = poi?.categories?.[0]?.name || poi?.business?.primary_category || '';
@@ -242,22 +244,11 @@ export default function BusinessDetail({ poi }) {
   ];
   const sections = (paid ? PAID_SECTIONS : FREE_SECTIONS).filter((s) => s.col1.length > 0 || s.col2.length > 0);
 
-  const statusOpen = openStatus?.isOpen;
-  const statusVariant = statusOpen ? 'open' : (openStatus?.status && /opens? at/i.test(openStatus.status) ? 'opensoon' : 'closed');
-  const statusLabel = openStatus
-    ? (() => {
-        if (statusOpen) return `Open Now${openStatus.status ? ` – ${openStatus.status}` : ''}`;
-        const base = openStatus.status || 'Closed';
-        const nextOpen = getNextOpenTime(poi.hours, lat, lng);
-        return nextOpen ? `${base} · Opens ${nextOpen.day} at ${nextOpen.time}` : base;
-      })()
-    : null;
-
   return (
     <POIDetailLayout
       poi={poi}
       mainCategory={primaryCategory}
-      statusVariant={openStatus ? statusVariant : undefined}
+      statusVariant={statusVariant}
       statusLabel={statusLabel}
       seoComponent={<LocalBusinessJsonLd poi={poi} />}
     >
