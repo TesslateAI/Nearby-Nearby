@@ -520,32 +520,16 @@ const HoursSelector = memo(({ value = {}, onChange, poiType,
 
         <Tabs.Panel value="regular" pt="md">
           <Stack>
-            <Alert color="blue" variant="light">
-              Set your standard operating hours. You can add multiple time periods per day for breaks.
-            </Alert>
-            
-            {DAYS_OF_WEEK.map(day => (
-              <DayHours
-                key={day.value}
-                day={day}
-                hours={hours.regular[day.value]}
-                onChange={(dayHours) => updateHours({
-                  regular: { ...hours.regular, [day.value]: dayHours }
-                })}
-                onCopy={() => handleCopyHours(day.value)}
-              />
-            ))}
-
-            <Group>
+            <Group wrap="wrap">
               <Button
                 size="sm"
                 variant="light"
                 onClick={() => {
                   const defaultHours = {
                     status: 'open',
-                    periods: [{ 
-                      open: { type: 'fixed', time: '09:00' }, 
-                      close: { type: 'fixed', time: '17:00' } 
+                    periods: [{
+                      open: { type: 'fixed', time: '09:00' },
+                      close: { type: 'fixed', time: '17:00' }
                     }]
                   };
                   const weekdays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
@@ -558,7 +542,7 @@ const HoursSelector = memo(({ value = {}, onChange, poiType,
               >
                 Set Mon-Fri: 9am-5pm
               </Button>
-              
+
               <Button
                 size="sm"
                 variant="light"
@@ -594,7 +578,33 @@ const HoursSelector = memo(({ value = {}, onChange, poiType,
               >
                 By Appointment Only
               </Button>
+
+              <Button
+                size="sm"
+                variant="light"
+                color="teal"
+                leftSection={<IconCalendar size={14} />}
+                onClick={() => setActiveTab('seasonal')}
+              >
+                Set Seasonal Hours
+              </Button>
             </Group>
+
+            <Alert color="blue" variant="light">
+              Set your standard operating hours. You can add multiple time periods per day for breaks.
+            </Alert>
+
+            {DAYS_OF_WEEK.map(day => (
+              <DayHours
+                key={day.value}
+                day={day}
+                hours={hours.regular[day.value]}
+                onChange={(dayHours) => updateHours({
+                  regular: { ...hours.regular, [day.value]: dayHours }
+                })}
+                onCopy={() => handleCopyHours(day.value)}
+              />
+            ))}
 
             {onAppointmentRequiredChange && (
               <>
