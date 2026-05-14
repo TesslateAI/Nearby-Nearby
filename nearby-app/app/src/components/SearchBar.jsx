@@ -27,6 +27,13 @@ const SearchBar = forwardRef(function SearchBar({
   useImperativeHandle(ref, () => ({
     getQuery: () => searchQuery,
     focus: () => inputRef.current?.focus(),
+    closeDropdown: () => {
+      setShowDropdown(false);
+      setSearchResults([]);
+      setSelectedIndex(-1);
+      // intentionally preserves searchQuery — it persists via URL to Explore
+    },
+    // backward-compat alias
     clearDropdown: () => setShowDropdown(false),
   }));
 
