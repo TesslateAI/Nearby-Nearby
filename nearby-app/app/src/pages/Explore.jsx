@@ -40,7 +40,7 @@ const DATE_PRESETS = [
   { value: 'weekend',  label: 'This Weekend' },
 ];
 
-const USER_LOCATION = { lat: 35.7198, lng: -79.1772 };
+const USER_LOCATION = { lat: 35.72028984062034, lng: -79.17718140354249 };
 
 /* ------------------------------------------------------------------ */
 /* Helpers                                                            */
@@ -302,6 +302,7 @@ export default function Explore() {
   const [customDate, setCustomDate] = useState('');
   // Set of event POI ids that match the active date filter (null = filter inactive / not yet loaded).
   const [dateMatchedEventIds, setDateMatchedEventIds] = useState(null);
+  const [highlightedId, setHighlightedId] = useState(null);
 
   const radiusRef = useRef(null);
   const dateRef   = useRef(null);
@@ -465,6 +466,12 @@ export default function Explore() {
   const mapOthers  = mapCurrent
     ? filteredResults.filter((p) => p !== mapCurrent && p?.location?.coordinates)
     : [];
+
+  const handleMarkerClick = useCallback((poiId) => {
+    setHighlightedId(poiId);
+    const el = document.getElementById(`explore-card-${poiId}`);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }, []);
 
   /* render --------------------------------------------------------- */
   return (
@@ -653,12 +660,23 @@ export default function Explore() {
         <div id="map_results_layout_1">
           <div className="map_results_layout_1_left_col">
             {filteredResults.map((poi, idx) => (
-              <ResultCard key={poi.id} poi={poi} index={idx} />
+              <div
+                key={poi.id}
+                id={`explore-card-${poi.id}`}
+                className={highlightedId === poi.id ? 'explore-card-highlighted' : undefined}
+              >
+                <ResultCard poi={poi} index={idx} />
+              </div>
             ))}
           </div>
           <div className="map_results_layout_1_right_col">
             {mapCurrent ? (
-              <Map currentPOI={mapCurrent} nearbyPOIs={mapOthers} />
+              <Map
+                currentPOI={mapCurrent}
+                nearbyPOIs={mapOthers}
+                highlightedId={highlightedId}
+                onMarkerClick={handleMarkerClick}
+              />
             ) : (
               <div className="explore__map-empty">
                 <MapPin size={32} aria-hidden="true" />

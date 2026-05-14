@@ -41,7 +41,9 @@ export default function BusinessDetail({ poi }) {
   const displayLoc = getDisplayableLocation(poi);
   const hideExact = displayLoc.hideExact;
   const coords = getCoordinates(poi, hideExact);
-  const openStatus = poi?.hours ? isCurrentlyOpen(poi.hours) : null;
+  const lat = poi?.front_door_latitude ?? coords?.[0];
+  const lng = poi?.front_door_longitude ?? coords?.[1];
+  const openStatus = poi?.hours ? isCurrentlyOpen(poi.hours, lat, lng) : null;
   const images = useMemo(() => getImages(poi), [poi]);
 
   const primaryCategory = poi?.categories?.[0]?.name || poi?.business?.primary_category || '';

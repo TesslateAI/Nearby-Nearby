@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -50,7 +50,20 @@ const createNumberedIcon = (number, isHighlighted = false) => {
   });
 };
 
-// Component to auto-fit bounds so all markers are visible
+// Disables scroll wheel zoom until the user clicks the map
+function ScrollWheelActivator({ active }) {
+  const map = useMap();
+  useEffect(() => {
+    if (active) {
+      map.scrollWheelZoom.enable();
+    } else {
+      map.scrollWheelZoom.disable();
+    }
+  }, [active, map]);
+  return null;
+}
+
+// Component to auto-fit bounds with radius-based zoom
 function AutoFitBounds({ bounds, radiusMiles }) {
   const map = useMap();
 
@@ -83,6 +96,12 @@ function AutoFitBounds({ bounds, radiusMiles }) {
 }
 
 function Map({ currentPOI, nearbyPOIs = [], radiusMiles, onMarkerClick, highlightedId }) {
+  const [scrollActive, setScrollActive] = useState(false);
+  const handleMapClick = useCallback(() => {
+    if (!scrollActive) setScrollActive(true);
+  }, [scrollActive]);
+
+
   if (!currentPOI || !currentPOI.location) {
     return (
       <div className="map-placeholder">
@@ -118,16 +137,20 @@ function Map({ currentPOI, nearbyPOIs = [], radiusMiles, onMarkerClick, highligh
   }
 
   return (
-    <div className="map-container">
+    <div className="map-container" onClick={handleMapClick}>
+      {!scrollActive && (
+        <div className="map-scroll-hint">Click map to enable scroll zoom</div>
+      )}
       <MapContainer
         key={`${currentPOI?.id}-${nearbyPOIs.length}-${nearbyPOIs[nearbyPOIs.length - 1]?.id || ''}`}
         center={currentCoords}
         zoom={14}
         className="leaflet-map"
-        scrollWheelZoom={true}
-        maxZoom={20} // Allow much closer zoom
+        scrollWheelZoom={false}
+        maxZoom={20}
         minZoom={10}
       >
+        <ScrollWheelActivator active={scrollActive} />
         {/* Carto Voyager - MapQuest-like warm colors */}
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'

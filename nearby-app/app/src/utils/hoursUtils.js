@@ -7,6 +7,44 @@
  * 4. Regular hours (fallback)
  */
 
+// Approximate sunrise/sunset using the NOAA simplified algorithm
+function getSunTimes(date, lat, lng) {
+  const rad = Math.PI / 180;
+  const dayOfYear = Math.floor((date - new Date(date.getFullYear(), 0, 1)) / 86400000) + 1;
+  const declination = 23.45 * Math.sin(rad * (360 / 365) * (dayOfYear - 81));
+  const cosHourAngle = -Math.tan(lat * rad) * Math.tan(declination * rad);
+  if (cosHourAngle < -1) return { sunrise: 0, sunset: 24 };   // polar day
+  if (cosHourAngle > 1)  return { sunrise: 12, sunset: 12 };  // polar night
+  const hourAngle = Math.acos(cosHourAngle) / rad;
+  const tzOffset = -date.getTimezoneOffset() / 60;
+  const lngHour = lng / 15;
+  return {
+    sunrise: 12 - hourAngle / 15 + tzOffset - lngHour,
+    sunset:  12 + hourAngle / 15 + tzOffset - lngHour,
+  };
+}
+
+function decimalHoursToHHMM(h) {
+  const hours = Math.floor(((h % 24) + 24) % 24);
+  const minutes = Math.floor(((h % 1) + 1) % 1 * 60);
+  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+}
+
+// Resolve a period time object to an HH:MM string, handling dawn/dusk types
+function resolvePeriodTime(timeObj, date, lat, lng) {
+  if (!timeObj) return null;
+  if (timeObj.type === 'fixed') return timeObj.time || null;
+  if (timeObj.type === 'dawn' || timeObj.type === 'dusk') {
+    if (lat != null && lng != null) {
+      const { sunrise, sunset } = getSunTimes(date, lat, lng);
+      return decimalHoursToHHMM(timeObj.type === 'dawn' ? sunrise : sunset);
+    }
+    // No coordinates — use generous fallback
+    return timeObj.type === 'dawn' ? '06:00' : '20:00';
+  }
+  return null;
+}
+
 const DAYS_SHORT = {
   monday: 'Mon',
   tuesday: 'Tue',
@@ -632,7 +670,7 @@ export function getWeekHours(hoursData, startDate = new Date()) {
 /**
  * Check if currently open based on all override rules
  */
-export function isCurrentlyOpen(hoursData) {
+export function isCurrentlyOpen(hoursData, lat = null, lng = null) {
   if (!hoursData) return { isOpen: false, status: 'unknown' };
 
   const now = new Date();
@@ -673,10 +711,10 @@ export function isCurrentlyOpen(hoursData) {
 
   if (hours.status === 'open' && hours.periods) {
     for (const period of hours.periods) {
-      if (period.open?.type === 'fixed' && period.close?.type === 'fixed') {
-        const openTime = period.open.time;
-        const closeTime = period.close.time;
+      const openTime = resolvePeriodTime(period.open, now, lat, lng);
+      const closeTime = resolvePeriodTime(period.close, now, lat, lng);
 
+      if (openTime && closeTime) {
         // Handle times that cross midnight
         if (closeTime < openTime) {
           if (currentTime >= openTime || currentTime < closeTime) {
@@ -702,7 +740,8 @@ export function isCurrentlyOpen(hoursData) {
 
     // Check if we're before opening
     const firstPeriod = hours.periods[0];
-    if (firstPeriod?.open?.type === 'fixed' && currentTime < firstPeriod.open.time) {
+    const firstOpenTime = resolvePeriodTime(firstPeriod?.open, now, lat, lng);
+    if (firstOpenTime && currentTime < firstOpenTime) {
       return {
         isOpen: false,
         status: `Opens at ${formatTime(firstPeriod.open)}`,
