@@ -4,9 +4,10 @@ import { MapPin, Navigation, Copy, Check, ExternalLink } from 'lucide-react';
 import {
   AccSection, ContentGroup, ChipList, QuickInfoRow, InfoPair,
   POIDetailLayout, QuickInfoPhotosBox, AmenitiesBox,
-  hasVal, asArray, copyToClipboard, getCoordinates, openDirections, getImages,
+  hasVal, asArray, copyToClipboard, getCoordinates, getImages,
   isYes,
 } from './shared';
+import DirectionsModal from '../common/DirectionsModal';
 import HoursDisplay from '../common/HoursDisplay';
 import ServiceAnimalAlert from './ServiceAnimalAlert';
 import { getDisplayableLocation } from '../../utils/getDisplayableLocation';
@@ -339,6 +340,7 @@ function buildSections(poi, helpers) {
 export default function ParkDetail({ poi }) {
   const [copiedCoords, setCopiedCoords] = useState(false);
   const [copiedAddress, setCopiedAddress] = useState(false);
+  const [directionsOpen, setDirectionsOpen] = useState(false);
 
   const displayLoc = getDisplayableLocation(poi);
   const paid = isPaidTier(poi);
@@ -350,7 +352,7 @@ export default function ParkDetail({ poi }) {
     ? getOpenCloseStatusLabel(poi.hours, lat, lng)
     : {};
 
-  const handleDirections = () => openDirections(poi, coords);
+  const handleDirections = () => setDirectionsOpen(true);
   const handleCopyCoords = async () => {
     if (!coords) return;
     if (await copyToClipboard(`${coords.lat}, ${coords.lng}`)) {
@@ -382,48 +384,52 @@ export default function ParkDetail({ poi }) {
   });
 
   return (
-    <POIDetailLayout
-      poi={poi}
-      mainCategory={subtitle}
-      statusVariant={statusVariant}
-      statusLabel={statusLabel}
-    >
-      {({ images: imgs, openLightbox }) => (
-        <>
-          <QuickInfoPhotosBox
-            title={poi.description_short}
-            quickInfoRows={
-              <>
-                <QuickInfoRow title="Best For:" value={idealForLocal} />
-                <QuickInfoRow title="Cost:" value={costValue} />
-                <QuickInfoRow title="At-A-Glance:" value={poi.description_short} />
-                <QuickInfoRow title="Pets:" value={petSummary} />
-              </>
-            }
-            images={imgs}
-            onOpenLightbox={openLightbox}
-          />
+    <>
+      <POIDetailLayout
+        poi={poi}
+        mainCategory={subtitle}
+        statusVariant={statusVariant}
+        statusLabel={statusLabel}
+      >
+        {({ images: imgs, openLightbox }) => (
+          <>
+            <QuickInfoPhotosBox
+              title={poi.description_short}
+              quickInfoRows={
+                <>
+                  <QuickInfoRow title="Best For:" value={idealForLocal} />
+                  <QuickInfoRow title="Cost:" value={costValue} />
+                  <QuickInfoRow title="At-A-Glance:" value={poi.description_short} />
+                  <QuickInfoRow title="Pets:" value={petSummary} />
+                </>
+              }
+              images={imgs}
+              onOpenLightbox={openLightbox}
+            />
 
-          <AmenitiesBox poi={poi} />
+            <AmenitiesBox poi={poi} />
 
-          {thingsToDo.length > 0 && (
-            <div id="poi_things_to_do_box" className="box_style_1">
-              <div className="poi_quick_info_title">Things To Do</div>
-              <div className="poi_amenities_list">
-                {thingsToDo.map((item, i) => <span className="aaa" key={`${item}-${i}`}>{item}</span>)}
+            {thingsToDo.length > 0 && (
+              <div id="poi_things_to_do_box" className="box_style_1">
+                <div className="poi_quick_info_title">Things To Do</div>
+                <div className="poi_amenities_list">
+                  {thingsToDo.map((item, i) => <span className="aaa" key={`${item}-${i}`}>{item}</span>)}
+                </div>
+              </div>
+            )}
+
+            <div id="accordion_1_box" className="poi_accordion_box">
+              <div id="accordion_1_parent" className="poi_accordion_parent">
+                {sections.map((s) => (
+                  <AccSection key={s.id} id={s.id} title={s.title} defaultOpen={!!s.defaultOpen} col1={s.col1} col2={s.col2} />
+                ))}
               </div>
             </div>
-          )}
+          </>
+        )}
+      </POIDetailLayout>
 
-          <div id="accordion_1_box" className="poi_accordion_box">
-            <div id="accordion_1_parent" className="poi_accordion_parent">
-              {sections.map((s) => (
-                <AccSection key={s.id} id={s.id} title={s.title} defaultOpen={!!s.defaultOpen} col1={s.col1} col2={s.col2} />
-              ))}
-            </div>
-          </div>
-        </>
-      )}
-    </POIDetailLayout>
+      {directionsOpen && <DirectionsModal poi={poi} onClose={() => setDirectionsOpen(false)} />}
+    </>
   );
 }

@@ -7,6 +7,7 @@ import {
   POIDetailLayout, QuickInfoPhotosBox, AmenitiesBox,
   hasVal, asArray, copyToClipboard, getImages,
 } from './shared';
+import DirectionsModal from '../common/DirectionsModal';
 import HoursDisplay from '../common/HoursDisplay';
 import ServiceAnimalAlert from './ServiceAnimalAlert';
 import { getOpenCloseStatusLabel } from '../../utils/hoursUtils';
@@ -31,6 +32,7 @@ const cap = (s) => (typeof s === 'string' && s.length > 0 ? s[0].toUpperCase() +
 export default function TrailDetail({ poi }) {
   const [copiedCoords, setCopiedCoords] = useState(false);
   const [copiedAddress, setCopiedAddress] = useState(false);
+  const [directionsOpen, setDirectionsOpen] = useState(false);
 
   const displayLoc = getDisplayableLocation(poi);
   const trail = poi?.trail || {};
@@ -48,13 +50,6 @@ export default function TrailDetail({ poi }) {
   };
   const coords = getCoords();
 
-  const handleDirections = () => {
-    if (coords) window.open(`https://www.google.com/maps/dir/?api=1&destination=${coords.lat},${coords.lng}`, '_blank');
-    else if (poi.address_street) {
-      const addr = encodeURIComponent([poi.address_street, poi.address_city, poi.address_state, poi.address_zip].filter(Boolean).join(', '));
-      window.open(`https://www.google.com/maps/dir/?api=1&destination=${addr}`, '_blank');
-    }
-  };
   const handleCopyCoords = async () => {
     if (!coords) return;
     if (await copyToClipboard(`${coords.lat}, ${coords.lng}`)) { setCopiedCoords(true); setTimeout(() => setCopiedCoords(false), 2000); }
@@ -118,7 +113,7 @@ export default function TrailDetail({ poi }) {
       </div>
       {!displayLoc.hideExact && (
         <div className="pd-addr__actions">
-          <button type="button" className="btn_reset button btn_outline_teal btn_poi_button_1" onClick={handleDirections}>
+          <button type="button" className="btn_reset button btn_outline_teal btn_poi_button_1" onClick={() => setDirectionsOpen(true)}>
             <Navigation size={14} /> <span className="poi_button_title">Get Directions</span>
           </button>
           {hasVal(poi.address_street) && (
@@ -226,39 +221,43 @@ export default function TrailDetail({ poi }) {
   ].filter(Boolean);
 
   return (
-    <POIDetailLayout
-      poi={poi}
-      mainCategory={subtitleText}
-      statusVariant={statusVariant}
-      statusLabel={statusLabel}
-    >
-      {({ images: imgs, openLightbox }) => (
-        <>
-          <QuickInfoPhotosBox
-            title={poi.description_short}
-            quickInfoRows={
-              <>
-                <QuickInfoRow title="Trail:" value={subtitleText} />
-                <QuickInfoRow title="Cost:" value={trail.cost} />
-                <QuickInfoRow title="Pets:" value={Array.isArray(poi.pet_options) && poi.pet_options.length > 0 ? poi.pet_options.join(', ') : null} />
-                <QuickInfoRow title="Parking:" value={Array.isArray(poi.parking_types) && poi.parking_types.length > 0 ? poi.parking_types.join(', ') : null} />
-              </>
-            }
-            images={imgs}
-            onOpenLightbox={openLightbox}
-          />
+    <>
+      <POIDetailLayout
+        poi={poi}
+        mainCategory={subtitleText}
+        statusVariant={statusVariant}
+        statusLabel={statusLabel}
+      >
+        {({ images: imgs, openLightbox }) => (
+          <>
+            <QuickInfoPhotosBox
+              title={poi.description_short}
+              quickInfoRows={
+                <>
+                  <QuickInfoRow title="Trail:" value={subtitleText} />
+                  <QuickInfoRow title="Cost:" value={trail.cost} />
+                  <QuickInfoRow title="Pets:" value={Array.isArray(poi.pet_options) && poi.pet_options.length > 0 ? poi.pet_options.join(', ') : null} />
+                  <QuickInfoRow title="Parking:" value={Array.isArray(poi.parking_types) && poi.parking_types.length > 0 ? poi.parking_types.join(', ') : null} />
+                </>
+              }
+              images={imgs}
+              onOpenLightbox={openLightbox}
+            />
 
-          <AmenitiesBox poi={poi} title="Amenities" />
+            <AmenitiesBox poi={poi} title="Amenities" />
 
-          <div id="accordion_1_box" className="poi_accordion_box">
-            <div id="accordion_1_parent" className="poi_accordion_parent">
-              {sections.map((s) => (
-                <AccSection key={s.id} id={s.id} title={s.title} defaultOpen={!!s.defaultOpen} col1={s.col1} col2={s.col2} />
-              ))}
+            <div id="accordion_1_box" className="poi_accordion_box">
+              <div id="accordion_1_parent" className="poi_accordion_parent">
+                {sections.map((s) => (
+                  <AccSection key={s.id} id={s.id} title={s.title} defaultOpen={!!s.defaultOpen} col1={s.col1} col2={s.col2} />
+                ))}
+              </div>
             </div>
-          </div>
-        </>
-      )}
-    </POIDetailLayout>
+          </>
+        )}
+      </POIDetailLayout>
+
+      {directionsOpen && <DirectionsModal poi={poi} onClose={() => setDirectionsOpen(false)} />}
+    </>
   );
 }

@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 
 import {
@@ -14,7 +14,8 @@ import { LocalBusinessJsonLd } from '../seo/index';
 import { getOpenCloseStatusLabel } from '../../utils/hoursUtils';
 import { getDisplayableLocation } from '../../utils/getDisplayableLocation';
 import { isPaidTier } from '../../utils/poiTier';
-import { copyToClipboard, getCoordinates, openDirections } from './shared/poiDetailUtils';
+import { copyToClipboard, getCoordinates } from './shared/poiDetailUtils';
+import DirectionsModal from '../common/DirectionsModal';
 import { sanitizeHtml } from '../../utils/sanitize';
 
 const ALCOHOL_LABELS = {
@@ -47,6 +48,7 @@ export default function BusinessDetail({ poi }) {
     ? getOpenCloseStatusLabel(poi.hours, lat, lng)
     : {};
   const images = useMemo(() => getImages(poi), [poi]);
+  const [directionsOpen, setDirectionsOpen] = useState(false);
 
   const primaryCategory = poi?.categories?.[0]?.name || poi?.business?.primary_category || '';
 
@@ -132,7 +134,7 @@ export default function BusinessDetail({ poi }) {
       <div className="acc_content_text">
         {addressLine && <div>{addressLine}</div>}
         <div className="pd-addr__actions" style={{ marginTop: 10 }}>
-          <button type="button" className="btn_reset button btn_outline_teal btn_poi_button_1" onClick={() => openDirections(poi, coords)}>
+          <button type="button" className="btn_reset button btn_outline_teal btn_poi_button_1" onClick={() => setDirectionsOpen(true)}>
             <SvgDirections /> <span className="poi_button_title">Directions</span>
           </button>
           {coords && (
@@ -245,45 +247,49 @@ export default function BusinessDetail({ poi }) {
   const sections = (paid ? PAID_SECTIONS : FREE_SECTIONS).filter((s) => s.col1.length > 0 || s.col2.length > 0);
 
   return (
-    <POIDetailLayout
-      poi={poi}
-      mainCategory={primaryCategory}
-      statusVariant={statusVariant}
-      statusLabel={statusLabel}
-      seoComponent={<LocalBusinessJsonLd poi={poi} />}
-    >
-      {({ images: imgs, openLightbox }) => (
-        <>
-          <QuickInfoPhotosBox
-            title={hasVal(poi?.description_short) ? poi.description_short : undefined}
-            quickInfoRows={
-              <>
-                <QuickInfoRow title="Category:" value={primaryCategory} />
-                <QuickInfoRow title="Cost:" value={costLabel} />
-                <QuickInfoRow title="Good For:" value={goodForLabel} />
-                <QuickInfoRow title="Pets:" value={petsLabel} />
-                <QuickInfoRow title="Parking:" value={parkingLabel} />
-              </>
-            }
-            images={imgs}
-            onOpenLightbox={openLightbox}
-          />
+    <>
+      <POIDetailLayout
+        poi={poi}
+        mainCategory={primaryCategory}
+        statusVariant={statusVariant}
+        statusLabel={statusLabel}
+        seoComponent={<LocalBusinessJsonLd poi={poi} />}
+      >
+        {({ images: imgs, openLightbox }) => (
+          <>
+            <QuickInfoPhotosBox
+              title={hasVal(poi?.description_short) ? poi.description_short : undefined}
+              quickInfoRows={
+                <>
+                  <QuickInfoRow title="Category:" value={primaryCategory} />
+                  <QuickInfoRow title="Cost:" value={costLabel} />
+                  <QuickInfoRow title="Good For:" value={goodForLabel} />
+                  <QuickInfoRow title="Pets:" value={petsLabel} />
+                  <QuickInfoRow title="Parking:" value={parkingLabel} />
+                </>
+              }
+              images={imgs}
+              onOpenLightbox={openLightbox}
+            />
 
-          {paid && amenitiesFlat.length > 0 && (
-            <AmenitiesBox title="Amenities" amenitiesList={amenitiesFlat} />
-          )}
+            {paid && amenitiesFlat.length > 0 && (
+              <AmenitiesBox title="Amenities" amenitiesList={amenitiesFlat} />
+            )}
 
-          {sections.length > 0 && (
-            <div id="accordion_1_box" className="poi_accordion_box">
-              <div id="accordion_1_parent" className="poi_accordion_parent">
-                {sections.map((s) => (
-                  <AccSection key={s.key} title={s.title} defaultOpen={s.open} col1={s.col1.length > 0 ? s.col1 : null} col2={s.col2.length > 0 ? s.col2 : null} />
-                ))}
+            {sections.length > 0 && (
+              <div id="accordion_1_box" className="poi_accordion_box">
+                <div id="accordion_1_parent" className="poi_accordion_parent">
+                  {sections.map((s) => (
+                    <AccSection key={s.key} title={s.title} defaultOpen={s.open} col1={s.col1.length > 0 ? s.col1 : null} col2={s.col2.length > 0 ? s.col2 : null} />
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
-        </>
-      )}
-    </POIDetailLayout>
+            )}
+          </>
+        )}
+      </POIDetailLayout>
+
+      {directionsOpen && <DirectionsModal poi={poi} onClose={() => setDirectionsOpen(false)} />}
+    </>
   );
 }

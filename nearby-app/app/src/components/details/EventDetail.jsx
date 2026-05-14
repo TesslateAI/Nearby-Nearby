@@ -7,7 +7,7 @@ import {
 
 import {
   AccSection, QuickInfoRow, QuickInfoPhotosBox,
-  hasVal, copyToClipboard, getCoordinates, openDirections, getImages,
+  hasVal, copyToClipboard, getCoordinates, getImages,
 } from './shared';
 import InfoRow from './InfoRow';
 import ServiceAnimalAlert from './ServiceAnimalAlert';
@@ -146,7 +146,6 @@ function EventDetail({ poi }) {
   };
 
   const coords = getEventCoords();
-  const handleDirections = () => openDirections(poi, coords);
   const handleCopyCoords = async () => {
     if (!coords) return;
     if (await copyToClipboard(`${coords.lat}, ${coords.lng}`)) {

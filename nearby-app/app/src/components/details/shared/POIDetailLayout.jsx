@@ -6,11 +6,12 @@ import PhotoLightbox from '../PhotoLightbox';
 import HeroBanner from '../HeroBanner';
 import SuggestEditOverlay from '../SuggestEditOverlay';
 import PoiHeader from '../PoiHeader';
+import DirectionsModal from '../../common/DirectionsModal';
 
 import { getDisplayableLocation } from '../../../utils/getDisplayableLocation';
 import { isPaidTier } from '../../../utils/poiTier';
 import { isCurrentlyOpen, getNextOpenTime } from '../../../utils/hoursUtils';
-import { copyToClipboard, getCoordinates, openDirections, getImages } from './poiDetailUtils';
+import { copyToClipboard, getCoordinates, getImages } from './poiDetailUtils';
 
 export default function POIDetailLayout({
   poi,
@@ -30,6 +31,7 @@ export default function POIDetailLayout({
 }) {
   const navigate = useNavigate();
   const [copiedCoords, setCopiedCoords] = useState(false);
+  const [directionsOpen, setDirectionsOpen] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const suggestEditRef = useRef(null);
@@ -54,7 +56,7 @@ export default function POIDetailLayout({
     }
   }
 
-  const handleDirections = () => openDirections(poi, coords);
+  const handleDirections = () => setDirectionsOpen(true);
   const handleCopyCoords = async () => {
     if (!coords) return;
     if (await copyToClipboard(`${coords.lat}, ${coords.lng}`)) {
@@ -112,7 +114,7 @@ export default function POIDetailLayout({
       <main id="main_content" className="pb50px">
         <div className="wrapper_default">
           {typeof children === 'function'
-            ? children({ images, openLightbox, paid, displayLoc, coords, copiedCoords })
+            ? children({ images, openLightbox, paid, displayLoc, coords, copiedCoords, openDirectionsModal: () => setDirectionsOpen(true) })
             : children}
         </div>
       </main>
@@ -133,6 +135,10 @@ export default function POIDetailLayout({
         poiId={poi?.id}
         triggerRef={suggestEditRef}
       />
+
+      {directionsOpen && (
+        <DirectionsModal poi={poi} onClose={() => setDirectionsOpen(false)} />
+      )}
     </div>
   );
 }
