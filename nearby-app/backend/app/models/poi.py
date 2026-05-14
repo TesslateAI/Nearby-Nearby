@@ -96,7 +96,6 @@ class PointOfInterest(Base):
     alcohol_options = Column(JSONB)
     alcohol_policy_details = Column(Text)
     alcohol_available = Column(String(50))
-    wheelchair_accessible = Column(JSONB)
     wheelchair_details = Column(Text)
     accessible_parking_details  = Column(JSONB)
     accessible_restroom         = Column(Boolean, nullable=False, server_default='false', default=False)

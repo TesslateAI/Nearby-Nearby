@@ -89,7 +89,6 @@ AUTOSAVE_ALLOWED_FIELDS: set[str] = {
     'alcohol_options',
     'alcohol_policy_details',
     'alcohol_available',
-    'wheelchair_accessible',
     'wheelchair_details',
     'accessible_parking_details',
     'accessible_restroom',

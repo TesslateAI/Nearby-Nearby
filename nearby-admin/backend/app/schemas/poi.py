@@ -429,7 +429,6 @@ class PointOfInterestBase(BaseModel):
     payment_methods: Optional[List[str]] = None
     alcohol_options: Optional[List[str]] = None
     alcohol_policy_details: Optional[str] = None
-    wheelchair_accessible: Optional[List[str]] = None
     wheelchair_details: Optional[str] = None
     smoking_options: Optional[List[str]] = None
     smoking_details: Optional[str] = None
@@ -623,7 +622,6 @@ class PointOfInterestUpdate(BaseModel):
     payment_methods: Optional[List[str]] = None
     alcohol_options: Optional[List[str]] = None
     alcohol_policy_details: Optional[str] = None
-    wheelchair_accessible: Optional[List[str]] = None
     wheelchair_details: Optional[str] = None
     smoking_options: Optional[List[str]] = None
     smoking_details: Optional[str] = None
@@ -773,7 +771,6 @@ class VenueDataForEvent(BaseModel):
     parking_locations: Optional[List[Dict[str, Any]]] = None
 
     # Accessibility
-    wheelchair_accessible: Optional[List[str]] = None
     wheelchair_details: Optional[str] = None
 
     # Restroom

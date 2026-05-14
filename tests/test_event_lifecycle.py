@@ -78,7 +78,6 @@ class TestEventBasePoiFields:
             },
             parking_types=["Public Parking Lot", "Street Parking"],
             parking_notes="Free parking in the courthouse lot.",
-            wheelchair_accessible=["Accessible Bathrooms", "Paved Paths"],
             pet_options=["Dog Friendly"],
             ideal_for=["All Ages", "Families"],
             cost="$15",
@@ -93,7 +92,6 @@ class TestEventBasePoiFields:
         assert data["address_city"] == "Pittsboro"
         assert data["hours"]["saturday"][0]["open"] == "10:00"
         assert data["parking_types"] == ["Public Parking Lot", "Street Parking"]
-        assert data["wheelchair_accessible"] == ["Accessible Bathrooms", "Paved Paths"]
         assert data["pet_options"] == ["Dog Friendly"]
         # Phase 1: ideal_for is a grouped dict. "All Ages" -> age_group, "Families" -> age_group.
         assert isinstance(data["ideal_for"], dict)
@@ -292,7 +290,6 @@ class TestEventCrossApp:
             published=True,
             parking_types=["Public Parking Lot"],
             parking_notes="Free lot behind the venue.",
-            wheelchair_accessible=["Accessible Bathrooms", "Ramp Entry"],
         )
         db_session.commit()
 
@@ -301,7 +298,6 @@ class TestEventCrossApp:
         data = resp.json()
         assert data["parking_types"] == ["Public Parking Lot"]
         assert data["parking_notes"] == "Free lot behind the venue."
-        assert "Accessible Bathrooms" in data["wheelchair_accessible"]
 
 
 # ---------------------------------------------------------------------------

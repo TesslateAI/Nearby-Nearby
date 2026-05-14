@@ -50,6 +50,7 @@ export default function RescheduleModal({ opened, onClose, onConfirm }) {
           onChange={setNewStartDatetime}
           required
           withSeconds={false}
+          timePickerProps={{ format: '12h' }}
         />
 
         <DateTimePicker
@@ -59,6 +60,7 @@ export default function RescheduleModal({ opened, onClose, onConfirm }) {
           onChange={setNewEndDatetime}
           withSeconds={false}
           minDate={newStartDatetime || undefined}
+          timePickerProps={{ format: '12h' }}
         />
 
         <Group justify="flex-end" mt="md">

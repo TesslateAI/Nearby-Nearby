@@ -102,7 +102,6 @@ class PointOfInterest(Base):
     alcohol_options = Column(JSONB)  # List of alcohol availability options
     alcohol_policy_details = Column(Text)  # Additional alcohol policy details
     alcohol_available = Column(String(50))
-    wheelchair_accessible = Column(JSONB)  # List of accessibility options
     wheelchair_details = Column(Text)
     accessible_parking_details  = Column(JSONB)
     accessible_restroom         = Column(Boolean, nullable=False, server_default='false', default=False)

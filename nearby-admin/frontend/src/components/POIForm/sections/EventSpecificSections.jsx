@@ -727,7 +727,7 @@ export const EventSponsorsSection = React.memo(function EventSponsorsSection({ f
                 data={SPONSOR_TIERS}
                 value={sponsor.tier || ''}
                 onChange={(val) => updateSponsorField(index, 'tier', val)}
-                clearable
+                required
               />
 
               <Button

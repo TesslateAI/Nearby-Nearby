@@ -24,7 +24,6 @@ import {
 import DynamicAttributeForm from '../../DynamicAttributeForm';
 
 import ServiceAnimalAlert from '../components/ServiceAnimalAlert';
-import { VenueSelector } from '../components/VenueSelector';
 import {
   AdminOnlyAccordionItem, IdealForGrouped, ArrivalMethodsGroup, What3WordsInput,
   AccessibleParkingChecklist, AccessibleRestroomChecklist, FullAmenitiesBlock,
@@ -93,6 +92,7 @@ export default function EventLayout({ form, userRole, poiId }) {
               label="Start"
               required
               valueFormat={DT_FORMAT}
+              timePickerProps={{ format: '12h' }}
               popoverProps={{ withinPortal: true }}
               value={form.values.event?.start_datetime ? new Date(form.values.event.start_datetime) : null}
               onChange={(v) => form.setFieldValue('event.start_datetime', v)}
@@ -100,6 +100,7 @@ export default function EventLayout({ form, userRole, poiId }) {
             <DateTimePicker
               label="End"
               valueFormat={DT_FORMAT}
+              timePickerProps={{ format: '12h' }}
               popoverProps={{ withinPortal: true }}
               value={form.values.event?.end_datetime ? new Date(form.values.event.end_datetime) : null}
               onChange={(v) => form.setFieldValue('event.end_datetime', v)}
@@ -132,12 +133,10 @@ export default function EventLayout({ form, userRole, poiId }) {
         </Accordion.Panel>
       </Accordion.Item>
 
-      {/* 5. Event Venue (TRAIL now allowed in venue search) */}
+      {/* 5. Event Venue */}
       <Accordion.Item value="s5-venue">
         <Accordion.Control><Text fw={600}>Event Venue</Text></Accordion.Control>
         <Accordion.Panel>
-          <VenueSelector form={form} poiId={poiId} types={['BUSINESS', 'PARK', 'TRAIL']} />
-          <Divider my="sm" />
           <EventVenueSection form={form} id={poiId} />
         </Accordion.Panel>
       </Accordion.Item>
