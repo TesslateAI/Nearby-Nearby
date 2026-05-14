@@ -217,7 +217,6 @@ class POIDetail(BaseModel):
 
     # Amenities and Facilities
     amenities: Optional[Any] = None
-    key_facilities: Optional[Any] = None
     facilities_options: Optional[Any] = None
     wifi_options: Optional[Any] = None
     payment_methods: Optional[Any] = None

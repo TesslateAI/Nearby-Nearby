@@ -90,7 +90,6 @@ class PointOfInterest(Base):
     amenities = Column(JSONB)
     ideal_for = Column(JSONB)
     ideal_for_key = Column(JSONB)
-    key_facilities = Column(JSONB)
     payment_methods = Column(JSONB)
     alcohol_options = Column(JSONB)
     alcohol_policy_details = Column(Text)

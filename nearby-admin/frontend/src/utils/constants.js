@@ -568,7 +568,7 @@ export const ENTERTAINMENT_OPTIONS = [
   'No Public Wifi'
 ];
 
-// Park Facilities Options (separate from key_facilities)
+// Park Facilities Options
 export const PARK_FACILITIES = [
   'Amphitheater',
   'Benches',

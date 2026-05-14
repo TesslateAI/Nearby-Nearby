@@ -84,7 +84,6 @@ AUTOSAVE_ALLOWED_FIELDS: set[str] = {
     # Additional info
     'downloadable_maps',
     'payment_methods',
-    'key_facilities',
     'alcohol_options',
     'alcohol_policy_details',
     'alcohol_available',
