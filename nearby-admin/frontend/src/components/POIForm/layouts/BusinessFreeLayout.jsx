@@ -1,15 +1,15 @@
 import React from 'react';
 import {
-  Accordion, Stack, Group, Text, Badge, Textarea, Select, Switch
+  Accordion, Stack, Group, Text, Badge, Select, Switch,
+  Checkbox, SimpleGrid, Textarea, Divider, Alert, Radio
 } from '@mantine/core';
+import RichTextEditor from '../../RichTextEditor';
 
 import { CoreInformationSection } from '../sections/CoreInformationSection';
 import { CategoriesSection } from '../sections/CategoriesSection';
 import { LocationSection } from '../sections/LocationSection';
 import { ContactSection } from '../sections/ContactSection';
-import {
-  FacilitiesSection, PublicAmenitiesSection
-} from '../sections/FacilitiesSection';
+import { PublicAmenitiesSection } from '../sections/FacilitiesSection';
 import { BusinessGallerySection } from '../sections/BusinessDetailsSection';
 import { PetPolicySection } from '../sections/OutdoorFeaturesSection';
 import {
@@ -19,10 +19,14 @@ import HoursSelector from '../../HoursSelector';
 
 import ServiceAnimalAlert from '../components/ServiceAnimalAlert';
 import {
-  AdminOnlyAccordionItem, IdealForGrouped, ArrivalMethodsGroup,
-  What3WordsInput, AccessibleRestroomChecklist
+  AdminOnlyAccordionItem, IdealForGrouped, What3WordsInput,
+  AccessibleRestroomChecklist, PARKING_OPTIONS
 } from './_shared';
-import { getFieldsForListingType } from '../../../utils/constants';
+import {
+  ALCOHOL_OPTIONS, SMOKING_OPTIONS, PRICE_RANGE_OPTIONS,
+  getFieldsForListingType
+} from '../../../utils/constants';
+import { getCheckboxGroupProps } from '../constants/helpers';
 
 export default function BusinessFreeLayout({ form, userRole, poiId }) {
   const fields = getFieldsForListingType('BUSINESS', 'free');
@@ -35,29 +39,25 @@ export default function BusinessFreeLayout({ form, userRole, poiId }) {
           <Group><Text fw={600}>Business Identity</Text><Badge size="sm" variant="light">Required</Badge></Group>
         </Accordion.Control>
         <Accordion.Panel>
-          <CoreInformationSection form={form} isBusiness isFreeListing id={poiId} />
+          <Stack>
+            <CoreInformationSection form={form} isBusiness isFreeListing id={poiId} />
+            <Textarea
+              label="Short Description"
+              description={`Up to 250 characters. (${(form.values.description_short || '').length}/250)`}
+              maxLength={250}
+              autosize
+              minRows={3}
+              value={form.values.description_short || ''}
+              onChange={(e) => form.setFieldValue('description_short', e.currentTarget.value.slice(0, 250))}
+            />
+            <ContactSection form={form} isFreeListing={true} />
+          </Stack>
         </Accordion.Panel>
       </Accordion.Item>
 
-      {/* 2. Short Description (capped 250 chars) */}
-      <Accordion.Item value="s2-short-desc">
-        <Accordion.Control><Text fw={600}>Short Description</Text></Accordion.Control>
-        <Accordion.Panel>
-          <Textarea
-            label="Short Description"
-            description={`Up to 250 characters. (${(form.values.description_short || '').length}/250)`}
-            maxLength={250}
-            autosize
-            minRows={3}
-            value={form.values.description_short || ''}
-            onChange={(e) => form.setFieldValue('description_short', e.currentTarget.value.slice(0, 250))}
-          />
-        </Accordion.Panel>
-      </Accordion.Item>
-
-      {/* 3. Categories & Ideal For (capped) */}
-      <Accordion.Item value="s3-categories">
-        <Accordion.Control><Text fw={600}>Categories & Ideal For</Text></Accordion.Control>
+      {/* 2. Categories + Discovery */}
+      <Accordion.Item value="s2-categories">
+        <Accordion.Control><Text fw={600}>Categories + Discovery</Text></Accordion.Control>
         <Accordion.Panel>
           <Stack>
             <CategoriesSection form={form} isFreeListing isPaidListing={false} />
@@ -66,20 +66,8 @@ export default function BusinessFreeLayout({ form, userRole, poiId }) {
         </Accordion.Panel>
       </Accordion.Item>
 
-      {/* 4. Location & Arrival */}
-      <Accordion.Item value="s4-location">
-        <Accordion.Control><Text fw={600}>Location & Arrival</Text></Accordion.Control>
-        <Accordion.Panel>
-          <Stack>
-            <LocationSection form={form} isBusiness isFreeListing id={poiId} />
-            <ArrivalMethodsGroup form={form} />
-            <What3WordsInput form={form} />
-          </Stack>
-        </Accordion.Panel>
-      </Accordion.Item>
-
-      {/* 5. Hours of Operation */}
-      <Accordion.Item value="s5-hours">
+      {/* 3. Hours of Operation */}
+      <Accordion.Item value="s3-hours">
         <Accordion.Control><Text fw={600}>Hours of Operation</Text></Accordion.Control>
         <Accordion.Panel>
           <HoursSelector
@@ -94,19 +82,115 @@ export default function BusinessFreeLayout({ form, userRole, poiId }) {
         </Accordion.Panel>
       </Accordion.Item>
 
-      {/* 6. Contact (no socials in Free) */}
-      <Accordion.Item value="s6-contact">
-        <Accordion.Control><Text fw={600}>Contact</Text></Accordion.Control>
+      {/* 4. Address */}
+      <Accordion.Item value="s4-address">
+        <Accordion.Control><Text fw={600}>Address</Text></Accordion.Control>
         <Accordion.Panel>
-          <ContactSection form={form} isFreeListing={true} />
+          <Stack>
+            <LocationSection form={form} isBusiness isFreeListing id={poiId} hideParking />
+            <What3WordsInput form={form} />
+          </Stack>
         </Accordion.Panel>
       </Accordion.Item>
 
-      {/* 7. Facilities & Accessibility (minimal) */}
-      <Accordion.Item value="s7-facilities">
-        <Accordion.Control><Text fw={600}>Facilities & Accessibility</Text></Accordion.Control>
+      {/* 5. Parking */}
+      <Accordion.Item value="s5-parking">
+        <Accordion.Control><Text fw={600}>Parking</Text></Accordion.Control>
         <Accordion.Panel>
-          <FacilitiesSection form={form} isBusiness isFreeListing id={poiId} />
+          <Checkbox.Group
+            label="Parking Types Available"
+            value={form.values.parking_types || []}
+            onChange={(value) => form.setFieldValue('parking_types', value)}
+          >
+            <SimpleGrid cols={{ base: 2, sm: 3 }}>
+              {PARKING_OPTIONS.map(type => (
+                <Checkbox key={type} value={type} label={type} />
+              ))}
+            </SimpleGrid>
+          </Checkbox.Group>
+        </Accordion.Panel>
+      </Accordion.Item>
+
+      {/* 6. Pricing + Passes */}
+      <Accordion.Item value="s6-pricing">
+        <Accordion.Control><Text fw={600}>Pricing + Passes</Text></Accordion.Control>
+        <Accordion.Panel>
+          <Stack>
+            <Select
+              label="Price Range (Per Person)"
+              placeholder="Select price range"
+              data={PRICE_RANGE_OPTIONS}
+              value={form.values.price_range_per_person || null}
+              onChange={(v) => form.setFieldValue('price_range_per_person', v)}
+              clearable
+            />
+            <RichTextEditor
+              label="Pricing Details"
+              placeholder="Additional pricing info (e.g., Kids under 2 are free)"
+              value={form.values.pricing_details || ''}
+              onChange={(html) => form.setFieldValue('pricing_details', html)}
+              error={form.errors.pricing_details}
+              minRows={3}
+            />
+          </Stack>
+        </Accordion.Panel>
+      </Accordion.Item>
+
+      {/* 7. Accessibility + Mobility Access */}
+      <Accordion.Item value="s7-accessibility">
+        <Accordion.Control><Text fw={600}>Accessibility + Mobility Access</Text></Accordion.Control>
+        <Accordion.Panel>
+          <Stack>
+            <Text size="sm" c="dimmed">
+              These fields help users with mobility needs find accessible locations.
+            </Text>
+            <SimpleGrid cols={{ base: 1, sm: 3 }}>
+              <Select
+                label="Step-Free Entry"
+                placeholder="Select..."
+                data={[
+                  { value: 'yes', label: 'Yes' },
+                  { value: 'no', label: 'No' },
+                  { value: 'unknown', label: 'Unknown' }
+                ]}
+                value={form.values.mobility_access?.step_free_entry || null}
+                onChange={(v) => form.setFieldValue('mobility_access.step_free_entry', v)}
+                clearable
+              />
+              <Select
+                label="Main Service Area Accessible"
+                placeholder="Select..."
+                data={[
+                  { value: 'yes', label: 'Yes' },
+                  { value: 'no', label: 'No' },
+                  { value: 'unknown', label: 'Unknown' }
+                ]}
+                value={form.values.mobility_access?.main_area_accessible || null}
+                onChange={(v) => form.setFieldValue('mobility_access.main_area_accessible', v)}
+                clearable
+              />
+              <Select
+                label="Ground Level Service"
+                placeholder="Select..."
+                data={[
+                  { value: 'yes', label: 'Yes' },
+                  { value: 'no', label: 'No' },
+                  { value: 'unknown', label: 'Unknown' }
+                ]}
+                value={form.values.mobility_access?.ground_level_service || null}
+                onChange={(v) => form.setFieldValue('mobility_access.ground_level_service', v)}
+                clearable
+              />
+            </SimpleGrid>
+            <RichTextEditor
+              label="Accessibility Details"
+              placeholder="Describe accessibility features, accommodations, and any known limitations"
+              value={form.values.wheelchair_details || ''}
+              onChange={(html) => form.setFieldValue('wheelchair_details', html)}
+              error={form.errors.wheelchair_details}
+              minRows={3}
+            />
+          </Stack>
         </Accordion.Panel>
       </Accordion.Item>
 
@@ -132,27 +216,86 @@ export default function BusinessFreeLayout({ form, userRole, poiId }) {
         </Accordion.Panel>
       </Accordion.Item>
 
-      {/* 10. Internal Contact */}
-      <Accordion.Item value="s10-internal">
-        <Accordion.Control><Text fw={600}>Internal Contact</Text></Accordion.Control>
+      {/* 10. Alcohol + Smoking */}
+      <Accordion.Item value="s10-alcohol-smoking">
+        <Accordion.Control><Text fw={600}>Alcohol + Smoking</Text></Accordion.Control>
         <Accordion.Panel>
-          <InternalContactSection form={form} />
+          <Stack>
+            <Divider label="Alcohol" />
+            <Radio.Group
+              label="Is alcohol available?"
+              value={form.values.alcohol_available || 'no'}
+              onChange={(value) => {
+                form.setFieldValue('alcohol_available', value);
+                if (value === 'no') form.setFieldValue('alcohol_options', []);
+              }}
+            >
+              <Stack mt="xs">
+                <Radio value="yes" label="Yes" />
+                <Radio value="no" label="No" />
+              </Stack>
+            </Radio.Group>
+
+            {form.values.alcohol_available === 'yes' && (
+              <>
+                <Checkbox.Group label="Alcohol Options" {...getCheckboxGroupProps(form, 'alcohol_options')}>
+                  <SimpleGrid cols={{ base: 2, sm: 3 }}>
+                    {ALCOHOL_OPTIONS.filter(o => !['Yes', 'No Alcohol Allowed'].includes(o)).map(o => (
+                      <Checkbox key={o} value={o} label={o} />
+                    ))}
+                  </SimpleGrid>
+                </Checkbox.Group>
+                <RichTextEditor
+                  label="Alcohol Policy Details"
+                  placeholder="BYOB policy, concession details, restrictions, etc."
+                  value={form.values.alcohol_policy_details || ''}
+                  onChange={(html) => form.setFieldValue('alcohol_policy_details', html)}
+                  error={form.errors.alcohol_policy_details}
+                />
+              </>
+            )}
+
+            <Divider label="Smoking" />
+            <Checkbox.Group label="Smoking Policy" {...getCheckboxGroupProps(form, 'smoking_options')}>
+              <SimpleGrid cols={{ base: 2, sm: 3 }}>
+                {SMOKING_OPTIONS.map(o => <Checkbox key={o} value={o} label={o} />)}
+              </SimpleGrid>
+            </Checkbox.Group>
+            <RichTextEditor
+              label="Smoking Policy Details"
+              placeholder="Additional smoking policy information"
+              value={form.values.smoking_details || ''}
+              onChange={(html) => form.setFieldValue('smoking_details', html)}
+              error={form.errors.smoking_details}
+            />
+          </Stack>
         </Accordion.Panel>
       </Accordion.Item>
 
-      {/* 11. Logo / Images */}
-      <Accordion.Item value="s11-images">
-        <Accordion.Control><Text fw={600}>Logo / Images</Text></Accordion.Control>
+      {/* 11. Logo */}
+      <Accordion.Item value="s11-logo">
+        <Accordion.Control><Text fw={600}>Logo</Text></Accordion.Control>
         <Accordion.Panel>
           <BusinessGallerySection form={form} id={poiId} isFreeListing />
         </Accordion.Panel>
       </Accordion.Item>
 
-      {/* 12. Corporate Compliance */}
-      <Accordion.Item value="s12-compliance">
-        <Accordion.Control><Text fw={600}>Corporate Compliance</Text></Accordion.Control>
+      {/* 12. Contact + Compliance (Admin only) */}
+      <Accordion.Item value="s12-contact-compliance">
+        <Accordion.Control>
+          <Group>
+            <Text fw={600}>Contact + Compliance</Text>
+            <Badge size="sm" variant="light" color="orange">Internal Only</Badge>
+          </Group>
+        </Accordion.Control>
         <Accordion.Panel>
-          <CorporateComplianceSection form={form} />
+          <Stack>
+            <Alert color="orange" variant="light" fw={500}>
+              FOR INTERNAL USE — NOT DISPLAYED PUBLICLY
+            </Alert>
+            <InternalContactSection form={form} />
+            <CorporateComplianceSection form={form} />
+          </Stack>
         </Accordion.Panel>
       </Accordion.Item>
 

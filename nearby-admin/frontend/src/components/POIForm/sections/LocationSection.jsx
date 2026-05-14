@@ -25,6 +25,7 @@ export const LocationSection = React.memo(function LocationSection({
   isTrail,
   isEvent,
   isFreeListing,
+  hideParking,
   id
 }) {
   return (
@@ -232,6 +233,7 @@ export const LocationSection = React.memo(function LocationSection({
         </>
       )}
 
+      {!hideParking && <>
       <Divider my="md" label="Parking Information" />
 
       <Checkbox.Group
@@ -361,6 +363,7 @@ export const LocationSection = React.memo(function LocationSection({
           </Button>
         </>
       )}
+      </>}
     </Stack>
   );
 });
