@@ -87,6 +87,10 @@ export default function BusinessPaidLayout({ form, userRole, poiId }) {
             value={form.values.hours}
             onChange={(value) => form.setFieldValue('hours', value)}
             poiType={form.values.poi_type}
+            appointmentRequired={form.values.hours_but_appointment_required || false}
+            onAppointmentRequiredChange={(v) => form.setFieldValue('hours_but_appointment_required', v)}
+            bookingUrl={form.values.appointment_booking_url || ''}
+            onBookingUrlChange={(v) => form.setFieldValue('appointment_booking_url', v)}
           />
         </Accordion.Panel>
       </Accordion.Item>

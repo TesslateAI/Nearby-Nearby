@@ -340,7 +340,10 @@ function DayHours({ day, hours, onChange, onCopy }) {
 }
 
 // Main HoursSelector component - memoized to prevent unnecessary re-renders
-const HoursSelector = memo(({ value = {}, onChange, poiType }) => {
+const HoursSelector = memo(({ value = {}, onChange, poiType,
+  appointmentRequired = false, onAppointmentRequiredChange,
+  bookingUrl = '', onBookingUrlChange
+}) => {
   const [activeTab, setActiveTab] = useState('regular');
   const [copyModalOpen, setCopyModalOpen] = useState(false);
   const [copySource, setCopySource] = useState(null);
@@ -370,7 +373,17 @@ const HoursSelector = memo(({ value = {}, onChange, poiType }) => {
   };
 
   const updateHours = (updates) => {
-    onChange({ ...hours, ...updates });
+    const newHours = { ...hours, ...updates };
+    onChange(newHours);
+    // Auto-flip appointment flag based on per-day status
+    if (updates.regular !== undefined && onAppointmentRequiredChange) {
+      const anyAppt = Object.values(newHours.regular).some(d => d?.status === 'appointment');
+      if (!anyAppt && appointmentRequired) {
+        onAppointmentRequiredChange(false);
+      } else if (anyAppt && !appointmentRequired) {
+        onAppointmentRequiredChange(true);
+      }
+    }
   };
 
   // Copy hours from one day to others
@@ -576,11 +589,31 @@ const HoursSelector = memo(({ value = {}, onChange, poiType }) => {
                     newRegular[day.value] = appointmentHours;
                   });
                   updateHours({ regular: newRegular });
+                  if (onAppointmentRequiredChange) onAppointmentRequiredChange(true);
                 }}
               >
                 By Appointment Only
               </Button>
             </Group>
+
+            {onAppointmentRequiredChange && (
+              <>
+                <Divider my="xs" label="Appointment Settings" />
+                <Switch
+                  label="Appointments required"
+                  description="Turn on if visitors must book before arriving"
+                  checked={appointmentRequired}
+                  onChange={(e) => onAppointmentRequiredChange(e.currentTarget.checked)}
+                />
+                <TextInput
+                  label="Appointment Booking URL"
+                  placeholder="https://example.com/book"
+                  description='Where visitors should book if appointments are required (Calendly, Acuity, your own form, etc.). Optional — if empty, the public site will show "By appointment only — call to book."'
+                  value={bookingUrl}
+                  onChange={(e) => onBookingUrlChange && onBookingUrlChange(e.currentTarget.value)}
+                />
+              </>
+            )}
           </Stack>
         </Tabs.Panel>
 
