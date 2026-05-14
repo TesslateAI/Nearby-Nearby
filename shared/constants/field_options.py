@@ -239,15 +239,18 @@ ALCOHOL_AVAILABLE_OPTIONS = [
     {"value": "nearby", "label": "Adjacent/Nearby Available"},
 ]
 
-# REPLACED — 38 values
 PET_OPTIONS = [
     "Pet Friendly",
     "Dogs Welcome",
     "Cats Welcome",
     "Small Pets Welcome",
+    "Indoor Pets Welcome",
     "Dogs On Leash Required",
     "Dogs Off Leash Permitted",
+    "Leash Provided",
     "Dog Park On Site",
+    "Fenced Dog Area",
+    "Dog Swimming Allowed",
     "Dog Waste Bags Provided",
     "Dog Waste Stations",
     "Dog Water Bowls Provided",
@@ -255,6 +258,7 @@ PET_OPTIONS = [
     "Dog Menu Available",
     "Pet Patio + Outdoor Only",
     "Pet Patio + Covered",
+    "Designated Pet Zone",
     "Service Animals Welcome",
     "Emotional Support Animals Welcome",
     "No Pets Allowed",
@@ -269,7 +273,9 @@ PET_OPTIONS = [
     "Pet Fee Required",
     "Pet Sitting Available",
     "Pet Boarding Available",
+    "Pet Daycare Available",
     "Pet Grooming Available",
+    "Pet First Aid Kit On Site",
     "Horses Welcome",
     "Horse Boarding",
     "Livestock Permitted",
