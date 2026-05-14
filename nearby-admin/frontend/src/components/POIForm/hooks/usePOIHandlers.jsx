@@ -44,7 +44,7 @@ export const usePOIHandlers = (id, isEditing, form, setPoiId) => {
           // Ensure all array fields are arrays, not null
           const arrayFields = [
             'ideal_for', 'ideal_for_key', 'parking_types', 'payment_methods',
-            'alcohol_options', 'wheelchair_accessible', 'smoking_options', 'wifi_options',
+            'alcohol_options', 'smoking_options', 'wifi_options',
             'pet_options', 'public_toilets', 'natural_features', 'outdoor_types', 'things_to_do',
             'hunting_types', 'fishing_types', 'licenses_required', 'playground_types',
             'playground_surface_types', 'downloadable_maps', 'parking_locations',

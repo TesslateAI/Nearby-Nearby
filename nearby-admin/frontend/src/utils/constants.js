@@ -220,13 +220,6 @@ export const ALCOHOL_OPTIONS = [
   'Other'
 ];
 
-// Wheelchair accessibility
-export const WHEELCHAIR_OPTIONS = [
-  'No',
-  'Unknown',
-  'Yes'
-];
-
 // Smoking options
 export const SMOKING_OPTIONS = [
   'Yes',

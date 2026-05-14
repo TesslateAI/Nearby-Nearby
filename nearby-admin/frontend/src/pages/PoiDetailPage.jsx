@@ -324,7 +324,6 @@ const PoiDetailPage = () => {
     
     const keyFeatures = [
         poi.public_toilets?.includes('yes') ? 'Public Toilet' : null,
-        poi.wheelchair_accessible?.includes('yes') ? 'Wheelchair Friendly' : null,
         poi.parking_types?.includes('street') ? 'Parking on Street' : null,
         poi.parking_types?.includes('lot') ? 'Parking Lot' : null,
         poi.playground_available ? 'Playground Available' : null,
@@ -611,7 +610,6 @@ const PoiDetailPage = () => {
                                 <DetailItem label="ZIP Code" value={poi.address_zip} icon={{ type: IconMapPin, props: {} }} />
                                 <DetailItem label="Parking Options" value={poi.parking_types} icon={{ type: IconCar, props: {} }} />
                                 <DetailItem label="Parking Notes" value={poi.parking_notes} icon={{ type: IconCar, props: {} }} />
-                                <DetailItem label="Wheelchair Accessible" value={poi.wheelchair_accessible} icon={{ type: IconInfoCircle, props: {} }} />
                                 <DetailItem label="Accessibility Details" value={poi.wheelchair_details} icon={{ type: IconInfoCircle, props: {} }} />
                             </Stack>
                         </Accordion.Panel>
