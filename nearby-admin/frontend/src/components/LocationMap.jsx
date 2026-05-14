@@ -6,14 +6,18 @@ import { Box, Skeleton, Paper, Text, Group } from '@mantine/core';
 function MapInvalidator() {
   const map = useMap();
   useEffect(() => {
+    // Initial call handles "mounted inside a collapsed accordion" — fire after rAF + 100ms
+    const t = setTimeout(() => map.invalidateSize({ animate: false }), 100);
+
+    // ResizeObserver handles subsequent accordion expand/collapse and window resize
     const container = map.getContainer();
     const observer = new ResizeObserver(() => {
       if (container.offsetWidth > 0 && container.offsetHeight > 0) {
-        map.invalidateSize();
+        map.invalidateSize({ animate: false });
       }
     });
     observer.observe(container);
-    return () => observer.disconnect();
+    return () => { clearTimeout(t); observer.disconnect(); };
   }, [map]);
   return null;
 }
