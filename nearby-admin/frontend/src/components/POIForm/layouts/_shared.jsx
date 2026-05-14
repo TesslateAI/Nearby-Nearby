@@ -14,7 +14,7 @@ import {
   PARKING_OPTIONS, PARKING_ADA_CHECKLIST, ARRIVAL_METHOD_OPTIONS,
   RESTROOM_ADA_CHECKLIST, PUBLIC_TOILET_OPTIONS,
   AMENITIES_GENERAL, AMENITIES_FAMILY_YOUTH, AMENITIES_WATER_BOATING, AMENITIES_DINING_SEATING,
-  ALCOHOL_AVAILABLE_OPTIONS, WIFI_OPTIONS, CELL_SERVICE_OPTIONS,
+  WIFI_OPTIONS, CELL_SERVICE_OPTIONS,
   PET_OPTIONS, PAYMENT_METHODS, DISCOUNT_TYPES,
 } from '../../../utils/constants';
 
@@ -373,21 +373,6 @@ export function ConnectivityRow({ form }) {
         value={form.values.cell_service}
         onChange={(v) => form.setFieldValue('cell_service', v)} />
     </SimpleGrid>
-  );
-}
-
-// -----------------------------------------------------------------------------
-// Alcohol Availability single-select
-// -----------------------------------------------------------------------------
-export function AlcoholAvailableSelect({ form }) {
-  return (
-    <Select
-      label="Alcohol Available"
-      data={ALCOHOL_AVAILABLE_OPTIONS}
-      value={form.values.alcohol_available}
-      onChange={(v) => form.setFieldValue('alcohol_available', v)}
-      clearable
-    />
   );
 }
 

@@ -97,7 +97,7 @@ export const HuntingFishingSection = React.memo(function HuntingFishingSection({
         </Stack>
       </Radio.Group>
 
-      {(form.values.fishing_allowed !== 'no') && (
+      {(form.values.fishing_allowed === 'catch_release' || form.values.fishing_allowed === 'catch_keep') && (
         <>
           <Divider my="md" label="Fishing Types" />
           <Checkbox.Group {...getCheckboxGroupProps(form, 'fishing_types')}>
