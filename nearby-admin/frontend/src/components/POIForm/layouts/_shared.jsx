@@ -3,9 +3,10 @@ import React, { useEffect, useState } from 'react';
 import {
   Accordion, Stack, Group, Switch, Select, Textarea, Badge, Text,
   Checkbox, Title, SimpleGrid, MultiSelect, TextInput, NumberInput,
-  Button, ActionIcon, Divider
+  Button, ActionIcon, Divider, Alert
 } from '@mantine/core';
-import { IconTrash, IconPlus } from '@tabler/icons-react';
+import { IconTrash, IconPlus, IconMapPin } from '@tabler/icons-react';
+import { api } from '../../../utils/api';
 import {
   SPONSOR_LEVEL_OPTIONS, LISTING_TYPES,
   IDEAL_FOR_ATMOSPHERE, IDEAL_FOR_AGE_GROUP, IDEAL_FOR_SOCIAL_SETTINGS, IDEAL_FOR_LOCAL_SPECIAL,
@@ -164,17 +165,84 @@ export function ArrivalMethodsGroup({ form }) {
 }
 
 // -----------------------------------------------------------------------------
-// What3Words address text input
+// What3Words address text input with resolve-to-coords button
 // -----------------------------------------------------------------------------
 export function What3WordsInput({ form }) {
+  const [resolving, setResolving] = useState(false);
+  const [resolveResult, setResolveResult] = useState(null);
+  const [resolveError, setResolveError] = useState(null);
+
+  const handleResolve = async () => {
+    const words = (form.values.what3words_address || '').trim();
+    if (!words) return;
+    setResolving(true);
+    setResolveResult(null);
+    setResolveError(null);
+    try {
+      const resp = await api.request('/utils/what3words-to-coords', {
+        method: 'POST',
+        body: JSON.stringify({ words }),
+      });
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({}));
+        throw new Error(err.detail || `Error ${resp.status}`);
+      }
+      const data = await resp.json();
+      setResolveResult(data);
+    } catch (err) {
+      setResolveError(err?.message || 'Failed to resolve address');
+    } finally {
+      setResolving(false);
+    }
+  };
+
+  const applyCoords = () => {
+    if (!resolveResult) return;
+    form.setFieldValue('latitude', resolveResult.latitude);
+    form.setFieldValue('longitude', resolveResult.longitude);
+    setResolveResult(null);
+  };
+
   return (
-    <TextInput
-      label="what3words Address"
-      placeholder="e.g. filled.count.soap"
-      description="Three-word address that pinpoints a 3m square"
-      {...form.getInputProps('what3words_address')}
-      value={form.values.what3words_address ?? ''}
-    />
+    <Stack gap="xs">
+      <Group align="flex-end">
+        <TextInput
+          style={{ flex: 1 }}
+          label="what3words Address"
+          placeholder="e.g. filled.count.soap"
+          description="Three-word address that pinpoints a 3m square"
+          {...form.getInputProps('what3words_address')}
+          value={form.values.what3words_address ?? ''}
+        />
+        <Button
+          variant="light"
+          leftSection={<IconMapPin size={16} />}
+          loading={resolving}
+          disabled={!form.values.what3words_address}
+          onClick={handleResolve}
+        >
+          Resolve
+        </Button>
+      </Group>
+      {resolveResult && (
+        <Alert color="green" variant="light">
+          <Group justify="space-between">
+            <Text size="sm">
+              {resolveResult.latitude.toFixed(6)}, {resolveResult.longitude.toFixed(6)}
+              {resolveResult.nearest_place ? ` — ${resolveResult.nearest_place}` : ''}
+            </Text>
+            <Button size="xs" variant="filled" color="green" onClick={applyCoords}>
+              Apply to Map Pin
+            </Button>
+          </Group>
+        </Alert>
+      )}
+      {resolveError && (
+        <Alert color="red" variant="light">
+          <Text size="sm">{resolveError}</Text>
+        </Alert>
+      )}
+    </Stack>
   );
 }
 
