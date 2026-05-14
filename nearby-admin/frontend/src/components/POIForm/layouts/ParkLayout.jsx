@@ -1,71 +1,48 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
-  Accordion, Stack, Group, Text, Badge, Select, Textarea, Switch, Divider
+  Accordion, Stack, Group, Text, Badge, Select, Switch, Divider,
+  Checkbox, SimpleGrid, Alert, Radio, NumberInput, Button, ActionIcon,
+  Card, TextInput
 } from '@mantine/core';
+import { IconPlus, IconTrash } from '@tabler/icons-react';
+import RichTextEditor from '../../RichTextEditor';
 
 import { CoreInformationSection } from '../sections/CoreInformationSection';
+import { CategoriesSection } from '../sections/CategoriesSection';
 import { LocationSection } from '../sections/LocationSection';
 import { ContactSection } from '../sections/ContactSection';
-import { ParkCategoriesSection } from '../sections/ParkCategoriesSection';
 import {
-  FacilitiesSection, PublicAmenitiesSection, RentalsSection
+  PublicAmenitiesSection, RentalsSection
 } from '../sections/FacilitiesSection';
 import {
   OutdoorFeaturesSection, HuntingFishingSection, PetPolicySection, PlaygroundSection
 } from '../sections/OutdoorFeaturesSection';
-import { BusinessGallerySection } from '../sections/BusinessDetailsSection';
 import {
-  InternalContactSection, PricingMembershipsSection, ConnectionsSection,
-  CommunityConnectionsSection, CorporateComplianceSection
+  InternalContactSection, PricingMembershipsSection, CorporateComplianceSection
 } from '../sections/MiscellaneousSections';
 import HoursSelector from '../../HoursSelector';
-import DynamicAttributeForm from '../../DynamicAttributeForm';
 
 import ServiceAnimalAlert from '../components/ServiceAnimalAlert';
 import {
   AdminOnlyAccordionItem, IdealForGrouped, ArrivalMethodsGroup, What3WordsInput,
   AccessibleParkingChecklist, AccessibleRestroomChecklist, FullAmenitiesBlock,
-  ConnectivityRow
+  ConnectivityRow, PARKING_OPTIONS
 } from './_shared';
-import { PLAYGROUND_AGE_GROUPS, PLAYGROUND_ADA_CHECKLIST } from '../../../utils/outdoorConstants';
-import { api } from '../../../utils/api';
-import { Checkbox, SimpleGrid } from '@mantine/core';
-
-function usePARKCategories() {
-  const [opts, setOpts] = useState([]);
-  useEffect(() => {
-    (async () => {
-      try {
-        const resp = await api.get('/categories/by-poi-type/PARK');
-        if (resp.ok) {
-          const data = await resp.json();
-          const list = Array.isArray(data) ? data : (data.items || []);
-          setOpts(list.map(c => ({ value: c.name, label: c.name })));
-        }
-      } catch (e) { /* ignore */ }
-    })();
-  }, []);
-  return opts;
-}
+import {
+  ALCOHOL_OPTIONS, SMOKING_OPTIONS, DRONE_USAGE_OPTIONS
+} from '../../../utils/constants';
+import { getCheckboxGroupProps } from '../constants/helpers';
+import {
+  FeaturedImageUpload, GalleryPhotosUpload, ParkingPhotosUpload, shouldUseImageUpload
+} from '../ImageIntegration';
+import { addTitledLink, removeTitledLink, updateTitledLink } from '../../../utils/fieldHelpers';
 
 export default function ParkLayout({ form, userRole, poiId }) {
-  const parkCatOpts = usePARKCategories();
-  const selectedParkCat = (form.values.outdoor_types && form.values.outdoor_types[0]) || null;
-  const playgroundAda = Array.isArray(form.values.playground_ada_checklist) ? form.values.playground_ada_checklist : [];
+  const [hasPlayground, setHasPlayground] = useState(
+    !!form.values.playground_available
+  );
 
-  const toggleAda = (label) => {
-    const next = playgroundAda.includes(label)
-      ? playgroundAda.filter(x => x !== label)
-      : [...playgroundAda, label];
-    form.setFieldValue('playground_ada_checklist', next);
-    const required = [
-      'Accessible route to play area',
-      'Ground-level play components accessible',
-      'Unitary surface (poured-rubber/tiles)',
-    ];
-    form.setFieldValue('inclusive_playground', required.every(r => next.includes(r)));
-  };
-  const adaGroups = [...new Set(PLAYGROUND_ADA_CHECKLIST.map(i => i.group))];
+  const articleLinks = form.values.article_links || [];
 
   return (
     <>
@@ -75,72 +52,26 @@ export default function ParkLayout({ form, userRole, poiId }) {
           <Group><Text fw={600}>Park Identity</Text><Badge size="sm" variant="light">Required</Badge></Group>
         </Accordion.Control>
         <Accordion.Panel>
-          <CoreInformationSection form={form} isPark id={poiId} />
+          <Stack>
+            <CoreInformationSection form={form} isPark id={poiId} />
+            <ContactSection form={form} />
+          </Stack>
         </Accordion.Panel>
       </Accordion.Item>
 
-      {/* 2. Park Category (single-select from API) */}
-      <Accordion.Item value="s2-park-category">
-        <Accordion.Control><Text fw={600}>Park Category</Text></Accordion.Control>
-        <Accordion.Panel>
-          <Select
-            label="Park Category"
-            placeholder="Select a category"
-            data={parkCatOpts}
-            value={selectedParkCat}
-            onChange={(v) => form.setFieldValue('outdoor_types', v ? [v] : [])}
-            clearable
-            searchable
-          />
-        </Accordion.Panel>
-      </Accordion.Item>
-
-      {/* 3. Things to Do / Ideal For */}
-      <Accordion.Item value="s3-things">
-        <Accordion.Control><Text fw={600}>Things to Do / Ideal For</Text></Accordion.Control>
+      {/* 2. Categories + Discovery */}
+      <Accordion.Item value="s2-categories">
+        <Accordion.Control><Text fw={600}>Categories + Discovery</Text></Accordion.Control>
         <Accordion.Panel>
           <Stack>
-            <ParkCategoriesSection form={form} />
+            <CategoriesSection form={form} isPaidListing isFreeListing={false} />
             <IdealForGrouped form={form} />
           </Stack>
         </Accordion.Panel>
       </Accordion.Item>
 
-      {/* 4. Location & Arrival */}
-      <Accordion.Item value="s4-location">
-        <Accordion.Control><Text fw={600}>Location & Arrival</Text></Accordion.Control>
-        <Accordion.Panel>
-          <Stack>
-            <LocationSection form={form} isPark id={poiId} />
-            <ArrivalMethodsGroup form={form} />
-            <What3WordsInput form={form} />
-          </Stack>
-        </Accordion.Panel>
-      </Accordion.Item>
-
-      {/* 5. Park Entry Notes */}
-      <Accordion.Item value="s5-entry">
-        <Accordion.Control><Text fw={600}>Park Entry</Text></Accordion.Control>
-        <Accordion.Panel>
-          <Textarea
-            label="Park Entry Notes"
-            autosize
-            minRows={3}
-            {...form.getInputProps('park_entry_notes')}
-          />
-        </Accordion.Panel>
-      </Accordion.Item>
-
-      {/* 6. Parking & Accessibility */}
-      <Accordion.Item value="s6-parking">
-        <Accordion.Control><Text fw={600}>Parking & Accessibility</Text></Accordion.Control>
-        <Accordion.Panel>
-          <AccessibleParkingChecklist form={form} />
-        </Accordion.Panel>
-      </Accordion.Item>
-
-      {/* 7. Hours of Operation */}
-      <Accordion.Item value="s7-hours">
+      {/* 3. Hours */}
+      <Accordion.Item value="s3-hours">
         <Accordion.Control><Text fw={600}>Hours of Operation</Text></Accordion.Control>
         <Accordion.Panel>
           <HoursSelector
@@ -155,44 +86,219 @@ export default function ParkLayout({ form, userRole, poiId }) {
         </Accordion.Panel>
       </Accordion.Item>
 
-      {/* 8. Contact & Social Media */}
-      <Accordion.Item value="s8-contact">
-        <Accordion.Control><Text fw={600}>Contact & Social Media</Text></Accordion.Control>
-        <Accordion.Panel>
-          <ContactSection form={form} />
-        </Accordion.Panel>
-      </Accordion.Item>
-
-      {/* 9. Gallery */}
-      <Accordion.Item value="s9-gallery">
-        <Accordion.Control><Text fw={600}>Gallery</Text></Accordion.Control>
-        <Accordion.Panel>
-          <BusinessGallerySection form={form} id={poiId} />
-        </Accordion.Panel>
-      </Accordion.Item>
-
-      {/* 10. Outdoor Features */}
-      <Accordion.Item value="s10-outdoor">
-        <Accordion.Control><Text fw={600}>Outdoor Features</Text></Accordion.Control>
-        <Accordion.Panel>
-          <OutdoorFeaturesSection form={form} />
-        </Accordion.Panel>
-      </Accordion.Item>
-
-      {/* 11. Facilities */}
-      <Accordion.Item value="s11-facilities">
-        <Accordion.Control><Text fw={600}>Facilities & Accessibility</Text></Accordion.Control>
+      {/* 4. Address */}
+      <Accordion.Item value="s4-address">
+        <Accordion.Control><Text fw={600}>Address</Text></Accordion.Control>
         <Accordion.Panel>
           <Stack>
-            <FacilitiesSection form={form} isPark id={poiId} />
-            <FullAmenitiesBlock form={form} />
-            <ConnectivityRow form={form} />
+            <LocationSection form={form} isPark hideParking id={poiId} />
+            <ArrivalMethodsGroup form={form} />
+            <What3WordsInput form={form} />
           </Stack>
         </Accordion.Panel>
       </Accordion.Item>
 
-      {/* 12. Public Restrooms */}
-      <Accordion.Item value="s12-restrooms">
+      {/* 5. Parking */}
+      <Accordion.Item value="s5-parking">
+        <Accordion.Control><Text fw={600}>Parking</Text></Accordion.Control>
+        <Accordion.Panel>
+          <Stack>
+            <Checkbox.Group
+              label="Parking Types Available"
+              value={form.values.parking_types || []}
+              onChange={(value) => form.setFieldValue('parking_types', value)}
+            >
+              <SimpleGrid cols={{ base: 2, sm: 3 }}>
+                {PARKING_OPTIONS.map(type => (
+                  <Checkbox key={type} value={type} label={type} />
+                ))}
+              </SimpleGrid>
+            </Checkbox.Group>
+
+            <RichTextEditor
+              label="Parking Notes"
+              placeholder="Additional parking information"
+              value={form.values.parking_notes || ''}
+              onChange={(html) => form.setFieldValue('parking_notes', html)}
+              error={form.errors.parking_notes}
+            />
+
+            <Divider my="md" label="Primary Parking Location" />
+            <Text size="sm" c="dimmed" mb="sm">
+              Set the coordinates and photos for the main parking area. Use "Add Another Parking Location" below for additional lots.
+            </Text>
+            <SimpleGrid cols={{ base: 1, sm: 2 }}>
+              <NumberInput
+                label="Primary Parking Latitude"
+                placeholder="35.7128"
+                precision={6}
+                value={form.values.primary_parking_lat || ''}
+                onChange={(value) => form.setFieldValue('primary_parking_lat', value)}
+              />
+              <NumberInput
+                label="Primary Parking Longitude"
+                placeholder="-79.0064"
+                precision={6}
+                value={form.values.primary_parking_lng || ''}
+                onChange={(value) => form.setFieldValue('primary_parking_lng', value)}
+              />
+            </SimpleGrid>
+            <TextInput
+              label="Primary Parking Area Name"
+              placeholder="e.g., Main Lot, Visitor Center Parking"
+              value={form.values.primary_parking_name || ''}
+              onChange={(e) => form.setFieldValue('primary_parking_name', e.target.value)}
+            />
+            {shouldUseImageUpload(poiId) ? (
+              <ParkingPhotosUpload poiId={poiId} parkingName={form.values.primary_parking_name || 'Primary'} form={form} />
+            ) : (
+              <Text size="sm" c="dimmed">Save POI first to enable parking photo upload</Text>
+            )}
+
+            <Divider my="md" label="Additional Parking Locations" />
+            {(form.values.parking_locations || []).map((parking, index) => (
+              <Card key={index} withBorder p="md" mb="sm">
+                <Stack>
+                  <SimpleGrid cols={{ base: 1, sm: 2 }}>
+                    <NumberInput
+                      label="Parking Latitude"
+                      placeholder="35.7128"
+                      precision={6}
+                      value={parking.lat || ''}
+                      onChange={(value) => {
+                        const locations = [...(form.values.parking_locations || [])];
+                        locations[index] = { ...locations[index], lat: value };
+                        form.setFieldValue('parking_locations', locations);
+                      }}
+                    />
+                    <NumberInput
+                      label="Parking Longitude"
+                      placeholder="-79.0064"
+                      precision={6}
+                      value={parking.lng || ''}
+                      onChange={(value) => {
+                        const locations = [...(form.values.parking_locations || [])];
+                        locations[index] = { ...locations[index], lng: value };
+                        form.setFieldValue('parking_locations', locations);
+                      }}
+                    />
+                  </SimpleGrid>
+                  <TextInput
+                    label="Parking Area Name"
+                    placeholder="e.g., Main Lot, Visitor Center Parking"
+                    value={parking.name || ''}
+                    onChange={(e) => {
+                      const locations = [...(form.values.parking_locations || [])];
+                      locations[index] = { ...locations[index], name: e.target.value };
+                      form.setFieldValue('parking_locations', locations);
+                    }}
+                  />
+                  {shouldUseImageUpload(poiId) ? (
+                    <ParkingPhotosUpload poiId={poiId} parkingIndex={index} parkingName={parking.name} form={form} />
+                  ) : (
+                    <Text size="sm" c="dimmed">Save POI first to enable parking photo upload</Text>
+                  )}
+                  <Button
+                    color="red"
+                    variant="light"
+                    size="xs"
+                    onClick={() => {
+                      const locations = [...(form.values.parking_locations || [])];
+                      locations.splice(index, 1);
+                      form.setFieldValue('parking_locations', locations);
+                    }}
+                  >
+                    Remove Parking Location
+                  </Button>
+                </Stack>
+              </Card>
+            ))}
+            <Button
+              variant="light"
+              leftSection={<IconPlus size={16} />}
+              onClick={() => {
+                const locations = [...(form.values.parking_locations || [])];
+                locations.push({ lat: null, lng: null, name: '' });
+                form.setFieldValue('parking_locations', locations);
+              }}
+            >
+              Add Another Parking Location
+            </Button>
+
+            <Divider my="md" label="Accessible Parking" />
+            <AccessibleParkingChecklist form={form} />
+          </Stack>
+        </Accordion.Panel>
+      </Accordion.Item>
+
+      {/* 6. Pricing + Passes */}
+      <Accordion.Item value="s6-pricing">
+        <Accordion.Control><Text fw={600}>Pricing + Passes</Text></Accordion.Control>
+        <Accordion.Panel>
+          <PricingMembershipsSection form={form} />
+        </Accordion.Panel>
+      </Accordion.Item>
+
+      {/* 7. Accessibility + Mobility Access */}
+      <Accordion.Item value="s7-accessibility">
+        <Accordion.Control><Text fw={600}>Accessibility + Mobility Access</Text></Accordion.Control>
+        <Accordion.Panel>
+          <Stack>
+            <Text size="sm" c="dimmed">
+              These fields help users with mobility needs find accessible locations.
+            </Text>
+            <SimpleGrid cols={{ base: 1, sm: 3 }}>
+              <Select
+                label="Step-Free Entry"
+                placeholder="Select..."
+                data={[
+                  { value: 'yes', label: 'Yes' },
+                  { value: 'no', label: 'No' },
+                  { value: 'unknown', label: 'Unknown' }
+                ]}
+                value={form.values.mobility_access?.step_free_entry || null}
+                onChange={(v) => form.setFieldValue('mobility_access.step_free_entry', v)}
+                clearable
+              />
+              <Select
+                label="Main Service Area Accessible"
+                placeholder="Select..."
+                data={[
+                  { value: 'yes', label: 'Yes' },
+                  { value: 'no', label: 'No' },
+                  { value: 'unknown', label: 'Unknown' }
+                ]}
+                value={form.values.mobility_access?.main_area_accessible || null}
+                onChange={(v) => form.setFieldValue('mobility_access.main_area_accessible', v)}
+                clearable
+              />
+              <Select
+                label="Ground Level Service"
+                placeholder="Select..."
+                data={[
+                  { value: 'yes', label: 'Yes' },
+                  { value: 'no', label: 'No' },
+                  { value: 'unknown', label: 'Unknown' }
+                ]}
+                value={form.values.mobility_access?.ground_level_service || null}
+                onChange={(v) => form.setFieldValue('mobility_access.ground_level_service', v)}
+                clearable
+              />
+            </SimpleGrid>
+            <RichTextEditor
+              label="Accessibility Details"
+              placeholder="Describe accessibility features, accommodations, and any known limitations"
+              value={form.values.wheelchair_details || ''}
+              onChange={(html) => form.setFieldValue('wheelchair_details', html)}
+              error={form.errors.wheelchair_details}
+              minRows={3}
+            />
+          </Stack>
+        </Accordion.Panel>
+      </Accordion.Item>
+
+      {/* 8. Public Restrooms */}
+      <Accordion.Item value="s8-restrooms">
         <Accordion.Control><Text fw={600}>Public Restrooms</Text></Accordion.Control>
         <Accordion.Panel>
           <Stack>
@@ -202,24 +308,37 @@ export default function ParkLayout({ form, userRole, poiId }) {
         </Accordion.Panel>
       </Accordion.Item>
 
-      {/* 13. Rentals */}
-      <Accordion.Item value="s13-rentals">
-        <Accordion.Control><Text fw={600}>Rentals</Text></Accordion.Control>
+      {/* 9. Playground */}
+      <Accordion.Item value="s9-playground">
+        <Accordion.Control><Text fw={600}>Playground</Text></Accordion.Control>
         <Accordion.Panel>
-          <RentalsSection form={form} id={poiId} />
+          <Stack>
+            <Switch
+              label="This park has a playground"
+              checked={hasPlayground}
+              onChange={(e) => {
+                setHasPlayground(e.currentTarget.checked);
+                form.setFieldValue('playground_available', e.currentTarget.checked);
+              }}
+            />
+            {hasPlayground && <PlaygroundSection form={form} id={poiId} />}
+          </Stack>
         </Accordion.Panel>
       </Accordion.Item>
 
-      {/* 14. Hunting & Fishing */}
-      <Accordion.Item value="s14-hunting">
-        <Accordion.Control><Text fw={600}>Hunting & Fishing</Text></Accordion.Control>
+      {/* 10. On Site Facilities + Amenities */}
+      <Accordion.Item value="s10-facilities-amenities">
+        <Accordion.Control><Text fw={600}>On Site Facilities + Amenities</Text></Accordion.Control>
         <Accordion.Panel>
-          <HuntingFishingSection form={form} />
+          <Stack>
+            <FullAmenitiesBlock form={form} />
+            <ConnectivityRow form={form} />
+          </Stack>
         </Accordion.Panel>
       </Accordion.Item>
 
-      {/* 15. Pet Policy */}
-      <Accordion.Item value="s15-pets">
+      {/* 11. Pet Policy */}
+      <Accordion.Item value="s11-pets">
         <Accordion.Control><Text fw={600}>Pet Policy</Text></Accordion.Control>
         <Accordion.Panel>
           <Stack>
@@ -229,112 +348,209 @@ export default function ParkLayout({ form, userRole, poiId }) {
         </Accordion.Panel>
       </Accordion.Item>
 
-      {/* 16. Playground (gated by has_playground/playground_available) */}
-      <Accordion.Item value="s16-playground">
-        <Accordion.Control><Text fw={600}>Playground Information</Text></Accordion.Control>
+      {/* 12. Alcohol + Smoking */}
+      <Accordion.Item value="s12-alcohol-smoking">
+        <Accordion.Control><Text fw={600}>Alcohol + Smoking</Text></Accordion.Control>
         <Accordion.Panel>
           <Stack>
-            <Switch
-              label="This park has a playground"
-              checked={!!form.values.playground_available}
-              onChange={(e) => form.setFieldValue('playground_available', e.currentTarget.checked)}
-            />
-            {form.values.playground_available && (
+            <Divider label="Alcohol" />
+            <Radio.Group
+              label="Is alcohol available?"
+              value={form.values.alcohol_available || 'no'}
+              onChange={(value) => {
+                form.setFieldValue('alcohol_available', value);
+                if (value === 'no') form.setFieldValue('alcohol_options', []);
+              }}
+            >
+              <Stack mt="xs">
+                <Radio value="yes" label="Yes" />
+                <Radio value="no" label="No" />
+              </Stack>
+            </Radio.Group>
+
+            {form.values.alcohol_available === 'yes' && (
               <>
-                <PlaygroundSection form={form} id={poiId} />
-                <Stack gap="xs">
-                  <Text fw={500}>Playground Age Groups</Text>
-                  <SimpleGrid cols={{ base: 2, sm: 4 }}>
-                    {PLAYGROUND_AGE_GROUPS.map(opt => {
-                      const selected = (form.values.playground_age_groups || []).includes(opt);
-                      return (
-                        <Checkbox
-                          key={opt}
-                          label={opt}
-                          checked={selected}
-                          onChange={() => {
-                            const arr = form.values.playground_age_groups || [];
-                            form.setFieldValue('playground_age_groups',
-                              selected ? arr.filter(x => x !== opt) : [...arr, opt]
-                            );
-                          }}
-                        />
-                      );
-                    })}
+                <Checkbox.Group label="Alcohol Options" {...getCheckboxGroupProps(form, 'alcohol_options')}>
+                  <SimpleGrid cols={{ base: 2, sm: 3 }}>
+                    {ALCOHOL_OPTIONS.filter(o => !['Yes', 'No Alcohol Allowed'].includes(o)).map(o => (
+                      <Checkbox key={o} value={o} label={o} />
+                    ))}
                   </SimpleGrid>
-                </Stack>
-                <Stack gap="sm">
-                  <Text fw={500}>Playground ADA Checklist</Text>
-                  {adaGroups.map(group => (
-                    <Stack key={group} gap="xs">
-                      <Text size="sm" fw={600} c="dimmed">{group}</Text>
-                      {PLAYGROUND_ADA_CHECKLIST.filter(i => i.group === group).map(item => (
-                        <Checkbox
-                          key={item.label}
-                          label={item.label}
-                          checked={playgroundAda.includes(item.label)}
-                          onChange={() => toggleAda(item.label)}
-                        />
-                      ))}
-                    </Stack>
-                  ))}
-                </Stack>
-                {form.values.inclusive_playground && (
-                  <Badge color="green">Inclusive Playground (ADA criteria met)</Badge>
-                )}
+                </Checkbox.Group>
+                <RichTextEditor
+                  label="Alcohol Policy Details"
+                  placeholder="BYOB policy, concession details, restrictions, etc."
+                  value={form.values.alcohol_policy_details || ''}
+                  onChange={(html) => form.setFieldValue('alcohol_policy_details', html)}
+                  error={form.errors.alcohol_policy_details}
+                />
               </>
+            )}
+
+            <Divider label="Smoking" />
+            <Checkbox.Group label="Smoking Policy" {...getCheckboxGroupProps(form, 'smoking_options')}>
+              <SimpleGrid cols={{ base: 2, sm: 3 }}>
+                {SMOKING_OPTIONS.map(o => <Checkbox key={o} value={o} label={o} />)}
+              </SimpleGrid>
+            </Checkbox.Group>
+            <RichTextEditor
+              label="Smoking Policy Details"
+              placeholder="Additional smoking policy information"
+              value={form.values.smoking_details || ''}
+              onChange={(html) => form.setFieldValue('smoking_details', html)}
+              error={form.errors.smoking_details}
+            />
+          </Stack>
+        </Accordion.Panel>
+      </Accordion.Item>
+
+      {/* 13. Outdoor Features */}
+      <Accordion.Item value="s13-outdoor-features">
+        <Accordion.Control><Text fw={600}>Outdoor Features</Text></Accordion.Control>
+        <Accordion.Panel>
+          <OutdoorFeaturesSection form={form} />
+        </Accordion.Panel>
+      </Accordion.Item>
+
+      {/* 14. Drone Policy */}
+      <Accordion.Item value="s14-drone">
+        <Accordion.Control><Text fw={600}>Drone Policy</Text></Accordion.Control>
+        <Accordion.Panel>
+          <Stack>
+            <Select
+              label="Drone Usage"
+              placeholder="Select drone policy"
+              data={DRONE_USAGE_OPTIONS}
+              value={form.values.drone_usage || null}
+              onChange={(v) => form.setFieldValue('drone_usage', v)}
+              clearable
+            />
+            <RichTextEditor
+              label="Drone Policy Details"
+              placeholder="Describe the full drone policy, restrictions, permit requirements, etc."
+              value={form.values.drone_policy || ''}
+              onChange={(html) => form.setFieldValue('drone_policy', html)}
+              error={form.errors.drone_policy}
+              minRows={3}
+            />
+          </Stack>
+        </Accordion.Panel>
+      </Accordion.Item>
+
+      {/* 15. Hunting + Fishing */}
+      <Accordion.Item value="s15-hunting-fishing">
+        <Accordion.Control><Text fw={600}>Hunting + Fishing</Text></Accordion.Control>
+        <Accordion.Panel>
+          <HuntingFishingSection form={form} />
+        </Accordion.Panel>
+      </Accordion.Item>
+
+      {/* 16. Rentals */}
+      <Accordion.Item value="s16-rentals">
+        <Accordion.Control><Text fw={600}>Rentals</Text></Accordion.Control>
+        <Accordion.Panel>
+          <RentalsSection form={form} id={poiId} />
+        </Accordion.Panel>
+      </Accordion.Item>
+
+      {/* 17. Locally Found + History */}
+      <Accordion.Item value="s17-locally-found-history">
+        <Accordion.Control><Text fw={600}>Locally Found + History</Text></Accordion.Control>
+        <Accordion.Panel>
+          <Stack>
+            <Divider label="Article Links" />
+            {articleLinks.map((link, index) => (
+              <Group key={index} align="flex-end" wrap="nowrap">
+                <TextInput
+                  label="Title"
+                  style={{ flex: 1 }}
+                  value={link.title || ''}
+                  onChange={(e) => updateTitledLink(form, 'article_links', index, 'title', e.currentTarget.value)}
+                />
+                <TextInput
+                  label="URL"
+                  style={{ flex: 2 }}
+                  value={link.url || ''}
+                  onChange={(e) => updateTitledLink(form, 'article_links', index, 'url', e.currentTarget.value)}
+                />
+                <ActionIcon
+                  variant="light"
+                  color="red"
+                  onClick={() => removeTitledLink(form, 'article_links', index)}
+                  aria-label="Remove"
+                >
+                  <IconTrash size={16} />
+                </ActionIcon>
+              </Group>
+            ))}
+            <Button
+              leftSection={<IconPlus size={14} />}
+              variant="light"
+              onClick={() => addTitledLink(form, 'article_links')}
+            >
+              Add Article Link
+            </Button>
+
+            <Divider label="Community Impact" mt="md" />
+            <RichTextEditor
+              label="Community Impact"
+              placeholder="Describe this park's impact on the local community"
+              value={form.values.community_impact || ''}
+              onChange={(html) => form.setFieldValue('community_impact', html)}
+              error={form.errors.community_impact}
+              minRows={3}
+            />
+
+            <Divider label="History" mt="md" />
+            <RichTextEditor
+              label="History"
+              placeholder="Share the history and background of this park"
+              value={form.values.history_paragraph || ''}
+              onChange={(html) => form.setFieldValue('history_paragraph', html)}
+              error={form.errors.history_paragraph}
+              minRows={3}
+            />
+          </Stack>
+        </Accordion.Panel>
+      </Accordion.Item>
+
+      {/* 18. Images */}
+      <Accordion.Item value="s18-images">
+        <Accordion.Control><Text fw={600}>Images</Text></Accordion.Control>
+        <Accordion.Panel>
+          <Stack>
+            {shouldUseImageUpload(poiId) ? (
+              <>
+                <FeaturedImageUpload poiId={poiId} form={form} />
+                <GalleryPhotosUpload poiId={poiId} form={form} />
+              </>
+            ) : (
+              <Text size="sm" c="dimmed">Save POI first to enable image upload</Text>
             )}
           </Stack>
         </Accordion.Panel>
       </Accordion.Item>
 
-      {/* 17. Pricing & Memberships */}
-      <Accordion.Item value="s17-pricing">
-        <Accordion.Control><Text fw={600}>Pricing & Memberships</Text></Accordion.Control>
-        <Accordion.Panel>
-          <PricingMembershipsSection form={form} />
-        </Accordion.Panel>
-      </Accordion.Item>
-
-      {/* 18. Connections */}
-      <Accordion.Item value="s18-connections">
-        <Accordion.Control><Text fw={600}>Connections</Text></Accordion.Control>
-        <Accordion.Panel>
-          <ConnectionsSection form={form} isPark />
-        </Accordion.Panel>
-      </Accordion.Item>
-
-      {/* 19. Community */}
-      <Accordion.Item value="s19-community">
-        <Accordion.Control><Text fw={600}>Community Connections</Text></Accordion.Control>
-        <Accordion.Panel>
-          <CommunityConnectionsSection form={form} />
-        </Accordion.Panel>
-      </Accordion.Item>
-
-      {/* 20. Internal & Compliance */}
-      <Accordion.Item value="s20-internal">
-        <Accordion.Control><Text fw={600}>Internal & Compliance</Text></Accordion.Control>
+      {/* 19. Contact + Compliance (Admin only) */}
+      <Accordion.Item value="s19-contact-compliance">
+        <Accordion.Control>
+          <Group>
+            <Text fw={600}>Contact + Compliance</Text>
+            <Badge size="sm" variant="light" color="orange">Internal Only</Badge>
+          </Group>
+        </Accordion.Control>
         <Accordion.Panel>
           <Stack>
+            <Alert color="orange" variant="light" fw={500}>
+              FOR INTERNAL USE — NOT DISPLAYED PUBLICLY
+            </Alert>
             <InternalContactSection form={form} />
             <CorporateComplianceSection form={form} />
           </Stack>
         </Accordion.Panel>
       </Accordion.Item>
 
-      {/* 21. Dynamic Attributes */}
-      <Accordion.Item value="s21-attrs">
-        <Accordion.Control><Text fw={600}>Dynamic Attributes</Text></Accordion.Control>
-        <Accordion.Panel>
-          <DynamicAttributeForm
-            poiType={form.values.poi_type}
-            value={form.values.dynamic_attributes || {}}
-            onChange={(value) => form.setFieldValue('dynamic_attributes', value)}
-          />
-        </Accordion.Panel>
-      </Accordion.Item>
-
+      {/* Admin-Only (Section 20) */}
       <AdminOnlyAccordionItem form={form} userRole={userRole} />
     </>
   );
