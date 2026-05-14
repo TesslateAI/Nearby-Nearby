@@ -44,23 +44,26 @@ export const PLAYGROUND_AGE_GROUPS = [
   'All Ages'
 ];
 
-// Phase 1 — playground ADA checklist
+// Phase 1 — playground ADA checklist (grouped: { group, label })
 export const PLAYGROUND_ADA_CHECKLIST = [
-  'Accessible route to play area',
-  'Accessible route onto play surface',
-  'Unitary surface (poured-rubber/tiles)',
-  'Ground-level play components accessible',
-  'Elevated play components with transfer system',
-  'Ramp access to composite structure',
-  'Accessible swing (bucket/harness)',
-  'Sensory play components',
-  'Quiet / retreat space',
-  'Shade over play area',
-  'Accessible seating for caregivers',
-  'Accessible drinking fountain nearby',
-  'Accessible restroom nearby',
-  'Signage with braille / tactile'
+  { group: 'Arrival + Access', label: 'Accessible route to play area' },
+  { group: 'Arrival + Access', label: 'Accessible route onto play surface' },
+  { group: 'Arrival + Access', label: 'Unitary surface (poured-rubber/tiles)' },
+  { group: 'Play Structure',   label: 'Ground-level play components accessible' },
+  { group: 'Play Structure',   label: 'Elevated play components with transfer system' },
+  { group: 'Play Structure',   label: 'Ramp access to composite structure' },
+  { group: 'Play Structure',   label: 'Accessible swing (bucket/harness)' },
+  { group: 'Sensory + Inclusive', label: 'Sensory play components' },
+  { group: 'Sensory + Inclusive', label: 'Quiet / retreat space' },
+  { group: 'Sensory + Inclusive', label: 'Shade over play area' },
+  { group: 'Facilities + Support', label: 'Accessible seating for caregivers' },
+  { group: 'Facilities + Support', label: 'Accessible drinking fountain nearby' },
+  { group: 'Facilities + Support', label: 'Accessible restroom nearby' },
+  { group: 'Facilities + Support', label: 'Signage with braille / tactile' },
 ];
+
+// Flat label array for backend comparisons and backward compat
+export const PLAYGROUND_ADA_CHECKLIST_LABELS = PLAYGROUND_ADA_CHECKLIST.map(i => i.label);
 
 // Natural Features
 export const NATURAL_FEATURES = [

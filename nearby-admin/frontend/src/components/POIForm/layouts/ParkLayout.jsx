@@ -29,7 +29,7 @@ import {
 } from './_shared';
 import { PLAYGROUND_AGE_GROUPS, PLAYGROUND_ADA_CHECKLIST } from '../../../utils/outdoorConstants';
 import { api } from '../../../utils/api';
-import { Checkbox, SimpleGrid, MultiSelect } from '@mantine/core';
+import { Checkbox, SimpleGrid } from '@mantine/core';
 
 function usePARKCategories() {
   const [opts, setOpts] = useState([]);
@@ -53,12 +53,11 @@ export default function ParkLayout({ form, userRole, poiId }) {
   const selectedParkCat = (form.values.outdoor_types && form.values.outdoor_types[0]) || null;
   const playgroundAda = Array.isArray(form.values.playground_ada_checklist) ? form.values.playground_ada_checklist : [];
 
-  const toggleAda = (opt) => {
-    const next = playgroundAda.includes(opt)
-      ? playgroundAda.filter(x => x !== opt)
-      : [...playgroundAda, opt];
+  const toggleAda = (label) => {
+    const next = playgroundAda.includes(label)
+      ? playgroundAda.filter(x => x !== label)
+      : [...playgroundAda, label];
     form.setFieldValue('playground_ada_checklist', next);
-    // Derive inclusive_playground = all 3 required items present
     const required = [
       'Accessible route to play area',
       'Ground-level play components accessible',
@@ -66,6 +65,7 @@ export default function ParkLayout({ form, userRole, poiId }) {
     ];
     form.setFieldValue('inclusive_playground', required.every(r => next.includes(r)));
   };
+  const adaGroups = [...new Set(PLAYGROUND_ADA_CHECKLIST.map(i => i.group))];
 
   return (
     <>
@@ -242,23 +242,43 @@ export default function ParkLayout({ form, userRole, poiId }) {
             {form.values.playground_available && (
               <>
                 <PlaygroundSection form={form} id={poiId} />
-                <MultiSelect
-                  label="Playground Age Groups"
-                  data={PLAYGROUND_AGE_GROUPS}
-                  value={form.values.playground_age_groups || []}
-                  onChange={(v) => form.setFieldValue('playground_age_groups', v)}
-                />
-                <Text fw={500}>Playground ADA Checklist</Text>
-                <SimpleGrid cols={{ base: 1, sm: 2 }}>
-                  {PLAYGROUND_ADA_CHECKLIST.map(opt => (
-                    <Checkbox
-                      key={opt}
-                      label={opt}
-                      checked={playgroundAda.includes(opt)}
-                      onChange={() => toggleAda(opt)}
-                    />
+                <Stack gap="xs">
+                  <Text fw={500}>Playground Age Groups</Text>
+                  <SimpleGrid cols={{ base: 2, sm: 4 }}>
+                    {PLAYGROUND_AGE_GROUPS.map(opt => {
+                      const selected = (form.values.playground_age_groups || []).includes(opt);
+                      return (
+                        <Checkbox
+                          key={opt}
+                          label={opt}
+                          checked={selected}
+                          onChange={() => {
+                            const arr = form.values.playground_age_groups || [];
+                            form.setFieldValue('playground_age_groups',
+                              selected ? arr.filter(x => x !== opt) : [...arr, opt]
+                            );
+                          }}
+                        />
+                      );
+                    })}
+                  </SimpleGrid>
+                </Stack>
+                <Stack gap="sm">
+                  <Text fw={500}>Playground ADA Checklist</Text>
+                  {adaGroups.map(group => (
+                    <Stack key={group} gap="xs">
+                      <Text size="sm" fw={600} c="dimmed">{group}</Text>
+                      {PLAYGROUND_ADA_CHECKLIST.filter(i => i.group === group).map(item => (
+                        <Checkbox
+                          key={item.label}
+                          label={item.label}
+                          checked={playgroundAda.includes(item.label)}
+                          onChange={() => toggleAda(item.label)}
+                        />
+                      ))}
+                    </Stack>
                   ))}
-                </SimpleGrid>
+                </Stack>
                 {form.values.inclusive_playground && (
                   <Badge color="green">Inclusive Playground (ADA criteria met)</Badge>
                 )}
