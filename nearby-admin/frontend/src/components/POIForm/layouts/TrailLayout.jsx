@@ -87,7 +87,7 @@ export default function TrailLayout({ form, userRole, poiId }) {
 
   const accessPoints = Array.isArray(form.values.access_points) ? form.values.access_points : [];
   const addAP = () =>
-    form.setFieldValue('access_points', [...accessPoints, { lat: null, lng: null, what3words: '', notes: '' }]);
+    form.setFieldValue('access_points', [...accessPoints, { name: '', type: 'access', latitude: null, longitude: null, what3words: '', notes: '' }]);
   const removeAP = (i) =>
     form.setFieldValue('access_points', accessPoints.filter((_, idx) => idx !== i));
 
@@ -181,31 +181,16 @@ export default function TrailLayout({ form, userRole, poiId }) {
         </Accordion.Control>
         <Accordion.Panel>
           <Stack>
+            <TextInput
+              label={waterTrail ? 'Put-In Name' : 'Primary Trailhead Name'}
+              placeholder={waterTrail ? 'e.g. River Road Launch' : 'e.g. Main Trailhead'}
+              description="Named identifier for the primary entry point"
+              value={form.values.primary_trailhead_name ?? ''}
+              onChange={(e) => form.setFieldValue('primary_trailhead_name', e.currentTarget.value)}
+            />
             <LocationSection form={form} isTrail id={poiId} />
             <ArrivalMethodsGroup form={form} />
             <What3WordsInput form={form} />
-          </Stack>
-        </Accordion.Panel>
-      </Accordion.Item>
-
-      {/* 6. Trailhead Exit (Take-Out for water trails) */}
-      <Accordion.Item value="s6-exit">
-        <Accordion.Control>
-          <Text fw={600}>{waterTrail ? 'Primary Take-Out' : 'Trailhead Exit'}</Text>
-        </Accordion.Control>
-        <Accordion.Panel>
-          <Stack>
-            <TextInput label={waterTrail ? 'Take-Out Location' : 'Exit Location'}
-              {...form.getInputProps('trail.trailhead_exit_location')}
-              value={form.values.trail?.trailhead_exit_location ?? ''} />
-            <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="sm">
-              <NumberInput label="Latitude" decimalScale={6}
-                value={form.values.trail?.trail_exit_latitude}
-                onChange={(v) => form.setFieldValue('trail.trail_exit_latitude', v)} />
-              <NumberInput label="Longitude" decimalScale={6}
-                value={form.values.trail?.trail_exit_longitude}
-                onChange={(v) => form.setFieldValue('trail.trail_exit_longitude', v)} />
-            </SimpleGrid>
           </Stack>
         </Accordion.Panel>
       </Accordion.Item>
@@ -250,16 +235,32 @@ export default function TrailLayout({ form, userRole, poiId }) {
             {accessPoints.map((ap, idx) => (
               <Stack key={idx} p="sm" style={{ border: '1px solid #eee', borderRadius: 6 }}>
                 <Group align="flex-end" wrap="nowrap">
-                  <NumberInput label="Latitude" decimalScale={6} style={{ flex: 1 }}
-                    value={ap.lat}
-                    onChange={(v) => form.setFieldValue(`access_points.${idx}.lat`, v)} />
-                  <NumberInput label="Longitude" decimalScale={6} style={{ flex: 1 }}
-                    value={ap.lng}
-                    onChange={(v) => form.setFieldValue(`access_points.${idx}.lng`, v)} />
-                  <ActionIcon variant="light" color="red" onClick={() => removeAP(idx)} aria-label="Remove">
+                  <TextInput label={waterTrail ? 'Point Name' : 'Access Point Name'} style={{ flex: 1 }}
+                    placeholder={waterTrail ? 'e.g. North Take-Out' : 'e.g. East Entrance'}
+                    value={ap.name || ''}
+                    onChange={(e) => form.setFieldValue(`access_points.${idx}.name`, e.currentTarget.value)} />
+                  <Select
+                    label="Type"
+                    style={{ width: 140 }}
+                    data={waterTrail
+                      ? [{ value: 'put_in', label: 'Put-In' }, { value: 'take_out', label: 'Take-Out' }, { value: 'access', label: 'Access' }]
+                      : [{ value: 'access', label: 'Access' }, { value: 'exit', label: 'Exit' }, { value: 'trailhead', label: 'Trailhead' }]
+                    }
+                    value={ap.type || 'access'}
+                    onChange={(v) => form.setFieldValue(`access_points.${idx}.type`, v)}
+                  />
+                  <ActionIcon variant="light" color="red" mt={24} onClick={() => removeAP(idx)} aria-label="Remove">
                     <IconTrash size={16} />
                   </ActionIcon>
                 </Group>
+                <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="sm">
+                  <NumberInput label="Latitude" decimalScale={6}
+                    value={ap.latitude}
+                    onChange={(v) => form.setFieldValue(`access_points.${idx}.latitude`, v)} />
+                  <NumberInput label="Longitude" decimalScale={6}
+                    value={ap.longitude}
+                    onChange={(v) => form.setFieldValue(`access_points.${idx}.longitude`, v)} />
+                </SimpleGrid>
                 <TextInput label="what3words"
                   value={ap.what3words || ''}
                   onChange={(e) => form.setFieldValue(`access_points.${idx}.what3words`, e.currentTarget.value)} />

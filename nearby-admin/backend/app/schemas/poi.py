@@ -110,13 +110,6 @@ class TrailBase(BaseModel):
     trailhead_location: Optional[Dict[str, Any]] = None
     trailhead_latitude: Optional[float] = None
     trailhead_longitude: Optional[float] = None
-    trailhead_entrance_photo: Optional[str] = None
-    # trailhead_photo - DEPRECATED: moved to Images table (image_type='trail_head')
-    trailhead_exit_location: Optional[Dict[str, Any]] = None
-    trail_exit_latitude: Optional[float] = None
-    trail_exit_longitude: Optional[float] = None
-    trailhead_exit_photo: Optional[str] = None
-    # trail_exit_photo - DEPRECATED: moved to Images table (image_type='trail_exit')
     trail_markings: Optional[str] = None
     trailhead_access_details: Optional[str] = None
     downloadable_trail_map: Optional[str] = None
@@ -390,6 +383,8 @@ class PointOfInterestBase(BaseModel):
 
     # Primary Display Category — single category badge shown on cards (all POI types, issue #42)
     primary_display_category: Optional[str] = None
+    # Trail: name of primary trailhead (issue #63)
+    primary_trailhead_name: Optional[str] = None
 
     # Phase 1 additions
     arrival_methods: Optional[List[str]] = []
@@ -683,6 +678,7 @@ class PointOfInterestUpdate(BaseModel):
     # Phase 1 additions
     has_been_published: Optional[bool] = None
     primary_display_category: Optional[str] = None
+    primary_trailhead_name: Optional[str] = None
     arrival_methods: Optional[List[str]] = None
     what3words_address: Optional[str] = None
     icon_free_wifi: Optional[bool] = None

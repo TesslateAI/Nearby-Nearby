@@ -44,6 +44,7 @@ const IMAGE_TYPE_CONFIG = {
   menu: { maxCount: 10, maxSizeMB: 10, label: 'Menu Photos' },
   trail_head: { maxCount: 10, maxSizeMB: 5, label: 'Trail Head Photos' },
   trail_exit: { maxCount: 10, maxSizeMB: 5, label: 'Trail Exit Photos' },
+  access_point: { maxCount: 10, maxSizeMB: 5, label: 'Access Point Photos' },
   map: { maxCount: 5, maxSizeMB: 20, label: 'Maps' },
   downloadable_map: { maxCount: 5, maxSizeMB: 50, label: 'Downloadable Maps' }
 };

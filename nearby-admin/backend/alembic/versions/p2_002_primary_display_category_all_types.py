@@ -12,7 +12,7 @@ The events.primary_display_category column is left in place for backward compat.
 from alembic import op
 import sqlalchemy as sa
 
-revision = 'p2_002_primary_display_category_all_types'
+revision = 'p2_002_primary_display_cat'
 down_revision = 'p2_001_drop_dead_columns'
 branch_labels = None
 depends_on = None

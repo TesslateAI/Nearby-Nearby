@@ -83,6 +83,9 @@ class PointOfInterest(Base):
     # Primary Display Category — the single category badge shown on cards (all POI types)
     primary_display_category = Column(String(100))
 
+    # Trail: primary trailhead name (issue #63)
+    primary_trailhead_name = Column(String)
+
     # Cost fields (for Events, Parks, Trails)
     cost = Column(String(100))  # Flexible format: "$1000" or "$0.00-$1000.00" or "0" (shows as Free)
     pricing_details = Column(Text)  # Additional pricing details like "Kids Under 2 are Free"
@@ -337,15 +340,8 @@ class Trail(Base):
     
     # Trailhead Information
     trailhead_location = Column(JSONB)  # {"lat": 0, "lng": 0}
-    trailhead_latitude = Column(Numeric(precision=10, scale=7))  # Separate lat field for trailhead
-    trailhead_longitude = Column(Numeric(precision=10, scale=7))  # Separate lng field for trailhead
-    trailhead_entrance_photo = Column(String)
-    # trailhead_photo moved to Images table (image_type='trail_head')
-    trailhead_exit_location = Column(JSONB)  # {"lat": 0, "lng": 0}
-    trail_exit_latitude = Column(Numeric(precision=10, scale=7))  # Separate lat field for trail exit
-    trail_exit_longitude = Column(Numeric(precision=10, scale=7))  # Separate lng field for trail exit
-    trailhead_exit_photo = Column(String)
-    # trail_exit_photo moved to Images table (image_type='trail_exit')
+    trailhead_latitude = Column(Numeric(precision=10, scale=7))
+    trailhead_longitude = Column(Numeric(precision=10, scale=7))
     trail_markings = Column(Text)
     trailhead_access_details = Column(Text)
     downloadable_trail_map = Column(String)  # URL to map file

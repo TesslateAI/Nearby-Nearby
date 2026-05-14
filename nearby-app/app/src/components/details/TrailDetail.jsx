@@ -162,7 +162,6 @@ export default function TrailDetail({ poi }) {
   ].filter(Boolean);
 
   const trailGuideCol2 = [
-    hasVal(trail.trail_exit_notes) && <ContentGroup key="exit" title={labels.exit}><div className="acc_content_text" dangerouslySetInnerHTML={{ __html: sanitizeHtml(trail.trail_exit_notes) }} /></ContentGroup>,
     accessPoints.length > 0 && (
       <ContentGroup key="ap" title={labels.accessPoints}>
         <div className="acc_content_text">

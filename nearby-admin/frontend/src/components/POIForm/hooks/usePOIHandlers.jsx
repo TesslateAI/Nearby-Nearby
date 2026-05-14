@@ -120,9 +120,12 @@ export const usePOIHandlers = (id, isEditing, form, setPoiId) => {
           if (!formData.hunting_fishing_allowed) formData.hunting_fishing_allowed = 'no';
           if (!formData.fishing_allowed) formData.fishing_allowed = 'no';
 
-          // Normalize top-level primary_display_category (issue #42 — moved from event subobject)
+          // Normalize top-level string fields that default to ''
           if (formData.primary_display_category === null || formData.primary_display_category === undefined) {
             formData.primary_display_category = '';
+          }
+          if (formData.primary_trailhead_name === null || formData.primary_trailhead_name === undefined) {
+            formData.primary_trailhead_name = '';
           }
 
           // Derive UI control fields from actual data arrays
@@ -144,8 +147,6 @@ export const usePOIHandlers = (id, isEditing, form, setPoiId) => {
             const trailStringFields = [
               'length_text', 'difficulty', 'difficulty_description', 'route_type',
               'trail_markings', 'trailhead_access_details', 'downloadable_trail_map',
-              'trailhead_entrance_photo', 'trailhead_exit_photo'
-              // Removed deprecated photo fields: trailhead_photo, trail_exit_photo
             ];
             trailStringFields.forEach(field => {
               if (formData.trail[field] === null || formData.trail[field] === undefined) {
@@ -155,7 +156,7 @@ export const usePOIHandlers = (id, isEditing, form, setPoiId) => {
 
             // Handle trail numeric fields
             const trailNumericFields = [
-              'trailhead_latitude', 'trailhead_longitude', 'trail_exit_latitude', 'trail_exit_longitude'
+              'trailhead_latitude', 'trailhead_longitude'
             ];
             trailNumericFields.forEach(field => {
               if (formData.trail[field] === '' || formData.trail[field] === 'null') {
@@ -409,9 +410,7 @@ export const usePOIHandlers = (id, isEditing, form, setPoiId) => {
         difficulty_description: null,
         route_type: null,
         trailhead_latitude: null,
-        trailhead_longitude: null,
-        trail_exit_latitude: null,
-        trail_exit_longitude: null
+        trailhead_longitude: null
       };
     } else if (poiType === 'EVENT') {
       minimalPOI.event = {
