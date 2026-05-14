@@ -68,8 +68,8 @@ const CATEGORIES = [
   { name: 'Parks', Icon: ParksIcon, path: '/explore?type=PARK', countKey: 'PARK' },
   { name: 'Trails', Icon: TrailsIcon, path: '/explore?type=TRAIL', countKey: 'TRAIL' },
   { name: 'Events', Icon: EventsIcon, path: '/explore?type=EVENT', countKey: 'EVENT' },
-  { name: 'Pet Friendly', Icon: PetFriendlyIcon, path: '/explore?amenity=pet-friendly', countKey: null },
-  { name: 'Wheelchair', Icon: WheelchairIcon, path: '/explore?amenity=wheelchair-accessible', countKey: null },
+  { name: 'Pet Friendly', Icon: PetFriendlyIcon, path: '/explore?amenity=pet-friendly', countKey: 'PET_FRIENDLY' },
+  { name: 'Wheelchair', Icon: WheelchairIcon, path: '/explore?amenity=wheelchair-accessible', countKey: 'WHEELCHAIR' },
 ];
 
 const BLOG_POSTS = [
@@ -100,22 +100,36 @@ const BLOG_POSTS = [
 ];
 
 function Home() {
-  // Real listing counts per POI type. null = loading/unknown.
-  const [counts, setCounts] = useState({ BUSINESS: null, PARK: null, TRAIL: null, EVENT: null });
+  // Real listing counts per POI type + amenity. null = loading/unknown.
+  const [counts, setCounts] = useState({ BUSINESS: null, PARK: null, TRAIL: null, EVENT: null, PET_FRIENDLY: null, WHEELCHAIR: null });
 
   useEffect(() => {
     let cancelled = false;
     const types = ['BUSINESS', 'PARK', 'TRAIL', 'EVENT'];
+    const negatives = new Set(['no', 'none', 'not available', 'unavailable']);
+    const hasAmenity = (values) =>
+      Array.isArray(values) && values.some((v) => {
+        const s = String(v || '').trim().toLowerCase();
+        return s && !negatives.has(s);
+      });
+
     Promise.all(
       types.map(t =>
         fetch(getApiUrl(`api/pois/by-type/${t}`))
           .then(r => (r.ok ? r.json() : []))
-          .then(d => (Array.isArray(d) ? d.length : 0))
-          .catch(() => 0)
+          .catch(() => [])
       )
-    ).then(results => {
+    ).then(arrays => {
       if (cancelled) return;
-      setCounts({ BUSINESS: results[0], PARK: results[1], TRAIL: results[2], EVENT: results[3] });
+      const all = arrays.flat();
+      setCounts({
+        BUSINESS: arrays[0].length,
+        PARK: arrays[1].length,
+        TRAIL: arrays[2].length,
+        EVENT: arrays[3].length,
+        PET_FRIENDLY: all.filter(p => hasAmenity(p.pet_options)).length,
+        WHEELCHAIR: all.filter(p => hasAmenity(p.wheelchair_accessible)).length,
+      });
     });
     return () => { cancelled = true; };
   }, []);
