@@ -9,7 +9,7 @@ import PoiHeader from '../PoiHeader';
 
 import { getDisplayableLocation } from '../../../utils/getDisplayableLocation';
 import { isPaidTier } from '../../../utils/poiTier';
-import { isCurrentlyOpen } from '../../../utils/hoursUtils';
+import { isCurrentlyOpen, getNextOpenTime } from '../../../utils/hoursUtils';
 import { copyToClipboard, getCoordinates, openDirections, getImages } from './poiDetailUtils';
 
 export default function POIDetailLayout({
@@ -45,9 +45,13 @@ export default function POIDetailLayout({
   let statusLabel = statusLabelProp;
   if (statusVariant === undefined && openStatus) {
     statusVariant = openStatus.isOpen ? 'open' : 'closed';
-    statusLabel = openStatus.isOpen
-      ? (openStatus.status ? `Open Now – ${openStatus.status}` : 'Open Now')
-      : (openStatus.status || 'Closed');
+    if (openStatus.isOpen) {
+      statusLabel = openStatus.status ? `Open Now – ${openStatus.status}` : 'Open Now';
+    } else {
+      const base = openStatus.status || 'Closed';
+      const nextOpen = getNextOpenTime(poi.hours);
+      statusLabel = nextOpen ? `${base} · Opens ${nextOpen.day} at ${nextOpen.time}` : base;
+    }
   }
 
   const handleDirections = () => openDirections(poi, coords);
@@ -94,6 +98,7 @@ export default function POIDetailLayout({
         mainCategory={mainCategory}
         statusVariant={statusVariant}
         statusLabel={statusLabel}
+        hoursData={poi?.hours || null}
         onDirections={handleDirections}
         onCopyLatLong={handleCopyCoords}
         onShare={handleShare}

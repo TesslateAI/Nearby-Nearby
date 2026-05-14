@@ -11,7 +11,7 @@ import ServiceAnimalAlert from './ServiceAnimalAlert';
 import { SvgDirections, SvgLatLong } from './PoiHeader';
 import { LocalBusinessJsonLd } from '../seo/index';
 
-import { isCurrentlyOpen } from '../../utils/hoursUtils';
+import { isCurrentlyOpen, getNextOpenTime } from '../../utils/hoursUtils';
 import { getDisplayableLocation } from '../../utils/getDisplayableLocation';
 import { isPaidTier } from '../../utils/poiTier';
 import { copyToClipboard, getCoordinates, openDirections } from './shared/poiDetailUtils';
@@ -245,7 +245,12 @@ export default function BusinessDetail({ poi }) {
   const statusOpen = openStatus?.isOpen;
   const statusVariant = statusOpen ? 'open' : (openStatus?.status && /opens? at/i.test(openStatus.status) ? 'opensoon' : 'closed');
   const statusLabel = openStatus
-    ? (statusOpen ? `Open Now${openStatus.status ? ` – ${openStatus.status}` : ''}` : (openStatus.status || 'Closed'))
+    ? (() => {
+        if (statusOpen) return `Open Now${openStatus.status ? ` – ${openStatus.status}` : ''}`;
+        const base = openStatus.status || 'Closed';
+        const nextOpen = getNextOpenTime(poi.hours, lat, lng);
+        return nextOpen ? `${base} · Opens ${nextOpen.day} at ${nextOpen.time}` : base;
+      })()
     : null;
 
   return (

@@ -113,6 +113,53 @@
   font-size: 16px;
 }
 
+/* Expandable weekly hours */
+.poi_hours_expand {
+  margin-top: 8px;
+}
+
+.poi_hours_toggle {
+  font-size: 13px;
+  color: var(--nn-teal1);
+  cursor: pointer;
+  text-decoration: none;
+  font-weight: 500;
+  padding: 0;
+  background: none;
+  border: none;
+  letter-spacing: 0;
+}
+.poi_hours_toggle:hover {
+  text-decoration: underline;
+}
+
+.poi_hours_weekly {
+  margin-top: 8px;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 4px;
+}
+
+.poi_hours_row {
+  display: flex;
+  gap: 12px;
+  font-size: 14px;
+  color: var(--nn-gray);
+}
+
+.poi_hours_today {
+  font-weight: 600;
+  color: var(--nn-dark);
+}
+
+.poi_hours_day {
+  min-width: 36px;
+}
+
+.poi_hours_time {
+  color: inherit;
+}
+
 /* Action buttons */
 .poi_button_group_1 {
   display: flex;

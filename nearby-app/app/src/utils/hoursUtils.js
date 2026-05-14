@@ -813,12 +813,53 @@ export function formatGroupedHours(group) {
   return { days: `${firstDay} - ${lastDay}`, hours: group.hours };
 }
 
+/**
+ * When a POI is currently closed, find the next time it opens.
+ * Returns { day, time } e.g. { day: 'Today', time: '5pm' }
+ * or { day: 'Mon', time: '9am' }, or null if unknown.
+ */
+export function getNextOpenTime(hoursData, lat = null, lng = null) {
+  if (!hoursData) return null;
+  const now = new Date();
+  const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+  const dowKeys = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+
+  for (let i = 0; i <= 7; i++) {
+    const date = new Date(now);
+    date.setDate(date.getDate() + i);
+    date.setHours(0, 0, 0, 0);
+
+    const { hours } = getEffectiveHoursForDate(hoursData, date);
+    if (!hours || hours.status === 'closed' || hours.status === 'appointment') continue;
+    if (hours.status === '24hours') {
+      if (i === 0) return null;
+      return { day: i === 1 ? 'Tomorrow' : DAYS_SHORT[dowKeys[date.getDay()]], time: 'all day' };
+    }
+    if (hours.status === 'open' && hours.periods) {
+      for (const period of hours.periods) {
+        const openTime = resolvePeriodTime(period.open, date, lat, lng);
+        if (!openTime) continue;
+        if (i === 0) {
+          if (openTime > currentTime) {
+            return { day: 'Today', time: formatTimeString(openTime) };
+          }
+        } else {
+          const dayStr = i === 1 ? 'Tomorrow' : DAYS_SHORT[dowKeys[date.getDay()]];
+          return { day: dayStr, time: formatTimeString(openTime) };
+        }
+      }
+    }
+  }
+  return null;
+}
+
 export default {
   formatTime,
   formatDayHours,
   getEffectiveHoursForDate,
   getWeekHours,
   isCurrentlyOpen,
+  getNextOpenTime,
   groupHours,
   formatGroupedHours,
   getUpcomingHolidays,

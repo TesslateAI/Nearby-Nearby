@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
+import { getWeekHours } from '../../utils/hoursUtils';
 
 /* ================================================================== *
  * PoiHeader — shared intro header for all POI detail pages.
@@ -151,6 +152,7 @@ export default function PoiHeader({
   mainCategory,
   statusVariant,         // 'open' | 'closed' | 'opensoon'
   statusLabel,           // e.g. "Open Now – Until 8:00 PM"
+  hoursData = null,      // raw hours for expandable weekly schedule
   onDirections,
   onCopyLatLong,
   onShare,
@@ -162,6 +164,9 @@ export default function PoiHeader({
 }) {
   const [tooltipOpen, setTooltipOpen] = useState(false);
   const [copiedCoords, setCopiedCoords] = useState(false);
+  const [showHours, setShowHours] = useState(false);
+
+  const weekHours = useMemo(() => hoursData ? getWeekHours(hoursData) : [], [hoursData]);
 
   const hideExact = !!displayLoc.hideExact;
   const coords = hideExact ? null : getCoords(poi);
@@ -263,6 +268,30 @@ export default function PoiHeader({
                   <span className="hours_icon" style={{ color: statusColor }}>&#9679;</span>
                   <span className="poi_page_hours_text">{statusLabel}</span>
                 </div>
+                {weekHours.length > 0 && (
+                  <div className="poi_hours_expand">
+                    <button
+                      type="button"
+                      className="btn_reset poi_hours_toggle"
+                      onClick={() => setShowHours(v => !v)}
+                    >
+                      {showHours ? '▲ Hide hours' : '▼ See weekly hours'}
+                    </button>
+                    {showHours && (
+                      <div className="poi_hours_weekly">
+                        {weekHours.map(day => (
+                          <div
+                            key={day.dayName}
+                            className={`poi_hours_row${day.isToday ? ' poi_hours_today' : ''}`}
+                          >
+                            <span className="poi_hours_day">{day.dayShort}</span>
+                            <span className="poi_hours_time">{day.formattedHours}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </div>

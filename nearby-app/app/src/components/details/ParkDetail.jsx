@@ -11,7 +11,7 @@ import HoursDisplay from '../common/HoursDisplay';
 import ServiceAnimalAlert from './ServiceAnimalAlert';
 import { getDisplayableLocation } from '../../utils/getDisplayableLocation';
 import { isPaidTier } from '../../utils/poiTier';
-import { isCurrentlyOpen } from '../../utils/hoursUtils';
+import { isCurrentlyOpen, getNextOpenTime } from '../../utils/hoursUtils';
 import { sanitizeHtml } from '../../utils/sanitize';
 
 /* ------------------------------------------------------------------ */
@@ -386,7 +386,11 @@ export default function ParkDetail({ poi }) {
       statusVariant={openStatus ? (openStatus.isOpen ? 'open' : 'closed') : undefined}
       statusLabel={openStatus ? (openStatus.isOpen
         ? (openStatus.status ? `Open Now – ${openStatus.status}` : 'Open Now')
-        : (openStatus.status || 'Closed')) : undefined}
+        : (() => {
+            const base = openStatus.status || 'Closed';
+            const nextOpen = getNextOpenTime(poi.hours, lat, lng);
+            return nextOpen ? `${base} · Opens ${nextOpen.day} at ${nextOpen.time}` : base;
+          })()) : undefined}
     >
       {({ images: imgs, openLightbox }) => (
         <>
