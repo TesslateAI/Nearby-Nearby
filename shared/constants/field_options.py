@@ -469,6 +469,21 @@ IDEAL_FOR_LOCAL_SPECIAL = [
     "Volunteer Opportunities",
 ]
 
+IDEAL_FOR_SPECIAL_NEEDS = [
+    "Service Animals Welcome",
+    "Sensory Friendly",
+    "Low Stimulation Environment",
+    "Autism Friendly",
+    "Mobility Aid Accessible",
+    "Hearing Loop Available",
+    "Vision Impairment Friendly",
+    "Caregiver Friendly",
+    "Medical Equipment Accessible",
+    "Communication Support Available",
+    "Quiet Hours Available",
+    "Large Print + High Contrast Available",
+]
+
 TRAIL_ROUTE_TYPES = [
     {"value": "loop", "label": "Loop"},
     {"value": "out_and_back", "label": "Out and Back"},
@@ -496,6 +511,7 @@ IDEAL_FOR_KEY_OPTIONS = (
     + IDEAL_FOR_AGE_GROUP
     + IDEAL_FOR_SOCIAL_SETTINGS
     + IDEAL_FOR_LOCAL_SPECIAL
+    + IDEAL_FOR_SPECIAL_NEEDS
 )
 
 # ============================================================================

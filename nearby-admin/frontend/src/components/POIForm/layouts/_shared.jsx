@@ -10,6 +10,7 @@ import { api } from '../../../utils/api';
 import {
   SPONSOR_LEVEL_OPTIONS, LISTING_TYPES,
   IDEAL_FOR_ATMOSPHERE, IDEAL_FOR_AGE_GROUP, IDEAL_FOR_SOCIAL_SETTINGS, IDEAL_FOR_LOCAL_SPECIAL,
+  IDEAL_FOR_SPECIAL_NEEDS,
   PARKING_OPTIONS, PARKING_ADA_CHECKLIST, ARRIVAL_METHOD_OPTIONS,
   RESTROOM_ADA_CHECKLIST, PUBLIC_TOILET_OPTIONS,
   AMENITIES_GENERAL, AMENITIES_FAMILY_YOUTH, AMENITIES_WATER_BOATING, AMENITIES_DINING_SEATING,
@@ -90,50 +91,65 @@ export function AdminOnlyAccordionItem({ form, userRole }) {
 }
 
 // -----------------------------------------------------------------------------
-// Grouped Ideal-For picker (4 groups). Optional global cap (used in Free layout).
-// Writes to form.values.ideal_for = { atmosphere, age_group, social_settings, local_special }.
+// Grouped Ideal-For picker (5 groups, checkbox grid). Optional totalCap.
+// Writes to form.values.ideal_for = { atmosphere, age_group, social_settings,
+//   local_special, special_needs }.
 // -----------------------------------------------------------------------------
-export function IdealForGrouped({ form, totalCap = null }) {
-  const groups = [
-    { key: 'atmosphere',      label: 'Atmosphere',      options: IDEAL_FOR_ATMOSPHERE },
-    { key: 'age_group',       label: 'Age Group',       options: IDEAL_FOR_AGE_GROUP },
-    { key: 'social_settings', label: 'Social Settings', options: IDEAL_FOR_SOCIAL_SETTINGS },
-    { key: 'local_special',   label: 'Local Special',   options: IDEAL_FOR_LOCAL_SPECIAL },
-  ];
-  const current = form.values.ideal_for || {};
-  const currentTotal = groups.reduce((n, g) => n + ((current[g.key] || []).length), 0);
+const IDEAL_FOR_GROUPS = [
+  { key: 'atmosphere',      label: 'Atmosphere',      options: IDEAL_FOR_ATMOSPHERE },
+  { key: 'age_group',       label: 'Age Group',       options: IDEAL_FOR_AGE_GROUP },
+  { key: 'social_settings', label: 'Social Settings', options: IDEAL_FOR_SOCIAL_SETTINGS },
+  { key: 'local_special',   label: 'Local + Special', options: IDEAL_FOR_LOCAL_SPECIAL },
+  { key: 'special_needs',   label: 'Special Needs',   options: IDEAL_FOR_SPECIAL_NEEDS },
+];
 
-  function onGroupChange(key, vals) {
-    if (totalCap != null) {
-      const otherTotal = groups
-        .filter(g => g.key !== key)
-        .reduce((n, g) => n + ((current[g.key] || []).length), 0);
-      if (otherTotal + vals.length > totalCap) {
-        // truncate to remaining capacity
-        const remain = Math.max(0, totalCap - otherTotal);
-        vals = vals.slice(0, remain);
-      }
+export function IdealForGrouped({ form, totalCap = null }) {
+  const current = form.values.ideal_for || {};
+  const currentTotal = IDEAL_FOR_GROUPS.reduce((n, g) => n + ((current[g.key] || []).length), 0);
+  const atCap = totalCap != null && currentTotal >= totalCap;
+
+  function toggle(key, val) {
+    const arr = current[key] || [];
+    if (arr.includes(val)) {
+      form.setFieldValue(`ideal_for.${key}`, arr.filter(x => x !== val));
+    } else if (totalCap == null || currentTotal < totalCap) {
+      form.setFieldValue(`ideal_for.${key}`, [...arr, val]);
     }
-    form.setFieldValue(`ideal_for.${key}`, vals);
   }
 
   return (
-    <Stack>
-      <Title order={5}>Ideal For</Title>
-      {totalCap && (
-        <Text size="xs" c="dimmed">{currentTotal} / {totalCap} selected</Text>
-      )}
-      {groups.map(g => (
-        <MultiSelect
-          key={g.key}
-          label={g.label}
-          data={g.options}
-          value={current[g.key] || []}
-          onChange={(vals) => onGroupChange(g.key, vals)}
-          searchable
-          clearable
-        />
-      ))}
+    <Stack gap="md">
+      <Group>
+        <Title order={5}>Ideal For</Title>
+        {totalCap != null && (
+          <Text size="xs" c={atCap ? 'red' : 'dimmed'}>
+            {currentTotal} / {totalCap} selected
+          </Text>
+        )}
+      </Group>
+      {IDEAL_FOR_GROUPS.map(g => {
+        const groupVals = current[g.key] || [];
+        return (
+          <Stack key={g.key} gap="xs">
+            <Text fw={600} size="sm" c="dimmed">{g.label}</Text>
+            <SimpleGrid cols={{ base: 2, sm: 3 }}>
+              {g.options.map(opt => {
+                const checked = groupVals.includes(opt);
+                const disabled = atCap && !checked;
+                return (
+                  <Checkbox
+                    key={opt}
+                    label={opt}
+                    checked={checked}
+                    disabled={disabled}
+                    onChange={() => toggle(g.key, opt)}
+                  />
+                );
+              })}
+            </SimpleGrid>
+          </Stack>
+        );
+      })}
     </Stack>
   );
 }

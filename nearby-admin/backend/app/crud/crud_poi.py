@@ -98,12 +98,14 @@ def _get_ideal_for_map():
         from shared.constants.field_options import (
             IDEAL_FOR_ATMOSPHERE, IDEAL_FOR_AGE_GROUP,
             IDEAL_FOR_SOCIAL_SETTINGS, IDEAL_FOR_LOCAL_SPECIAL,
+            IDEAL_FOR_SPECIAL_NEEDS,
         )
         m = {}
         for v in IDEAL_FOR_ATMOSPHERE: m[v] = 'atmosphere'
         for v in IDEAL_FOR_AGE_GROUP: m[v] = 'age_group'
         for v in IDEAL_FOR_SOCIAL_SETTINGS: m[v] = 'social_settings'
         for v in IDEAL_FOR_LOCAL_SPECIAL: m[v] = 'local_special'
+        for v in IDEAL_FOR_SPECIAL_NEEDS: m[v] = 'special_needs'
         _IDEAL_FOR_GROUP_MAP = m
     return _IDEAL_FOR_GROUP_MAP
 
@@ -114,7 +116,7 @@ def normalize_ideal_for(poi: dict) -> dict:
     if isinstance(val, list):
         m = _get_ideal_for_map()
         out = {'atmosphere': [], 'age_group': [], 'social_settings': [],
-               'local_special': [], '_legacy': []}
+               'local_special': [], 'special_needs': [], '_legacy': []}
         for item in val:
             out[m.get(item, '_legacy')].append(item)
         poi['ideal_for'] = out

@@ -91,13 +91,28 @@ export const IDEAL_FOR_LOCAL_SPECIAL = [
   'Volunteer Opportunities'
 ];
 
-// Ideal For Key Box options — flat union of the 4 Phase-1 groups so existing
-// importers (KeyIdealFor pickers, etc.) keep working.
+export const IDEAL_FOR_SPECIAL_NEEDS = [
+  'Service Animals Welcome',
+  'Sensory Friendly',
+  'Low Stimulation Environment',
+  'Autism Friendly',
+  'Mobility Aid Accessible',
+  'Hearing Loop Available',
+  'Vision Impairment Friendly',
+  'Caregiver Friendly',
+  'Medical Equipment Accessible',
+  'Communication Support Available',
+  'Quiet Hours Available',
+  'Large Print + High Contrast Available',
+];
+
+// Ideal For Key Box options — flat union of all groups so existing importers keep working.
 export const IDEAL_FOR_KEY_OPTIONS = [
   ...IDEAL_FOR_ATMOSPHERE,
   ...IDEAL_FOR_AGE_GROUP,
   ...IDEAL_FOR_SOCIAL_SETTINGS,
-  ...IDEAL_FOR_LOCAL_SPECIAL
+  ...IDEAL_FOR_LOCAL_SPECIAL,
+  ...IDEAL_FOR_SPECIAL_NEEDS,
 ];
 
 // Parking options — Phase 1 replaced list (24 values)
