@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
-  Accordion, Stack, Group, Text, Badge, TextInput, Switch, Divider,
+  Accordion, Stack, Group, Text, Badge, TextInput, Divider,
   Autocomplete
 } from '@mantine/core';
 
@@ -15,19 +15,20 @@ import {
   EventSponsorsSection,
 } from '../sections/EventSpecificSections';
 import {
-  FacilitiesSection, PublicAmenitiesSection, RentalsSection
+  FacilitiesSection, PublicAmenitiesSection, RentalsSection, PlaygroundsSection
 } from '../sections/FacilitiesSection';
-import { PetPolicySection, PlaygroundSection } from '../sections/OutdoorFeaturesSection';
+import { PetPolicySection } from '../sections/OutdoorFeaturesSection';
 import {
   InternalContactSection, CommunityConnectionsSection, CorporateComplianceSection
 } from '../sections/MiscellaneousSections';
 import DynamicAttributeForm from '../../DynamicAttributeForm';
 
 import ServiceAnimalAlert from '../components/ServiceAnimalAlert';
+import AlcoholAccordionItem from '../components/AlcoholAccordionItem';
 import {
   AdminOnlyAccordionItem, IdealForGrouped, ArrivalMethodsGroup, What3WordsInput,
-  AccessibleParkingChecklist, AccessibleRestroomChecklist, FullAmenitiesBlock,
-  ConnectivityRow, AlcoholAvailableSelect
+  AccessibleParkingChecklist, FullAmenitiesBlock,
+  ConnectivityRow
 } from './_shared';
 import { api } from '../../../utils/api';
 
@@ -181,14 +182,12 @@ export default function EventLayout({ form, userRole, poiId }) {
         </Accordion.Panel>
       </Accordion.Item>
 
-      {/* 10. Restrooms */}
+      {/* 10. Restrooms — PublicAmenitiesSection renders the inline ADA checklist
+              per Wave 3 #47. Do NOT add a standalone <AccessibleRestroomChecklist>. */}
       <Accordion.Item value="s10-restrooms">
         <Accordion.Control><Text fw={600}>Restrooms</Text></Accordion.Control>
         <Accordion.Panel>
-          <Stack>
-            <PublicAmenitiesSection form={form} isEvent id={poiId} />
-            <AccessibleRestroomChecklist form={form} />
-          </Stack>
+          <PublicAmenitiesSection form={form} isEvent id={poiId} />
         </Accordion.Panel>
       </Accordion.Item>
 
@@ -200,30 +199,18 @@ export default function EventLayout({ form, userRole, poiId }) {
         </Accordion.Panel>
       </Accordion.Item>
 
-      {/* 12. Playground — conditional on playground_available */}
+      {/* 12. Playground — #49 per-playground age groups + grouped ADA checklist.
+              PlaygroundsSection owns its own playground_available Switch. */}
       <Accordion.Item value="s12-playground">
         <Accordion.Control><Text fw={600}>Playground</Text></Accordion.Control>
         <Accordion.Panel>
-          <Stack>
-            <Switch
-              label="This event has a playground on-site"
-              checked={!!form.values.playground_available}
-              onChange={(e) => form.setFieldValue('playground_available', e.currentTarget.checked)}
-            />
-            {form.values.playground_available && (
-              <PlaygroundSection form={form} id={poiId} />
-            )}
-          </Stack>
+          <PlaygroundsSection form={form} />
         </Accordion.Panel>
       </Accordion.Item>
 
-      {/* 13. Alcohol */}
-      <Accordion.Item value="s13-alcohol">
-        <Accordion.Control><Text fw={600}>Alcohol</Text></Accordion.Control>
-        <Accordion.Panel>
-          <AlcoholAvailableSelect form={form} />
-        </Accordion.Panel>
-      </Accordion.Item>
+      {/* 13. Alcohol — #69 accordion with conditional sub-options
+              (granular availability, BYOB, notes) when alcohol_available !== 'no'. */}
+      <AlcoholAccordionItem form={form} value="s13-alcohol" />
 
       {/* 14. Pet Policy */}
       <Accordion.Item value="s14-pets">

@@ -8,7 +8,7 @@ Listed in recommended implementation order (waves). Check each box as you finish
 
 ## Step 0 — Unblock today (mostly not coding)
 
-- [~] **#35 — Locate and commit `BACKEND_UPDATES_FINAL.md`, update Section 12** — _file already exists on `origin/fix/phase1-bugs-and-cleanups` (commit `722f9a7`, "Closes #35"); needs cherry-pick or merge onto this branch._
+- [x] **#35 — Locate and commit `BACKEND_UPDATES_FINAL.md`, update Section 12** — _cherry-picked `722f9a7` onto this branch (Wave 3+4 finishing push 2026-05-25). Section 12 is the source of truth for #55._
   _Why:_ It is the spec #55 builds against. The May 14 commit on the other branch adds the file with Section 12 fully updated (visibility flags ALL/PT/B+E, ADA inline checklists, sub-select fields). Sections 1-11 and 13+ are stubs.
 - [ ] **BLOCKED #36 — Get product sign-off before dropping the 5 "dead" columns** — _awaiting product._
   _Why:_ Verification shows 4 of the 5 still feed the live search engine + embeddings. Only `expect_to_pay_parking` is truly dead — the rest is a feature change, not a cleanup.
@@ -96,17 +96,17 @@ Listed in recommended implementation order (waves). Check each box as you finish
   _Why:_ Seasonal businesses can't currently express "no regular hours"; affects both the admin form and public display.
 - [x] **#47 — Update restroom options, fix the ADA checklist trigger, tighten `accessible_restroom` logic**
   _Why:_ Current restroom data is loose and the inline ADA checklist doesn't reveal correctly.
-- [ ] **#49 — Add a Playground Age Group field, update Type/Surface lists, group the ADA checklist into 4 categories**
+- [x] **#49 — Add a Playground Age Group field, update Type/Surface lists, group the ADA checklist into 4 categories**
   _Why:_ Playground data is incomplete vs spec; age group is a frequently-requested filter. (Storage column already exists.)
 - [x] **#54 — Add the missing appointment-booking-URL admin input and wire the "By Appointment Only" toggle**
   _Why:_ The field can be rendered but has no admin input, so it can never actually be filled in.
 
 ### Chained rebuilds — strict order
-- [ ] **#55 — Rebuild Facilities + Amenities with POI-type visibility and inline sub-options** *(needs #35 + #56 done)*
+- [x] **#55 — Rebuild Facilities + Amenities with POI-type visibility and inline sub-options** *(needs #35 + #56 done)*
   _Why:_ The current amenities UI writes form fields that aren't in the schema, so that data is silently dropped on every save — a real data-loss bug.
-- [ ] **#69 — Build a dedicated Alcohol accordion with conditional sub-options** *(after #55)*
+- [x] **#69 — Build a dedicated Alcohol accordion with conditional sub-options** *(after #55)*
   _Why:_ #55 moves alcohol controls out of Amenities; they need a proper home with the full conditional logic.
-- [ ] **#63 — Build the consolidated Trail Trailhead + Access Points structure** *(needs `<CoordinateInput>` + an `ImageType.access_point` enum migration)*
+- [x] **#63 — Build the consolidated Trail Trailhead + Access Points structure** *(needs `<CoordinateInput>` + an `ImageType.access_point` enum migration)*
   _Why:_ Trail entry/exit data is fragmented across legacy fields; it needs one coherent structure with names, photos, notes, and W3W coordinates.
 
 ---
@@ -119,18 +119,12 @@ Re-grep every section slug against current code first — these ticket bodies ar
   _Why:_ Section order doesn't match the approved form spec. Ships first because Business Free is smallest — it validates the reorg pattern.
 - [x] **#53 — Reorder the Business Paid + Community Comped accordion to the 18-section spec**
   _Why:_ Same spec-alignment goal for paid business listings.
-- [ ] **#59 — Reorder the Event accordion to the 20-section spec**
+- [x] **#59 — Reorder the Event accordion to the 20-section spec**
   _Why:_ Spec-alignment for event listings.
-- [ ] **#60 — Reorder the Park accordion to the 20-section spec**
+- [x] **#60 — Reorder the Park accordion to the 22-section spec + extract Drone Policy**
   _Why:_ Spec-alignment for park listings.
-- [ ] **#64 — Reorder the Trail accordion to the 22-section spec**
-  _Why:_ Spec-alignment for trail listings. Ships last because it depends on every other rebuild.
-
-### Wave 4 deferral notes (as of 2026-05-25)
-
-- **#59 (Event)** — Deferred. Spec calls for a 3-way consolidation into a single `Event Details` mega-section (currently split into s2-datetime + s3-status + s5-venue). Also requires #58 venue dual-render fix + #51 sponsor Tier render verification. Recommend a dedicated Event-only PR.
-- **#60 (Park)** — Deferred. Spec adds NEW Hours section to Park (Park currently has no Hours section); also requires Drone Policy extraction from FacilitiesSection.jsx:284-292; depends on #61 fishing_types conditional fix landing first.
-- **#64 (Trail)** — Deferred. Largest reorg; requires `trail_entry_notes` NEW column migration (column does not exist in poi.py yet), #63 access_points migration, AND a `Trail Guide` mega-section consolidating 4 current sections with water-trail conditional label swaps. Trail ships LAST per spec sequence.
+- [x] **#64 — Reorder the Trail accordion to the 22-section spec + Drone Policy section**
+  _Why:_ Spec-alignment for trail listings. Shipped last because it depends on every other rebuild.
 
 ---
 
