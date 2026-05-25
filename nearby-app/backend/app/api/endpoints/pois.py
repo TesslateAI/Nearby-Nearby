@@ -220,7 +220,8 @@ def _apply_venue_inheritance(db: Session, poi_dict: dict, event) -> dict:
     # Build a simpler dict from poi_dict for the fields we care about
     inheritable_fields = [
         "parking_types", "parking_locations", "parking_notes", "expect_to_pay_parking",
-        "public_transit_info", "public_toilets", "toilet_locations", "toilet_description",
+        # public_transit_info removed (Migration A #33 — renamed to _deprecated_public_transit_info)
+        "public_toilets", "toilet_locations", "toilet_description",
         "wheelchair_accessible", "wheelchair_details", "hours", "amenities",
         "pet_options", "pet_policy", "drone_usage", "drone_policy",
     ]

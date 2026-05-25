@@ -69,7 +69,7 @@ class TestCreateParkAllFields:
             "hours": {"monday": {"open": "07:00", "close": "21:00"}},
             "downloadable_maps": [{"name": "Trail Map", "url": "https://park.com/map.pdf"}],
             "history_paragraph": "Established in 1935 as part of the CCC program.",
-            "key_facilities": ["Boat Ramp", "Swimming Beach"],
+            # "key_facilities" removed — renamed _deprecated_key_facilities (Migration A #34)
             "park": {"drone_usage_policy": "Not allowed in wildlife areas"},
         }
 

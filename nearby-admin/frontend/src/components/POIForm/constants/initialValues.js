@@ -61,12 +61,12 @@ export const emptyInitialValues = {
   primary_parking_lng: null,
   primary_parking_name: '',
   // parking_photos removed - use Images table with image_type='parking'
-  public_transit_info: '',
+  // public_transit_info removed — renamed _deprecated_public_transit_info (Migration A #33)
   expect_to_pay_parking: 'no',
   // Additional Info
   downloadable_maps: [],
   payment_methods: [],
-  key_facilities: [],
+  // key_facilities removed — renamed _deprecated_key_facilities (Migration A #34)
   alcohol_available: null,
   alcohol_options: [],
   alcohol_policy_details: '',

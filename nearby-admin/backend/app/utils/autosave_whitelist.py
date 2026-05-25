@@ -79,13 +79,13 @@ AUTOSAVE_ALLOWED_FIELDS: set[str] = {
     'parking_types',
     'parking_locations',
     'parking_notes',
-    'public_transit_info',
+    # 'public_transit_info' removed — renamed to _deprecated_public_transit_info (Migration A #33)
     'expect_to_pay_parking',
 
     # Additional info
     'downloadable_maps',
     'payment_methods',
-    'key_facilities',
+    # 'key_facilities' removed — renamed to _deprecated_key_facilities (Migration A #34)
     'alcohol_options',
     'alcohol_policy_details',
     'alcohol_available',

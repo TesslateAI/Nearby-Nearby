@@ -65,14 +65,14 @@ class TestCreateBusinessAllFields:
             "parking_types": ["Street", "Lot"],
             "parking_locations": [{"lat": 35.72, "lng": -79.18, "name": "Main Lot"}],
             "parking_notes": "Free parking in rear",
-            "public_transit_info": "Bus route 5 stops nearby",
+            # "public_transit_info" removed — renamed _deprecated_public_transit_info (Migration A #33)
             "expect_to_pay_parking": "no",
             "wheelchair_accessible": ["Entrance", "Restroom"],
             "wheelchair_details": "Ramp at front entrance",
             "public_toilets": ["Indoor"],
             "toilet_locations": [{"lat": 35.72, "lng": -79.18}],
             "toilet_description": "Accessible restrooms available",
-            "key_facilities": ["ATM", "Water Fountain"],
+            # "key_facilities" removed — renamed _deprecated_key_facilities (Migration A #34)
             "payment_methods": ["Cash", "Credit Card", "Apple Pay"],
             "alcohol_options": ["Beer", "Wine"],
             "smoking_options": ["Outdoor Only"],
