@@ -273,8 +273,10 @@ export const emptyInitialValues = {
   accessible_parking_details: [],
   accessible_restroom: false,
   accessible_restroom_details: [],
-  playground_age_groups: [],
-  playground_ada_checklist: [],
+  // playground_age_groups + playground_ada_checklist removed from form bindings
+  // (#49). Data now lives per-row inside playground_locations[].age_groups +
+  // playground_locations[].ada_checklist. POI-level columns remain in the DB
+  // as orphans; deprecation deferred to Wave 5.
   inclusive_playground: false,
   cell_service: null,
   // Trail — new Phase 1 columns
