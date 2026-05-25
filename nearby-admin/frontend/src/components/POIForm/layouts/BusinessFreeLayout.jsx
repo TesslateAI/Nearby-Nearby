@@ -20,7 +20,7 @@ import HoursSelector from '../../HoursSelector';
 import ServiceAnimalAlert from '../components/ServiceAnimalAlert';
 import {
   AdminOnlyAccordionItem, IdealForGrouped, ArrivalMethodsGroup,
-  What3WordsInput, AccessibleRestroomChecklist
+  What3WordsInput
 } from './_shared';
 import { getFieldsForListingType } from '../../../utils/constants';
 
@@ -110,10 +110,7 @@ export default function BusinessFreeLayout({ form, userRole, poiId }) {
       <Accordion.Item value="s8-restrooms">
         <Accordion.Control><Text fw={600}>Public Restrooms</Text></Accordion.Control>
         <Accordion.Panel>
-          <Stack>
-            <PublicAmenitiesSection form={form} isBusiness isFreeListing id={poiId} />
-            <AccessibleRestroomChecklist form={form} />
-          </Stack>
+          <PublicAmenitiesSection form={form} isBusiness isFreeListing id={poiId} />
         </Accordion.Panel>
       </Accordion.Item>
 

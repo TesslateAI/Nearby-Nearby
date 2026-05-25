@@ -39,15 +39,29 @@ def test_icon_wheelchair_accessible_from_accessible_restroom():
     assert p2["icon_wheelchair_accessible"] is False
 
 
-def test_compute_accessible_restroom_dict_of_bools():
-    p = compute_accessible_restroom({"accessible_restroom_details": {"grab_bars": True, "ramp": False}})
-    assert p["accessible_restroom"] is True
+def test_compute_accessible_restroom_strict_all_three():
+    # Strict ALL-THREE rule (Wave 3 #47): wide door + (side OR rear) grab bar + level entry.
+    # The old permissive-any logic was replaced; see test_phase3_accessible_restroom.py
+    # for the exhaustive matrix. Spot-check here that an incomplete checklist
+    # does not flip the boolean true.
+    incomplete = compute_accessible_restroom(
+        {"accessible_restroom_details": ["Side grab bar installed"]}
+    )
+    assert incomplete["accessible_restroom"] is False
 
-    p2 = compute_accessible_restroom({"accessible_restroom_details": {"grab_bars": False}})
-    assert p2["accessible_restroom"] is False
+    all_three = compute_accessible_restroom(
+        {
+            "accessible_restroom_details": [
+                "Wide door — minimum 32 inches clear width",
+                "Side grab bar installed",
+                "Level entry — no lip or step",
+            ]
+        }
+    )
+    assert all_three["accessible_restroom"] is True
 
-    p3 = compute_accessible_restroom({"accessible_restroom_details": None})
-    assert p3["accessible_restroom"] is False
+    none_ = compute_accessible_restroom({"accessible_restroom_details": None})
+    assert none_["accessible_restroom"] is False
 
 
 def test_inclusive_playground_requires_three_items():

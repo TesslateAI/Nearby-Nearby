@@ -38,13 +38,44 @@ def compute_icon_booleans(poi: dict) -> dict:
     return poi
 
 def compute_accessible_restroom(poi: dict) -> dict:
-    cl = poi.get('accessible_restroom_details') or {}
-    if isinstance(cl, dict):
-        poi['accessible_restroom'] = any(bool(v) for v in cl.values())
-    elif isinstance(cl, list):
-        poi['accessible_restroom'] = len(cl) > 0
+    """Strict ALL-THREE accessible-restroom rule (Wave 3 #47).
+
+    A restroom is marked accessible only when the admin has checked all three
+    of:
+      1. Wide door — minimum 32 inches clear width
+      2. Either Side grab bar installed OR Rear grab bar installed
+      3. Level entry — no lip or step
+
+    The checklist field `accessible_restroom_details` stores the exact label
+    strings from `shared.constants.field_options.RESTROOM_ADA_CHECKLIST`. We
+    substring-match because legacy data may have minor whitespace/punctuation
+    drift. Both list (current) and dict (legacy) shapes are supported.
+    """
+    cl = poi.get('accessible_restroom_details')
+    if isinstance(cl, list):
+        checked = [str(x) for x in cl if x]
+    elif isinstance(cl, dict):
+        # Legacy shape: {label: bool} or {group: [labels]}.
+        checked = []
+        for k, v in cl.items():
+            if isinstance(v, bool) and v:
+                checked.append(str(k))
+            elif isinstance(v, list):
+                checked.extend(str(x) for x in v if x)
+            elif isinstance(v, str):
+                checked.append(v)
     else:
-        poi['accessible_restroom'] = False
+        checked = []
+
+    def _has(needle: str) -> bool:
+        n = needle.lower()
+        return any(n in s.lower() for s in checked)
+
+    wide_door = _has('Wide door')
+    grab_bar = _has('Side grab bar') or _has('Rear grab bar')
+    level_entry = _has('Level entry')
+
+    poi['accessible_restroom'] = bool(wide_door and grab_bar and level_entry)
     return poi
 
 def compute_inclusive_playground(poi: dict) -> dict:
