@@ -7,13 +7,14 @@ import {
 
 import {
   AccSection, QuickInfoRow, QuickInfoPhotosBox,
-  hasVal, copyToClipboard, getCoordinates, openDirections, getImages,
+  hasVal, copyToClipboard, getCoordinates, getImages,
 } from './shared';
 import InfoRow from './InfoRow';
 import ServiceAnimalAlert from './ServiceAnimalAlert';
 import EventStatusBanner from './EventStatusBanner';
 import { POIDetailLayout } from './shared';
 import { EventJsonLd } from '../seo/index';
+import DirectionsModal from '../common/DirectionsModal';
 
 import { getDisplayableLocation } from '../../utils/getDisplayableLocation';
 import { isPaidTier } from '../../utils/poiTier';
@@ -127,6 +128,7 @@ function EventDetail({ poi }) {
 
   const [copiedCoords, setCopiedCoords] = useState(false);
   const [ticketsOpen, setTicketsOpen] = useState(false);
+  const [directionsOpen, setDirectionsOpen] = useState(false);
 
   const event = poi.event || null;
   const displayLoc = getDisplayableLocation(poi);
@@ -146,7 +148,7 @@ function EventDetail({ poi }) {
   };
 
   const coords = getEventCoords();
-  const handleDirections = () => openDirections(poi, coords);
+  const handleDirections = () => setDirectionsOpen(true);
   const handleCopyCoords = async () => {
     if (!coords) return;
     if (await copyToClipboard(`${coords.lat}, ${coords.lng}`)) {
@@ -711,6 +713,13 @@ function EventDetail({ poi }) {
         </>
       )}
     </POIDetailLayout>
+    <DirectionsModal
+      isOpen={directionsOpen}
+      onClose={() => setDirectionsOpen(false)}
+      poiName={poi?.name}
+      coords={coords}
+      poi={poi}
+    />
   );
 }
 

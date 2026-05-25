@@ -4,11 +4,12 @@ import { MapPin, Navigation, Copy, Check, ExternalLink } from 'lucide-react';
 import {
   AccSection, ContentGroup, ChipList, QuickInfoRow, InfoPair,
   POIDetailLayout, QuickInfoPhotosBox, AmenitiesBox,
-  hasVal, asArray, copyToClipboard, getCoordinates, openDirections, getImages,
+  hasVal, asArray, copyToClipboard, getCoordinates, getImages,
   isYes,
 } from './shared';
 import HoursDisplay from '../common/HoursDisplay';
 import ServiceAnimalAlert from './ServiceAnimalAlert';
+import DirectionsModal from '../common/DirectionsModal';
 import { getDisplayableLocation } from '../../utils/getDisplayableLocation';
 import { isPaidTier } from '../../utils/poiTier';
 import { isCurrentlyOpen } from '../../utils/hoursUtils';
@@ -339,6 +340,7 @@ function buildSections(poi, helpers) {
 export default function ParkDetail({ poi }) {
   const [copiedCoords, setCopiedCoords] = useState(false);
   const [copiedAddress, setCopiedAddress] = useState(false);
+  const [directionsOpen, setDirectionsOpen] = useState(false);
 
   const displayLoc = getDisplayableLocation(poi);
   const paid = isPaidTier(poi);
@@ -346,7 +348,7 @@ export default function ParkDetail({ poi }) {
   const images = useMemo(() => getImages(poi), [poi]);
   const openStatus = poi.hours ? isCurrentlyOpen(poi.hours) : null;
 
-  const handleDirections = () => openDirections(poi, coords);
+  const handleDirections = () => setDirectionsOpen(true);
   const handleCopyCoords = async () => {
     if (!coords) return;
     if (await copyToClipboard(`${coords.lat}, ${coords.lng}`)) {
@@ -423,5 +425,12 @@ export default function ParkDetail({ poi }) {
         </>
       )}
     </POIDetailLayout>
+    <DirectionsModal
+      isOpen={directionsOpen}
+      onClose={() => setDirectionsOpen(false)}
+      poiName={poi?.name}
+      coords={coords}
+      poi={poi}
+    />
   );
 }
