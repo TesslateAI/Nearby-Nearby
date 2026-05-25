@@ -112,7 +112,11 @@ class PointOfInterest(Base):
     smoking_options = Column(JSONB)  # List of smoking options
     smoking_details = Column(Text)
     wifi_options = Column(JSONB)  # For Events only
-    drone_usage = Column(String)  # For Events, Parks, Trails
+    # Drone fields surface only in Park (s14) + Trail (s15) admin layouts.
+    # Events deliberately render NO drone section (Wave 4 #59 spec — FAA
+    # crowd-area rules), so drone_usage / drone_policy are write-orphans for
+    # POI rows where poi_type='EVENT'. Reads still work; the columns stay.
+    drone_usage = Column(String)
     drone_policy = Column(Text)
     pet_options = Column(JSONB)  # List of pet policy options
     pet_policy = Column(Text)

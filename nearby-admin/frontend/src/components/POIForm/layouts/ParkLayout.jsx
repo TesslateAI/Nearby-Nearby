@@ -191,7 +191,9 @@ export default function ParkLayout({ form, userRole, poiId }) {
               label="Drone Usage"
               placeholder="Select drone policy"
               data={DRONE_USAGE_OPTIONS}
-              {...form.getInputProps('drone_usage')}
+              value={form.values.drone_usage || null}
+              onChange={(v) => form.setFieldValue('drone_usage', v)}
+              clearable
             />
             <Textarea
               label="Drone Policy Details"
