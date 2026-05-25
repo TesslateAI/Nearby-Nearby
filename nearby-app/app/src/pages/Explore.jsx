@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo, forwardRef } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import {
   Search,
@@ -40,7 +40,8 @@ const DATE_PRESETS = [
   { value: 'weekend',  label: 'This Weekend' },
 ];
 
-const USER_LOCATION = { lat: 35.7198, lng: -79.1772 };
+// Downtown Pittsboro center — confirmed by product owner (stopgap; see follow-up ticket for geolocation)
+const USER_LOCATION = { lat: 35.72028984062034, lng: -79.17718140354249 };
 
 /* ------------------------------------------------------------------ */
 /* Helpers                                                            */
@@ -171,7 +172,7 @@ function exploreHasAmenity(values) {
   });
 }
 
-function ResultCard({ poi, index }) {
+const ResultCard = forwardRef(function ResultCard({ poi, index, isHighlighted }, ref) {
   const navigate = useNavigate();
   const slug = poi.slug || poi.id;
   const city = poi.address_city || poi.city || '';
@@ -207,7 +208,8 @@ function ResultCard({ poi, index }) {
 
   return (
     <div
-      className="one_search_map_result_single box_style_1 one_search_map_result_single--clickable"
+      ref={ref}
+      className={`one_search_map_result_single box_style_1 one_search_map_result_single--clickable${isHighlighted ? ' one_search_map_result_single--highlighted' : ''}`}
       role="link"
       tabIndex={0}
       onClick={goDetails}
@@ -221,7 +223,7 @@ function ResultCard({ poi, index }) {
           <span className="one_search_map_result_calculated">
             {poi.distance.toFixed(1)} {poi.distance === 1 ? 'mile' : 'miles'}
           </span>{' '}
-          <span className="one_search_map_result_frompoint">from point of interest</span>
+          <span className="one_search_map_result_frompoint">from downtown Pittsboro</span>
         </div>
       )}
 
@@ -276,7 +278,7 @@ function ResultCard({ poi, index }) {
       </div>
     </div>
   );
-}
+});
 
 /* ------------------------------------------------------------------ */
 /* Page                                                               */
@@ -305,6 +307,18 @@ export default function Explore() {
 
   const radiusRef = useRef(null);
   const dateRef   = useRef(null);
+
+  // Marker click → scroll-to-card + highlight (#32)
+  const [highlightedCardId, setHighlightedCardId] = useState(null);
+  const cardRefs = useRef({});
+
+  const handleMarkerClick = useCallback((poiId) => {
+    setHighlightedCardId(poiId);
+    setTimeout(() => {
+      cardRefs.current[poiId]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 100);
+    setTimeout(() => setHighlightedCardId(null), 3000);
+  }, []);
 
   /* sync search input with url ------------------------------------- */
   useEffect(() => { setSearchInput(urlQuery); }, [urlQuery]);
@@ -653,12 +667,23 @@ export default function Explore() {
         <div id="map_results_layout_1">
           <div className="map_results_layout_1_left_col">
             {filteredResults.map((poi, idx) => (
-              <ResultCard key={poi.id} poi={poi} index={idx} />
+              <ResultCard
+                key={poi.id}
+                poi={poi}
+                index={idx}
+                ref={(el) => (cardRefs.current[poi.id] = el)}
+                isHighlighted={highlightedCardId === poi.id}
+              />
             ))}
           </div>
           <div className="map_results_layout_1_right_col">
             {mapCurrent ? (
-              <Map currentPOI={mapCurrent} nearbyPOIs={mapOthers} />
+              <Map
+                currentPOI={mapCurrent}
+                nearbyPOIs={mapOthers}
+                onMarkerClick={handleMarkerClick}
+                highlightedId={highlightedCardId}
+              />
             ) : (
               <div className="explore__map-empty">
                 <MapPin size={32} aria-hidden="true" />
