@@ -9,6 +9,7 @@ import {
 } from './shared';
 import HoursDisplay from '../common/HoursDisplay';
 import ServiceAnimalAlert from './ServiceAnimalAlert';
+import DirectionsModal from '../common/DirectionsModal';
 import { isCurrentlyOpen } from '../../utils/hoursUtils';
 import { getDisplayableLocation } from '../../utils/getDisplayableLocation';
 import { isPaidTier } from '../../utils/poiTier';
@@ -31,6 +32,7 @@ const cap = (s) => (typeof s === 'string' && s.length > 0 ? s[0].toUpperCase() +
 export default function TrailDetail({ poi }) {
   const [copiedCoords, setCopiedCoords] = useState(false);
   const [copiedAddress, setCopiedAddress] = useState(false);
+  const [directionsOpen, setDirectionsOpen] = useState(false);
 
   const displayLoc = getDisplayableLocation(poi);
   const trail = poi?.trail || {};
@@ -48,13 +50,7 @@ export default function TrailDetail({ poi }) {
   };
   const coords = getCoords();
 
-  const handleDirections = () => {
-    if (coords) window.open(`https://www.google.com/maps/dir/?api=1&destination=${coords.lat},${coords.lng}`, '_blank');
-    else if (poi.address_street) {
-      const addr = encodeURIComponent([poi.address_street, poi.address_city, poi.address_state, poi.address_zip].filter(Boolean).join(', '));
-      window.open(`https://www.google.com/maps/dir/?api=1&destination=${addr}`, '_blank');
-    }
-  };
+  const handleDirections = () => setDirectionsOpen(true);
   const handleCopyCoords = async () => {
     if (!coords) return;
     if (await copyToClipboard(`${coords.lat}, ${coords.lng}`)) { setCopiedCoords(true); setTimeout(() => setCopiedCoords(false), 2000); }
@@ -263,5 +259,12 @@ export default function TrailDetail({ poi }) {
         </>
       )}
     </POIDetailLayout>
+    <DirectionsModal
+      isOpen={directionsOpen}
+      onClose={() => setDirectionsOpen(false)}
+      poiName={poi?.name}
+      coords={coords}
+      poi={poi}
+    />
   );
 }

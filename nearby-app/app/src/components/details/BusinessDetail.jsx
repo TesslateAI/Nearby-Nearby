@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 
 import {
@@ -10,11 +10,12 @@ import HoursDisplay from '../common/HoursDisplay';
 import ServiceAnimalAlert from './ServiceAnimalAlert';
 import { SvgDirections, SvgLatLong } from './PoiHeader';
 import { LocalBusinessJsonLd } from '../seo/index';
+import DirectionsModal from '../common/DirectionsModal';
 
 import { isCurrentlyOpen } from '../../utils/hoursUtils';
 import { getDisplayableLocation } from '../../utils/getDisplayableLocation';
 import { isPaidTier } from '../../utils/poiTier';
-import { copyToClipboard, getCoordinates, openDirections } from './shared/poiDetailUtils';
+import { copyToClipboard, getCoordinates } from './shared/poiDetailUtils';
 import { sanitizeHtml } from '../../utils/sanitize';
 
 const ALCOHOL_LABELS = {
@@ -37,6 +38,7 @@ export default function BusinessDetail({ poi }) {
     if (tierParam === 'paid') return true;
     return isPaidTier(poi);
   }, [tierParam, poi]);
+  const [directionsOpen, setDirectionsOpen] = useState(false);
 
   const displayLoc = getDisplayableLocation(poi);
   const hideExact = displayLoc.hideExact;
@@ -131,7 +133,7 @@ export default function BusinessDetail({ poi }) {
       <div className="acc_content_text">
         {addressLine && <div>{addressLine}</div>}
         <div className="pd-addr__actions" style={{ marginTop: 10 }}>
-          <button type="button" className="btn_reset button btn_outline_teal btn_poi_button_1" onClick={() => openDirections(poi, coords)}>
+          <button type="button" className="btn_reset button btn_outline_teal btn_poi_button_1" onClick={() => setDirectionsOpen(true)}>
             <SvgDirections /> <span className="poi_button_title">Directions</span>
           </button>
           {coords && (
@@ -290,5 +292,12 @@ export default function BusinessDetail({ poi }) {
         </>
       )}
     </POIDetailLayout>
+    <DirectionsModal
+      isOpen={directionsOpen}
+      onClose={() => setDirectionsOpen(false)}
+      poiName={poi?.name}
+      coords={coords}
+      poi={poi}
+    />
   );
 }

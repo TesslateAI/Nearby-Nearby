@@ -6,11 +6,12 @@ import PhotoLightbox from '../PhotoLightbox';
 import HeroBanner from '../HeroBanner';
 import SuggestEditOverlay from '../SuggestEditOverlay';
 import PoiHeader from '../PoiHeader';
+import DirectionsModal from '../../common/DirectionsModal';
 
 import { getDisplayableLocation } from '../../../utils/getDisplayableLocation';
 import { isPaidTier } from '../../../utils/poiTier';
 import { isCurrentlyOpen } from '../../../utils/hoursUtils';
-import { copyToClipboard, getCoordinates, openDirections, getImages } from './poiDetailUtils';
+import { copyToClipboard, getCoordinates, getImages } from './poiDetailUtils';
 
 export default function POIDetailLayout({
   poi,
@@ -32,6 +33,7 @@ export default function POIDetailLayout({
   const [copiedCoords, setCopiedCoords] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
+  const [directionsOpen, setDirectionsOpen] = useState(false);
   const suggestEditRef = useRef(null);
 
   const displayLoc = getDisplayableLocation(poi);
@@ -53,7 +55,7 @@ export default function POIDetailLayout({
       : (openStatus.status || 'Closed');
   }
 
-  const handleDirections = () => openDirections(poi, coords);
+  const handleDirections = () => setDirectionsOpen(true);
   const handleCopyCoords = async () => {
     if (!coords) return;
     if (await copyToClipboard(`${coords.lat}, ${coords.lng}`)) {
@@ -130,6 +132,14 @@ export default function POIDetailLayout({
         poiName={poi?.name}
         poiId={poi?.id}
         triggerRef={suggestEditRef}
+      />
+
+      <DirectionsModal
+        isOpen={directionsOpen}
+        onClose={() => setDirectionsOpen(false)}
+        poiName={poi?.name}
+        coords={coords}
+        poi={poi}
       />
     </div>
   );
