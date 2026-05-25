@@ -17,6 +17,7 @@ class ImageTypeEnum(str, Enum):
     MENU = "menu"
     TRAIL_HEAD = "trail_head"
     TRAIL_EXIT = "trail_exit"
+    ACCESS_POINT = "access_point"
     MAP = "map"
     DOWNLOADABLE_MAP = "downloadable_map"
 

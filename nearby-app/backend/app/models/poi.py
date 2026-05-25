@@ -228,6 +228,7 @@ class Trail(Base):
     trail_guide_notes     = Column(Text)
     trail_lighting        = Column(String(30))
     access_points         = Column(JSONB)
+    trail_entry_notes     = Column(Text)
     poi = relationship("PointOfInterest", back_populates="trail")
 
 class Event(Base):

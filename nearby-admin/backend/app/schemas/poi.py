@@ -134,6 +134,7 @@ class TrailBase(BaseModel):
     trail_guide_notes: Optional[str] = None
     trail_lighting: Optional[TRAIL_LIGHTING] = None
     access_points: Optional[List[Dict[str, Any]]] = None
+    trail_entry_notes: Optional[str] = None
 
 class TrailCreate(TrailBase): pass
 class Trail(TrailBase):
