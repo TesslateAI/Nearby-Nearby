@@ -284,5 +284,6 @@ export const emptyInitialValues = {
   qr_trail_guide: false,
   trail_guide_notes: '',
   trail_lighting: null,
-  access_points: []
+  access_points: [],
+  trail_entry_notes: ''
 };

@@ -34,6 +34,13 @@ class Trail(BaseModel):
     length_text: Optional[str] = None
     difficulty: Optional[str] = None
     route_type: Optional[str] = None
+    # Issue #63 / #64 — Trailhead + Access Points consolidation.
+    trailhead_latitude: Optional[float] = None
+    trailhead_longitude: Optional[float] = None
+    trailhead_location: Optional[dict] = None
+    trailhead_access_details: Optional[str] = None
+    access_points: Optional[list] = None
+    trail_entry_notes: Optional[str] = None
     model_config = ConfigDict(from_attributes=True)
 
 class Event(BaseModel):

@@ -11,6 +11,7 @@ import { LocationSection } from '../sections/LocationSection';
 import { ContactSection } from '../sections/ContactSection';
 import { TrailCategoriesSection } from '../sections/TrailCategoriesSection';
 import { TrailDetailsSection } from '../sections/TrailSpecificSections';
+import TrailheadAccessPointsSection from '../sections/TrailheadAccessPointsSection';
 import {
   FacilitiesSection, PublicAmenitiesSection, RentalsSection
 } from '../sections/FacilitiesSection';
@@ -84,12 +85,6 @@ export default function TrailLayout({ form, userRole, poiId }) {
 
   const trailInParkVal = form.values.trail_in_park ? 'yes' : (form.values.trail_in_park === false ? 'no' : null);
   const associatedPark = form.values.trail?.associated_park || null;
-
-  const accessPoints = Array.isArray(form.values.access_points) ? form.values.access_points : [];
-  const addAP = () =>
-    form.setFieldValue('access_points', [...accessPoints, { lat: null, lng: null, what3words: '', notes: '' }]);
-  const removeAP = (i) =>
-    form.setFieldValue('access_points', accessPoints.filter((_, idx) => idx !== i));
 
   return (
     <>
@@ -173,41 +168,17 @@ export default function TrailLayout({ form, userRole, poiId }) {
         </Accordion.Panel>
       </Accordion.Item>
 
-      {/* 5. Location & Arrival */}
+      {/* 5. Trailhead + Access Points (Issue #63 — consolidated) */}
       <Accordion.Item value="s5-location">
         <Accordion.Control>
-          <Text fw={600}>{waterTrail ? 'Primary Put-In' : 'Primary Trailhead'}</Text>
+          <Text fw={600}>{waterTrail ? 'Primary Put-In + Access Points' : 'Trailhead + Access Points'}</Text>
         </Accordion.Control>
         <Accordion.Panel>
-          <Stack>
-            <LocationSection form={form} isTrail id={poiId} />
-            <ArrivalMethodsGroup form={form} />
-            <What3WordsInput form={form} />
-          </Stack>
+          <TrailheadAccessPointsSection form={form} poiId={poiId} />
         </Accordion.Panel>
       </Accordion.Item>
-
-      {/* 6. Trailhead Exit (Take-Out for water trails) */}
-      <Accordion.Item value="s6-exit">
-        <Accordion.Control>
-          <Text fw={600}>{waterTrail ? 'Primary Take-Out' : 'Trailhead Exit'}</Text>
-        </Accordion.Control>
-        <Accordion.Panel>
-          <Stack>
-            <TextInput label={waterTrail ? 'Take-Out Location' : 'Exit Location'}
-              {...form.getInputProps('trail.trailhead_exit_location')}
-              value={form.values.trail?.trailhead_exit_location ?? ''} />
-            <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="sm">
-              <NumberInput label="Latitude" decimalScale={6}
-                value={form.values.trail?.trail_exit_latitude}
-                onChange={(v) => form.setFieldValue('trail.trail_exit_latitude', v)} />
-              <NumberInput label="Longitude" decimalScale={6}
-                value={form.values.trail?.trail_exit_longitude}
-                onChange={(v) => form.setFieldValue('trail.trail_exit_longitude', v)} />
-            </SimpleGrid>
-          </Stack>
-        </Accordion.Panel>
-      </Accordion.Item>
+      {/* s6-exit removed — Trail Exit absorbed into Access Points (Issue #63).
+          trail_exit_latitude/longitude columns remain in the DB unread. */}
 
       {/* 7. Trail Guide (7 new fields + water_trail labels for access points) */}
       <Accordion.Item value="s7-guide">
@@ -245,31 +216,9 @@ export default function TrailLayout({ form, userRole, poiId }) {
               onChange={(v) => form.setFieldValue('trail_lighting', v)}
               clearable
             />
-            <Divider label={waterTrail ? 'Additional Put-In + Take-Out Points' : 'Access Points'} />
-            {accessPoints.map((ap, idx) => (
-              <Stack key={idx} p="sm" style={{ border: '1px solid #eee', borderRadius: 6 }}>
-                <Group align="flex-end" wrap="nowrap">
-                  <NumberInput label="Latitude" decimalScale={6} style={{ flex: 1 }}
-                    value={ap.lat}
-                    onChange={(v) => form.setFieldValue(`access_points.${idx}.lat`, v)} />
-                  <NumberInput label="Longitude" decimalScale={6} style={{ flex: 1 }}
-                    value={ap.lng}
-                    onChange={(v) => form.setFieldValue(`access_points.${idx}.lng`, v)} />
-                  <ActionIcon variant="light" color="red" onClick={() => removeAP(idx)} aria-label="Remove">
-                    <IconTrash size={16} />
-                  </ActionIcon>
-                </Group>
-                <TextInput label="what3words"
-                  value={ap.what3words || ''}
-                  onChange={(e) => form.setFieldValue(`access_points.${idx}.what3words`, e.currentTarget.value)} />
-                <Textarea label="Notes" autosize minRows={1}
-                  value={ap.notes || ''}
-                  onChange={(e) => form.setFieldValue(`access_points.${idx}.notes`, e.currentTarget.value)} />
-              </Stack>
-            ))}
-            <Button leftSection={<IconPlus size={14} />} variant="light" onClick={addAP}>
-              Add Access Point
-            </Button>
+            {/* Issue #63: Access Points moved into the "Trailhead + Access
+                Points" section above. This pane keeps only trail-guide flags
+                + lighting + notes. */}
           </Stack>
         </Accordion.Panel>
       </Accordion.Item>
