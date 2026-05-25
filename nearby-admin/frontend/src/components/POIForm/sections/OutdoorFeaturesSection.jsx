@@ -182,17 +182,19 @@ export const PetPolicySection = React.memo(function PetPolicySection({ form }) {
 });
 
 export const PlaygroundSection = React.memo(function PlaygroundSection({ form, id }) {
-  // Normalize: if playground_location is a single dict, wrap in array
+  // Normalize: if playground_locations is a single dict (legacy), wrap in array.
+  // Migration g67_001 renamed the column singular -> plural and one-time wraps
+  // existing singular-object rows, but defensive normalization stays for
+  // forms loaded from older API responses.
   const playgrounds = React.useMemo(() => {
-    const val = form.values.playground_location;
+    const val = form.values.playground_locations;
     if (!val) return [];
     if (Array.isArray(val)) return val;
-    // Legacy single dict format
     return [val];
-  }, [form.values.playground_location]);
+  }, [form.values.playground_locations]);
 
   const updatePlaygrounds = (newPlaygrounds) => {
-    form.setFieldValue('playground_location', newPlaygrounds);
+    form.setFieldValue('playground_locations', newPlaygrounds);
   };
 
   return (

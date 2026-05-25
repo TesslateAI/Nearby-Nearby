@@ -256,7 +256,7 @@ class POIDetail(BaseModel):
     playground_surface_types: Optional[Any] = None
     playground_notes: Optional[str] = None
     playground_photos: Optional[Any] = None
-    playground_location: Optional[Any] = None
+    playground_locations: Optional[Any] = None  # Plural array; renamed by migration g67_001.
 
     # Outdoor Activities
     natural_features: Optional[Any] = None

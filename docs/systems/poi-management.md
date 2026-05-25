@@ -1034,7 +1034,7 @@ Free business listings (`listing_type == 'free'` and `poi_type == 'BUSINESS'`) h
 
 ### Multiple Playgrounds (JSONB)
 
-The `playground_location` field accepts either a single dict `{lat, lng}` or an array `[{lat, lng, types, surfaces, notes}, ...]`. The frontend normalizes both formats to an array for display. Each playground can have its own photos via `image_context` grouping.
+The `playground_locations` field (plural) accepts an array `[{lat, lng, types, surfaces, notes}, ...]`. Migration `g67_001` renamed this column from the historical singular `playground_location`, and one-time wraps any legacy single-dict rows into a one-element array. The frontend defensively still normalizes a stray single-dict response into an array. Each playground can have its own photos via `image_context` grouping.
 
 ### Multiple Restrooms (JSONB)
 

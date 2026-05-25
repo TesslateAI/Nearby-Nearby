@@ -122,24 +122,34 @@ class TestAlcoholPolicyDetails:
 
 class TestPlaygroundLocation:
     def test_create_with_playground_coords(self, admin_client):
-        """playground_location JSONB with lat/lng should persist."""
-        loc = {"lat": 35.72, "lng": -79.18}
+        """playground_locations JSONB list with lat/lng should persist (post g67_001)."""
+        locs = [{"lat": 35.72, "lng": -79.18}]
         poi = create_park(
             admin_client, name="Playground Park",
             playground_available=True,
-            playground_location=loc,
+            playground_locations=locs,
         )
-        assert poi["playground_location"]["lat"] == 35.72
-        assert poi["playground_location"]["lng"] == -79.18
+        result = poi["playground_locations"]
+        # Schema accepts either dict or list (Optional[Any]); plural is the canonical shape.
+        if isinstance(result, list):
+            assert result[0]["lat"] == 35.72
+            assert result[0]["lng"] == -79.18
+        else:
+            assert result["lat"] == 35.72
+            assert result["lng"] == -79.18
 
     def test_update_playground_coords(self, admin_client):
-        """Should be updatable via PUT."""
+        """Should be updatable via PUT using the plural column."""
         poi = create_park(admin_client, name="Move Playground Park")
         poi_id = poi["id"]
-        loc = {"lat": 35.80, "lng": -79.20}
-        resp = admin_client.put(f"/api/pois/{poi_id}", json={"playground_location": loc})
+        locs = [{"lat": 35.80, "lng": -79.20}]
+        resp = admin_client.put(f"/api/pois/{poi_id}", json={"playground_locations": locs})
         assert resp.status_code == 200
-        assert resp.json()["playground_location"]["lat"] == 35.80
+        result = resp.json()["playground_locations"]
+        if isinstance(result, list):
+            assert result[0]["lat"] == 35.80
+        else:
+            assert result["lat"] == 35.80
 
 
 # -------------------------------------------------------------------------

@@ -465,7 +465,7 @@ class PointOfInterestBase(BaseModel):
     playground_surface_types: Optional[List[str]] = None
     playground_notes: Optional[str] = None
     # playground_photos - DEPRECATED: moved to Images table (image_type='playground')
-    playground_location: Optional[Any] = None  # Single dict or list of dicts (multiple playgrounds)
+    playground_locations: Optional[Any] = None  # List of dicts (multiple playgrounds). Accepts a single dict for backward-compat; migration g67_001 wraps legacy singular rows.
 
     # Parks & Trails Additional Info
     payphone_location: Optional[Dict[str, Any]] = None
@@ -660,7 +660,7 @@ class PointOfInterestUpdate(BaseModel):
     playground_surface_types: Optional[List[str]] = None
     playground_notes: Optional[str] = None
     # playground_photos - DEPRECATED: moved to Images table (image_type='playground')
-    playground_location: Optional[Any] = None  # Single dict or list of dicts (multiple playgrounds)
+    playground_locations: Optional[Any] = None  # List of dicts (multiple playgrounds). Accepts a single dict for backward-compat; migration g67_001 wraps legacy singular rows.
     payphone_location: Optional[Dict[str, Any]] = None
     payphone_locations: Optional[List[Dict[str, Any]]] = None
     park_entry_notes: Optional[str] = None

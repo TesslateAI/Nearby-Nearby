@@ -4,7 +4,7 @@ Tests for Tasks 17-41 (Admin Panel Features & Fixes Batch 2).
 FAILING TESTS (require implementation):
 - TestShortDescriptionLimit: Task 24 — 250-char visible text limit on description_short
 - TestFreeBizCategoryLimit: Task 25 — Free business limited to 1 category
-- TestMultiplePlaygrounds: Tasks 19/38 — playground_location accepts list of objects
+- TestMultiplePlaygrounds: Tasks 19/38 — playground_locations accepts list of objects
 
 VERIFICATION TESTS (already-working features):
 - TestArticleLinksTitle: Task 21 — article_links with title+url round-trips
@@ -149,11 +149,11 @@ class TestFreeBizCategoryLimit:
 
 
 # =========================================================================
-# Tasks 19/38: Multiple Playgrounds (playground_location accepts list)
+# Tasks 19/38: Multiple Playgrounds (playground_locations accepts list)
 # =========================================================================
 
 class TestMultiplePlaygrounds:
-    """playground_location JSONB field should accept a list of playground objects."""
+    """playground_locations JSONB field should accept a list of playground objects."""
 
     def test_single_playground_dict_still_works(self, admin_client):
         """Old format (single dict) should still be accepted."""
@@ -161,9 +161,9 @@ class TestMultiplePlaygrounds:
         poi = create_park(
             admin_client, name="Single Playground Park",
             playground_available=True,
-            playground_location=loc,
+            playground_locations=loc,
         )
-        assert poi["playground_location"] is not None
+        assert poi["playground_locations"] is not None
 
     def test_multiple_playgrounds_as_list(self, admin_client):
         """New format (list of dicts) should be accepted."""
@@ -174,9 +174,9 @@ class TestMultiplePlaygrounds:
         poi = create_park(
             admin_client, name="Multi Playground Park",
             playground_available=True,
-            playground_location=locs,
+            playground_locations=locs,
         )
-        result = poi["playground_location"]
+        result = poi["playground_locations"]
         assert isinstance(result, list), f"Expected list, got {type(result)}"
         assert len(result) == 2
         assert result[0]["lat"] == 35.72
@@ -188,7 +188,7 @@ class TestMultiplePlaygrounds:
         poi = create_park(
             admin_client, name="RT Playground Park",
             playground_available=True,
-            playground_location=locs1,
+            playground_locations=locs1,
         )
         poi_id = poi["id"]
 
@@ -197,10 +197,10 @@ class TestMultiplePlaygrounds:
             {"lat": 35.81, "lng": -79.21, "notes": "New Second"},
         ]
         resp = admin_client.put(f"/api/pois/{poi_id}", json={
-            "playground_location": locs2,
+            "playground_locations": locs2,
         })
         assert resp.status_code == 200
-        result = resp.json()["playground_location"]
+        result = resp.json()["playground_locations"]
         assert isinstance(result, list)
         assert len(result) == 2
         assert result[0]["notes"] == "Updated First"
