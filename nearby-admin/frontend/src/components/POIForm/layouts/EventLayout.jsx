@@ -24,11 +24,10 @@ import {
 import DynamicAttributeForm from '../../DynamicAttributeForm';
 
 import ServiceAnimalAlert from '../components/ServiceAnimalAlert';
-import { VenueSelector } from '../components/VenueSelector';
 import {
   AdminOnlyAccordionItem, IdealForGrouped, ArrivalMethodsGroup, What3WordsInput,
   AccessibleParkingChecklist, AccessibleRestroomChecklist, FullAmenitiesBlock,
-  ConnectivityRow, AlcoholAvailableSelect
+  ConnectivityRow
 } from './_shared';
 import { SPONSOR_LEVEL_OPTIONS } from '../../../utils/constants';
 import { api } from '../../../utils/api';
@@ -136,8 +135,6 @@ export default function EventLayout({ form, userRole, poiId }) {
       <Accordion.Item value="s5-venue">
         <Accordion.Control><Text fw={600}>Event Venue</Text></Accordion.Control>
         <Accordion.Panel>
-          <VenueSelector form={form} poiId={poiId} types={['BUSINESS', 'PARK', 'TRAIL']} />
-          <Divider my="sm" />
           <EventVenueSection form={form} id={poiId} />
         </Accordion.Panel>
       </Accordion.Item>
@@ -291,7 +288,6 @@ export default function EventLayout({ form, userRole, poiId }) {
             <EventAmenitiesSection form={form} id={poiId} />
             <FullAmenitiesBlock form={form} />
             <ConnectivityRow form={form} />
-            <AlcoholAvailableSelect form={form} />
           </Stack>
         </Accordion.Panel>
       </Accordion.Item>

@@ -28,7 +28,7 @@ import ServiceAnimalAlert from '../components/ServiceAnimalAlert';
 import {
   AdminOnlyAccordionItem, IdealForGrouped, ArrivalMethodsGroup, What3WordsInput,
   AccessibleParkingChecklist, AccessibleRestroomChecklist, FullAmenitiesBlock,
-  ConnectivityRow, AlcoholAvailableSelect, PAYMENT_METHODS, DISCOUNT_TYPES
+  ConnectivityRow, PAYMENT_METHODS, DISCOUNT_TYPES
 } from './_shared';
 
 export default function BusinessPaidLayout({ form, userRole, poiId }) {
@@ -169,7 +169,6 @@ export default function BusinessPaidLayout({ form, userRole, poiId }) {
             <FacilitiesSection form={form} isBusiness isFreeListing={false} id={poiId} />
             <FullAmenitiesBlock form={form} />
             <ConnectivityRow form={form} />
-            <AlcoholAvailableSelect form={form} />
           </Stack>
         </Accordion.Panel>
       </Accordion.Item>
