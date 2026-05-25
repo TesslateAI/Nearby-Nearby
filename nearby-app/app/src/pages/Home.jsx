@@ -68,8 +68,8 @@ const CATEGORIES = [
   { name: 'Parks', Icon: ParksIcon, path: '/explore?type=PARK', countKey: 'PARK' },
   { name: 'Trails', Icon: TrailsIcon, path: '/explore?type=TRAIL', countKey: 'TRAIL' },
   { name: 'Events', Icon: EventsIcon, path: '/explore?type=EVENT', countKey: 'EVENT' },
-  { name: 'Pet Friendly', Icon: PetFriendlyIcon, path: '/explore?amenity=pet-friendly', countKey: null },
-  { name: 'Wheelchair', Icon: WheelchairIcon, path: '/explore?amenity=wheelchair-accessible', countKey: null },
+  { name: 'Pet Friendly', Icon: PetFriendlyIcon, path: '/explore?amenity=pet-friendly', countKey: 'pet_friendly' },
+  { name: 'Wheelchair', Icon: WheelchairIcon, path: '/explore?amenity=wheelchair-accessible', countKey: 'wheelchair_accessible' },
 ];
 
 const BLOG_POSTS = [
@@ -100,23 +100,18 @@ const BLOG_POSTS = [
 ];
 
 function Home() {
-  // Real listing counts per POI type. null = loading/unknown.
-  const [counts, setCounts] = useState({ BUSINESS: null, PARK: null, TRAIL: null, EVENT: null });
+  // Real listing counts per POI type and amenity. null = loading/unknown.
+  const [counts, setCounts] = useState({ BUSINESS: null, PARK: null, TRAIL: null, EVENT: null, pet_friendly: null, wheelchair_accessible: null });
 
   useEffect(() => {
     let cancelled = false;
-    const types = ['BUSINESS', 'PARK', 'TRAIL', 'EVENT'];
-    Promise.all(
-      types.map(t =>
-        fetch(getApiUrl(`api/pois/by-type/${t}`))
-          .then(r => (r.ok ? r.json() : []))
-          .then(d => (Array.isArray(d) ? d.length : 0))
-          .catch(() => 0)
-      )
-    ).then(results => {
-      if (cancelled) return;
-      setCounts({ BUSINESS: results[0], PARK: results[1], TRAIL: results[2], EVENT: results[3] });
-    });
+    fetch(getApiUrl('api/pois/counts'))
+      .then(r => (r.ok ? r.json() : null))
+      .then(data => {
+        if (cancelled || !data) return;
+        setCounts({ ...data.by_type, ...data.by_amenity });
+      })
+      .catch(() => {});
     return () => { cancelled = true; };
   }, []);
 

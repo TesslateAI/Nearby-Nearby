@@ -241,6 +241,24 @@ def _apply_venue_inheritance(db: Session, poi_dict: dict, event) -> dict:
     return poi_dict
 
 
+@router.get("/pois/counts")
+def api_get_poi_counts(db: Session = Depends(get_db)):
+    """Return published POI counts by type and by amenity (pet-friendly / wheelchair-accessible)."""
+    POI = models.poi.PointOfInterest
+    base = db.query(POI).filter(POI.publication_status == 'published')
+    by_type = {
+        t: base.filter(POI.poi_type == t).count()
+        for t in ['BUSINESS', 'PARK', 'TRAIL', 'EVENT']
+    }
+    return {
+        "by_type": by_type,
+        "by_amenity": {
+            "pet_friendly": base.filter(POI.icon_pet_friendly.is_(True)).count(),
+            "wheelchair_accessible": base.filter(POI.icon_wheelchair_accessible.is_(True)).count(),
+        },
+    }
+
+
 @router.get("/pois/{poi_id}", response_model=schemas.poi.POIDetail)
 def api_get_poi(poi_id: uuid.UUID, db: Session = Depends(get_db)):
     db_poi = crud.crud_poi.get_poi(db, poi_id=str(poi_id))
