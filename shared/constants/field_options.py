@@ -458,11 +458,48 @@ IDEAL_FOR_LOCAL_SPECIAL = [
     "Takeout Available",
     "Veteran Owned",
     "Virtual Consults Available",
-    "Virtual Events Available",
     "Virtual Services Available",
     "Walk Ins Welcome",
     "We Come to You",
     "Volunteer Opportunities",
+]
+
+# Issue #43 — 32 condition checkboxes. Multi-select. Stored under
+# ideal_for.special_needs (JSONB). Backend label: "Supports These Special Needs".
+# Frontend (public) label: "Special Needs Supported".
+IDEAL_FOR_SPECIAL_NEEDS = [
+    "Acquired Disability",
+    "ADHD",
+    "Anxiety Disorders",
+    "Asperger's Syndrome",
+    "Autism",
+    "Behavioral Issues",
+    "Blind + Low Vision",
+    "Cerebral Palsy",
+    "Chronic Illness",
+    "Deaf or Hard of Hearing",
+    "Dementia + Memory Care",
+    "Developmental Issues",
+    "Down Syndrome",
+    "Epilepsy + Seizure Disorders",
+    "Intellectual Disability",
+    "Learning Issues",
+    "Medical Issues",
+    "Mental Health",
+    "Mobility Impaired",
+    "Multiple Sclerosis",
+    "Muscular Dystrophy",
+    "Nonverbal",
+    "OCD",
+    "ODD",
+    "Processing Disorders",
+    "PTSD",
+    "Schizophrenia",
+    "Selective Mutism",
+    "Sensory Impaired",
+    "Speech + Language Disorders",
+    "Tourette Syndrome",
+    "Traumatic Brain Injury",
 ]
 
 TRAIL_ROUTE_TYPES = [
@@ -486,12 +523,15 @@ TRAIL_LIGHTING_OPTIONS = [
     {"value": "dusk_to_dawn", "label": "Dusk-to-Dawn"},
 ]
 
-# IDEAL_FOR_KEY_OPTIONS: flat union so existing importers keep working.
+# IDEAL_FOR_KEY_OPTIONS: flat union of all 5 Ideal For groups (incl. Special Needs).
+# Kept as a flat list so existing data-pipeline importers keep working, but the
+# admin form no longer surfaces it as a flat-checkbox UI — see IdealForGrouped.
 IDEAL_FOR_KEY_OPTIONS = (
     IDEAL_FOR_ATMOSPHERE
     + IDEAL_FOR_AGE_GROUP
     + IDEAL_FOR_SOCIAL_SETTINGS
     + IDEAL_FOR_LOCAL_SPECIAL
+    + IDEAL_FOR_SPECIAL_NEEDS
 )
 
 # ============================================================================

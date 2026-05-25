@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-  Accordion, Stack, Group, Text, Badge, Textarea, Select, Switch
+  Accordion, Stack, Group, Text, Badge
 } from '@mantine/core';
 
 import { CoreInformationSection } from '../sections/CoreInformationSection';
@@ -22,11 +22,7 @@ import {
   AdminOnlyAccordionItem, IdealForGrouped, ArrivalMethodsGroup,
   What3WordsInput, AccessibleRestroomChecklist
 } from './_shared';
-import { getFieldsForListingType } from '../../../utils/constants';
-
 export default function BusinessFreeLayout({ form, userRole, poiId }) {
-  const fields = getFieldsForListingType('BUSINESS', 'free');
-
   return (
     <>
       {/* 1. Business Identity */}
@@ -39,29 +35,17 @@ export default function BusinessFreeLayout({ form, userRole, poiId }) {
         </Accordion.Panel>
       </Accordion.Item>
 
-      {/* 2. Short Description (capped 250 chars) */}
-      <Accordion.Item value="s2-short-desc">
-        <Accordion.Control><Text fw={600}>Short Description</Text></Accordion.Control>
-        <Accordion.Panel>
-          <Textarea
-            label="Short Description"
-            description={`Up to 250 characters. (${(form.values.description_short || '').length}/250)`}
-            maxLength={250}
-            autosize
-            minRows={3}
-            value={form.values.description_short || ''}
-            onChange={(e) => form.setFieldValue('description_short', e.currentTarget.value.slice(0, 250))}
-          />
-        </Accordion.Panel>
-      </Accordion.Item>
+      {/* Issue #43: removed duplicate Short Description accordion (s2-short-desc).
+          The rich-text Short Description in Section 1 (Business Identity, via
+          CoreInformationSection) is the canonical source. */}
 
-      {/* 3. Categories & Ideal For (capped) */}
+      {/* 2. Categories & Ideal For (capped) */}
       <Accordion.Item value="s3-categories">
         <Accordion.Control><Text fw={600}>Categories & Ideal For</Text></Accordion.Control>
         <Accordion.Panel>
           <Stack>
+            <IdealForGrouped form={form} listingType="Business Free" />
             <CategoriesSection form={form} isFreeListing isPaidListing={false} />
-            <IdealForGrouped form={form} totalCap={fields.maxIdealFor} />
           </Stack>
         </Accordion.Panel>
       </Accordion.Item>

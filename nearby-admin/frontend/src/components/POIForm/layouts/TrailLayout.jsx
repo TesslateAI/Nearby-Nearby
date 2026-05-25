@@ -27,7 +27,7 @@ import DynamicAttributeForm from '../../DynamicAttributeForm';
 
 import ServiceAnimalAlert from '../components/ServiceAnimalAlert';
 import {
-  AdminOnlyAccordionItem, IdealForGrouped, ArrivalMethodsGroup, What3WordsInput,
+  AdminOnlyAccordionItem, ArrivalMethodsGroup, What3WordsInput,
   AccessibleParkingChecklist, AccessibleRestroomChecklist, FullAmenitiesBlock,
   ConnectivityRow, AlcoholAvailableSelect
 } from './_shared';
@@ -146,13 +146,12 @@ export default function TrailLayout({ form, userRole, poiId }) {
         </Accordion.Panel>
       </Accordion.Item>
 
-      {/* 3. Trail Categories (Ideal For) */}
+      {/* 3. Trail Categories (Issue #43: Ideal For not rendered for Trail) */}
       <Accordion.Item value="s3-categories">
-        <Accordion.Control><Text fw={600}>Trail Categories / Ideal For</Text></Accordion.Control>
+        <Accordion.Control><Text fw={600}>Trail Categories</Text></Accordion.Control>
         <Accordion.Panel>
           <Stack>
             <TrailCategoriesSection form={form} />
-            <IdealForGrouped form={form} />
           </Stack>
         </Accordion.Panel>
       </Accordion.Item>

@@ -41,9 +41,11 @@ export const usePOIHandlers = (id, isEditing, form, setPoiId) => {
             event: poi.event || emptyInitialValues.event
           };
 
-          // Ensure all array fields are arrays, not null
+          // Ensure all array fields are arrays, not null.
+          // NOTE: Issue #43 — `ideal_for` is now an object ({atmosphere, age_group,
+          // social_settings, local_special, special_needs}), not an array. Handle below.
           const arrayFields = [
-            'ideal_for', 'ideal_for_key', 'parking_types', 'payment_methods', 'key_facilities',
+            'ideal_for_key', 'parking_types', 'payment_methods', 'key_facilities',
             'alcohol_options', 'wheelchair_accessible', 'smoking_options', 'wifi_options',
             'pet_options', 'public_toilets', 'youth_amenities', 'business_amenities',
             'entertainment_options', 'natural_features', 'outdoor_types', 'things_to_do',
@@ -62,6 +64,28 @@ export const usePOIHandlers = (id, isEditing, form, setPoiId) => {
               formData[field] = emptyInitialValues[field] || [];
             }
           });
+
+          // Issue #43 — `ideal_for` is an object of 5 string-array groups.
+          // Coerce legacy flat arrays / null / missing values into the canonical shape.
+          {
+            const idealDefault = emptyInitialValues.ideal_for || {
+              atmosphere: [], age_group: [], social_settings: [], local_special: [], special_needs: []
+            };
+            const incoming = formData.ideal_for;
+            if (!incoming || Array.isArray(incoming) || typeof incoming !== 'object') {
+              // Legacy flat array data is no longer surfaced; safe to reset.
+              formData.ideal_for = { ...idealDefault };
+            } else {
+              formData.ideal_for = {
+                ...idealDefault,
+                ...incoming,
+              };
+              // Normalize any non-array group value back to []
+              Object.keys(idealDefault).forEach(k => {
+                if (!Array.isArray(formData.ideal_for[k])) formData.ideal_for[k] = [];
+              });
+            }
+          }
 
           // Ensure all subtype objects exist with proper initialization
           if (!formData.business && formData.poi_type === 'BUSINESS') {
