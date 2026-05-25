@@ -119,6 +119,11 @@
   box-shadow: 0 10px 24px rgba(86, 37, 86, 0.12);
   border-color: #f0b84a;
 }
+.one_search_map_result_single--highlighted {
+  border-color: var(--nn-gold) !important;
+  box-shadow: 0 10px 24px rgba(254, 199, 100, 0.35) !important;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
 .one_search_map_result_number {
   left: 50% !important;
   transform: translateX(-50%) !important;
