@@ -831,13 +831,13 @@ export const REPEAT_FREQUENCY_OPTIONS = [
   { value: 'yearly', label: 'Yearly' },
 ];
 
-// Sponsor tier options for event sponsors
+// Sponsor tier options for event sponsors (Issue #51)
 export const SPONSOR_TIERS = [
-  { value: 'Platinum', label: 'Platinum' },
-  { value: 'Gold', label: 'Gold' },
-  { value: 'Silver', label: 'Silver' },
-  { value: 'Bronze', label: 'Bronze' },
-  { value: 'Community', label: 'Community' },
+  { value: 'Tier 1', label: 'Tier 1' },
+  { value: 'Tier 2', label: 'Tier 2' },
+  { value: 'Tier 3', label: 'Tier 3' },
+  { value: 'Tier 4', label: 'Tier 4' },
+  { value: 'Tier 5', label: 'Tier 5' },
 ];
 
 // Phase 1 helper — returns feature flags for a (poi_type, listing_type) pair.

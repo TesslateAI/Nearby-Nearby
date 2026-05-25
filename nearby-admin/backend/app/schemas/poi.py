@@ -196,6 +196,28 @@ class EventBase(BaseModel):
     # Task 140: Sponsors
     sponsors: Optional[List[Dict[str, Any]]] = None
 
+    # Issue #51: every sponsor must have a tier in Tier 1..Tier 5
+    @field_validator('sponsors')
+    @classmethod
+    def validate_sponsor_tiers(cls, v):
+        if v is None:
+            return v
+        valid_tiers = {'Tier 1', 'Tier 2', 'Tier 3', 'Tier 4', 'Tier 5'}
+        for idx, sponsor in enumerate(v):
+            if not isinstance(sponsor, dict):
+                raise ValueError(f'Sponsor at position {idx + 1} must be an object')
+            tier = sponsor.get('tier')
+            if not tier:
+                raise ValueError(
+                    f'Sponsor at position {idx + 1} is missing required Tier value'
+                )
+            if tier not in valid_tiers:
+                raise ValueError(
+                    f'Sponsor at position {idx + 1} has invalid Tier value: {tier!r} '
+                    f'(must be one of Tier 1, Tier 2, Tier 3, Tier 4, Tier 5)'
+                )
+        return v
+
 class EventCreate(EventBase): pass
 class EventUpdate(BaseModel):
     start_datetime: Optional[datetime] = None
@@ -244,6 +266,28 @@ class EventUpdate(BaseModel):
     ticket_links: Optional[List[Dict[str, str]]] = None
     # Task 140: Sponsors
     sponsors: Optional[List[Dict[str, Any]]] = None
+
+    # Issue #51: every sponsor must have a tier in Tier 1..Tier 5
+    @field_validator('sponsors')
+    @classmethod
+    def validate_sponsor_tiers(cls, v):
+        if v is None:
+            return v
+        valid_tiers = {'Tier 1', 'Tier 2', 'Tier 3', 'Tier 4', 'Tier 5'}
+        for idx, sponsor in enumerate(v):
+            if not isinstance(sponsor, dict):
+                raise ValueError(f'Sponsor at position {idx + 1} must be an object')
+            tier = sponsor.get('tier')
+            if not tier:
+                raise ValueError(
+                    f'Sponsor at position {idx + 1} is missing required Tier value'
+                )
+            if tier not in valid_tiers:
+                raise ValueError(
+                    f'Sponsor at position {idx + 1} has invalid Tier value: {tier!r} '
+                    f'(must be one of Tier 1, Tier 2, Tier 3, Tier 4, Tier 5)'
+                )
+        return v
 class Event(EventBase):
     poi_id: uuid.UUID
     model_config = ConfigDict(from_attributes=True)
