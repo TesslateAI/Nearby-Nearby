@@ -1,23 +1,23 @@
 import React, { useState } from 'react';
 import {
-  Accordion, Stack, Group, Text, Badge, TextInput, Textarea, Select,
-  MultiSelect, Switch, Title, Divider, Autocomplete, Button, ActionIcon
+  Accordion, Stack, Group, Text, Badge, TextInput, Switch, Divider,
+  Autocomplete
 } from '@mantine/core';
-import { DateTimePicker } from '@mantine/dates';
-import { IconPlus, IconTrash } from '@tabler/icons-react';
 
 import { CoreInformationSection } from '../sections/CoreInformationSection';
 import { CategoriesSection } from '../sections/CategoriesSection';
 import { LocationSection } from '../sections/LocationSection';
 import { ContactSection } from '../sections/ContactSection';
+import RecurringEventSection from '../sections/RecurringEventSection';
 import {
-  EventVendorsSection, EventAmenitiesSection, EventMapsSection,
-  EventVenueSection, EventStatusSection, EventCostSection
+  EventVendorsSection, EventMapsSection,
+  EventVenueSection, EventStatusSection, EventCostSection,
+  EventSponsorsSection,
 } from '../sections/EventSpecificSections';
 import {
-  FacilitiesSection, PublicAmenitiesSection
+  FacilitiesSection, PublicAmenitiesSection, RentalsSection
 } from '../sections/FacilitiesSection';
-import { PetPolicySection } from '../sections/OutdoorFeaturesSection';
+import { PetPolicySection, PlaygroundSection } from '../sections/OutdoorFeaturesSection';
 import {
   InternalContactSection, CommunityConnectionsSection, CorporateComplianceSection
 } from '../sections/MiscellaneousSections';
@@ -26,13 +26,10 @@ import DynamicAttributeForm from '../../DynamicAttributeForm';
 import ServiceAnimalAlert from '../components/ServiceAnimalAlert';
 import {
   AdminOnlyAccordionItem, IdealForGrouped, ArrivalMethodsGroup, What3WordsInput,
-  AccessibleParkingChecklist, FullAmenitiesBlock,
-  ConnectivityRow
+  AccessibleParkingChecklist, AccessibleRestroomChecklist, FullAmenitiesBlock,
+  ConnectivityRow, AlcoholAvailableSelect
 } from './_shared';
-import { SPONSOR_LEVEL_OPTIONS } from '../../../utils/constants';
 import { api } from '../../../utils/api';
-
-const DT_FORMAT = 'MMM D, YYYY hh:mm A';
 
 function useOrganizerSearch() {
   const [options, setOptions] = useState([]);
@@ -56,24 +53,10 @@ function useOrganizerSearch() {
 
 export default function EventLayout({ form, userRole, poiId }) {
   const organizerSearch = useOrganizerSearch();
-  const sponsorSearch = useOrganizerSearch();
-
-  const ticket_links = form.values.event?.ticket_links || [];
-  const sponsors = form.values.event?.sponsors || [];
-
-  const addTicket = () =>
-    form.setFieldValue('event.ticket_links', [...ticket_links, { platform: '', url: '' }]);
-  const removeTicket = (i) =>
-    form.setFieldValue('event.ticket_links', ticket_links.filter((_, idx) => idx !== i));
-
-  const addSponsor = () =>
-    form.setFieldValue('event.sponsors', [...sponsors, { tier: '', poi_id: null, name: '', logo_url: '', website: '' }]);
-  const removeSponsor = (i) =>
-    form.setFieldValue('event.sponsors', sponsors.filter((_, idx) => idx !== i));
 
   return (
     <>
-      {/* 1. Event Identity */}
+      {/* 1. Event Identity — absorbs status_message + contact intro */}
       <Accordion.Item value="s1-identity">
         <Accordion.Control>
           <Group><Text fw={600}>Event Identity</Text><Badge size="sm" variant="light">Required</Badge></Group>
@@ -83,66 +66,50 @@ export default function EventLayout({ form, userRole, poiId }) {
         </Accordion.Panel>
       </Accordion.Item>
 
-      {/* 2. Date & Time — 12-hour AM/PM DateTimePicker */}
-      <Accordion.Item value="s2-datetime">
-        <Accordion.Control><Text fw={600}>Date & Time</Text></Accordion.Control>
+      {/* 2. Categories + Discovery (Ideal For 5-group) */}
+      <Accordion.Item value="s2-categories">
+        <Accordion.Control><Text fw={600}>Categories & Discovery</Text></Accordion.Control>
         <Accordion.Panel>
           <Stack>
-            <DateTimePicker
-              label="Start"
-              required
-              valueFormat={DT_FORMAT}
-              timePickerProps={{ format: '12h', withDropdown: true }}
-              popoverProps={{ withinPortal: true }}
-              value={form.values.event?.start_datetime ? new Date(form.values.event.start_datetime) : null}
-              onChange={(v) => form.setFieldValue('event.start_datetime', v)}
-            />
-            <DateTimePicker
-              label="End"
-              valueFormat={DT_FORMAT}
-              timePickerProps={{ format: '12h', withDropdown: true }}
-              popoverProps={{ withinPortal: true }}
-              value={form.values.event?.end_datetime ? new Date(form.values.event.end_datetime) : null}
-              onChange={(v) => form.setFieldValue('event.end_datetime', v)}
-            />
-            <Switch
-              label="Repeating event"
-              checked={!!form.values.event?.is_repeating}
-              onChange={(e) => form.setFieldValue('event.is_repeating', e.currentTarget.checked)}
-            />
-          </Stack>
-        </Accordion.Panel>
-      </Accordion.Item>
-
-      {/* 3. Event Status */}
-      <Accordion.Item value="s3-status">
-        <Accordion.Control><Text fw={600}>Event Status</Text></Accordion.Control>
-        <Accordion.Panel>
-          <EventStatusSection form={form} />
-        </Accordion.Panel>
-      </Accordion.Item>
-
-      {/* 4. Categories & Ideal For */}
-      <Accordion.Item value="s4-categories">
-        <Accordion.Control><Text fw={600}>Categories & Ideal For</Text></Accordion.Control>
-        <Accordion.Panel>
-          <Stack>
-            <IdealForGrouped form={form} listingType="Event" />
             <CategoriesSection form={form} isPaidListing isFreeListing={false} />
+            <Divider my="sm" />
+            <IdealForGrouped form={form} />
           </Stack>
         </Accordion.Panel>
       </Accordion.Item>
 
-      {/* 5. Event Venue (TRAIL now allowed in venue search) */}
-      <Accordion.Item value="s5-venue">
-        <Accordion.Control><Text fw={600}>Event Venue</Text></Accordion.Control>
+      {/* 3. Event Details — MEGA-CONSOLIDATION of datetime + status + venue */}
+      <Accordion.Item value="s3-event-details">
+        <Accordion.Control>
+          <Group><Text fw={600}>Event Details</Text><Badge size="sm" variant="light">Required</Badge></Group>
+        </Accordion.Control>
         <Accordion.Panel>
-          <EventVenueSection form={form} id={poiId} />
+          <Stack>
+            <RecurringEventSection form={form} />
+            <Divider my="sm" />
+            <EventStatusSection form={form} />
+            <Divider my="sm" />
+            <EventVenueSection form={form} id={poiId} />
+          </Stack>
         </Accordion.Panel>
       </Accordion.Item>
 
-      {/* 6. Location & Arrival */}
-      <Accordion.Item value="s6-location">
+      {/* 4. Venue Details — additional event_venue setup (placeholder for future fields) */}
+      <Accordion.Item value="s4-venue-details">
+        <Accordion.Control><Text fw={600}>Venue Details</Text></Accordion.Control>
+        <Accordion.Panel>
+          <Stack>
+            <Text size="sm" c="dimmed">
+              Additional venue configuration is handled through the venue selector above.
+              Use this section to capture event-specific overrides (capacity, indoor/outdoor flag,
+              venue address) once those fields are wired up.
+            </Text>
+          </Stack>
+        </Accordion.Panel>
+      </Accordion.Item>
+
+      {/* 5. Location & Arrival */}
+      <Accordion.Item value="s5-location">
         <Accordion.Control><Text fw={600}>Location & Arrival</Text></Accordion.Control>
         <Accordion.Panel>
           <Stack>
@@ -153,16 +120,22 @@ export default function EventLayout({ form, userRole, poiId }) {
         </Accordion.Panel>
       </Accordion.Item>
 
-      {/* 7. Parking & Accessibility */}
-      <Accordion.Item value="s7-parking">
+      {/* 6. Parking & Accessibility */}
+      <Accordion.Item value="s6-parking">
         <Accordion.Control><Text fw={600}>Parking & Accessibility</Text></Accordion.Control>
         <Accordion.Panel>
-          <AccessibleParkingChecklist form={form} />
+          <Stack>
+            <Text size="sm" c="dimmed">
+              Parking locations are managed in the Location & Arrival section.
+              Use this section for ADA accessible parking details.
+            </Text>
+            <AccessibleParkingChecklist form={form} />
+          </Stack>
         </Accordion.Panel>
       </Accordion.Item>
 
-      {/* 8. Organizer (with POI link + prefill) */}
-      <Accordion.Item value="s8-organizer">
+      {/* 7. Event Organizer */}
+      <Accordion.Item value="s7-organizer">
         <Accordion.Control><Text fw={600}>Event Organizer</Text></Accordion.Control>
         <Accordion.Panel>
           <Stack>
@@ -189,137 +162,71 @@ export default function EventLayout({ form, userRole, poiId }) {
         </Accordion.Panel>
       </Accordion.Item>
 
-      {/* 9. Cost & Ticketing — ticket_links repeatable */}
-      <Accordion.Item value="s9-cost">
-        <Accordion.Control><Text fw={600}>Cost & Ticketing</Text></Accordion.Control>
+      {/* 8. Sponsors — Tier-first via EventSponsorsSection (#51) */}
+      <Accordion.Item value="s8-sponsors">
+        <Accordion.Control><Text fw={600}>Sponsors</Text></Accordion.Control>
         <Accordion.Panel>
-          <Stack>
-            <EventCostSection form={form} />
-            <Divider label="Ticket Links" />
-            {ticket_links.map((tl, idx) => (
-              <Group key={idx} align="flex-end" wrap="nowrap">
-                <TextInput
-                  label="Platform"
-                  style={{ flex: 1 }}
-                  value={tl.platform || ''}
-                  onChange={(e) => form.setFieldValue(`event.ticket_links.${idx}.platform`, e.currentTarget.value)}
-                />
-                <TextInput
-                  label="URL"
-                  style={{ flex: 2 }}
-                  value={tl.url || ''}
-                  onChange={(e) => form.setFieldValue(`event.ticket_links.${idx}.url`, e.currentTarget.value)}
-                />
-                <ActionIcon variant="light" color="red" onClick={() => removeTicket(idx)} aria-label="Remove">
-                  <IconTrash size={16} />
-                </ActionIcon>
-              </Group>
-            ))}
-            <Button leftSection={<IconPlus size={14} />} variant="light" onClick={addTicket}>
-              Add Ticket Link
-            </Button>
-          </Stack>
+          <EventSponsorsSection form={form} />
         </Accordion.Panel>
       </Accordion.Item>
 
-      {/* 10. Sponsors — Tiers (plural) with POI link + prefill */}
-      <Accordion.Item value="s10-sponsors">
-        <Accordion.Control><Text fw={600}>Sponsors — Tiers</Text></Accordion.Control>
+      {/* 9. Facilities & Amenities */}
+      <Accordion.Item value="s9-amenities">
+        <Accordion.Control><Text fw={600}>Facilities & Amenities</Text></Accordion.Control>
         <Accordion.Panel>
           <Stack>
-            {sponsors.map((s, idx) => (
-              <Stack key={idx} p="sm" style={{ border: '1px solid #eee', borderRadius: 6 }}>
-                <Group align="flex-end" wrap="nowrap">
-                  <Select
-                    label="Tier"
-                    style={{ flex: 1 }}
-                    data={SPONSOR_LEVEL_OPTIONS}
-                    value={s.tier}
-                    onChange={(v) => form.setFieldValue(`event.sponsors.${idx}.tier`, v)}
-                    clearable
-                  />
-                  <ActionIcon variant="light" color="red" onClick={() => removeSponsor(idx)} aria-label="Remove">
-                    <IconTrash size={16} />
-                  </ActionIcon>
-                </Group>
-                <Autocomplete
-                  label="Link sponsor to existing POI"
-                  placeholder="Search…"
-                  data={sponsorSearch.options}
-                  onChange={(val) => {
-                    sponsorSearch.search(val);
-                    form.setFieldValue(`event.sponsors.${idx}.name`, val);
-                  }}
-                  onOptionSubmit={(val) => {
-                    const poi = sponsorSearch.byId[val];
-                    if (!poi) return;
-                    form.setFieldValue(`event.sponsors.${idx}.poi_id`, poi.id);
-                    form.setFieldValue(`event.sponsors.${idx}.name`, poi.name || '');
-                    if (poi.logo_url) form.setFieldValue(`event.sponsors.${idx}.logo_url`, poi.logo_url);
-                    if (poi.website_url) form.setFieldValue(`event.sponsors.${idx}.website`, poi.website_url);
-                  }}
-                />
-                <TextInput label="Name" value={s.name || ''}
-                  onChange={(e) => form.setFieldValue(`event.sponsors.${idx}.name`, e.currentTarget.value)} />
-                <TextInput label="Logo URL" value={s.logo_url || ''}
-                  onChange={(e) => form.setFieldValue(`event.sponsors.${idx}.logo_url`, e.currentTarget.value)} />
-                <TextInput label="Website" value={s.website || ''}
-                  onChange={(e) => form.setFieldValue(`event.sponsors.${idx}.website`, e.currentTarget.value)} />
-              </Stack>
-            ))}
-            <Button leftSection={<IconPlus size={14} />} variant="light" onClick={addSponsor}>
-              Add Sponsor Tier
-            </Button>
-          </Stack>
-        </Accordion.Panel>
-      </Accordion.Item>
-
-      {/* 11. Vendors */}
-      <Accordion.Item value="s11-vendors">
-        <Accordion.Control><Text fw={600}>Vendors</Text></Accordion.Control>
-        <Accordion.Panel>
-          <EventVendorsSection form={form} id={poiId} />
-        </Accordion.Panel>
-      </Accordion.Item>
-
-      {/* 12. Event Amenities */}
-      <Accordion.Item value="s12-amenities">
-        <Accordion.Control><Text fw={600}>Event Amenities</Text></Accordion.Control>
-        <Accordion.Panel>
-          <Stack>
-            <EventAmenitiesSection form={form} id={poiId} />
             <FullAmenitiesBlock form={form} poiType="EVENT" />
             <ConnectivityRow form={form} />
           </Stack>
         </Accordion.Panel>
       </Accordion.Item>
 
-      {/* 13. Event Maps */}
-      <Accordion.Item value="s13-maps">
-        <Accordion.Control><Text fw={600}>Event Maps</Text></Accordion.Control>
+      {/* 10. Restrooms */}
+      <Accordion.Item value="s10-restrooms">
+        <Accordion.Control><Text fw={600}>Restrooms</Text></Accordion.Control>
         <Accordion.Panel>
-          <EventMapsSection form={form} id={poiId} />
+          <Stack>
+            <PublicAmenitiesSection form={form} isEvent id={poiId} />
+            <AccessibleRestroomChecklist form={form} />
+          </Stack>
         </Accordion.Panel>
       </Accordion.Item>
 
-      {/* 14. Public Restrooms */}
-      <Accordion.Item value="s14-restrooms">
-        <Accordion.Control><Text fw={600}>Public Restrooms</Text></Accordion.Control>
-        <Accordion.Panel>
-          <PublicAmenitiesSection form={form} isEvent id={poiId} />
-        </Accordion.Panel>
-      </Accordion.Item>
-
-      {/* 15. Facilities & Accessibility */}
-      <Accordion.Item value="s15-facilities">
-        <Accordion.Control><Text fw={600}>Facilities & Accessibility</Text></Accordion.Control>
+      {/* 11. On-Site Facilities */}
+      <Accordion.Item value="s11-onsite-facilities">
+        <Accordion.Control><Text fw={600}>On-Site Facilities</Text></Accordion.Control>
         <Accordion.Panel>
           <FacilitiesSection form={form} isEvent id={poiId} />
         </Accordion.Panel>
       </Accordion.Item>
 
-      {/* 16. Pet Policy */}
-      <Accordion.Item value="s16-pets">
+      {/* 12. Playground — conditional on playground_available */}
+      <Accordion.Item value="s12-playground">
+        <Accordion.Control><Text fw={600}>Playground</Text></Accordion.Control>
+        <Accordion.Panel>
+          <Stack>
+            <Switch
+              label="This event has a playground on-site"
+              checked={!!form.values.playground_available}
+              onChange={(e) => form.setFieldValue('playground_available', e.currentTarget.checked)}
+            />
+            {form.values.playground_available && (
+              <PlaygroundSection form={form} id={poiId} />
+            )}
+          </Stack>
+        </Accordion.Panel>
+      </Accordion.Item>
+
+      {/* 13. Alcohol */}
+      <Accordion.Item value="s13-alcohol">
+        <Accordion.Control><Text fw={600}>Alcohol</Text></Accordion.Control>
+        <Accordion.Panel>
+          <AlcoholAvailableSelect form={form} />
+        </Accordion.Panel>
+      </Accordion.Item>
+
+      {/* 14. Pet Policy */}
+      <Accordion.Item value="s14-pets">
         <Accordion.Control><Text fw={600}>Pet Policy</Text></Accordion.Control>
         <Accordion.Panel>
           <Stack>
@@ -329,28 +236,63 @@ export default function EventLayout({ form, userRole, poiId }) {
         </Accordion.Panel>
       </Accordion.Item>
 
-      {/* 17. Contact & Social Media */}
-      <Accordion.Item value="s17-contact">
-        <Accordion.Control><Text fw={600}>Contact & Social Media</Text></Accordion.Control>
+      {/* 15. Cost & Ticketing */}
+      <Accordion.Item value="s15-cost">
+        <Accordion.Control><Text fw={600}>Cost & Ticketing</Text></Accordion.Control>
         <Accordion.Panel>
-          <ContactSection form={form} isEvent />
+          <EventCostSection form={form} />
         </Accordion.Panel>
       </Accordion.Item>
 
-      {/* 18. Internal & Compliance */}
-      <Accordion.Item value="s18-internal">
+      {/* 16. Vendors */}
+      <Accordion.Item value="s16-vendors">
+        <Accordion.Control><Text fw={600}>Vendors</Text></Accordion.Control>
+        <Accordion.Panel>
+          <EventVendorsSection form={form} id={poiId} />
+        </Accordion.Panel>
+      </Accordion.Item>
+
+      {/* 17. Contact & Social Media */}
+      <Accordion.Item value="s17-contact-social">
+        <Accordion.Control><Text fw={600}>Contact & Social Media</Text></Accordion.Control>
+        <Accordion.Panel>
+          <ContactSection form={form} isFreeListing={false} />
+        </Accordion.Panel>
+      </Accordion.Item>
+
+      {/* 18. Rentals */}
+      <Accordion.Item value="s18-rentals">
+        <Accordion.Control><Text fw={600}>Rentals</Text></Accordion.Control>
+        <Accordion.Panel>
+          <RentalsSection form={form} id={poiId} />
+        </Accordion.Panel>
+      </Accordion.Item>
+
+      {/* 19. Miscellaneous — event maps + community connections (article_links, community_impact) */}
+      <Accordion.Item value="s19-misc">
+        <Accordion.Control><Text fw={600}>Miscellaneous</Text></Accordion.Control>
+        <Accordion.Panel>
+          <Stack>
+            <EventMapsSection form={form} id={poiId} />
+            <Divider my="sm" />
+            <CommunityConnectionsSection form={form} />
+          </Stack>
+        </Accordion.Panel>
+      </Accordion.Item>
+
+      {/* 20. Internal & Compliance */}
+      <Accordion.Item value="s20-internal-compliance">
         <Accordion.Control><Text fw={600}>Internal & Compliance</Text></Accordion.Control>
         <Accordion.Panel>
           <Stack>
             <InternalContactSection form={form} />
-            <CommunityConnectionsSection form={form} />
             <CorporateComplianceSection form={form} />
           </Stack>
         </Accordion.Panel>
       </Accordion.Item>
 
-      {/* 19. Dynamic Attributes */}
-      <Accordion.Item value="s19-attrs">
+      {/* 21. Dynamic Attributes */}
+      <Accordion.Item value="s21-attrs">
         <Accordion.Control><Text fw={600}>Dynamic Attributes</Text></Accordion.Control>
         <Accordion.Panel>
           <DynamicAttributeForm
