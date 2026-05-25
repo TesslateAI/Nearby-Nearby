@@ -356,13 +356,11 @@ class Trail(Base):
     trailhead_location = Column(JSONB)  # {"lat": 0, "lng": 0}
     trailhead_latitude = Column(Numeric(precision=10, scale=7))  # Separate lat field for trailhead
     trailhead_longitude = Column(Numeric(precision=10, scale=7))  # Separate lng field for trailhead
-    trailhead_entrance_photo = Column(String)
-    # trailhead_photo moved to Images table (image_type='trail_head')
-    trailhead_exit_location = Column(JSONB)  # {"lat": 0, "lng": 0}
-    trail_exit_latitude = Column(Numeric(precision=10, scale=7))  # Separate lat field for trail exit
-    trail_exit_longitude = Column(Numeric(precision=10, scale=7))  # Separate lng field for trail exit
-    trailhead_exit_photo = Column(String)
-    # trail_exit_photo moved to Images table (image_type='trail_exit')
+    # trailhead_entrance_photo / trailhead_exit_photo / trail_exit_* / trailhead_exit_location
+    # were dropped by migration w63c_001. Photo URLs moved to the Images table
+    # (image_type='trail_head' / 'access_point') and exit coordinates moved into
+    # ``access_points`` JSONB entries — see w63b_001 for the data migration.
+    # trailhead_photo / trail_exit_photo had previously moved to the Images table.
     trail_markings = Column(Text)
     trailhead_access_details = Column(Text)
     downloadable_trail_map = Column(String)  # URL to map file

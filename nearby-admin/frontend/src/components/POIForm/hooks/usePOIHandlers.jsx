@@ -163,9 +163,9 @@ export const usePOIHandlers = (id, isEditing, form, setPoiId) => {
           if (formData.trail) {
             const trailStringFields = [
               'length_text', 'difficulty', 'difficulty_description', 'route_type',
-              'trail_markings', 'trailhead_access_details', 'downloadable_trail_map',
-              'trailhead_entrance_photo', 'trailhead_exit_photo'
-              // Removed deprecated photo fields: trailhead_photo, trail_exit_photo
+              'trail_markings', 'trailhead_access_details', 'downloadable_trail_map'
+              // Removed: trailhead_entrance_photo, trailhead_exit_photo (dropped by w63c_001).
+              // Removed earlier: trailhead_photo, trail_exit_photo.
             ];
             trailStringFields.forEach(field => {
               if (formData.trail[field] === null || formData.trail[field] === undefined) {
@@ -174,8 +174,9 @@ export const usePOIHandlers = (id, isEditing, form, setPoiId) => {
             });
 
             // Handle trail numeric fields
+            // trail_exit_latitude/longitude dropped by w63c_001 — exits live in access_points[].
             const trailNumericFields = [
-              'trailhead_latitude', 'trailhead_longitude', 'trail_exit_latitude', 'trail_exit_longitude'
+              'trailhead_latitude', 'trailhead_longitude'
             ];
             trailNumericFields.forEach(field => {
               if (formData.trail[field] === '' || formData.trail[field] === 'null') {
@@ -431,9 +432,9 @@ export const usePOIHandlers = (id, isEditing, form, setPoiId) => {
         difficulty_description: null,
         route_type: null,
         trailhead_latitude: null,
-        trailhead_longitude: null,
-        trail_exit_latitude: null,
-        trail_exit_longitude: null
+        trailhead_longitude: null
+        // trail_exit_latitude / trail_exit_longitude dropped by w63c_001 —
+        // exit coords now live inside access_points[] entries.
       };
     } else if (poiType === 'EVENT') {
       minimalPOI.event = {

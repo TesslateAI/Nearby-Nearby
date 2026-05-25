@@ -225,11 +225,8 @@ AUTOSAVE_ALLOWED_FIELDS: set[str] = {
     'trailhead_location',
     'trailhead_latitude',
     'trailhead_longitude',
-    'trailhead_entrance_photo',
-    'trailhead_exit_location',
-    'trail_exit_latitude',
-    'trail_exit_longitude',
-    'trailhead_exit_photo',
+    # trailhead_entrance_photo / trailhead_exit_photo / trailhead_exit_location /
+    # trail_exit_latitude / trail_exit_longitude dropped by migration w63c_001.
     'trail_markings',
     'trailhead_access_details',
     'downloadable_trail_map',

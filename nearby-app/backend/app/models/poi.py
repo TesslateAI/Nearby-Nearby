@@ -215,11 +215,8 @@ class Trail(Base):
     trailhead_location = Column(JSONB)
     trailhead_latitude = Column(Numeric(10, 7))
     trailhead_longitude = Column(Numeric(10, 7))
-    trailhead_entrance_photo = Column(String)
-    trailhead_exit_location = Column(JSONB)
-    trail_exit_latitude = Column(Numeric(10, 7))
-    trail_exit_longitude = Column(Numeric(10, 7))
-    trailhead_exit_photo = Column(String)
+    # trailhead_entrance_photo / trailhead_exit_photo / trail_exit_* / trailhead_exit_location
+    # dropped by migration w63c_001 — see nearby-admin/backend/alembic/versions/w63b_001*.
     trail_markings = Column(Text)
     trailhead_access_details = Column(Text)
     downloadable_trail_map = Column(String)
