@@ -159,25 +159,10 @@ export const LocationSection = React.memo(function LocationSection({
         </>
       )}
 
-      {/* Trail Entry Information */}
-      {isTrail && (
-        <>
-          <Divider my="md" label="Trail Entry Information" />
-          <RichTextEditor
-            label="Trail Entry Notes"
-            placeholder="Describe how to access the trail, trailhead location, special instructions, etc."
-            value={form.values.trail_entry_notes || ''}
-            onChange={(html) => form.setFieldValue('trail_entry_notes', html)}
-            error={form.errors.trail_entry_notes}
-            minRows={3}
-          />
-          {shouldUseImageUpload(id) ? (
-            <EntryPhotoUpload poiId={id} poiType="Trail" form={form} />
-          ) : (
-            <Text size="sm" c="dimmed">Save POI first to enable trail entry photo upload</Text>
-          )}
-        </>
-      )}
+      {/* Trail Entry Information removed (#63 / #64): trail_entry_notes is
+          now bound by <TrailheadAccessPointsSection> in s8-trail-guide, and
+          trailhead photos use image_type='trail_head' there. Keeping the
+          duplicate here caused a dual-write conflict (R2 reviewer flag). */}
 
       {/* Business Entry Information - PAID Business only */}
       {isBusiness && !isFreeListing && (
