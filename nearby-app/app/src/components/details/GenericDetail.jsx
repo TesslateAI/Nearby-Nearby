@@ -56,7 +56,8 @@ export default function GenericDetail({ poi }) {
     hasVal(poi.hours) && (
       <ContentGroup key="hours" title="Hours">
         <div className="acc_content_text">
-          <HoursDisplay hours={poi.hours} holidayHours={poi.holiday_hours}
+          {/* Issue #70: holiday_hours top-level field removed; holidays live in hours.holidays */}
+          <HoursDisplay hours={poi.hours}
             appointmentBookingUrl={poi.appointment_booking_url}
             appointmentRequired={poi.hours_but_appointment_required}
             hoursNotes={poi.hours_notes} />

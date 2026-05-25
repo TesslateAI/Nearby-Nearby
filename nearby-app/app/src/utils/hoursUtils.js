@@ -90,8 +90,13 @@ function formatHolidayName(key) {
 }
 
 /**
- * Get upcoming holidays from holiday_hours data
- * Returns array of { key, name, date, dateStr, hours } sorted by date
+ * Get upcoming holidays from a holidays object.
+ *
+ * Issue #70: callers should pass `hours.holidays` (the canonical nested key).
+ * The legacy top-level `holiday_hours` column has been deprecated; this util
+ * intentionally never falls back to that legacy source.
+ *
+ * Returns array of { key, name, date, dateStr, hours } sorted by date.
  */
 export function getUpcomingHolidays(holidayHours, count = null) {
   if (!holidayHours || typeof holidayHours !== 'object') return [];
