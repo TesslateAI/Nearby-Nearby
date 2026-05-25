@@ -1,7 +1,7 @@
 """Rename playground_location → playground_locations (singular → plural).
 
 Revision ID: g67_001
-Revises: p1_002_repair_amenities_arrays
+Revises: g42_001
 Create Date: 2026-05-25
 
 Migration A pattern: rename only — no drops. The reorg specs (#53/#59/#60/#64)
@@ -28,7 +28,7 @@ import sqlalchemy as sa
 
 
 revision = 'g67_001'
-down_revision = 'p1_002_repair_amenities_arrays'
+down_revision = 'g42_001'
 branch_labels = None
 depends_on = None
 

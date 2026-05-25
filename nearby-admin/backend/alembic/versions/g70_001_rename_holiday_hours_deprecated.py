@@ -1,7 +1,7 @@
 """Issue #70 — consolidate holiday_hours into hours.holidays.
 
 Revision ID: g70_001
-Revises: g42_001
+Revises: g67_001
 Create Date: 2026-05-25
 
 Background
@@ -36,7 +36,7 @@ from alembic import op
 
 
 revision = 'g70_001'
-down_revision = 'g42_001'
+down_revision = 'g67_001'
 branch_labels = None
 depends_on = None
 
