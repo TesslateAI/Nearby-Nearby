@@ -16,7 +16,10 @@ import { sanitizeHtml } from '../../utils/sanitize';
 export default function GenericDetail({ poi }) {
   const paid = isPaidTier(poi);
   const displayLoc = getDisplayableLocation(poi);
-  const openStatus = poi.hours ? isCurrentlyOpen(poi.hours) : null;
+  const _coords = poi?.location?.coordinates;
+  const _lat = Array.isArray(_coords) ? _coords[1] : null;
+  const _lng = Array.isArray(_coords) ? _coords[0] : null;
+  const openStatus = poi.hours ? isCurrentlyOpen(poi.hours, _lat, _lng) : null;
   const images = useMemo(() => getImages(poi), [poi]);
 
   const categoryFromPoiType = (() => {

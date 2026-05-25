@@ -344,7 +344,10 @@ export default function ParkDetail({ poi }) {
   const paid = isPaidTier(poi);
   const coords = getCoordinates(poi, displayLoc.hideExact);
   const images = useMemo(() => getImages(poi), [poi]);
-  const openStatus = poi.hours ? isCurrentlyOpen(poi.hours) : null;
+  const _coords = poi?.location?.coordinates;
+  const _lat = Array.isArray(_coords) ? _coords[1] : null;
+  const _lng = Array.isArray(_coords) ? _coords[0] : null;
+  const openStatus = poi.hours ? isCurrentlyOpen(poi.hours, _lat, _lng) : null;
 
   const handleDirections = () => openDirections(poi, coords);
   const handleCopyCoords = async () => {

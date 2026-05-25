@@ -7,6 +7,44 @@
  * 4. Regular hours (fallback)
  */
 
+import SunCalc from 'suncalc';
+
+/**
+ * Resolve a time object (fixed, dawn, or dusk) to an "HH:MM" string.
+ * Returns null when the type is unresolvable or when coordinates are missing
+ * for a solar-relative type (dawn/dusk).
+ *
+ * @param {object} timeObj  - e.g. {type:'fixed',time:'06:00'} or {type:'dawn'}
+ * @param {Date}   date     - the date to compute sunrise/sunset for
+ * @param {number|null} lat - latitude  (WGS-84)
+ * @param {number|null} lng - longitude (WGS-84)
+ * @returns {string|null}   "HH:MM" or null
+ */
+function resolveTime(timeObj, date, lat, lng) {
+  if (!timeObj) return null;
+
+  if (timeObj.type === 'fixed') {
+    return timeObj.time || null;
+  }
+
+  // Solar types require coordinates
+  if (timeObj.type === 'dawn' || timeObj.type === 'dusk') {
+    if (lat == null || lng == null || isNaN(lat) || isNaN(lng)) return null;
+
+    const sunTimes = SunCalc.getTimes(date, lat, lng);
+    const solar = timeObj.type === 'dawn' ? sunTimes.sunrise : sunTimes.sunset;
+
+    // Guard against polar edge cases where the value may be Invalid Date
+    if (!solar || isNaN(solar.getTime())) return null;
+
+    const hh = String(solar.getHours()).padStart(2, '0');
+    const mm = String(solar.getMinutes()).padStart(2, '0');
+    return `${hh}:${mm}`;
+  }
+
+  return null;
+}
+
 const DAYS_SHORT = {
   monday: 'Mon',
   tuesday: 'Tue',
@@ -630,9 +668,13 @@ export function getWeekHours(hoursData, startDate = new Date()) {
 }
 
 /**
- * Check if currently open based on all override rules
+ * Check if currently open based on all override rules.
+ *
+ * @param {object}      hoursData - structured hours object from POI
+ * @param {number|null} lat       - POI latitude  (poi.location.coordinates[1])
+ * @param {number|null} lng       - POI longitude (poi.location.coordinates[0])
  */
-export function isCurrentlyOpen(hoursData) {
+export function isCurrentlyOpen(hoursData, lat = null, lng = null) {
   if (!hoursData) return { isOpen: false, status: 'unknown' };
 
   const now = new Date();
@@ -673,42 +715,66 @@ export function isCurrentlyOpen(hoursData) {
 
   if (hours.status === 'open' && hours.periods) {
     for (const period of hours.periods) {
-      if (period.open?.type === 'fixed' && period.close?.type === 'fixed') {
-        const openTime = period.open.time;
-        const closeTime = period.close.time;
+      // Skip non-time-of-day period types (e.g. call-ahead)
+      if (!period.open || !period.close) continue;
 
-        // Handle times that cross midnight
-        if (closeTime < openTime) {
-          if (currentTime >= openTime || currentTime < closeTime) {
-            return {
-              isOpen: true,
-              status: `Open until ${formatTime(period.close)}`,
-              source,
-              label
-            };
-          }
-        } else {
-          if (currentTime >= openTime && currentTime < closeTime) {
-            return {
-              isOpen: true,
-              status: `Open until ${formatTime(period.close)}`,
-              source,
-              label
-            };
-          }
+      const openType = period.open.type;
+      const closeType = period.close.type;
+
+      // appointment/call periods — leave as-is, no open status
+      if (openType === 'appointment' || closeType === 'appointment' ||
+          openType === 'call' || closeType === 'call') {
+        continue;
+      }
+
+      // Resolve both ends; if either is a solar type without coords, return unknown
+      const openTime = resolveTime(period.open, now, lat, lng);
+      const closeTime = resolveTime(period.close, now, lat, lng);
+
+      if (!openTime || !closeTime) {
+        // Dawn/dusk period but no coordinates — honest unknown, not false "Closed"
+        return {
+          isOpen: false,
+          status: 'Hours vary by season',
+          source,
+          label
+        };
+      }
+
+      // Handle times that cross midnight
+      if (closeTime < openTime) {
+        if (currentTime >= openTime || currentTime < closeTime) {
+          return {
+            isOpen: true,
+            status: `Open until ${formatTime(period.close)}`,
+            source,
+            label
+          };
+        }
+      } else {
+        if (currentTime >= openTime && currentTime < closeTime) {
+          return {
+            isOpen: true,
+            status: `Open until ${formatTime(period.close)}`,
+            source,
+            label
+          };
         }
       }
     }
 
-    // Check if we're before opening
+    // Check if we're before opening (use resolved time for first period)
     const firstPeriod = hours.periods[0];
-    if (firstPeriod?.open?.type === 'fixed' && currentTime < firstPeriod.open.time) {
-      return {
-        isOpen: false,
-        status: `Opens at ${formatTime(firstPeriod.open)}`,
-        source,
-        label
-      };
+    if (firstPeriod?.open) {
+      const firstOpenTime = resolveTime(firstPeriod.open, now, lat, lng);
+      if (firstOpenTime && currentTime < firstOpenTime) {
+        return {
+          isOpen: false,
+          status: `Opens at ${formatTime(firstPeriod.open)}`,
+          source,
+          label
+        };
+      }
     }
   }
 

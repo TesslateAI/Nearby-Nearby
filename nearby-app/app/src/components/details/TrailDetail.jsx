@@ -72,7 +72,10 @@ export default function TrailDetail({ poi }) {
   if (trail.difficulty) subtitleParts.push(cap(trail.difficulty));
   const subtitleText = subtitleParts.join(', ');
 
-  const openStatus = poi.hours ? isCurrentlyOpen(poi.hours) : null;
+  const _coords = poi?.location?.coordinates;
+  const _lat = Array.isArray(_coords) ? _coords[1] : null;
+  const _lng = Array.isArray(_coords) ? _coords[0] : null;
+  const openStatus = poi.hours ? isCurrentlyOpen(poi.hours, _lat, _lng) : null;
   const statusLabel = openStatus?.isOpen ? 'Fully Open' : (openStatus ? 'Closed' : (poi.status || 'Open'));
 
   const relList = poi.poi_relationships || poi.relationships || [];
