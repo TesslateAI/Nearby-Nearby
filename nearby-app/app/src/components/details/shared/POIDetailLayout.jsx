@@ -10,7 +10,7 @@ import DirectionsModal from '../../common/DirectionsModal';
 
 import { getDisplayableLocation } from '../../../utils/getDisplayableLocation';
 import { isPaidTier } from '../../../utils/poiTier';
-import { isCurrentlyOpen } from '../../../utils/hoursUtils';
+import { getOpenCloseStatusLabel } from '../../../utils/hoursUtils';
 import { copyToClipboard, getCoordinates, getImages } from './poiDetailUtils';
 
 export default function POIDetailLayout({
@@ -44,15 +44,13 @@ export default function POIDetailLayout({
   const _coords = poi?.location?.coordinates;
   const _lat = Array.isArray(_coords) ? _coords[1] : null;
   const _lng = Array.isArray(_coords) ? _coords[0] : null;
-  const openStatus = poi?.hours ? isCurrentlyOpen(poi.hours, _lat, _lng) : null;
 
   let statusVariant = statusVariantProp;
   let statusLabel = statusLabelProp;
-  if (statusVariant === undefined && openStatus) {
-    statusVariant = openStatus.isOpen ? 'open' : 'closed';
-    statusLabel = openStatus.isOpen
-      ? (openStatus.status ? `Open Now – ${openStatus.status}` : 'Open Now')
-      : (openStatus.status || 'Closed');
+  if (statusVariant === undefined && poi?.hours) {
+    const derived = getOpenCloseStatusLabel(poi.hours, new Date(), _lat, _lng);
+    statusVariant = derived.variant || undefined;
+    statusLabel = derived.label;
   }
 
   const handleDirections = () => setDirectionsOpen(true);

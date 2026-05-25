@@ -787,6 +787,155 @@ export function isCurrentlyOpen(hoursData, lat = null, lng = null) {
 }
 
 /**
+ * Find the next open transition after `fromDate`.
+ * Walks today's remaining periods (if any), then days 1..7 forward.
+ * Returns { dayLabel, openLabel } or null (closed all week / no hours).
+ *
+ * @param {object}      hoursData - structured hours object from POI
+ * @param {Date}        fromDate  - the reference "now" date
+ * @param {number|null} lat       - POI latitude  (GeoJSON: coordinates[1])
+ * @param {number|null} lng       - POI longitude (GeoJSON: coordinates[0])
+ * @returns {{ dayLabel: string, openLabel: string }|null}
+ */
+export function getNextOpenTransition(hoursData, fromDate = new Date(), lat = null, lng = null) {
+  if (!hoursData) return null;
+
+  const now = fromDate;
+  const currentMins = now.getHours() * 60 + now.getMinutes();
+
+  const toMins = (hhmm) => {
+    if (!hhmm) return null;
+    const [h, m] = hhmm.split(':').map(Number);
+    return h * 60 + (m || 0);
+  };
+
+  const MAX_DAYS = 7;
+  for (let i = 0; i <= MAX_DAYS; i++) {
+    const checkDate = new Date(now);
+    checkDate.setDate(now.getDate() + i);
+    checkDate.setHours(0, 0, 0, 0);
+
+    const { hours } = getEffectiveHoursForDate(hoursData, checkDate);
+    if (!hours || hours.status === 'closed' || hours.status === 'appointment') continue;
+    if (hours.status === '24hours') {
+      const label = i === 0 ? 'Today' : (i === 1 ? 'Tomorrow' : DAYS_FULL[['sunday','monday','tuesday','wednesday','thursday','friday','saturday'][checkDate.getDay()]] || checkDate.toLocaleDateString('en-US', { weekday: 'long' }));
+      return { dayLabel: label, openLabel: 'Open 24 Hours' };
+    }
+
+    if (hours.status === 'open' && Array.isArray(hours.periods)) {
+      for (const period of hours.periods) {
+        if (!period.open || !period.close) continue;
+        if (period.open.type === 'appointment' || period.open.type === 'call') continue;
+
+        const openTimeStr = resolveTime(period.open, checkDate, lat, lng);
+        if (!openTimeStr) continue;
+
+        const openMins = toMins(openTimeStr);
+        // On day 0 (today), skip periods whose open time is already past
+        if (i === 0 && openMins != null && openMins <= currentMins) continue;
+
+        const openFormatted = formatTime(period.open);
+        const dayNames7 = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
+        const dayKey = dayNames7[checkDate.getDay()];
+        const label = i === 0 ? 'Today' : (i === 1 ? 'Tomorrow' : (DAYS_FULL[dayKey] || checkDate.toLocaleDateString('en-US', { weekday: 'long' })));
+        return { dayLabel: label, openLabel: openFormatted };
+      }
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Single source-of-truth for status badge on detail pages and cards.
+ * Computes open/closed status against `now` (default: current time).
+ * Returns { variant, label } where:
+ *   variant = 'open' | 'closed' | 'opensoon' | null
+ *   label   = e.g. "Open until 8:00 PM", "Closed · Opens Tomorrow 9:00 AM"
+ *
+ * Unlike isCurrentlyOpen(), this function respects the `now` argument so it
+ * can be used in tests with a deterministic date.
+ *
+ * @param {object}      hoursData - structured hours object from POI
+ * @param {Date}        now       - reference "now" (default: new Date())
+ * @param {number|null} lat       - POI latitude  (GeoJSON: coordinates[1])
+ * @param {number|null} lng       - POI longitude (GeoJSON: coordinates[0])
+ * @returns {{ variant: string|null, label: string|null }}
+ */
+export function getOpenCloseStatusLabel(hoursData, now = new Date(), lat = null, lng = null) {
+  if (!hoursData) return { variant: null, label: null };
+
+  const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+  const { hours, source, label: overrideLabel } = getEffectiveHoursForDate(hoursData, now);
+
+  if (!hours) return { variant: null, label: null };
+
+  // Special statuses
+  if (hours.status === 'closed') {
+    const statusStr = overrideLabel ? `Closed · ${overrideLabel}` : 'Closed';
+    const next = getNextOpenTransition(hoursData, now, lat, lng);
+    if (next) {
+      const prefix = next.dayLabel === 'Today' ? 'Opens ' : `Opens ${next.dayLabel} `;
+      return { variant: 'closed', label: `Closed · ${prefix}${next.openLabel}` };
+    }
+    return { variant: 'closed', label: statusStr };
+  }
+
+  if (hours.status === '24hours') {
+    return { variant: 'open', label: 'Open 24 Hours' };
+  }
+
+  if (hours.status === 'appointment') {
+    return { variant: 'closed', label: 'By Appointment Only' };
+  }
+
+  if (hours.status === 'open' && Array.isArray(hours.periods)) {
+    // Check if we're inside an open period
+    for (const period of hours.periods) {
+      if (!period.open || !period.close) continue;
+      if (period.open.type === 'appointment' || period.open.type === 'call' ||
+          period.close.type === 'appointment' || period.close.type === 'call') continue;
+
+      const openTime = resolveTime(period.open, now, lat, lng);
+      const closeTime = resolveTime(period.close, now, lat, lng);
+
+      if (!openTime || !closeTime) {
+        // Solar type without coords — honest unknown
+        return { variant: null, label: 'Hours vary by season' };
+      }
+
+      const isOpen = closeTime < openTime
+        ? (currentTime >= openTime || currentTime < closeTime)
+        : (currentTime >= openTime && currentTime < closeTime);
+
+      if (isOpen) {
+        return { variant: 'open', label: `Open until ${formatTime(period.close)}` };
+      }
+    }
+
+    // Not in any open period — check if a future slot exists today
+    const firstPeriod = hours.periods[0];
+    if (firstPeriod?.open) {
+      const firstOpenTime = resolveTime(firstPeriod.open, now, lat, lng);
+      if (firstOpenTime && currentTime < firstOpenTime) {
+        return { variant: 'opensoon', label: `Opens at ${formatTime(firstPeriod.open)}` };
+      }
+    }
+
+    // Past all of today's periods — look ahead
+    const next = getNextOpenTransition(hoursData, now, lat, lng);
+    if (next) {
+      const prefix = next.dayLabel === 'Today' ? 'Opens ' : `Opens ${next.dayLabel} `;
+      return { variant: 'closed', label: `Closed · ${prefix}${next.openLabel}` };
+    }
+
+    return { variant: 'closed', label: 'Closed' };
+  }
+
+  return { variant: null, label: null };
+}
+
+/**
  * Group consecutive days with same hours for compact display
  */
 export function groupHours(hoursData) {
@@ -846,6 +995,8 @@ export default {
   getEffectiveHoursForDate,
   getWeekHours,
   isCurrentlyOpen,
+  getNextOpenTransition,
+  getOpenCloseStatusLabel,
   groupHours,
   formatGroupedHours,
   getUpcomingHolidays,

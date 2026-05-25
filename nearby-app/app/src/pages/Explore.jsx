@@ -17,6 +17,7 @@ import {
   PetIcon,
 } from '../components/nearby-feature/NearbyCard';
 import { getApiUrl } from '../config';
+import { getOpenCloseStatusLabel } from '../utils/hoursUtils';
 import './Explore.css';
 
 /* ------------------------------------------------------------------ */
@@ -118,48 +119,12 @@ function dateRangeForFilter(filter, customDate) {
 /*          └─ Details    (btn_outline_teal btn_poi_button_1)          */
 /* ------------------------------------------------------------------ */
 
-// Format 24h "HH:MM" → "9:00 PM"
-function formatTime12(time24) {
-  if (!time24) return '';
-  const [hStr, mStr] = String(time24).split(':');
-  let h = parseInt(hStr, 10);
-  const period = h >= 12 ? 'PM' : 'AM';
-  if (h > 12) h -= 12;
-  if (h === 0) h = 12;
-  return `${h}:${mStr} ${period}`;
-}
-
-// "Open now - Until 9:00 PM" / "Closed - Opens 8:00 AM" / "Closed today"
-function exploreStatusLine(hours) {
+// Contextual status line for explore result cards — delegates to the shared helper
+// so it is dawn/dusk-aware and produces consistent output with detail pages and NearbyCard.
+function exploreStatusLine(hours, lat, lng) {
   if (!hours || typeof hours !== 'object') return null;
-  const reg = hours.regular && typeof hours.regular === 'object' ? hours.regular : null;
-  if (!reg) return null;
-  const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-  const now = new Date();
-  const dayName = days[now.getDay()];
-  const today = reg[dayName] || reg[dayName.charAt(0).toUpperCase() + dayName.slice(1)];
-  if (!today) return null;
-  if (today.status === 'closed' || today.status === 'Closed') return 'Closed today';
-  const periods = Array.isArray(today.periods) ? today.periods : [];
-  if (today.status !== 'open' || periods.length === 0) return null;
-
-  const nowMins = now.getHours() * 60 + now.getMinutes();
-  const toMins = (t) => {
-    if (!t) return null;
-    const [h, m] = t.split(':').map(Number);
-    return h * 60 + (m || 0);
-  };
-  for (const p of periods) {
-    const o = toMins(p.open?.time);
-    const c = toMins(p.close?.time);
-    if (o == null || c == null) continue;
-    if (nowMins >= o && nowMins < c) return `Open now - Until ${formatTime12(p.close.time)}`;
-  }
-  for (const p of periods) {
-    const o = toMins(p.open?.time);
-    if (o != null && nowMins < o) return `Closed - Opens ${formatTime12(p.open.time)}`;
-  }
-  return 'Closed';
+  const { label } = getOpenCloseStatusLabel(hours, new Date(), lat ?? null, lng ?? null);
+  return label || null;
 }
 
 // Same matcher as NearbyCard — accept any non-empty / non-"no" entry.
@@ -192,10 +157,9 @@ const ResultCard = forwardRef(function ResultCard({ poi, index, isHighlighted },
   if (exploreHasAmenity(poi.wifi_options))          amenities.push({ key: 'wifi',       title: 'WiFi Available',        Icon: WifiIcon });
   if (exploreHasAmenity(poi.pet_options))           amenities.push({ key: 'pet',        title: 'Pet Friendly',          Icon: PetIcon });
   const hasDistance = typeof poi.distance === 'number';
-  const statusLine = !isEvent ? exploreStatusLine(poi.hours) : null;
-
   const lat = poi?.location?.coordinates?.[1];
   const lng = poi?.location?.coordinates?.[0];
+  const statusLine = !isEvent ? exploreStatusLine(poi.hours, lat, lng) : null;
   const directionsHref = lat && lng
     ? `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`
     : null;

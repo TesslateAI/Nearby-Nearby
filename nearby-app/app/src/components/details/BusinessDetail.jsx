@@ -12,7 +12,7 @@ import { SvgDirections, SvgLatLong } from './PoiHeader';
 import { LocalBusinessJsonLd } from '../seo/index';
 import DirectionsModal from '../common/DirectionsModal';
 
-import { isCurrentlyOpen } from '../../utils/hoursUtils';
+import { getOpenCloseStatusLabel } from '../../utils/hoursUtils';
 import { getDisplayableLocation } from '../../utils/getDisplayableLocation';
 import { isPaidTier } from '../../utils/poiTier';
 import { copyToClipboard, getCoordinates } from './shared/poiDetailUtils';
@@ -46,7 +46,9 @@ export default function BusinessDetail({ poi }) {
   const _coords = poi?.location?.coordinates;
   const _lat = Array.isArray(_coords) ? _coords[1] : null;
   const _lng = Array.isArray(_coords) ? _coords[0] : null;
-  const openStatus = poi?.hours ? isCurrentlyOpen(poi.hours, _lat, _lng) : null;
+  const { variant: _statusVariant, label: _statusLabel } = poi?.hours
+    ? getOpenCloseStatusLabel(poi.hours, new Date(), _lat, _lng)
+    : { variant: null, label: null };
   const images = useMemo(() => getImages(poi), [poi]);
 
   const primaryCategory = poi?.categories?.[0]?.name || poi?.business?.primary_category || '';
@@ -245,18 +247,12 @@ export default function BusinessDetail({ poi }) {
   ];
   const sections = (paid ? PAID_SECTIONS : FREE_SECTIONS).filter((s) => s.col1.length > 0 || s.col2.length > 0);
 
-  const statusOpen = openStatus?.isOpen;
-  const statusVariant = statusOpen ? 'open' : (openStatus?.status && /opens? at/i.test(openStatus.status) ? 'opensoon' : 'closed');
-  const statusLabel = openStatus
-    ? (statusOpen ? `Open Now${openStatus.status ? ` – ${openStatus.status}` : ''}` : (openStatus.status || 'Closed'))
-    : null;
-
   return (
     <POIDetailLayout
       poi={poi}
       mainCategory={primaryCategory}
-      statusVariant={openStatus ? statusVariant : undefined}
-      statusLabel={statusLabel}
+      statusVariant={_statusVariant || undefined}
+      statusLabel={_statusLabel}
       seoComponent={<LocalBusinessJsonLd poi={poi} />}
     >
       {({ images: imgs, openLightbox }) => (
