@@ -29,7 +29,7 @@ import ServiceAnimalAlert from '../components/ServiceAnimalAlert';
 import {
   AdminOnlyAccordionItem, IdealForGrouped, ArrivalMethodsGroup, What3WordsInput,
   AccessibleParkingChecklist, AccessibleRestroomChecklist, FullAmenitiesBlock,
-  ConnectivityRow, AlcoholAvailableSelect
+  ConnectivityRow
 } from './_shared';
 import {
   TRAIL_ROUTE_TYPES, GRANDFATHERED_ROUTE_TYPES, TRAIL_LIGHTING_OPTIONS
@@ -327,7 +327,6 @@ export default function TrailLayout({ form, userRole, poiId }) {
             <FacilitiesSection form={form} isTrail id={poiId} />
             <FullAmenitiesBlock form={form} />
             <ConnectivityRow form={form} />
-            <AlcoholAvailableSelect form={form} />
           </Stack>
         </Accordion.Panel>
       </Accordion.Item>

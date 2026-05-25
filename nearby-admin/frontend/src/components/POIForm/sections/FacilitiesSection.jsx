@@ -7,7 +7,7 @@ import { IconPlus } from '@tabler/icons-react';
 import RichTextEditor from '../../RichTextEditor';
 import { getCheckboxGroupProps } from '../constants/helpers';
 import {
-  KEY_FACILITIES, PAYMENT_METHODS, ALCOHOL_OPTIONS, WHEELCHAIR_OPTIONS,
+  KEY_FACILITIES, PAYMENT_METHODS, ALCOHOL_OPTIONS,
   SMOKING_OPTIONS, WIFI_OPTIONS, DRONE_USAGE_OPTIONS, PET_OPTIONS,
   PUBLIC_TOILET_OPTIONS, ENTERTAINMENT_OPTIONS, PARK_FACILITIES
 } from '../../../utils/constants';
@@ -172,13 +172,6 @@ export const FacilitiesSection = React.memo(function FacilitiesSection({
         </>
       )}
 
-      <CheckboxGroupSection
-        label="Wheelchair and Mobility Access"
-        fieldName="wheelchair_accessible"
-        options={WHEELCHAIR_OPTIONS}
-        cols={{ base: 2, sm: 3 }}
-        form={form}
-      />
       <RichTextEditor
         label="Additional Accessibility Details"
         placeholder="Describe accessibility features"
@@ -224,29 +217,6 @@ export const FacilitiesSection = React.memo(function FacilitiesSection({
           ]}
           value={form.values.mobility_access?.ground_level_service || ''}
           onChange={(value) => form.setFieldValue('mobility_access.ground_level_service', value)}
-        />
-        <Select
-          label="Accessible Restroom Available"
-          placeholder="Select..."
-          data={[
-            { value: 'yes', label: 'Yes' },
-            { value: 'no', label: 'No' },
-            { value: 'unknown', label: 'Unknown' }
-          ]}
-          value={form.values.mobility_access?.accessible_restroom || ''}
-          onChange={(value) => form.setFieldValue('mobility_access.accessible_restroom', value)}
-        />
-        <Select
-          label="Accessible Parking"
-          placeholder="Select..."
-          data={[
-            { value: 'dedicated_ada', label: 'Dedicated ADA Spots' },
-            { value: 'street_level', label: 'Street Level' },
-            { value: 'none', label: 'None' },
-            { value: 'unknown', label: 'Unknown' }
-          ]}
-          value={form.values.mobility_access?.accessible_parking || ''}
-          onChange={(value) => form.setFieldValue('mobility_access.accessible_parking', value)}
         />
       </SimpleGrid>
 
