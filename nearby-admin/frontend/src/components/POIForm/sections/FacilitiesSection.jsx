@@ -1,7 +1,7 @@
 import React from 'react';
 import {
   Stack, SimpleGrid, Checkbox, Divider, Radio, Select, Card,
-  NumberInput, TextInput, Button, Switch, Text
+  NumberInput, TextInput, Button, Switch, Text, MultiSelect
 } from '@mantine/core';
 import { IconPlus } from '@tabler/icons-react';
 import RichTextEditor from '../../RichTextEditor';
@@ -9,7 +9,8 @@ import { getCheckboxGroupProps } from '../constants/helpers';
 import {
   KEY_FACILITIES, PAYMENT_METHODS, ALCOHOL_OPTIONS, WHEELCHAIR_OPTIONS,
   SMOKING_OPTIONS, WIFI_OPTIONS, DRONE_USAGE_OPTIONS, PET_OPTIONS,
-  PUBLIC_TOILET_OPTIONS, ENTERTAINMENT_OPTIONS, PARK_FACILITIES
+  PUBLIC_TOILET_OPTIONS, ENTERTAINMENT_OPTIONS, PARK_FACILITIES,
+  PLAYGROUND_TYPES, PARK_PLAYGROUND_SURFACES
 } from '../../../utils/constants';
 import {
   RestroomPhotosUpload,
@@ -17,6 +18,7 @@ import {
   shouldUseImageUpload
 } from '../ImageIntegration';
 import { CheckboxGroupSection } from '../components/CheckboxGroupSection';
+import { RepeatableLocationGroup } from '../layouts/_shared';
 
 export const FacilitiesSection = React.memo(function FacilitiesSection({
   form,
@@ -503,6 +505,67 @@ export const PublicAmenitiesSection = React.memo(function PublicAmenitiesSection
         </>
       )}
 
+    </Stack>
+  );
+});
+
+// -----------------------------------------------------------------------------
+// PlaygroundsSection — #49: reorganized playground UI.
+//
+// Renders:
+//   - "Playground Available" switch (form.values.playground_available)
+//   - Refreshed POI-level playground TYPES + SURFACES multi-selects
+//   - RepeatableLocationGroup bound to playground_locations[] with the
+//     per-row age_groups MultiSelect + 4-category ADA checklist
+//
+// NOTE: the previous flat POI-level "ADA Playground Checklist" + POI-level
+// age_groups MultiSelect have been REMOVED from the layout that mounts this
+// section. That data now lives inside each playground_locations[idx].
+// -----------------------------------------------------------------------------
+export const PlaygroundsSection = React.memo(function PlaygroundsSection({ form }) {
+  return (
+    <Stack>
+      <Switch
+        label="This POI has a playground"
+        checked={!!form.values.playground_available}
+        onChange={(e) => form.setFieldValue('playground_available', e.currentTarget.checked)}
+      />
+
+      {form.values.playground_available && (
+        <>
+          <MultiSelect
+            label="Playground Types"
+            placeholder="Select one or more"
+            data={PLAYGROUND_TYPES}
+            value={form.values.playground_types || []}
+            onChange={(v) => form.setFieldValue('playground_types', v)}
+            searchable
+            clearable
+          />
+
+          <MultiSelect
+            label="Playground Surface(s)"
+            placeholder="Select one or more"
+            data={PARK_PLAYGROUND_SURFACES}
+            value={form.values.playground_surface_types || []}
+            onChange={(v) => form.setFieldValue('playground_surface_types', v)}
+            searchable
+            clearable
+          />
+
+          <Divider my="xs" label="Playground Locations" />
+          <Text size="xs" c="dimmed">
+            Add one entry per playground. Each playground has its own age groups and ADA checklist.
+          </Text>
+
+          <RepeatableLocationGroup
+            form={form}
+            fieldName="playground_locations"
+            extraFields="playground"
+            addLabel="Add a playground"
+          />
+        </>
+      )}
     </Stack>
   );
 });
