@@ -92,6 +92,7 @@ export default function EventLayout({ form, userRole, poiId }) {
               label="Start"
               required
               valueFormat={DT_FORMAT}
+              timePickerProps={{ format: '12h', withDropdown: true }}
               popoverProps={{ withinPortal: true }}
               value={form.values.event?.start_datetime ? new Date(form.values.event.start_datetime) : null}
               onChange={(v) => form.setFieldValue('event.start_datetime', v)}
@@ -99,6 +100,7 @@ export default function EventLayout({ form, userRole, poiId }) {
             <DateTimePicker
               label="End"
               valueFormat={DT_FORMAT}
+              timePickerProps={{ format: '12h', withDropdown: true }}
               popoverProps={{ withinPortal: true }}
               value={form.values.event?.end_datetime ? new Date(form.values.event.end_datetime) : null}
               onChange={(v) => form.setFieldValue('event.end_datetime', v)}

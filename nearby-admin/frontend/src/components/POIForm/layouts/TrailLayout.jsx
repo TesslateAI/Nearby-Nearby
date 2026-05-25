@@ -291,6 +291,7 @@ export default function TrailLayout({ form, userRole, poiId }) {
             value={form.values.hours}
             onChange={(value) => form.setFieldValue('hours', value)}
             poiType={form.values.poi_type}
+            form={form}
           />
         </Accordion.Panel>
       </Accordion.Item>
