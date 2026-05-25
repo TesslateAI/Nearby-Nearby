@@ -155,7 +155,8 @@ AUTOSAVE_ALLOWED_FIELDS: set[str] = {
     'appointment_booking_url',
     'hours_but_appointment_required',
     'hours',
-    'holiday_hours',
+    # 'holiday_hours' — DEPRECATED (Issue #70). Use hours.holidays inside
+    # the `hours` JSONB blob instead.
 
     # Services / community
     'service_locations',
@@ -270,7 +271,8 @@ AUTOSAVE_ALLOWED_FIELDS: set[str] = {
     'contact_organizer_toggle',
     'new_event_link',
     'rescheduled_from_event_id',
-    'primary_display_category',
+    # 'primary_display_category' — DEPRECATED (Issue #42). Use main_category_id
+    # via the canonical POI categories association instead.
     'organizer_email',
     'organizer_phone',
     'organizer_website',

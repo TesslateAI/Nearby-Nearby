@@ -190,8 +190,8 @@ export const usePOIHandlers = (id, isEditing, form, setPoiId) => {
               'event_entry_notes',
               // Task 134-136
               'event_status', 'cancellation_paragraph', 'new_event_link',
-              // Task 137
-              'primary_display_category',
+              // Task 137 — DEPRECATED (Issue #42). Use main_category_id /
+              // MainCategorySelector instead of the legacy string field.
               // Task 138
               'organizer_email', 'organizer_phone', 'organizer_website',
               // Task 139

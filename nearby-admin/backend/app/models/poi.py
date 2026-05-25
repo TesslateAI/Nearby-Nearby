@@ -221,8 +221,12 @@ class PointOfInterest(Base):
     
     # JSONB fields for flexible attributes
     photos = Column(JSONB)  # {"featured": "url", "gallery": ["url1", "url2"]}
-    hours = Column(JSONB)   # Complex hours structure with multiple periods, seasonal, dawn/dusk
-    holiday_hours = Column(JSONB)  # Recurring holiday hours {"christmas": "closed", "thanksgiving": {"open": "10:00", "close": "14:00"}}
+    hours = Column(JSONB)   # Complex hours structure with multiple periods, seasonal, dawn/dusk, holidays
+    # holiday_hours — DEPRECATED (Issue #70). Column renamed to
+    # `_deprecated_holiday_hours` by Alembic migration g70_001. Holiday hours
+    # now live under `hours.holidays`. Not mapped on the ORM so SELECTs ignore
+    # the legacy column; the data was backfilled into hours.holidays by the
+    # migration. The column will be dropped in a later wave.
     amenities = Column(JSONB)  # {"payment_methods": ["Cash", "Credit Card"]}
     ideal_for = Column(JSONB)  # List of ideal_for options
     contact_info = Column(JSONB)  # {"best": {"name": "Rhonda", ...}, "emergency": {...}}
@@ -418,8 +422,12 @@ class Event(Base):
     new_event_link = Column(String)  # Stores UUID string of the new event POI (not a FK for flexibility)
     rescheduled_from_event_id = Column(UUID(as_uuid=True), ForeignKey("events.poi_id"), nullable=True)
 
-    # Task 137: Primary Display Category
-    primary_display_category = Column(String(100))
+    # Task 137: Primary Display Category — DEPRECATED (Issue #42).
+    # Column renamed to `_deprecated_primary_display_category` by Alembic
+    # migration g42_001. Canonical primary-category storage is
+    # `poi_categories.is_main` + `points_of_interest.main_category_id`.
+    # Intentionally not mapped on the ORM model so SELECTs ignore the legacy
+    # data; the column will be dropped in a later wave.
 
     # Task 138: Extended Organizer
     organizer_email = Column(String)

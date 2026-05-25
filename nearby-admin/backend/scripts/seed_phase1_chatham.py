@@ -109,7 +109,8 @@ BASE_SCALAR_FIELDS = {
     "playground_available", "history_paragraph",
 }
 JSONB_FIELDS = {
-    "arrival_methods", "hours", "holiday_hours", "amenities", "contact_info",
+    # Issue #70: holiday_hours deprecated; holidays nested in hours.holidays.
+    "arrival_methods", "hours", "amenities", "contact_info",
     "compliance", "photos", "custom_fields", "ideal_for", "pet_options",
     "public_toilets", "wifi_options", "parking_types", "payment_methods",
     # "key_facilities" removed — renamed _deprecated_key_facilities (Migration A #34)
@@ -221,8 +222,9 @@ def seed_businesses(db):
             "friday": [{"open": "07:00", "close": "18:00"}, {"open": "19:00", "close": "21:00"}],
             "saturday": [{"open": "08:00", "close": "14:00"}],
             "sunday": [{"open": "08:00", "close": "13:00"}],
+            # Issue #70: holidays nested under hours.holidays
+            "holidays": {"christmas": "closed", "thanksgiving": {"open": "08:00", "close": "12:00"}},
         },
-        holiday_hours={"christmas": "closed", "thanksgiving": {"open": "08:00", "close": "12:00"}},
         wifi_options=["Free Wifi"],
         pet_options=["Dogs Welcome", "Service Animals Welcome"],
         public_toilets=["Flush Toilets", "All-Gender / Unisex"],
@@ -269,8 +271,9 @@ def seed_businesses(db):
                "thursday": [{"open": "16:00", "close": "22:00"}],
                "friday": [{"open": "15:00", "close": "23:00"}],
                "saturday": [{"open": "12:00", "close": "23:00"}],
-               "sunday": [{"open": "12:00", "close": "20:00"}]},
-        holiday_hours={"new_years_day": "closed"},
+               "sunday": [{"open": "12:00", "close": "20:00"}],
+               # Issue #70: holidays nested under hours.holidays
+               "holidays": {"new_years_day": "closed"}},
         wifi_options=["Free Wifi"],
         pet_options=["Pet Friendly", "Dogs Welcome", "Dog Water Bowls Provided"],
         public_toilets=["Accessible Restroom", "All-Gender / Unisex"],
@@ -503,8 +506,9 @@ def seed_parks(db):
                "thursday": [{"open": "06:00", "close": "22:00"}],
                "friday": [{"open": "06:00", "close": "22:00"}],
                "saturday": [{"open": "06:00", "close": "22:00"}],
-               "sunday": [{"open": "06:00", "close": "22:00"}]},
-        holiday_hours={"christmas": "closed"},
+               "sunday": [{"open": "06:00", "close": "22:00"}],
+               # Issue #70: holidays nested under hours.holidays
+               "holidays": {"christmas": "closed"}},
         cost="0", park_entry_notes="Two entrances: main gate on Chatham Park Dr, secondary off Robeson St. Restrooms at main pavilion.",
         pet_options=["Dog Friendly", "Dogs On Leash Required", "Dog Waste Stations"],
         public_toilets=["Accessible Restroom", "Family Restroom", "Flush Toilets", "Baby Changing Station"],

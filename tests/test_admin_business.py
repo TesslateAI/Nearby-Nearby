@@ -108,8 +108,9 @@ class TestCreateBusinessAllFields:
             "hours": {
                 "monday": {"open": "09:00", "close": "17:00"},
                 "tuesday": {"open": "09:00", "close": "17:00"},
+                # Issue #70: holiday_hours top-level key replaced by hours.holidays.
+                "holidays": {"christmas": "closed"},
             },
-            "holiday_hours": {"christmas": "closed"},
             "amenities": {"wifi": True, "outdoor_seating": True},
             "contact_info": {"best": {"name": "Rhonda", "phone": "919-555-0000"}},
             "compliance": {"pre_approval_required": True, "lead_time": "5 days"},

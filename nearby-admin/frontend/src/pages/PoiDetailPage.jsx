@@ -542,8 +542,11 @@ const PoiDetailPage = () => {
                                     <DetailItem label="History" value={poi.history_paragraph} />
                                 )}
                                 <HoursDisplay hours={poi.hours} />
-                                {poi.holiday_hours && (
-                                    <DetailItem label="Holiday Hours" value={JSON.stringify(poi.holiday_hours)} />
+                                {/* Issue #70: holiday_hours top-level column is deprecated.
+                                    Holiday hours now live in poi.hours.holidays and render
+                                    inside <HoursDisplay /> above. */}
+                                {poi.hours?.holidays && Object.keys(poi.hours.holidays).length > 0 && (
+                                    <DetailItem label="Holiday Hours" value={JSON.stringify(poi.hours.holidays)} />
                                 )}
                                 {poiTypeData.length && (
                                     <DetailItem label="Length" value={poiTypeData.length} icon={{ type: IconRoute, props: {} }} />

@@ -182,8 +182,11 @@ class EventBase(BaseModel):
     contact_organizer_toggle: bool = False
     new_event_link: Optional[str] = None
     rescheduled_from_event_id: Optional[uuid.UUID] = None
-    # Task 137: Primary Display Category
-    primary_display_category: Optional[str] = None
+    # Task 137: Primary Display Category — DEPRECATED (Issue #42).
+    # The canonical primary-category mechanism is the UUID-based
+    # `main_category_id` / `is_main` on `poi_categories`. This string field is
+    # no longer accepted on Event payloads; the column is renamed to
+    # `_deprecated_primary_display_category` by Alembic migration g42_001.
     # Task 138: Extended Organizer
     organizer_email: Optional[str] = None
     organizer_phone: Optional[str] = None
@@ -253,8 +256,7 @@ class EventUpdate(BaseModel):
     contact_organizer_toggle: Optional[bool] = None
     new_event_link: Optional[str] = None
     rescheduled_from_event_id: Optional[uuid.UUID] = None
-    # Task 137: Primary Display Category
-    primary_display_category: Optional[str] = None
+    # Task 137: Primary Display Category — DEPRECATED (Issue #42), see EventBase.
     # Task 138: Extended Organizer
     organizer_email: Optional[str] = None
     organizer_phone: Optional[str] = None
@@ -542,8 +544,10 @@ class PointOfInterestBase(BaseModel):
     
     # JSONB fields
     photos: Optional[Dict[str, Any]] = None
-    hours: Optional[Dict[str, Any]] = None  # Complex hours with multiple periods, seasonal
-    holiday_hours: Optional[Dict[str, Any]] = None  # Recurring holiday hours
+    hours: Optional[Dict[str, Any]] = None  # Complex hours with multiple periods, seasonal, and holidays (nested at hours.holidays)
+    # holiday_hours — DEPRECATED (Issue #70). Holiday hours now live under
+    # `hours.holidays`. Schema no longer exposes the top-level field; the
+    # column is renamed to `_deprecated_holiday_hours` by migration g70_001.
     amenities: Optional[Dict[str, Any]] = None
     ideal_for: Optional[Union[Dict[str, List[str]], List[str]]] = None  # Grouped dict preferred; flat list accepted for back-compat
     contact_info: Optional[Dict[str, Any]] = None
@@ -728,7 +732,7 @@ class PointOfInterestUpdate(BaseModel):
     camping_lodging: Optional[str] = None
     photos: Optional[Dict[str, Any]] = None
     hours: Optional[Dict[str, Any]] = None
-    holiday_hours: Optional[Dict[str, Any]] = None
+    # holiday_hours — DEPRECATED (Issue #70); use hours.holidays.
     amenities: Optional[Dict[str, Any]] = None
     ideal_for: Optional[Union[Dict[str, List[str]], List[str]]] = None
     contact_info: Optional[Dict[str, Any]] = None

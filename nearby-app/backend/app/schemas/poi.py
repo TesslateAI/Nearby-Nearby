@@ -69,8 +69,8 @@ class Event(BaseModel):
     contact_organizer_toggle: Optional[bool] = None
     new_event_link: Optional[str] = None
     rescheduled_from_event_id: Optional[str] = None
-    # Task 137: Primary Display Category
-    primary_display_category: Optional[str] = None
+    # Task 137: Primary Display Category — DEPRECATED (Issue #42).
+    # Use `main_category` (UUID-based) from the canonical POI response instead.
     # Task 138: Extended Organizer
     organizer_email: Optional[str] = None
     organizer_phone: Optional[str] = None
@@ -191,7 +191,8 @@ class POIDetail(BaseModel):
 
     # Hours and Availability
     hours: Optional[Any] = None
-    holiday_hours: Optional[Any] = None
+    # holiday_hours — DEPRECATED (Issue #70). Holiday hours now live under
+    # `hours.holidays` and are surfaced by `HoursDisplay` via the nested key.
     hours_but_appointment_required: Optional[bool] = None
     appointment_booking_url: Optional[str] = None
 

@@ -339,19 +339,25 @@ def create_poi(db: Session, poi: schemas.PointOfInterestCreate):
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Error creating POI: {e}")
 
-    # Handle main category via poi_categories table with is_main=True
+    # Handle main category via poi_categories table with is_main=True.
+    # Issue #42: enforce that the chosen main category is one of the POI's
+    # selected categories (membership), not just any category in the tree.
     if hasattr(poi, 'main_category_id') and poi.main_category_id:
         main_category = get_category(db, poi.main_category_id)
-        if main_category and main_category.parent_id is None:
-            # Insert into poi_categories with is_main=True
-            from app.models.category import poi_category_association
-            db.execute(poi_category_association.insert().values(
-                poi_id=db_poi.id,
-                category_id=poi.main_category_id,
-                is_main=True
-            ))
-        else:
+        if not main_category:
             raise HTTPException(status_code=400, detail="Invalid main category")
+        selected_category_ids = set(getattr(poi, 'category_ids', None) or [])
+        if selected_category_ids and poi.main_category_id not in selected_category_ids:
+            raise HTTPException(
+                status_code=422,
+                detail="main_category_id must be one of the POI's selected category_ids",
+            )
+        from app.models.category import poi_category_association
+        db.execute(poi_category_association.insert().values(
+            poi_id=db_poi.id,
+            category_id=poi.main_category_id,
+            is_main=True
+        ))
 
     # Validate free business category limit
     if poi.category_ids:
@@ -360,10 +366,16 @@ def create_poi(db: Session, poi: schemas.PointOfInterestCreate):
         if listing_type == 'free' and poi_type_str == 'BUSINESS' and len(poi.category_ids) > 1:
             raise HTTPException(status_code=400, detail="Free business listings are limited to 1 category")
 
-    # Add secondary categories via poi_categories table with is_main=False
+    # Add secondary categories via poi_categories table with is_main=False.
+    # Issue #42: skip the main category — it's already inserted above as
+    # is_main=True; re-inserting would either violate the (poi_id, category_id)
+    # unique constraint or duplicate the row depending on schema.
+    main_cat_id_create = getattr(poi, 'main_category_id', None)
     if poi.category_ids:
         from app.models.category import poi_category_association
         for cat_id in poi.category_ids:
+            if cat_id == main_cat_id_create:
+                continue
             category = get_category(db, cat_id)
             if category:
                 # Insert into poi_categories with is_main=False
@@ -515,7 +527,10 @@ def update_poi(db: Session, *, db_obj: models.PointOfInterest, obj_in: schemas.P
         else:
             db_obj.event = models.Event(**event_data)
 
-    # Handle main category update via poi_categories table
+    # Handle main category update via poi_categories table.
+    # Issue #42: validate membership — the chosen main category must be one
+    # of the POI's selected categories (either the incoming category_ids in
+    # this same request, or the existing rows on poi_categories).
     if 'main_category_id' in update_data:
         main_category_id = update_data.pop('main_category_id')
         from app.models.category import poi_category_association
@@ -529,28 +544,43 @@ def update_poi(db: Session, *, db_obj: models.PointOfInterest, obj_in: schemas.P
         # Add/update new main category if provided
         if main_category_id:
             main_category = get_category(db, main_category_id)
-            if main_category and main_category.parent_id is None:
-                # Check if this category already exists for this POI
-                existing = db.execute(poi_category_association.select().where(
+            if not main_category:
+                raise HTTPException(status_code=400, detail="Invalid main category")
+
+            # Determine the effective category membership for validation.
+            if 'category_ids' in update_data:
+                effective_category_ids = set(update_data.get('category_ids') or [])
+            else:
+                existing_rows = db.execute(poi_category_association.select().where(
+                    poi_category_association.c.poi_id == db_obj.id
+                )).fetchall()
+                effective_category_ids = {row.category_id for row in existing_rows}
+
+            if effective_category_ids and main_category_id not in effective_category_ids:
+                raise HTTPException(
+                    status_code=422,
+                    detail="main_category_id must be one of the POI's selected category_ids",
+                )
+
+            # Check if this category already exists for this POI
+            existing = db.execute(poi_category_association.select().where(
+                poi_category_association.c.poi_id == db_obj.id,
+                poi_category_association.c.category_id == main_category_id
+            )).fetchone()
+
+            if existing:
+                # Update existing to be main
+                db.execute(poi_category_association.update().where(
                     poi_category_association.c.poi_id == db_obj.id,
                     poi_category_association.c.category_id == main_category_id
-                )).fetchone()
-
-                if existing:
-                    # Update existing to be main
-                    db.execute(poi_category_association.update().where(
-                        poi_category_association.c.poi_id == db_obj.id,
-                        poi_category_association.c.category_id == main_category_id
-                    ).values(is_main=True))
-                else:
-                    # Insert new main category
-                    db.execute(poi_category_association.insert().values(
-                        poi_id=db_obj.id,
-                        category_id=main_category_id,
-                        is_main=True
-                    ))
+                ).values(is_main=True))
             else:
-                raise HTTPException(status_code=400, detail="Invalid main category")
+                # Insert new main category
+                db.execute(poi_category_association.insert().values(
+                    poi_id=db_obj.id,
+                    category_id=main_category_id,
+                    is_main=True
+                ))
 
     # Handle secondary category updates via poi_categories table
     if 'category_ids' in update_data:
