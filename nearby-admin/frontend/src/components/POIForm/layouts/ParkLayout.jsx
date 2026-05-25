@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
-  Accordion, Stack, Group, Text, Badge, Select, Textarea, Switch, Divider
+  Accordion, Stack, Group, Text, Badge, Select, Textarea
 } from '@mantine/core';
 
 import { CoreInformationSection } from '../sections/CoreInformationSection';
@@ -8,10 +8,10 @@ import { LocationSection } from '../sections/LocationSection';
 import { ContactSection } from '../sections/ContactSection';
 import { ParkCategoriesSection } from '../sections/ParkCategoriesSection';
 import {
-  FacilitiesSection, PublicAmenitiesSection, RentalsSection
+  FacilitiesSection, PublicAmenitiesSection, RentalsSection, PlaygroundsSection
 } from '../sections/FacilitiesSection';
 import {
-  OutdoorFeaturesSection, HuntingFishingSection, PetPolicySection, PlaygroundSection
+  OutdoorFeaturesSection, HuntingFishingSection, PetPolicySection
 } from '../sections/OutdoorFeaturesSection';
 import { BusinessGallerySection } from '../sections/BusinessDetailsSection';
 import {
@@ -27,9 +27,7 @@ import {
   AccessibleParkingChecklist, FullAmenitiesBlock,
   ConnectivityRow
 } from './_shared';
-import { PLAYGROUND_AGE_GROUPS, PLAYGROUND_ADA_CHECKLIST } from '../../../utils/outdoorConstants';
 import { api } from '../../../utils/api';
-import { Checkbox, SimpleGrid, MultiSelect } from '@mantine/core';
 
 function usePARKCategories() {
   const [opts, setOpts] = useState([]);
@@ -51,21 +49,6 @@ function usePARKCategories() {
 export default function ParkLayout({ form, userRole, poiId }) {
   const parkCatOpts = usePARKCategories();
   const selectedParkCat = (form.values.outdoor_types && form.values.outdoor_types[0]) || null;
-  const playgroundAda = Array.isArray(form.values.playground_ada_checklist) ? form.values.playground_ada_checklist : [];
-
-  const toggleAda = (opt) => {
-    const next = playgroundAda.includes(opt)
-      ? playgroundAda.filter(x => x !== opt)
-      : [...playgroundAda, opt];
-    form.setFieldValue('playground_ada_checklist', next);
-    // Derive inclusive_playground = all 3 required items present
-    const required = [
-      'Accessible route to play area',
-      'Ground-level play components accessible',
-      'Unitary surface (poured-rubber/tiles)',
-    ];
-    form.setFieldValue('inclusive_playground', required.every(r => next.includes(r)));
-  };
 
   return (
     <>
@@ -222,42 +205,11 @@ export default function ParkLayout({ form, userRole, poiId }) {
         </Accordion.Panel>
       </Accordion.Item>
 
-      {/* 16. Playground (gated by has_playground/playground_available) */}
+      {/* 16. Playground — #49 reorganized: per-row age groups + grouped ADA */}
       <Accordion.Item value="s16-playground">
         <Accordion.Control><Text fw={600}>Playground Information</Text></Accordion.Control>
         <Accordion.Panel>
-          <Stack>
-            <Switch
-              label="This park has a playground"
-              checked={!!form.values.playground_available}
-              onChange={(e) => form.setFieldValue('playground_available', e.currentTarget.checked)}
-            />
-            {form.values.playground_available && (
-              <>
-                <PlaygroundSection form={form} id={poiId} />
-                <MultiSelect
-                  label="Playground Age Groups"
-                  data={PLAYGROUND_AGE_GROUPS}
-                  value={form.values.playground_age_groups || []}
-                  onChange={(v) => form.setFieldValue('playground_age_groups', v)}
-                />
-                <Text fw={500}>Playground ADA Checklist</Text>
-                <SimpleGrid cols={{ base: 1, sm: 2 }}>
-                  {PLAYGROUND_ADA_CHECKLIST.map(opt => (
-                    <Checkbox
-                      key={opt}
-                      label={opt}
-                      checked={playgroundAda.includes(opt)}
-                      onChange={() => toggleAda(opt)}
-                    />
-                  ))}
-                </SimpleGrid>
-                {form.values.inclusive_playground && (
-                  <Badge color="green">Inclusive Playground (ADA criteria met)</Badge>
-                )}
-              </>
-            )}
-          </Stack>
+          <PlaygroundsSection form={form} />
         </Accordion.Panel>
       </Accordion.Item>
 

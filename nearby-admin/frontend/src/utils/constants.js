@@ -470,6 +470,82 @@ export const PUBLIC_TOILET_OPTIONS = [
   '24 Hour Access'
 ];
 
+// Phase 1 / #49 — Playground option lists (refreshed) — per-playground data
+// stored inside each item of playground_locations[] JSONB array. Item shape:
+// { lat, lng, name?, age_groups: string[], ada_checklist: { [groupKey]: [] } }.
+export const PLAYGROUND_TYPES = [
+  { value: 'traditional',          label: 'Traditional / Climbing Structure' },
+  { value: 'nature',               label: 'Nature Playground' },
+  { value: 'inclusive',            label: 'Inclusive / All-Abilities' },
+  { value: 'sensory',              label: 'Sensory Playground' },
+  { value: 'adventure',            label: 'Adventure Course / Ropes / Ninja' },
+  { value: 'water',                label: 'Water / Splash Play' },
+  { value: 'musical',              label: 'Musical Instruments' },
+  { value: 'imaginative',          label: 'Imaginative / Themed' },
+  { value: 'sports',               label: 'Sport-Focused (Mini Pitch / Court)' },
+  { value: 'other',                label: 'Other' },
+];
+
+export const PARK_PLAYGROUND_SURFACES = [
+  { value: 'poured_rubber',        label: 'Poured Rubber' },
+  { value: 'rubber_tiles',         label: 'Rubber Tiles' },
+  { value: 'engineered_woodchip',  label: 'Engineered Wood Fiber / Mulch' },
+  { value: 'sand',                 label: 'Sand' },
+  { value: 'pea_gravel',           label: 'Pea Gravel' },
+  { value: 'turf',                 label: 'Artificial Turf' },
+  { value: 'grass',                label: 'Grass' },
+  { value: 'concrete',             label: 'Concrete / Pavement' },
+  { value: 'mixed',                label: 'Mixed Surface' },
+  { value: 'other',                label: 'Other' },
+];
+
+export const PLAYGROUND_AGE_GROUPS = [
+  { value: 'infant_toddler', label: 'Infant / Toddler (0–2)' },
+  { value: 'preschool',      label: 'Preschool (3–5)' },
+  { value: 'school_age',     label: 'School Age (6–12)' },
+  { value: 'teen',           label: 'Teen / Adult' },
+  { value: 'all_ages',       label: 'All Ages' },
+];
+
+// ADA checklist grouped into 4 categories per #49.
+export const PLAYGROUND_ADA_CATEGORIES = {
+  surface_access: {
+    label: 'Surface + Access',
+    items: [
+      { value: 'firm_stable_surface',   label: 'Firm + stable surface (rubber tile, poured-in-place, engineered wood fiber)' },
+      { value: 'accessible_route',      label: 'Accessible route from parking / sidewalk to play area' },
+      { value: 'level_transitions',     label: 'No abrupt level changes / ramped transitions' },
+      { value: 'maneuvering_clearance', label: '60"+ maneuvering clearance at entries' },
+    ],
+  },
+  play_equipment: {
+    label: 'Play Equipment',
+    items: [
+      { value: 'transfer_platform',  label: 'Transfer platform at composite structure' },
+      { value: 'accessible_swing',   label: 'Accessible swing (full-back / harness)' },
+      { value: 'ground_level_play', label: 'Ground-level play components reachable from wheelchair' },
+      { value: 'sensory_panel',      label: 'Sensory / interactive panel at wheelchair height' },
+      { value: 'inclusive_carousel', label: 'Inclusive carousel or spinner (wheelchair-friendly)' },
+    ],
+  },
+  seating_shade: {
+    label: 'Seating + Shade',
+    items: [
+      { value: 'accessible_seating', label: 'Accessible bench with armrests + back' },
+      { value: 'shade_structure',    label: 'Shade structure or natural shade over play area' },
+      { value: 'companion_seating',  label: 'Companion seating beside accessible seats' },
+    ],
+  },
+  amenities: {
+    label: 'Amenities Nearby',
+    items: [
+      { value: 'accessible_water',    label: 'Accessible drinking fountain or bottle-fill' },
+      { value: 'accessible_restroom', label: 'Accessible restroom within sight / short distance' },
+      { value: 'accessible_parking',  label: 'Accessible parking with curb cut' },
+    ],
+  },
+};
+
 // Wave 3 #47 — grouped ADA restroom checklist (15 items, 6 groups). Each entry
 // is { group, label }. Renderer groups by `group`. Label wording must match
 // shared/constants/field_options.py RESTROOM_ADA_CHECKLIST exactly because

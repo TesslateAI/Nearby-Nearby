@@ -15,6 +15,7 @@ import {
   AMENITIES_GENERAL, AMENITIES_FAMILY_YOUTH, AMENITIES_WATER_BOATING, AMENITIES_DINING_SEATING,
   ALCOHOL_AVAILABLE_OPTIONS, WIFI_OPTIONS, CELL_SERVICE_OPTIONS,
   PET_OPTIONS, PAYMENT_METHODS, DISCOUNT_TYPES,
+  PLAYGROUND_AGE_GROUPS, PLAYGROUND_ADA_CATEGORIES,
 } from '../../../utils/constants';
 
 // -----------------------------------------------------------------------------
@@ -407,6 +408,166 @@ export function AlcoholAvailableSelect({ form }) {
       onChange={(v) => form.setFieldValue('alcohol_available', v)}
       clearable
     />
+  );
+}
+
+// -----------------------------------------------------------------------------
+// PlaygroundRowExtras — internal helper used by RepeatableLocationGroup when
+// `extraFields="playground"`.  Renders the per-playground age-groups
+// MultiSelect plus the 4-category ADA checklist.  Pure controlled component
+// driven through the parent form via `fieldName` + index.
+// -----------------------------------------------------------------------------
+function PlaygroundRowExtras({ form, fieldName, idx }) {
+  const row = form.values?.[fieldName]?.[idx] || {};
+  const ageGroups = Array.isArray(row.age_groups) ? row.age_groups : [];
+  const adaChecklist = (row.ada_checklist && typeof row.ada_checklist === 'object')
+    ? row.ada_checklist
+    : {};
+
+  const updateAgeGroups = (vals) => {
+    form.setFieldValue(`${fieldName}.${idx}.age_groups`, vals);
+  };
+
+  const updateAdaCategory = (catKey, vals) => {
+    form.setFieldValue(`${fieldName}.${idx}.ada_checklist.${catKey}`, vals);
+  };
+
+  return (
+    <Stack gap="md">
+      <MultiSelect
+        label="Age Groups"
+        description="Who this playground is designed for"
+        placeholder="Select one or more"
+        data={PLAYGROUND_AGE_GROUPS}
+        value={ageGroups}
+        onChange={updateAgeGroups}
+        searchable
+        clearable
+      />
+
+      <Stack gap="xs">
+        <Text fw={500}>ADA Accessibility Checklist</Text>
+        {Object.entries(PLAYGROUND_ADA_CATEGORIES).map(([catKey, cat]) => {
+          const groupValue = Array.isArray(adaChecklist[catKey]) ? adaChecklist[catKey] : [];
+          return (
+            <Stack key={catKey} gap={4}>
+              <Text fw={500} c="dimmed" size="sm">{cat.label}</Text>
+              <Checkbox.Group
+                value={groupValue}
+                onChange={(vals) => updateAdaCategory(catKey, vals)}
+              >
+                <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="xs">
+                  {cat.items.map((opt) => (
+                    <Checkbox key={opt.value} value={opt.value} label={opt.label} />
+                  ))}
+                </SimpleGrid>
+              </Checkbox.Group>
+            </Stack>
+          );
+        })}
+      </Stack>
+    </Stack>
+  );
+}
+
+// -----------------------------------------------------------------------------
+// RepeatableLocationGroup — repeats a row of { lat, lng, name? } objects bound
+// to `form.values[fieldName]` (must be an array, even if empty/undefined).
+//
+// Optional `extraFields` selectors render additional inputs inside each row:
+//   - "playground": per-row age_groups MultiSelect + grouped ADA checklist
+//                   (data shape: { age_groups: string[], ada_checklist: {} })
+//
+// Backward compat: missing keys render as empty controls. Updates use
+// setFieldValue with merge-style paths so untouched keys are preserved.
+// -----------------------------------------------------------------------------
+export function RepeatableLocationGroup({
+  form,
+  fieldName,
+  extraFields = null,
+  addLabel = 'Add another location',
+  showName = true,
+}) {
+  const rows = Array.isArray(form.values?.[fieldName]) ? form.values[fieldName] : [];
+
+  const addRow = () => {
+    const next = [...rows, { lat: null, lng: null, name: '' }];
+    form.setFieldValue(fieldName, next);
+  };
+
+  const removeRow = (idx) => {
+    const next = rows.filter((_, i) => i !== idx);
+    form.setFieldValue(fieldName, next);
+  };
+
+  return (
+    <Stack>
+      {rows.map((row, idx) => (
+        <div
+          key={idx}
+          style={{
+            border: '1px solid var(--mantine-color-gray-3)',
+            borderRadius: 8,
+            padding: 12,
+          }}
+        >
+          <Stack>
+            <Group justify="space-between" align="center">
+              <Text fw={500}>
+                {extraFields === 'playground' ? 'Playground' : 'Location'} {idx + 1}
+              </Text>
+              <ActionIcon
+                variant="light"
+                color="red"
+                onClick={() => removeRow(idx)}
+                aria-label="Remove"
+              >
+                <IconTrash size={16} />
+              </ActionIcon>
+            </Group>
+
+            {showName && (
+              <TextInput
+                label="Name (optional)"
+                placeholder="e.g. Main Playground, North Lot Playground"
+                value={row?.name ?? ''}
+                onChange={(e) =>
+                  form.setFieldValue(`${fieldName}.${idx}.name`, e.currentTarget.value)
+                }
+              />
+            )}
+
+            <SimpleGrid cols={{ base: 1, sm: 2 }}>
+              <NumberInput
+                label="Latitude"
+                placeholder="35.7128"
+                decimalScale={6}
+                value={row?.lat ?? ''}
+                onChange={(v) => form.setFieldValue(`${fieldName}.${idx}.lat`, v)}
+              />
+              <NumberInput
+                label="Longitude"
+                placeholder="-79.0064"
+                decimalScale={6}
+                value={row?.lng ?? ''}
+                onChange={(v) => form.setFieldValue(`${fieldName}.${idx}.lng`, v)}
+              />
+            </SimpleGrid>
+
+            {extraFields === 'playground' && (
+              <>
+                <Divider my="xs" />
+                <PlaygroundRowExtras form={form} fieldName={fieldName} idx={idx} />
+              </>
+            )}
+          </Stack>
+        </div>
+      ))}
+
+      <Button leftSection={<IconPlus size={14} />} variant="light" onClick={addRow}>
+        {addLabel}
+      </Button>
+    </Stack>
   );
 }
 

@@ -22,5 +22,17 @@ export const getValidationRules = () => ({
       return 'Start date/time is required for events';
     }
     return null;
+  },
+  // #49: soft validation — every playground row must declare at least one
+  // age group. Returns an array of per-row errors so Mantine's form surfaces
+  // the warning on the offending row without blocking save.
+  playground_locations: (value) => {
+    if (!Array.isArray(value) || value.length === 0) return null;
+    const missing = value.some(
+      (row) => !row || !Array.isArray(row.age_groups) || row.age_groups.length === 0
+    );
+    return missing
+      ? 'Each playground should have at least one age group selected'
+      : null;
   }
 });
