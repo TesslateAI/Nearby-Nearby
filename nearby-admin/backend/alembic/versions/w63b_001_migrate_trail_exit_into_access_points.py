@@ -1,13 +1,12 @@
 """Wave 5 / Issue #63 Migration B — migrate trail_exit data into access_points.
 
 Revision ID: w63b_001
-Revises: w34b_001
+Revises: w45b_001
 Create Date: 2026-05-25
 
-# MERGER: bump down_revision to w45b_001 once Wave 5 #45 PR2 lands. At the
-# time this migration was written, w45b_001 was not yet on the parent
-# branch; depending on w34b_001 is safe because the two chains are
-# orthogonal (no overlapping columns).
+# MERGE NOTE: down_revision linearized to w45b_001 (Wave 5 #45 PR2) once
+# that chain landed; the two chains are orthogonal (no overlapping columns)
+# so ordering between #45 and #63 is interchangeable.
 
 For every Trail POI that has trail_exit_latitude / trail_exit_longitude /
 trailhead_exit_location set, this migration:
@@ -46,7 +45,7 @@ from alembic import op
 
 
 revision = 'w63b_001'
-down_revision = 'w34b_001'
+down_revision = 'w45b_001'
 branch_labels = None
 depends_on = None
 
