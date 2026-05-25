@@ -70,7 +70,6 @@ export const emptyInitialValues = {
   alcohol_available: null,
   alcohol_options: [],
   alcohol_policy_details: '',
-  wheelchair_accessible: [],
   wheelchair_details: '',
   smoking_options: [],
   smoking_details: '',
