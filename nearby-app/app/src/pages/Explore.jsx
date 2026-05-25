@@ -40,7 +40,8 @@ const DATE_PRESETS = [
   { value: 'weekend',  label: 'This Weekend' },
 ];
 
-const USER_LOCATION = { lat: 35.7198, lng: -79.1772 };
+// Downtown Pittsboro center — confirmed by product owner (stopgap; see follow-up ticket for geolocation)
+const USER_LOCATION = { lat: 35.72028984062034, lng: -79.17718140354249 };
 
 /* ------------------------------------------------------------------ */
 /* Helpers                                                            */
@@ -221,7 +222,7 @@ function ResultCard({ poi, index }) {
           <span className="one_search_map_result_calculated">
             {poi.distance.toFixed(1)} {poi.distance === 1 ? 'mile' : 'miles'}
           </span>{' '}
-          <span className="one_search_map_result_frompoint">from point of interest</span>
+          <span className="one_search_map_result_frompoint">from downtown Pittsboro</span>
         </div>
       )}
 
