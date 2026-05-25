@@ -35,7 +35,11 @@ async def what3words_to_coords(
 ):
     api_key = getattr(settings, 'what3words_api_key', None)
     if not api_key:
-        raise HTTPException(status_code=503, detail="what3words API not configured")
+        raise HTTPException(
+            status_code=503,
+            detail="WHAT3WORDS_API_KEY not configured — set in .env (dev) "
+                   "or SSM SecureString /nearbynearby/prod/what3words-api-key (prod).",
+        )
 
     url = "https://api.what3words.com/v3/convert-to-coordinates"
     params = {"words": body.words, "key": api_key}
