@@ -43,7 +43,8 @@ export const usePOIHandlers = (id, isEditing, form, setPoiId) => {
 
           // Ensure all array fields are arrays, not null
           const arrayFields = [
-            'ideal_for', 'ideal_for_key', 'parking_types', 'payment_methods', 'key_facilities',
+            'ideal_for', 'ideal_for_key', 'parking_types', 'payment_methods',
+            // 'key_facilities' removed — renamed _deprecated_key_facilities (Migration A #34)
             'alcohol_options', 'wheelchair_accessible', 'smoking_options', 'wifi_options',
             'pet_options', 'public_toilets', 'youth_amenities', 'business_amenities',
             'entertainment_options', 'natural_features', 'outdoor_types', 'things_to_do',
@@ -90,7 +91,8 @@ export const usePOIHandlers = (id, isEditing, form, setPoiId) => {
             'tiktok_username', 'linkedin_username', 'main_contact_name', 'main_contact_email',
             'main_contact_phone', 'offsite_emergency_contact', 'emergency_protocols',
             'cost', 'pricing_details', 'history_paragraph', 'featured_image',
-            'parking_notes', 'public_transit_info', 'wheelchair_details', 'smoking_details',
+            'parking_notes', 'wheelchair_details', 'smoking_details',
+            // 'public_transit_info' removed — renamed _deprecated_public_transit_info (Migration A #33)
             'drone_usage', 'drone_policy', 'pet_policy', 'toilet_description', 'rental_info',
             'rental_pricing', 'rental_link', 'price_range_per_person', 'pricing', 'gift_cards',
             'menu_link', 'community_impact', 'night_sky_viewing', 'birding_wildlife',

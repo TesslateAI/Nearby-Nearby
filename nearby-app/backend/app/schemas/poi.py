@@ -210,7 +210,7 @@ class POIDetail(BaseModel):
     parking_photos: Optional[Any] = None
     expect_to_pay_parking: Optional[str] = None
     parking_lot_photo: Optional[str] = None
-    public_transit_info: Optional[str] = None
+    # public_transit_info - DEPRECATED: renamed _deprecated_public_transit_info (Migration A #33)
 
     # Accessibility
     wheelchair_accessible: Optional[Any] = None
@@ -218,7 +218,7 @@ class POIDetail(BaseModel):
 
     # Amenities and Facilities
     amenities: Optional[Any] = None
-    key_facilities: Optional[Any] = None
+    # key_facilities - DEPRECATED: renamed _deprecated_key_facilities (Migration A #34)
     facilities_options: Optional[Any] = None
     wifi_options: Optional[Any] = None
     payment_methods: Optional[Any] = None

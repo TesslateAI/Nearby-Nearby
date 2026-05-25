@@ -428,13 +428,13 @@ class PointOfInterestBase(BaseModel):
     parking_locations: Optional[List[Dict[str, Any]]] = None
     parking_notes: Optional[str] = None
     # parking_photos - DEPRECATED: moved to Images table (image_type='parking')
-    public_transit_info: Optional[str] = None
+    # public_transit_info - DEPRECATED: renamed _deprecated_public_transit_info (Migration A #33)
     expect_to_pay_parking: Optional[Literal['yes', 'no', 'sometimes']] = None
 
     # Additional Info
     downloadable_maps: Optional[List[Dict[str, str]]] = None
     payment_methods: Optional[List[str]] = None
-    key_facilities: Optional[List[str]] = None
+    # key_facilities - DEPRECATED: renamed _deprecated_key_facilities (Migration A #34)
     alcohol_options: Optional[List[str]] = None
     alcohol_policy_details: Optional[str] = None
     wheelchair_accessible: Optional[List[str]] = None
@@ -631,11 +631,11 @@ class PointOfInterestUpdate(BaseModel):
     parking_locations: Optional[List[Dict[str, Any]]] = None
     parking_notes: Optional[str] = None
     # parking_photos - DEPRECATED: moved to Images table (image_type='parking')
-    public_transit_info: Optional[str] = None
+    # public_transit_info - DEPRECATED: renamed _deprecated_public_transit_info (Migration A #33)
     expect_to_pay_parking: Optional[Literal['yes', 'no', 'sometimes']] = None
     downloadable_maps: Optional[List[Dict[str, str]]] = None
     payment_methods: Optional[List[str]] = None
-    key_facilities: Optional[List[str]] = None
+    # key_facilities - DEPRECATED: renamed _deprecated_key_facilities (Migration A #34)
     alcohol_options: Optional[List[str]] = None
     alcohol_policy_details: Optional[str] = None
     wheelchair_accessible: Optional[List[str]] = None
@@ -786,7 +786,7 @@ class VenueDataForEvent(BaseModel):
     parking_notes: Optional[str] = None
     parking_locations: Optional[List[Dict[str, Any]]] = None
     expect_to_pay_parking: Optional[str] = None
-    public_transit_info: Optional[str] = None
+    # public_transit_info - DEPRECATED: renamed _deprecated_public_transit_info (Migration A #33)
 
     # Accessibility
     wheelchair_accessible: Optional[List[str]] = None

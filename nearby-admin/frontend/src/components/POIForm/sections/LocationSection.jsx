@@ -254,13 +254,7 @@ export const LocationSection = React.memo(function LocationSection({
         error={form.errors.parking_notes}
       />
 
-      <RichTextEditor
-        label="Public Transit Information"
-        placeholder="Bus routes, train stations, etc."
-        value={form.values.public_transit_info || ''}
-        onChange={(html) => form.setFieldValue('public_transit_info', html)}
-        error={form.errors.public_transit_info}
-      />
+      {/* public_transit_info removed — renamed _deprecated_public_transit_info (Migration A #33) */}
 
       <Radio.Group
         label="Expect to Pay for Parking?"

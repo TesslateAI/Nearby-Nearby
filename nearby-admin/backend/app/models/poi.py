@@ -89,13 +89,13 @@ class PointOfInterest(Base):
     parking_locations = Column(JSONB)  # [{"lat": 0, "lng": 0, "name": "Main lot"}]
     parking_notes = Column(Text)
     # parking_photos moved to Images table (image_type='parking')
-    public_transit_info = Column(Text)
+    # public_transit_info renamed to _deprecated_public_transit_info (Migration A #33)
     expect_to_pay_parking = Column(String)  # 'yes', 'no', 'sometimes'
     
     # Additional Info
     downloadable_maps = Column(JSONB)  # [{"name": "Trail Map", "url": "..."}]
     payment_methods = Column(JSONB)  # List of accepted payment methods
-    key_facilities = Column(JSONB)  # For Events, Parks, Trails
+    # key_facilities renamed to _deprecated_key_facilities (Migration A #34)
     alcohol_options = Column(JSONB)  # List of alcohol availability options
     alcohol_policy_details = Column(Text)  # Additional alcohol policy details
     alcohol_available = Column(String(50))

@@ -87,10 +87,7 @@ def create_searchable_text(poi: dict, categories: list = None,
     if all_amenities:
         parts.append(f"Amenities: {', '.join(all_amenities)}")
 
-    # Key facilities
-    key_fac = _json_list(poi.get('key_facilities'))
-    if key_fac:
-        parts.append(f"Key facilities: {', '.join(key_fac)}")
+    # key_facilities removed — column renamed _deprecated_key_facilities (Migration A #34)
 
     # --- Accessibility & features ---
     features = []

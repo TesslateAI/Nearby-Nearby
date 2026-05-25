@@ -112,7 +112,8 @@ JSONB_FIELDS = {
     "arrival_methods", "hours", "holiday_hours", "amenities", "contact_info",
     "compliance", "photos", "custom_fields", "ideal_for", "pet_options",
     "public_toilets", "wifi_options", "parking_types", "payment_methods",
-    "key_facilities", "wheelchair_accessible", "accessible_parking_details",
+    # "key_facilities" removed — renamed _deprecated_key_facilities (Migration A #34)
+    "wheelchair_accessible", "accessible_parking_details",
     "accessible_restroom_details", "playground_types", "playground_surface_types",
     "playground_age_groups", "playground_ada_checklist", "business_amenities",
     "discounts", "entertainment_options", "youth_amenities", "facilities_options",
@@ -527,7 +528,7 @@ def seed_parks(db):
             "Accessible seating for caregivers",
         ],
         wheelchair_accessible=["Paved Paths", "Accessible Parking", "Accessible Restroom"],
-        key_facilities=["Playground", "Restrooms", "Paved Trail", "Picnic Shelter"],
+        # key_facilities removed — renamed _deprecated_key_facilities (Migration A #34)
         facilities_options=["Covered Shelter + Pavilion", "Drinking Fountain", "Benches"],
         natural_features=["Creek", "Hardwood Forest"],
         things_to_do=["Playground", "Walk", "Picnic", "Birdwatch"],
@@ -569,7 +570,7 @@ def seed_parks(db):
         public_toilets=["Vault Toilet", "Accessible Restroom", "Seasonal Restroom"],
         accessible_parking_details=["Accessible parking within reasonable distance", "Accessible parking on firm stable surface"],
         accessible_restroom_details={"Accessible route to restroom": True, "Firm stable flooring": True},
-        key_facilities=["Boat Launch", "Swim Area", "Fishing Pier", "Picnic Shelter"],
+        # key_facilities removed — renamed _deprecated_key_facilities (Migration A #34)
         natural_features=["Lake", "Pine Forest"],
         things_to_do=["Swim", "Fish", "Boat", "Picnic"],
         payment_methods=["Cash", "Check", "Fee Station + Self-Pay Envelope"],
@@ -602,7 +603,7 @@ def seed_parks(db):
         pet_options=["Dog Park On Site", "Dogs Off Leash Permitted", "Dog Waste Stations",
                      "Dog Waste Bags Provided", "Dog Water Bowls Provided", "Small Dogs Only"],
         public_toilets=["Portable Toilet"],
-        key_facilities=["Dog Park", "Water Fountain", "Shade Structures"],
+        # key_facilities removed — renamed _deprecated_key_facilities (Migration A #34)
         ideal_for=["Pet Friendly", "Community Gathering Spot", "Solo Friendly"],
     ))
 
@@ -657,7 +658,7 @@ def seed_parks(db):
         public_toilets=["Accessible Restroom", "All-Gender / Unisex", "Flush Toilets"],
         accessible_parking_details=["Dedicated accessible parking spaces on site"],
         accessible_restroom_details={"Accessible stall present": True, "Grab bars installed": True},
-        key_facilities=["Visitor Center", "Picnic Area", "Historic Site"],
+        # key_facilities removed — renamed _deprecated_key_facilities (Migration A #34)
         ideal_for=["Historic + Heritage", "Quiet + Reflective", "Peaceful + Secluded", "Families"],
         history_paragraph="The Bynum Mill operated from 1872 to 1982, producing cotton textiles along the Haw River. Restored as a public park in 2015.",
     ))

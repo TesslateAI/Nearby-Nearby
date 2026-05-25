@@ -126,7 +126,7 @@ export function VenueSelector({ form, poiId, types = ['BUSINESS', 'PARK', 'TRAIL
         if (venueData.parking_notes) form.setFieldValue('parking_notes', venueData.parking_notes);
         if (venueData.parking_locations) form.setFieldValue('parking_locations', venueData.parking_locations);
         if (venueData.expect_to_pay_parking) form.setFieldValue('expect_to_pay_parking', venueData.expect_to_pay_parking);
-        if (venueData.public_transit_info) form.setFieldValue('public_transit_info', venueData.public_transit_info);
+        // public_transit_info removed — renamed _deprecated_public_transit_info (Migration A #33)
       }
 
       // Copy accessibility fields

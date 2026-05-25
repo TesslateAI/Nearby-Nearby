@@ -7,12 +7,12 @@ import { IconPlus } from '@tabler/icons-react';
 import RichTextEditor from '../../RichTextEditor';
 import { DebouncedTextInput } from '../../DebouncedTextInput';
 import { getDebouncedInputProps } from '../constants/helpers';
-import { getStatusOptions, KEY_FACILITIES } from '../../../utils/constants';
+import { getStatusOptions } from '../../../utils/constants'; // KEY_FACILITIES removed (Migration A #34)
 import {
   FeaturedImageUpload,
   shouldUseImageUpload
 } from '../ImageIntegration';
-import { CheckboxGroupSection } from '../components/CheckboxGroupSection';
+// CheckboxGroupSection import removed — no longer used after key_facilities removal (Migration A #34)
 
 export const CoreInformationSection = React.memo(function CoreInformationSection({
   form,
@@ -132,14 +132,7 @@ export const CoreInformationSection = React.memo(function CoreInformationSection
         )}
       </SimpleGrid>
 
-      {/* Key Facilities - available for all POI types */}
-      <CheckboxGroupSection
-        label="Key Facilities"
-        fieldName="key_facilities"
-        options={KEY_FACILITIES}
-        cols={{ base: 2, sm: 3 }}
-        form={form}
-      />
+      {/* key_facilities removed — renamed _deprecated_key_facilities (Migration A #34) */}
 
       {isEvent && (
         <>
