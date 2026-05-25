@@ -248,6 +248,7 @@ export default function BusinessDetail({ poi }) {
   const sections = (paid ? PAID_SECTIONS : FREE_SECTIONS).filter((s) => s.col1.length > 0 || s.col2.length > 0);
 
   return (
+    <>
     <POIDetailLayout
       poi={poi}
       mainCategory={primaryCategory}
@@ -295,5 +296,6 @@ export default function BusinessDetail({ poi }) {
       coords={coords}
       poi={poi}
     />
+    </>
   );
 }

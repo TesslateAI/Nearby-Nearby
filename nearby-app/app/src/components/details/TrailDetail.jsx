@@ -226,6 +226,7 @@ export default function TrailDetail({ poi }) {
   ].filter(Boolean);
 
   return (
+    <>
     <POIDetailLayout
       poi={poi}
       mainCategory={subtitleText}
@@ -267,5 +268,6 @@ export default function TrailDetail({ poi }) {
       coords={coords}
       poi={poi}
     />
+    </>
   );
 }

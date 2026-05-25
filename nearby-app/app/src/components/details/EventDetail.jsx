@@ -631,6 +631,7 @@ function EventDetail({ poi }) {
   })();
 
   return (
+    <>
     <POIDetailLayout
       poi={poi}
       mainCategory={dateTimeLine}
@@ -720,6 +721,7 @@ function EventDetail({ poi }) {
       coords={coords}
       poi={poi}
     />
+    </>
   );
 }
 

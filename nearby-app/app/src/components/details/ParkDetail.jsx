@@ -385,6 +385,7 @@ export default function ParkDetail({ poi }) {
   });
 
   return (
+    <>
     <POIDetailLayout
       poi={poi}
       mainCategory={subtitle}
@@ -435,5 +436,6 @@ export default function ParkDetail({ poi }) {
       coords={coords}
       poi={poi}
     />
+    </>
   );
 }
