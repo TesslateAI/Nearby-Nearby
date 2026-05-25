@@ -8,7 +8,7 @@ import RichTextEditor from '../../RichTextEditor';
 import { getCheckboxGroupProps } from '../constants/helpers';
 import {
   KEY_FACILITIES, PAYMENT_METHODS, ALCOHOL_OPTIONS,
-  SMOKING_OPTIONS, WIFI_OPTIONS, DRONE_USAGE_OPTIONS, PET_OPTIONS,
+  SMOKING_OPTIONS, WIFI_OPTIONS, PET_OPTIONS,
   PUBLIC_TOILET_OPTIONS, ENTERTAINMENT_OPTIONS, PARK_FACILITIES,
   PLAYGROUND_TYPES, PARK_PLAYGROUND_SURFACES
 } from '../../../utils/constants';
@@ -247,24 +247,9 @@ export const FacilitiesSection = React.memo(function FacilitiesSection({
         />
       )}
 
-      {(isEvent || isPark || isTrail) && (
-        <>
-          <Divider my="md" label="Drone Policy" />
-          <Select
-            label="Drone Usage"
-            placeholder="Select drone policy"
-            data={DRONE_USAGE_OPTIONS}
-            {...form.getInputProps('drone_usage')}
-          />
-          <RichTextEditor
-            label="Drone Policy Details"
-            placeholder="Additional drone policy information"
-            value={form.values.drone_policy || ''}
-            onChange={(html) => form.setFieldValue('drone_policy', html)}
-            error={form.errors.drone_policy}
-          />
-        </>
-      )}
+      {/* Issue #60 — Drone Policy controls moved out of FacilitiesSection
+          into a dedicated Park layout section (s14-drone-policy). Do not
+          re-add drone controls here. */}
     </Stack>
   );
 });
