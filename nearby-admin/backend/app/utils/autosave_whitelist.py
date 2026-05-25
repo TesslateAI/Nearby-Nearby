@@ -89,6 +89,9 @@ AUTOSAVE_ALLOWED_FIELDS: set[str] = {
     'alcohol_options',
     'alcohol_policy_details',
     'alcohol_available',
+    'alcohol_availability',  # Issue #69 — granular alcohol types
+    'byob_allowed',          # Issue #69
+    'alcohol_notes',         # Issue #69
     'wheelchair_accessible',
     'wheelchair_details',
     'accessible_parking_details',
@@ -240,6 +243,7 @@ AUTOSAVE_ALLOWED_FIELDS: set[str] = {
     'trail_guide_notes',
     'trail_lighting',
     'access_points',
+    'trail_entry_notes',
 
     # --- Event subtype ---
     'start_datetime',
