@@ -49,9 +49,9 @@ export default function BusinessPaidLayout({ form, userRole, poiId }) {
         <Accordion.Control><Text fw={600}>Categories & Ideal For</Text></Accordion.Control>
         <Accordion.Panel>
           <Stack>
-            <CategoriesSection form={form} isPaidListing isFreeListing={false} />
+            <IdealForGrouped form={form} listingType="Business Paid" />
             <Divider my="sm" />
-            <IdealForGrouped form={form} />
+            <CategoriesSection form={form} isPaidListing isFreeListing={false} />
           </Stack>
         </Accordion.Panel>
       </Accordion.Item>

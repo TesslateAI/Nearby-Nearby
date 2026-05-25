@@ -8,7 +8,8 @@ import {
 import { IconTrash, IconPlus } from '@tabler/icons-react';
 import {
   SPONSOR_LEVEL_OPTIONS, LISTING_TYPES,
-  IDEAL_FOR_ATMOSPHERE, IDEAL_FOR_AGE_GROUP, IDEAL_FOR_SOCIAL_SETTINGS, IDEAL_FOR_LOCAL_SPECIAL,
+  IDEAL_FOR_ATMOSPHERE, IDEAL_FOR_AGE_GROUP, IDEAL_FOR_SOCIAL_SETTINGS,
+  IDEAL_FOR_LOCAL_SPECIAL, IDEAL_FOR_SPECIAL_NEEDS,
   PARKING_OPTIONS, PARKING_ADA_CHECKLIST, ARRIVAL_METHOD_OPTIONS,
   RESTROOM_ADA_CHECKLIST, PUBLIC_TOILET_OPTIONS,
   AMENITIES_GENERAL, AMENITIES_FAMILY_YOUTH, AMENITIES_WATER_BOATING, AMENITIES_DINING_SEATING,
@@ -89,50 +90,137 @@ export function AdminOnlyAccordionItem({ form, userRole }) {
 }
 
 // -----------------------------------------------------------------------------
-// Grouped Ideal-For picker (4 groups). Optional global cap (used in Free layout).
-// Writes to form.values.ideal_for = { atmosphere, age_group, social_settings, local_special }.
+// Unified Ideal-For checkbox grid (Issue #43).
+//
+// One canonical UI replacing the 3 competing surfaces (flat Key Ideal For
+// checkboxes, legacy <IdealForSelector />, and the 4-MultiSelect grouped picker).
+//
+// Renders 5 groups (Atmosphere, Age Group, Social Settings, Local + Special,
+// Supports These Special Needs) as inline checkbox grids. Per-listing-type
+// visibility + total-cap rules:
+//   - "Business Free"  -> all 5 groups visible, 5 total max
+//   - "Business Paid"  -> all 5 groups visible, no cap
+//   - "Event"          -> all 5 groups visible, 10 total max
+//   - "Park"/"Trail"   -> NOT rendered (per visibility table, returns null)
+//
+// Storage: form.values.ideal_for = {
+//   atmosphere, age_group, social_settings, local_special, special_needs
+// }
+// JSONB key — no migration needed.
 // -----------------------------------------------------------------------------
-export function IdealForGrouped({ form, totalCap = null }) {
-  const groups = [
-    { key: 'atmosphere',      label: 'Atmosphere',      options: IDEAL_FOR_ATMOSPHERE },
-    { key: 'age_group',       label: 'Age Group',       options: IDEAL_FOR_AGE_GROUP },
-    { key: 'social_settings', label: 'Social Settings', options: IDEAL_FOR_SOCIAL_SETTINGS },
-    { key: 'local_special',   label: 'Local Special',   options: IDEAL_FOR_LOCAL_SPECIAL },
-  ];
-  const current = form.values.ideal_for || {};
-  const currentTotal = groups.reduce((n, g) => n + ((current[g.key] || []).length), 0);
+const IDEAL_FOR_GROUPS = [
+  { key: 'atmosphere',      label: 'ATMOSPHERE',                    options: IDEAL_FOR_ATMOSPHERE },
+  { key: 'age_group',       label: 'AGE GROUP',                     options: IDEAL_FOR_AGE_GROUP },
+  { key: 'social_settings', label: 'SOCIAL SETTINGS',               options: IDEAL_FOR_SOCIAL_SETTINGS },
+  { key: 'local_special',   label: 'LOCAL + SPECIAL',               options: IDEAL_FOR_LOCAL_SPECIAL },
+  { key: 'special_needs',   label: 'SUPPORTS THESE SPECIAL NEEDS',  options: IDEAL_FOR_SPECIAL_NEEDS },
+];
 
-  function onGroupChange(key, vals) {
-    if (totalCap != null) {
-      const otherTotal = groups
-        .filter(g => g.key !== key)
-        .reduce((n, g) => n + ((current[g.key] || []).length), 0);
-      if (otherTotal + vals.length > totalCap) {
-        // truncate to remaining capacity
-        const remain = Math.max(0, totalCap - otherTotal);
-        vals = vals.slice(0, remain);
-      }
+// Per-listing-type rules. listingType is the human-readable label so callers
+// can pass it directly from the layout file ("Business Free", "Event", etc).
+export const IDEAL_FOR_RULES = {
+  'Business Free': { visible: true,  cap: 5 },
+  'Business Paid': { visible: true,  cap: null },
+  'Event':         { visible: true,  cap: 10 },
+  'Park':          { visible: false, cap: null },
+  'Trail':         { visible: false, cap: null },
+};
+
+function rulesFor(listingType) {
+  return IDEAL_FOR_RULES[listingType] || { visible: true, cap: null };
+}
+
+export function IdealForGrouped({ form, listingType, totalCap = null }) {
+  // Back-compat: callers that still pass totalCap directly win over listingType.
+  const rules = listingType ? rulesFor(listingType) : { visible: true, cap: totalCap };
+  if (!rules.visible) return null;
+  const cap = totalCap != null ? totalCap : rules.cap;
+
+  const current = form.values.ideal_for || {};
+  const currentTotal = IDEAL_FOR_GROUPS.reduce(
+    (n, g) => n + ((current[g.key] || []).length), 0
+  );
+
+  function toggle(groupKey, option, checked) {
+    const list = Array.isArray(current[groupKey]) ? current[groupKey] : [];
+    if (checked) {
+      if (list.includes(option)) return;
+      if (cap != null && currentTotal >= cap) return; // cap enforced
+      form.setFieldValue(`ideal_for.${groupKey}`, [...list, option]);
+    } else {
+      form.setFieldValue(`ideal_for.${groupKey}`, list.filter(v => v !== option));
     }
-    form.setFieldValue(`ideal_for.${key}`, vals);
   }
+
+  const capReached = cap != null && currentTotal >= cap;
 
   return (
     <Stack>
       <Title order={5}>Ideal For</Title>
-      {totalCap && (
-        <Text size="xs" c="dimmed">{currentTotal} / {totalCap} selected</Text>
+      {cap != null && (
+        <Text size="xs" c="dimmed" data-testid="ideal-for-cap-counter">
+          {currentTotal} / {cap} selected
+        </Text>
       )}
-      {groups.map(g => (
-        <MultiSelect
-          key={g.key}
-          label={g.label}
-          data={g.options}
-          value={current[g.key] || []}
-          onChange={(vals) => onGroupChange(g.key, vals)}
-          searchable
-          clearable
-        />
-      ))}
+      {IDEAL_FOR_GROUPS.map((g) => {
+        const groupVal = Array.isArray(current[g.key]) ? current[g.key] : [];
+        return (
+          <Stack key={g.key} gap="xs" data-testid={`ideal-for-group-${g.key}`}>
+            <Text fw={700} size="xs" tt="uppercase" style={{ letterSpacing: '0.05em' }}>
+              {g.label}
+            </Text>
+            {g.key === 'special_needs' && (
+              <Text size="xs" c="dimmed">
+                Select needs your location, program, service, or staff can reasonably
+                support or accommodate. <strong>Only select items you actively serve
+                or are equipped to handle.</strong>
+              </Text>
+            )}
+            <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="xs">
+              {g.options.map((opt) => {
+                const checked = groupVal.includes(opt);
+                const disabled = !checked && capReached;
+                return (
+                  <Checkbox
+                    key={opt}
+                    label={opt}
+                    checked={checked}
+                    disabled={disabled}
+                    onChange={(e) => toggle(g.key, opt, e.currentTarget.checked)}
+                  />
+                );
+              })}
+            </SimpleGrid>
+          </Stack>
+        );
+      })}
+    </Stack>
+  );
+}
+
+// -----------------------------------------------------------------------------
+// Featured Ideal For — read-only chip display of currently-selected ideal_for
+// items (across all 5 groups). Replaces the old flat "Key Ideal For" checkbox
+// block in CategoriesSection.
+// -----------------------------------------------------------------------------
+export function FeaturedIdealForChips({ form }) {
+  const current = form.values.ideal_for || {};
+  const selected = IDEAL_FOR_GROUPS.flatMap(g => (Array.isArray(current[g.key]) ? current[g.key] : []));
+  return (
+    <Stack gap="xs">
+      <Title order={5}>Featured Ideal For</Title>
+      <Text size="sm" c="dimmed">
+        Items currently selected in the Ideal For section above.
+      </Text>
+      {selected.length === 0 ? (
+        <Text size="sm" c="dimmed" fs="italic">None selected yet.</Text>
+      ) : (
+        <Group gap="xs">
+          {selected.map((v) => (
+            <Badge key={v} variant="light" color="blue">{v}</Badge>
+          ))}
+        </Group>
+      )}
     </Stack>
   );
 }

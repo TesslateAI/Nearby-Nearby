@@ -23,7 +23,7 @@ import DynamicAttributeForm from '../../DynamicAttributeForm';
 
 import ServiceAnimalAlert from '../components/ServiceAnimalAlert';
 import {
-  AdminOnlyAccordionItem, IdealForGrouped, ArrivalMethodsGroup, What3WordsInput,
+  AdminOnlyAccordionItem, ArrivalMethodsGroup, What3WordsInput,
   AccessibleParkingChecklist, FullAmenitiesBlock,
   ConnectivityRow
 } from './_shared';
@@ -95,13 +95,12 @@ export default function ParkLayout({ form, userRole, poiId }) {
         </Accordion.Panel>
       </Accordion.Item>
 
-      {/* 3. Things to Do / Ideal For */}
+      {/* 3. Things to Do / Categories (Issue #43: Ideal For not rendered for Park) */}
       <Accordion.Item value="s3-things">
-        <Accordion.Control><Text fw={600}>Things to Do / Ideal For</Text></Accordion.Control>
+        <Accordion.Control><Text fw={600}>Things to Do / Categories</Text></Accordion.Control>
         <Accordion.Panel>
           <Stack>
             <ParkCategoriesSection form={form} />
-            <IdealForGrouped form={form} />
           </Stack>
         </Accordion.Panel>
       </Accordion.Item>

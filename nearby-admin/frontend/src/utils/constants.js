@@ -84,20 +84,59 @@ export const IDEAL_FOR_LOCAL_SPECIAL = [
   'Takeout Available',
   'Veteran Owned',
   'Virtual Consults Available',
-  'Virtual Events Available',
   'Virtual Services Available',
   'Walk Ins Welcome',
   'We Come to You',
   'Volunteer Opportunities'
 ];
 
-// Ideal For Key Box options — flat union of the 4 Phase-1 groups so existing
-// importers (KeyIdealFor pickers, etc.) keep working.
+// Issue #43 — 32 condition checkboxes. Multi-select. Stored under
+// ideal_for.special_needs (JSONB). Backend label: "Supports These Special Needs".
+// Frontend (public) label: "Special Needs Supported".
+export const IDEAL_FOR_SPECIAL_NEEDS = [
+  'Acquired Disability',
+  'ADHD',
+  'Anxiety Disorders',
+  "Asperger's Syndrome",
+  'Autism',
+  'Behavioral Issues',
+  'Blind + Low Vision',
+  'Cerebral Palsy',
+  'Chronic Illness',
+  'Deaf or Hard of Hearing',
+  'Dementia + Memory Care',
+  'Developmental Issues',
+  'Down Syndrome',
+  'Epilepsy + Seizure Disorders',
+  'Intellectual Disability',
+  'Learning Issues',
+  'Medical Issues',
+  'Mental Health',
+  'Mobility Impaired',
+  'Multiple Sclerosis',
+  'Muscular Dystrophy',
+  'Nonverbal',
+  'OCD',
+  'ODD',
+  'Processing Disorders',
+  'PTSD',
+  'Schizophrenia',
+  'Selective Mutism',
+  'Sensory Impaired',
+  'Speech + Language Disorders',
+  'Tourette Syndrome',
+  'Traumatic Brain Injury'
+];
+
+// Ideal For Key Box options — flat union of all 5 Ideal For groups so existing
+// importers (KeyIdealFor pickers, etc.) keep working. The admin form no longer
+// surfaces this flat list as a checkbox UI — see IdealForGrouped.
 export const IDEAL_FOR_KEY_OPTIONS = [
   ...IDEAL_FOR_ATMOSPHERE,
   ...IDEAL_FOR_AGE_GROUP,
   ...IDEAL_FOR_SOCIAL_SETTINGS,
-  ...IDEAL_FOR_LOCAL_SPECIAL
+  ...IDEAL_FOR_LOCAL_SPECIAL,
+  ...IDEAL_FOR_SPECIAL_NEEDS
 ];
 
 // Parking options — Phase 1 replaced list (24 values)
@@ -688,112 +727,6 @@ export const EVENT_STATUS_OPTIONS = [
   'Rescheduled',
   'Moved Online',
   'Unofficial Proposed Date'
-];
-
-export const IDEAL_FOR_OPTIONS = [
-  // Atmosphere
-  { value: 'Casual + Welcoming', label: 'Casual + Welcoming', group: 'Atmosphere' },
-  { value: 'Formal + Refined', label: 'Formal + Refined', group: 'Atmosphere' },
-  { value: 'Loud + Lively', label: 'Loud + Lively', group: 'Atmosphere' },
-  { value: 'Quiet + Reflective', label: 'Quiet + Reflective', group: 'Atmosphere' },
-  
-  // Age Groups
-  { value: 'All Ages', label: 'All Ages', group: 'Age Groups' },
-  { value: 'Families', label: 'Families', group: 'Age Groups' },
-  { value: 'For the Kids', label: 'For the Kids', group: 'Age Groups' },
-  { value: 'Pet Friendly', label: 'Pet Friendly', group: 'Age Groups' },
-  { value: 'Ages 18+', label: 'Ages 18+', group: 'Age Groups' },
-  { value: 'Ages 21+', label: 'Ages 21+', group: 'Age Groups' },
-  { value: 'Golden Years Ages 55+', label: 'Golden Years Ages 55+', group: 'Age Groups' },
-  
-  // Social Settings
-  { value: 'Date Night - Romance', label: 'Date Night - Romance', group: 'Social Settings' },
-  { value: 'Girls Night - Hanging out with Girlfriends', label: 'Girls Night - Hanging out with Girlfriends', group: 'Social Settings' },
-  { value: 'Guys Night - Hanging out with Guys', label: 'Guys Night - Hanging out with Guys', group: 'Social Settings' },
-  { value: 'Large Groups 10+', label: 'Large Groups 10+', group: 'Social Settings' },
-  
-  // Local & Special
-  { value: 'Local Artists', label: 'Local Artists', group: 'Local & Special' },
-  { value: 'Locally Sourced Ingredients', label: 'Locally Sourced Ingredients', group: 'Local & Special' },
-  { value: 'Budget Friendly', label: 'Budget Friendly', group: 'Local & Special' },
-  { value: 'Eco Friendly', label: 'Eco Friendly', group: 'Local & Special' },
-  { value: 'Luxury', label: 'Luxury', group: 'Local & Special' },
-  { value: 'Night Owls Open Late (past 10pm)', label: 'Night Owls Open Late (past 10pm)', group: 'Local & Special' },
-  { value: 'Reservations', label: 'Reservations', group: 'Local & Special' },
-  
-  // Special Needs Adult (18+)
-  { value: 'Special Needs Adult (18+)', label: 'Special Needs Adult (18+)', group: 'Special Needs Adult' },
-  { value: 'ADD Attention-Deficit-Disorder', label: 'ADD Attention-Deficit-Disorder', group: 'Special Needs Adult' },
-  { value: 'ADHD Attention-Deficit-Hyperactivity Disorder', label: 'ADHD Attention-Deficit-Hyperactivity Disorder', group: 'Special Needs Adult' },
-  { value: 'Asperger\'s Syndrome', label: 'Asperger\'s Syndrome', group: 'Special Needs Adult' },
-  { value: 'Autism', label: 'Autism', group: 'Special Needs Adult' },
-  { value: 'Behavioral Issues', label: 'Behavioral Issues', group: 'Special Needs Adult' },
-  { value: 'Blind', label: 'Blind', group: 'Special Needs Adult' },
-  { value: 'Deaf or Hard of Hearing', label: 'Deaf or Hard of Hearing', group: 'Special Needs Adult' },
-  { value: 'Developmental Issues', label: 'Developmental Issues', group: 'Special Needs Adult' },
-  { value: 'Down Syndrome', label: 'Down Syndrome', group: 'Special Needs Adult' },
-  { value: 'Learning Issues', label: 'Learning Issues', group: 'Special Needs Adult' },
-  { value: 'Medical Issues', label: 'Medical Issues', group: 'Special Needs Adult' },
-  { value: 'Mental Health', label: 'Mental Health', group: 'Special Needs Adult' },
-  { value: 'Processing Disorders', label: 'Processing Disorders', group: 'Special Needs Adult' },
-  { value: 'PTSD (Post-Traumatic-Stress Disorder)', label: 'PTSD (Post-Traumatic-Stress Disorder)', group: 'Special Needs Adult' },
-  { value: 'Sensory Impaired', label: 'Sensory Impaired', group: 'Special Needs Adult' },
-  { value: 'Visually Impaired', label: 'Visually Impaired', group: 'Special Needs Adult' },
-  { value: 'Wheelchair Friendly', label: 'Wheelchair Friendly', group: 'Special Needs Adult' },
-  
-  // Youth WITH Adult
-  { value: 'Youth WITH Adult - All', label: 'All', group: 'Youth WITH Adult' },
-  { value: 'Youth WITH Adult - Infant (non walking)', label: 'Infant (non walking)', group: 'Youth WITH Adult' },
-  { value: 'Youth WITH Adult - Toddler', label: 'Toddler', group: 'Youth WITH Adult' },
-  { value: 'Youth WITH Adult - Pre K', label: 'Pre K', group: 'Youth WITH Adult' },
-  { value: 'Youth WITH Adult - Elementary School (Age 5yrs-10yrs)', label: 'Elementary School (Age 5yrs-10yrs)', group: 'Youth WITH Adult' },
-  { value: 'Youth WITH Adult - Middle School (Age 10yrs-14yrs)', label: 'Middle School (Age 10yrs-14yrs)', group: 'Youth WITH Adult' },
-  { value: 'Youth WITH Adult - High School (Age 14yrs-18yrs)', label: 'High School (Age 14yrs-18yrs)', group: 'Youth WITH Adult' },
-  { value: 'Youth WITH Adult - Homeschooling', label: 'Homeschooling', group: 'Youth WITH Adult' },
-  { value: 'Youth WITH Adult - Special Needs', label: 'Special Needs', group: 'Youth WITH Adult' },
-  { value: 'Youth WITH Adult - ADD', label: 'ADD', group: 'Youth WITH Adult' },
-  { value: 'Youth WITH Adult - ADHD', label: 'ADHD', group: 'Youth WITH Adult' },
-  { value: 'Youth WITH Adult - Asperger\'s Syndrome', label: 'Asperger\'s Syndrome', group: 'Youth WITH Adult' },
-  { value: 'Youth WITH Adult - Autism', label: 'Autism', group: 'Youth WITH Adult' },
-  { value: 'Youth WITH Adult - Behavioral Issues', label: 'Behavioral Issues', group: 'Youth WITH Adult' },
-  { value: 'Youth WITH Adult - Blind', label: 'Blind', group: 'Youth WITH Adult' },
-  { value: 'Youth WITH Adult - Deaf or Hard of Hearing', label: 'Deaf or Hard of Hearing', group: 'Youth WITH Adult' },
-  { value: 'Youth WITH Adult - Developmental Issues', label: 'Developmental Issues', group: 'Youth WITH Adult' },
-  { value: 'Youth WITH Adult - Down Syndrome', label: 'Down Syndrome', group: 'Youth WITH Adult' },
-  { value: 'Youth WITH Adult - Learning Issues', label: 'Learning Issues', group: 'Youth WITH Adult' },
-  { value: 'Youth WITH Adult - Medical Issues', label: 'Medical Issues', group: 'Youth WITH Adult' },
-  { value: 'Youth WITH Adult - Mental Health', label: 'Mental Health', group: 'Youth WITH Adult' },
-  { value: 'Youth WITH Adult - Processing Disorders', label: 'Processing Disorders', group: 'Youth WITH Adult' },
-  { value: 'Youth WITH Adult - PTSD', label: 'PTSD', group: 'Youth WITH Adult' },
-  { value: 'Youth WITH Adult - Sensory Impaired', label: 'Sensory Impaired', group: 'Youth WITH Adult' },
-  { value: 'Youth WITH Adult - Visually Impaired', label: 'Visually Impaired', group: 'Youth WITH Adult' },
-  
-  // Youth WITHOUT Adult
-  { value: 'Youth WITHOUT Adult - All', label: 'All', group: 'Youth WITHOUT Adult' },
-  { value: 'Youth WITHOUT Adult - Infant (non walking)', label: 'Infant (non walking)', group: 'Youth WITHOUT Adult' },
-  { value: 'Youth WITHOUT Adult - Toddler', label: 'Toddler', group: 'Youth WITHOUT Adult' },
-  { value: 'Youth WITHOUT Adult - Pre K', label: 'Pre K', group: 'Youth WITHOUT Adult' },
-  { value: 'Youth WITHOUT Adult - Elementary School (Age 5yrs-10yrs)', label: 'Elementary School (Age 5yrs-10yrs)', group: 'Youth WITHOUT Adult' },
-  { value: 'Youth WITHOUT Adult - Middle School (Age 10yrs-14yrs)', label: 'Middle School (Age 10yrs-14yrs)', group: 'Youth WITHOUT Adult' },
-  { value: 'Youth WITHOUT Adult - High School (Age 14yrs-18yrs)', label: 'High School (Age 14yrs-18yrs)', group: 'Youth WITHOUT Adult' },
-  { value: 'Youth WITHOUT Adult - Homeschooling', label: 'Homeschooling', group: 'Youth WITHOUT Adult' },
-  { value: 'Youth WITHOUT Adult - Special Needs', label: 'Special Needs', group: 'Youth WITHOUT Adult' },
-  { value: 'Youth WITHOUT Adult - ADD', label: 'ADD', group: 'Youth WITHOUT Adult' },
-  { value: 'Youth WITHOUT Adult - ADHD', label: 'ADHD', group: 'Youth WITHOUT Adult' },
-  { value: 'Youth WITHOUT Adult - Asperger\'s Syndrome', label: 'Asperger\'s Syndrome', group: 'Youth WITHOUT Adult' },
-  { value: 'Youth WITHOUT Adult - Autism', label: 'Autism', group: 'Youth WITHOUT Adult' },
-  { value: 'Youth WITHOUT Adult - Behavioral Issues', label: 'Behavioral Issues', group: 'Youth WITHOUT Adult' },
-  { value: 'Youth WITHOUT Adult - Blind', label: 'Blind', group: 'Youth WITHOUT Adult' },
-  { value: 'Youth WITHOUT Adult - Deaf or Hard of Hearing', label: 'Deaf or Hard of Hearing', group: 'Youth WITHOUT Adult' },
-  { value: 'Youth WITHOUT Adult - Developmental Issues', label: 'Developmental Issues', group: 'Youth WITHOUT Adult' },
-  { value: 'Youth WITHOUT Adult - Down Syndrome', label: 'Down Syndrome', group: 'Youth WITHOUT Adult' },
-  { value: 'Youth WITHOUT Adult - Learning Issues', label: 'Learning Issues', group: 'Youth WITHOUT Adult' },
-  { value: 'Youth WITHOUT Adult - Medical Issues', label: 'Medical Issues', group: 'Youth WITHOUT Adult' },
-  { value: 'Youth WITHOUT Adult - Mental Health', label: 'Mental Health', group: 'Youth WITHOUT Adult' },
-  { value: 'Youth WITHOUT Adult - Processing Disorders', label: 'Processing Disorders', group: 'Youth WITHOUT Adult' },
-  { value: 'Youth WITHOUT Adult - PTSD', label: 'PTSD', group: 'Youth WITHOUT Adult' },
-  { value: 'Youth WITHOUT Adult - Sensory Impaired', label: 'Sensory Impaired', group: 'Youth WITHOUT Adult' },
-  { value: 'Youth WITHOUT Adult - Visually Impaired', label: 'Visually Impaired', group: 'Youth WITHOUT Adult' }
 ];
 
 // Event Cost Types (Task 139)

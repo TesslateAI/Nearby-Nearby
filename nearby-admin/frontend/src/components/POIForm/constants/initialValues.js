@@ -242,8 +242,9 @@ export const emptyInitialValues = {
   hours: {},
   holiday_hours: {},
   amenities: {},
-  // Phase 1 — ideal_for is now grouped (was flat list)
-  ideal_for: { atmosphere: [], age_group: [], social_settings: [], local_special: [] },
+  // Phase 1 — ideal_for is now grouped (was flat list).
+  // Issue #43 added the special_needs group (5th).
+  ideal_for: { atmosphere: [], age_group: [], social_settings: [], local_special: [], special_needs: [] },
   contact_info: {},
   compliance: {},
   mobility_access: {},

@@ -127,8 +127,8 @@ export default function EventLayout({ form, userRole, poiId }) {
         <Accordion.Control><Text fw={600}>Categories & Ideal For</Text></Accordion.Control>
         <Accordion.Panel>
           <Stack>
+            <IdealForGrouped form={form} listingType="Event" />
             <CategoriesSection form={form} isPaidListing isFreeListing={false} />
-            <IdealForGrouped form={form} />
           </Stack>
         </Accordion.Panel>
       </Accordion.Item>
