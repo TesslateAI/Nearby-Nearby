@@ -136,7 +136,7 @@ def db_session():
             CREATE TYPE imagetype AS ENUM (
                 'main', 'gallery', 'entry', 'parking', 'restroom',
                 'rental', 'playground', 'menu', 'trail_head',
-                'trail_exit', 'map', 'downloadable_map'
+                'trail_exit', 'access_point', 'map', 'downloadable_map'
             );
         """))
         conn.commit()
