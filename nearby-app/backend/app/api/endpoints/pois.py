@@ -222,7 +222,8 @@ def _apply_venue_inheritance(db: Session, poi_dict: dict, event) -> dict:
         "parking_types", "parking_locations", "parking_notes", "expect_to_pay_parking",
         # public_transit_info removed (Migration A #33 — renamed to _deprecated_public_transit_info)
         "public_toilets", "toilet_locations", "toilet_description",
-        "wheelchair_accessible", "wheelchair_details", "hours", "amenities",
+        # wheelchair_accessible removed (Issue #45 PR2 Migration B — column dropped)
+        "wheelchair_details", "hours", "amenities",
         "pet_options", "pet_policy", "drone_usage", "drone_policy",
     ]
     event_fields = {f: poi_dict.get(f) for f in inheritable_fields}
@@ -243,7 +244,7 @@ def _apply_venue_inheritance(db: Session, poi_dict: dict, event) -> dict:
 
 @router.get("/pois/counts")
 def api_get_poi_counts(db: Session = Depends(get_db)):
-    """Return published POI counts by type and by amenity (pet-friendly / wheelchair-accessible)."""
+    """Return published POI counts by type and by amenity (pet-friendly / icon_wheelchair_accessible)."""
     POI = models.poi.PointOfInterest
     base = db.query(POI).filter(POI.publication_status == 'published')
     by_type = {
@@ -379,7 +380,7 @@ def api_get_nearby_pois(
             'location': PointGeometry.from_wkb(poi.location) if poi.location else None,
             'poi_type': poi.poi_type.value if hasattr(poi.poi_type, 'value') else poi.poi_type,
             'hours': poi.hours,
-            'wheelchair_accessible': poi.wheelchair_accessible,
+            # wheelchair_accessible removed (Issue #45 PR2 Migration B — column dropped)
             'wifi_options': poi.wifi_options,
             'pet_options': poi.pet_options,
         }
@@ -447,7 +448,7 @@ def api_get_nearby_pois_by_id(
             'location': location_geo,
             'poi_type': poi.poi_type.value if hasattr(poi.poi_type, 'value') else poi.poi_type,
             'hours': poi.hours,
-            'wheelchair_accessible': poi.wheelchair_accessible,
+            # wheelchair_accessible removed (Issue #45 PR2 Migration B — column dropped)
             'wifi_options': poi.wifi_options,
             'pet_options': poi.pet_options,
             'public_toilets': poi.public_toilets,
@@ -530,7 +531,7 @@ def api_get_pois_by_category(
             'description_short': poi.description_short,
             'location': PointGeometry.from_wkb(poi.location) if poi.location else None,
             'hours': poi.hours,
-            'wheelchair_accessible': poi.wheelchair_accessible,
+            # wheelchair_accessible removed (Issue #45 PR2 Migration B — column dropped)
         }
 
         # Add event-specific data if it's an event
@@ -607,7 +608,7 @@ def api_get_pois_by_type(
             'hours': poi.hours,
             'pet_options': poi.pet_options,
             'wifi_options': poi.wifi_options,
-            'wheelchair_accessible': poi.wheelchair_accessible,
+            # wheelchair_accessible removed (Issue #45 PR2 Migration B — column dropped)
             'public_toilets': poi.public_toilets,
             'categories': categories_data,
         }

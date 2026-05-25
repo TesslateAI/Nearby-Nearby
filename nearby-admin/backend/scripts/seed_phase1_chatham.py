@@ -114,7 +114,8 @@ JSONB_FIELDS = {
     "compliance", "photos", "custom_fields", "ideal_for", "pet_options",
     "public_toilets", "wifi_options", "parking_types", "payment_methods",
     # "key_facilities" removed — renamed _deprecated_key_facilities (Migration A #34)
-    "wheelchair_accessible", "accessible_parking_details",
+    # "wheelchair_accessible" removed — column dropped (Issue #45 PR2 Migration B)
+    "accessible_parking_details",
     "accessible_restroom_details", "playground_types", "playground_surface_types",
     "playground_age_groups", "playground_ada_checklist", "business_amenities",
     "discounts", "entertainment_options", "youth_amenities", "facilities_options",
@@ -531,7 +532,7 @@ def seed_parks(db):
             "Shade over play area",
             "Accessible seating for caregivers",
         ],
-        wheelchair_accessible=["Paved Paths", "Accessible Parking", "Accessible Restroom"],
+        # wheelchair_accessible removed — column dropped (Issue #45 PR2 Migration B)
         # key_facilities removed — renamed _deprecated_key_facilities (Migration A #34)
         facilities_options=["Covered Shelter + Pavilion", "Drinking Fountain", "Benches"],
         natural_features=["Creek", "Hardwood Forest"],
@@ -847,7 +848,7 @@ def seed_trails(db, parks):
         cost="0",
         pet_options=["Dog Friendly", "Dogs On Leash Required"],
         public_toilets=["Accessible Restroom"],
-        wheelchair_accessible=["Paved Paths", "Accessible Parking"],
+        # wheelchair_accessible removed — column dropped (Issue #45 PR2 Migration B)
         accessible_parking_details=["Dedicated accessible parking spaces on site", "Accessible route from parking to main entrance"],
         ideal_for=["Night Owls Open Late (past 10pm)", "Families", "Stroller Friendly", "Solo Friendly"],
     ))

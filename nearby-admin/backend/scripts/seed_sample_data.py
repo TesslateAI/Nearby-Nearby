@@ -403,7 +403,7 @@ def create_parks(db: Session):
             "images": {"main": "park1_main", "gallery": ["park1_gallery1", "park1_gallery2"]},
             # "key_facilities" removed — renamed _deprecated_key_facilities (Migration A #34)
             "pet_options": ["Dog Friendly", "Clean Up Stations"],
-            "wheelchair_accessible": ["Accessible Bathrooms", "Paved Paths"],
+            # "wheelchair_accessible" removed — column dropped (Issue #45 PR2 Migration B)
             "public_toilets": ["Wheelchair Accessible"],
         },
         {
@@ -510,8 +510,8 @@ def create_parks(db: Session):
             hours=p.get("hours"),
             cost=p.get("cost"),
             # key_facilities removed — renamed _deprecated_key_facilities (Migration A #34)
+            # wheelchair_accessible removed — column dropped (Issue #45 PR2 Migration B)
             pet_options=p.get("pet_options"),
-            wheelchair_accessible=p.get("wheelchair_accessible"),
             public_toilets=p.get("public_toilets"),
             playground_available=p.get("playground_available", False),
             playground_types=p.get("playground_types"),
@@ -606,7 +606,7 @@ def create_trails(db: Session):
             },
             "images": {"main": "trail2_main", "gallery": ["trail2_gallery1"]},
             "cost": "0",
-            "wheelchair_accessible": ["Paved Paths", "Accessible Parking"],
+            # "wheelchair_accessible" removed — column dropped (Issue #45 PR2 Migration B)
             "pet_options": ["Dog Friendly", "Clean Up Stations"],
         },
         {
@@ -673,7 +673,7 @@ def create_trails(db: Session):
             address_full=t["address_full"],
             cost=t.get("cost"),
             pet_options=t.get("pet_options"),
-            wheelchair_accessible=t.get("wheelchair_accessible"),
+            # wheelchair_accessible removed — column dropped (Issue #45 PR2 Migration B)
         )
         poi.trail = Trail(
             length_text=trail_data["length_text"],

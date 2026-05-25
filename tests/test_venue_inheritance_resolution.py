@@ -79,15 +79,18 @@ class TestVenueInheritanceResolution:
         assert result["toilet_description"] == "Near entrance"
 
     def test_accessibility_use_and_add(self):
-        """use_and_add for accessibility section."""
+        """use_and_add for accessibility section.
+
+        Note: wheelchair_accessible removed — column dropped (Issue #45 PR2 Migration B).
+        The accessibility section now only inherits wheelchair_details.
+        """
         from shared.utils.venue_inheritance import resolve_venue_inheritance
 
-        event_data = {"wheelchair_accessible": ["Yes"]}
-        venue_data = {"wheelchair_accessible": ["Yes"], "wheelchair_details": "Ramp at entrance"}
+        event_data = {"wheelchair_details": None}
+        venue_data = {"wheelchair_details": "Ramp at entrance"}
         config = {"accessibility": "use_and_add"}
 
         result = resolve_venue_inheritance(event_data, venue_data, config)
-        assert "Yes" in result["wheelchair_accessible"]
         assert result["wheelchair_details"] == "Ramp at entrance"
 
     def test_hours_as_is(self):
@@ -105,15 +108,17 @@ class TestVenueInheritanceResolution:
         """Multiple sections can be configured independently."""
         from shared.utils.venue_inheritance import resolve_venue_inheritance
 
+        # wheelchair_accessible removed — column dropped (Issue #45 PR2 Migration B)
+        # Accessibility section now uses wheelchair_details.
         event_data = {
             "parking_types": None,
             "public_toilets": ["Porta Potti"],
-            "wheelchair_accessible": None,
+            "wheelchair_details": None,
         }
         venue_data = {
             "parking_types": ["Street"],
             "public_toilets": ["Yes"],
-            "wheelchair_accessible": ["Yes"],
+            "wheelchair_details": "Ramp at entrance",
         }
         config = {
             "parking": "as_is",
@@ -124,7 +129,7 @@ class TestVenueInheritanceResolution:
         result = resolve_venue_inheritance(event_data, venue_data, config)
         assert result["parking_types"] == ["Street"]
         assert result["public_toilets"] == ["Porta Potti"]  # do_not_use: event keeps own
-        assert result["wheelchair_accessible"] == ["Yes"]  # as_is from venue
+        assert result["wheelchair_details"] == "Ramp at entrance"  # as_is from venue
 
     def test_venue_source_annotations(self):
         """Result should include _venue_source annotations."""

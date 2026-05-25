@@ -126,7 +126,7 @@ def seed_rustic_spoon():
             toilet_description="Blah, Blah blah for the bathrooms! This is for patrons of the store only!",
 
             # Wheelchair accessibility
-            wheelchair_accessible=["Accessible Bathrooms", "First Floor Seating"],
+            # wheelchair_accessible removed — column dropped (Issue #45 PR2 Migration B)
             wheelchair_details="We have accessible Bathrooms, accessible entry is on the right of the building and we have seating on the first floor.",
 
             # Pet policy
@@ -239,7 +239,7 @@ def seed_rustic_spoon():
             toilet_description="Blah, Blah blah for the bathrooms! This is for patrons of the store only!",
 
             # Wheelchair accessibility
-            wheelchair_accessible=["Accessible Bathrooms", "First Floor Seating"],
+            # wheelchair_accessible removed — column dropped (Issue #45 PR2 Migration B)
             wheelchair_details="We have accessible Bathrooms, accessible entry is on the right of the building and we have seating on the first floor.",
 
             # Pet policy

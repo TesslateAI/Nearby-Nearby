@@ -187,7 +187,8 @@ function buildSections(poi, helpers) {
 
   /* WHEELCHAIR + MOBILITY ACCESS */
   {
-    const col1 = hasVal(poi.wheelchair_accessible) ? [<ContentGroup key="wa" title="Wheelchair Accessible"><ChipList items={poi.wheelchair_accessible} /></ContentGroup>] : [];
+    // wheelchair_accessible chip removed — column dropped (Issue #45 PR2 Migration B)
+    const col1 = [];
     const col2 = hasVal(poi.wheelchair_details) ? [<ContentGroup key="wd"><div className="acc_content_text" dangerouslySetInnerHTML={{ __html: sanitizeHtml(poi.wheelchair_details) }} /></ContentGroup>] : [];
     if (col1.length || col2.length) out.push({ id: 'mobility_access', title: 'Wheelchair and Mobility Access', col1, col2 });
   }

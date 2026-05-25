@@ -488,7 +488,7 @@ class PointOfInterestBase(BaseModel):
     alcohol_availability: Optional[List[str]] = None
     byob_allowed: Optional[bool] = False
     alcohol_notes: Optional[str] = None
-    wheelchair_accessible: Optional[List[str]] = None
+    # wheelchair_accessible - DROPPED (Issue #45 PR2 Migration B)
     wheelchair_details: Optional[str] = None
     smoking_options: Optional[List[str]] = None
     smoking_details: Optional[str] = None
@@ -695,7 +695,7 @@ class PointOfInterestUpdate(BaseModel):
     alcohol_availability: Optional[List[str]] = None
     byob_allowed: Optional[bool] = False
     alcohol_notes: Optional[str] = None
-    wheelchair_accessible: Optional[List[str]] = None
+    # wheelchair_accessible - DROPPED (Issue #45 PR2 Migration B)
     wheelchair_details: Optional[str] = None
     smoking_options: Optional[List[str]] = None
     smoking_details: Optional[str] = None
@@ -846,7 +846,7 @@ class VenueDataForEvent(BaseModel):
     # public_transit_info - DEPRECATED: renamed _deprecated_public_transit_info (Migration A #33)
 
     # Accessibility
-    wheelchair_accessible: Optional[List[str]] = None
+    # wheelchair_accessible - DROPPED (Issue #45 PR2 Migration B)
     wheelchair_details: Optional[str] = None
 
     # Restroom

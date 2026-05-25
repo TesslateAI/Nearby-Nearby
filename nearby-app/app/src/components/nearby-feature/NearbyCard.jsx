@@ -143,7 +143,7 @@ function hasAmenity(values) {
 function getAmenities(poi) {
   const amenities = [];
   if (hasAmenity(poi.public_toilets))        amenities.push({ icon: <RestroomIcon />,  title: 'Public Restrooms',     key: 'restroom' });
-  if (hasAmenity(poi.wheelchair_accessible)) amenities.push({ icon: <WheelchairIcon />, title: 'Wheelchair Accessible', key: 'wheelchair' });
+  // wheelchair amenity icon removed — wheelchair_accessible column dropped (Issue #45 PR2 Migration B)
   if (hasAmenity(poi.wifi_options))          amenities.push({ icon: <WifiIcon />,       title: 'WiFi Available',        key: 'wifi' });
   if (hasAmenity(poi.pet_options))           amenities.push({ icon: <PetIcon />,        title: 'Pet Friendly',          key: 'pet' });
   return amenities;

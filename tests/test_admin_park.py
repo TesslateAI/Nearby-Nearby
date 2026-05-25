@@ -39,7 +39,7 @@ class TestCreateParkAllFields:
             "is_verified": True,
             "parking_types": ["Lot", "Overflow"],
             "parking_notes": "Main lot fills up by 10am on weekends",
-            "wheelchair_accessible": ["Paved Trails", "Restroom"],
+            # "wheelchair_accessible" removed — column dropped (Issue #45 PR2 Migration B)
             "public_toilets": ["Indoor", "Portable"],
             "pet_options": ["Leashed Dogs"],
             "pet_policy": "Dogs must be on 6-foot leash at all times",

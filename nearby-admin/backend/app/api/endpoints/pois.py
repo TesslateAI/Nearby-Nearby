@@ -313,7 +313,7 @@ def get_venue_data_for_event(
         parking_locations=db_poi.parking_locations,
         expect_to_pay_parking=db_poi.expect_to_pay_parking,
         # public_transit_info removed (Migration A #33 — renamed to _deprecated_public_transit_info)
-        wheelchair_accessible=db_poi.wheelchair_accessible,
+        # wheelchair_accessible removed (Issue #45 PR2 Migration B — column dropped)
         wheelchair_details=db_poi.wheelchair_details,
         public_toilets=db_poi.public_toilets,
         toilet_description=db_poi.toilet_description,

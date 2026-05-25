@@ -193,7 +193,7 @@ export default function BusinessDetail({ poi }) {
   ].filter(Boolean);
 
   const wheelchairCol1 = [
-    hasVal(poi?.wheelchair_accessible) && <ContentGroup key="wa" title="Wheelchair Accessible"><ChipList items={poi.wheelchair_accessible} /></ContentGroup>,
+    // wheelchair_accessible chip removed — column dropped (Issue #45 PR2 Migration B)
     hasVal(poi?.wheelchair_details) && <ContentGroup key="wd" title="Details"><div className="acc_content_text">{poi.wheelchair_details}</div></ContentGroup>,
   ].filter(Boolean);
   const wheelchairCol2 = [

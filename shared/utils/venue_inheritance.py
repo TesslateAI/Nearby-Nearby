@@ -14,7 +14,8 @@ _SECTION_FIELDS = {
     # public_transit_info removed from parking inheritance — renamed _deprecated_public_transit_info (Migration A #33)
     "parking": ["parking_types", "parking_locations", "parking_notes", "expect_to_pay_parking"],
     "restrooms": ["public_toilets", "toilet_locations", "toilet_description"],
-    "accessibility": ["wheelchair_accessible", "wheelchair_details"],
+    # wheelchair_accessible removed (Issue #45 PR2 Migration B — column dropped)
+    "accessibility": ["wheelchair_details"],
     "hours": ["hours"],
     "amenities": ["amenities"],
     "pet_policy": ["pet_options", "pet_policy"],

@@ -67,7 +67,7 @@ class TestCreateBusinessAllFields:
             "parking_notes": "Free parking in rear",
             # "public_transit_info" removed — renamed _deprecated_public_transit_info (Migration A #33)
             "expect_to_pay_parking": "no",
-            "wheelchair_accessible": ["Entrance", "Restroom"],
+            # "wheelchair_accessible" removed — column dropped (Issue #45 PR2 Migration B)
             "wheelchair_details": "Ramp at front entrance",
             "public_toilets": ["Indoor"],
             "toilet_locations": [{"lat": 35.72, "lng": -79.18}],

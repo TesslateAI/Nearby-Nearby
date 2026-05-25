@@ -48,7 +48,8 @@ export const usePOIHandlers = (id, isEditing, form, setPoiId) => {
             'ideal_for_key', 'parking_types', 'payment_methods',
             // 'key_facilities' removed — renamed _deprecated_key_facilities (Migration A #34)
             // 'ideal_for' removed — now an object {atmosphere, age_group, social_settings, local_special, special_needs} (Issue #43)
-            'alcohol_options', 'wheelchair_accessible', 'smoking_options', 'wifi_options',
+            // 'wheelchair_accessible' removed — column dropped (Issue #45 PR2 Migration B)
+            'alcohol_options', 'smoking_options', 'wifi_options',
             'pet_options', 'public_toilets', 'youth_amenities', 'business_amenities',
             'entertainment_options', 'natural_features', 'outdoor_types', 'things_to_do',
             'hunting_types', 'fishing_types', 'licenses_required', 'playground_types',

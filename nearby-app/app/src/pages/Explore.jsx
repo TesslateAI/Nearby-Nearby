@@ -12,7 +12,7 @@ import {
 import Map from '../components/Map';
 import {
   RestroomIcon,
-  WheelchairIcon,
+  // WheelchairIcon removed — wheelchair_accessible column dropped (Issue #45 PR2 Migration B)
   WifiIcon,
   PetIcon,
 } from '../components/nearby-feature/NearbyCard';
@@ -153,7 +153,7 @@ const ResultCard = forwardRef(function ResultCard({ poi, index, isHighlighted },
     null;
   const amenities = [];
   if (exploreHasAmenity(poi.public_toilets))        amenities.push({ key: 'restroom',   title: 'Public Restrooms',     Icon: RestroomIcon });
-  if (exploreHasAmenity(poi.wheelchair_accessible)) amenities.push({ key: 'wheelchair', title: 'Wheelchair Accessible', Icon: WheelchairIcon });
+  // wheelchair amenity icon removed — wheelchair_accessible column dropped (Issue #45 PR2 Migration B)
   if (exploreHasAmenity(poi.wifi_options))          amenities.push({ key: 'wifi',       title: 'WiFi Available',        Icon: WifiIcon });
   if (exploreHasAmenity(poi.pet_options))           amenities.push({ key: 'pet',        title: 'Pet Friendly',          Icon: PetIcon });
   const hasDistance = typeof poi.distance === 'number';

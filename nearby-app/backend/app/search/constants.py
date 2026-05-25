@@ -107,8 +107,7 @@ AMENITY_PATTERNS_STATIC = {
     "off leash": ("pet_options", ["Off Leash"]),
     "wifi": ("wifi_options", ["Free Public Wifi", "Paid Public Wifi"]),
     "free wifi": ("wifi_options", ["Free Public Wifi"]),
-    "wheelchair": ("wheelchair_accessible", ["Yes"]),
-    "wheelchair accessible": ("wheelchair_accessible", ["Yes"]),
+    # "wheelchair" / "wheelchair accessible" patterns removed — wheelchair_accessible column dropped (Issue #45 PR2)
     "restroom": ("public_toilets", ["Yes", "Family", "Baby Changing Station"]),
     "restrooms": ("public_toilets", ["Yes", "Family", "Baby Changing Station"]),
     "bathroom": ("public_toilets", ["Yes", "Family", "Baby Changing Station"]),

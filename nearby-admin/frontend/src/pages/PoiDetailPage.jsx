@@ -324,7 +324,7 @@ const PoiDetailPage = () => {
     
     const keyFeatures = [
         poi.public_toilets?.includes('yes') ? 'Public Toilet' : null,
-        poi.wheelchair_accessible?.includes('yes') ? 'Wheelchair Friendly' : null,
+        // wheelchair_accessible removed — column dropped (Issue #45 PR2 Migration B)
         poi.parking_types?.includes('street') ? 'Parking on Street' : null,
         poi.parking_types?.includes('lot') ? 'Parking Lot' : null,
         poi.playground_available ? 'Playground Available' : null,
@@ -619,7 +619,7 @@ const PoiDetailPage = () => {
                                 <DetailItem label="Parking Notes" value={poi.parking_notes} icon={{ type: IconCar, props: {} }} />
                                 <DetailItem label="Expected Parking Cost" value={poi.expect_to_pay_parking} icon={{ type: IconCar, props: {} }} />
                                 {/* public_transit_info removed — renamed _deprecated_public_transit_info (Migration A #33) */}
-                                <DetailItem label="Wheelchair Accessible" value={poi.wheelchair_accessible} icon={{ type: IconInfoCircle, props: {} }} />
+                                {/* wheelchair_accessible removed — column dropped (Issue #45 PR2 Migration B) */}
                                 <DetailItem label="Accessibility Details" value={poi.wheelchair_details} icon={{ type: IconInfoCircle, props: {} }} />
                             </Stack>
                         </Accordion.Panel>

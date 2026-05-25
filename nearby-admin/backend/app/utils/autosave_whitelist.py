@@ -92,7 +92,7 @@ AUTOSAVE_ALLOWED_FIELDS: set[str] = {
     'alcohol_availability',  # Issue #69 — granular alcohol types
     'byob_allowed',          # Issue #69
     'alcohol_notes',         # Issue #69
-    'wheelchair_accessible',
+    # 'wheelchair_accessible' removed — column dropped (Issue #45 PR2 Migration B)
     'wheelchair_details',
     'accessible_parking_details',
     'accessible_restroom',

@@ -369,17 +369,11 @@ function EventDetail({ poi }) {
   };
 
   const renderWheelchair = () => {
-    if (!hasContent(poi.wheelchair_accessible) && !hasContent(poi.wheelchair_details)) return null;
+    // wheelchair_accessible chip removed — column dropped (Issue #45 PR2 Migration B)
+    if (!hasContent(poi.wheelchair_details)) return null;
     return (
       <>
-        {hasContent(poi.wheelchair_accessible) && (
-          <InfoRow label="Wheelchair Accessible">
-            {Array.isArray(poi.wheelchair_accessible) ? poi.wheelchair_accessible.join(', ') : poi.wheelchair_accessible}
-          </InfoRow>
-        )}
-        {hasContent(poi.wheelchair_details) && (
-          <InfoRow label="Details">{poi.wheelchair_details}</InfoRow>
-        )}
+        <InfoRow label="Details">{poi.wheelchair_details}</InfoRow>
       </>
     );
   };

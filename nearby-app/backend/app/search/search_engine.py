@@ -314,7 +314,8 @@ def _signal_structured_filters(
         # (2) regex sanity-check on the identifier so a future entry can't
         # accidentally inject something like "name; DROP TABLE x".
         allowed_fields = {
-            "pet_options", "wifi_options", "wheelchair_accessible", "public_toilets",
+            # wheelchair_accessible removed (Issue #45 PR2 Migration B — column dropped)
+            "pet_options", "wifi_options", "public_toilets",
             "entertainment_options", "business_amenities", "youth_amenities",
             "alcohol_options", "parking_types", "facilities_options",
             "playground_available", "fishing_allowed", "hunting_fishing_allowed",

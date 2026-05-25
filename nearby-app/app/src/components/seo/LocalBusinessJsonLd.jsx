@@ -251,10 +251,7 @@ function LocalBusinessJsonLd({ poi }) {
     businessSchema.paymentAccepted = paymentAccepted;
   }
 
-  // Add accessibility features
-  if (poi.wheelchair_accessible && Array.isArray(poi.wheelchair_accessible)) {
-    businessSchema.accessibilityFeature = poi.wheelchair_accessible;
-  }
+  // accessibilityFeature removed — wheelchair_accessible column dropped (Issue #45 PR2 Migration B)
 
   // Add amenities as additional property
   if (poi.amenities && Array.isArray(poi.amenities) && poi.amenities.length > 0) {

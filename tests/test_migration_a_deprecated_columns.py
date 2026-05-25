@@ -103,7 +103,7 @@ class TestKeyFacilitiesNotExposed:
             "poi_type": "PARK",
             "location": {"type": "Point", "coordinates": [-79.1, 35.7]},
             "publication_status": "draft",
-            "wheelchair_accessible": ["Paved Paths"],
+            # wheelchair_accessible removed — column dropped (Issue #45 PR2 Migration B)
             "park": {"drone_usage_policy": "Not allowed"},
         }
         resp = admin_client.post("/api/pois/", json=payload)
@@ -187,7 +187,7 @@ class TestCRUDWithoutDeprecatedColumns:
             "parking_types": ["Street", "Lot"],
             "parking_notes": "Free parking in rear",
             "expect_to_pay_parking": "no",
-            "wheelchair_accessible": ["Entrance", "Restroom"],
+            # wheelchair_accessible removed — column dropped (Issue #45 PR2 Migration B)
             "payment_methods": ["Cash", "Credit Card"],
             "business": {"price_range": "$$"},
         }

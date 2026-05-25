@@ -131,7 +131,7 @@ export function VenueSelector({ form, poiId, types = ['BUSINESS', 'PARK', 'TRAIL
 
       // Copy accessibility fields
       if (copyOptions.accessibility) {
-        if (venueData.wheelchair_accessible) form.setFieldValue('wheelchair_accessible', venueData.wheelchair_accessible);
+        // wheelchair_accessible removed — column dropped (Issue #45 PR2 Migration B)
         if (venueData.wheelchair_details) form.setFieldValue('wheelchair_details', venueData.wheelchair_details);
       }
 

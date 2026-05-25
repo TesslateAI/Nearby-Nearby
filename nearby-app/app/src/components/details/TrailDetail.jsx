@@ -194,9 +194,10 @@ export default function TrailDetail({ poi }) {
       col1: [hasVal(poi.public_toilets) && <ContentGroup key="pt" title="Available"><ChipList items={poi.public_toilets} /></ContentGroup>, hasVal(poi.toilet_description) && <ContentGroup key="td" title="Details"><div className="acc_content_text" dangerouslySetInnerHTML={{ __html: sanitizeHtml(poi.toilet_description) }} /></ContentGroup>].filter(Boolean),
       col2: [hasVal(poi.accessible_restroom_details) && <ContentGroup key="ada" title="ADA Accessible Restrooms"><ChipList items={poi.accessible_restroom_details} /></ContentGroup>].filter(Boolean),
     },
-    (hasVal(poi.wheelchair_accessible) || hasVal(poi.wheelchair_details)) && {
+    // wheelchair_accessible chip removed — column dropped (Issue #45 PR2 Migration B)
+    hasVal(poi.wheelchair_details) && {
       id: 'mobility', title: 'Wheelchair and Mobility Access',
-      col1: [hasVal(poi.wheelchair_accessible) && <ContentGroup key="wa" title="Wheelchair"><div className="acc_content_text">{asArray(poi.wheelchair_accessible).join(', ')}</div></ContentGroup>, hasVal(poi.wheelchair_details) && <ContentGroup key="wd" title="Details"><div className="acc_content_text" dangerouslySetInnerHTML={{ __html: sanitizeHtml(poi.wheelchair_details) }} /></ContentGroup>].filter(Boolean),
+      col1: [hasVal(poi.wheelchair_details) && <ContentGroup key="wd" title="Details"><div className="acc_content_text" dangerouslySetInnerHTML={{ __html: sanitizeHtml(poi.wheelchair_details) }} /></ContentGroup>].filter(Boolean),
       col2: [hasVal(poi.amenities?.mobility_access) && <ContentGroup key="ma" title="Mobility Access"><ChipList items={poi.amenities.mobility_access} /></ContentGroup>].filter(Boolean),
     },
     (hasVal(poi.pet_options) || hasVal(poi.pet_policy)) && {

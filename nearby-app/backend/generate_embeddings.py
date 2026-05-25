@@ -91,9 +91,7 @@ def create_searchable_text(poi: dict, categories: list = None,
 
     # --- Accessibility & features ---
     features = []
-    wheelchair = _json_list(poi.get('wheelchair_accessible'))
-    if wheelchair and wheelchair != ['No'] and wheelchair != ['Unknown']:
-        features.append("wheelchair accessible")
+    # wheelchair_accessible removed (Issue #45 PR2 Migration B — column dropped)
     wifi = _json_list(poi.get('wifi_options'))
     if wifi:
         features.extend(wifi)

@@ -229,10 +229,7 @@ function EventJsonLd({ poi }) {
     }
   }
 
-  // Add accessibility info
-  if (poi.wheelchair_accessible && Array.isArray(poi.wheelchair_accessible)) {
-    eventSchema.accessibilityFeature = poi.wheelchair_accessible;
-  }
+  // accessibilityFeature removed — wheelchair_accessible column dropped (Issue #45 PR2 Migration B)
 
   // Add maximum attendee capacity if known
   if (poi.event?.max_capacity) {

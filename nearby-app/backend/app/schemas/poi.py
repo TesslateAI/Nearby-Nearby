@@ -147,7 +147,7 @@ class POINearbyResult(POISearchResult):
     location: Optional[PointGeometry] = None
     poi_type: Optional[str] = None
     hours: Optional[dict] = None
-    wheelchair_accessible: Optional[list] = None
+    # wheelchair_accessible - DROPPED (Issue #45 PR2 Migration B)
     wifi_options: Optional[list] = None
     pet_options: Optional[list] = None
     public_toilets: Optional[list] = None
@@ -221,7 +221,7 @@ class POIDetail(BaseModel):
     # public_transit_info - DEPRECATED: renamed _deprecated_public_transit_info (Migration A #33)
 
     # Accessibility
-    wheelchair_accessible: Optional[Any] = None
+    # wheelchair_accessible - DROPPED (Issue #45 PR2 Migration B)
     wheelchair_details: Optional[str] = None
 
     # Amenities and Facilities
