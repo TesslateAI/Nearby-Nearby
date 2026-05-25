@@ -10,8 +10,8 @@ Listed in recommended implementation order (waves). Check each box as you finish
 
 - [x] **#35 — Locate and commit `BACKEND_UPDATES_FINAL.md`, update Section 12** — _cherry-picked `722f9a7` onto this branch (Wave 3+4 finishing push 2026-05-25). Section 12 is the source of truth for #55._
   _Why:_ It is the spec #55 builds against. The May 14 commit on the other branch adds the file with Section 12 fully updated (visibility flags ALL/PT/B+E, ADA inline checklists, sub-select fields). Sections 1-11 and 13+ are stubs.
-- [ ] **BLOCKED #36 — Awaiting product decision** — see Wave 5 entry below; pending separate chat about scope (drop only `expect_to_pay_parking` vs. all 5).
-  _Why:_ Verification shows 4 of the 5 still feed the live search engine + embeddings. Only `expect_to_pay_parking` is truly dead — the rest is a feature change, not a cleanup.
+- [x] **#36 — Product decision: keep all 5 columns** (2026-05-25, manav@tesslate.com).
+  _Why:_ 4 of the 5 still feed live search/embeddings. Dropping them would silently delete amenity-search filters real users hit today. Treated as a product/feature change rather than cleanup; ticket is closed-as-keep until a replacement search UX is scoped.
 - [x] **#45 — Sign-off received; PR2 column drop shipped in Wave 5** (commits `ffb0632` + `2ae9673`).
   _Why:_ The column still powers search, 4 detail pages, cards, and SEO. Removing the UI dropdowns is safe; dropping the column is not.
 - [x] **#50 — CLOSED on GitHub** (2026-05-25, duplicate of #57)
@@ -134,7 +134,7 @@ Irreversible — done deliberately, last, never bundled into a UI PR.
 
 - [x] **#33 / #34 (Migration B) — Dropped the renamed `_deprecated_*` columns** (commit `91eecde`, migrations `w33b_001` + `w34b_001`).
   _Why:_ The two-phase split lets the rename settle in production before the irreversible drop.
-- [ ] **#36 — Awaiting product decision** — separate chat scheduled with @manav before scoping.
+- [x] **#36 — Decision: keep all 5 columns** (2026-05-25). Search dependency on 4 of 5 makes the drop a feature deletion, not a cleanup. Reopen only when a replacement amenity-search UX is in scope.
   _Why:_ 4 of the 5 columns feed live search; they can only go after the search engine stops reading them.
 - [x] **#45 (PR2) — Dropped the `wheelchair_accessible` column** (commits `ffb0632` + `2ae9673`, migrations `w45a_001` + `w45b_001`).
   _Why:_ The column powers search/SEO/detail pages; its removal must be a deliberate, approved change.
