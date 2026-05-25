@@ -10,9 +10,9 @@ Listed in recommended implementation order (waves). Check each box as you finish
 
 - [x] **#35 — Locate and commit `BACKEND_UPDATES_FINAL.md`, update Section 12** — _cherry-picked `722f9a7` onto this branch (Wave 3+4 finishing push 2026-05-25). Section 12 is the source of truth for #55._
   _Why:_ It is the spec #55 builds against. The May 14 commit on the other branch adds the file with Section 12 fully updated (visibility flags ALL/PT/B+E, ADA inline checklists, sub-select fields). Sections 1-11 and 13+ are stubs.
-- [ ] **BLOCKED #36 — Get product sign-off before dropping the 5 "dead" columns** — _awaiting product._
+- [ ] **BLOCKED #36 — Awaiting product decision** — see Wave 5 entry below; pending separate chat about scope (drop only `expect_to_pay_parking` vs. all 5).
   _Why:_ Verification shows 4 of the 5 still feed the live search engine + embeddings. Only `expect_to_pay_parking` is truly dead — the rest is a feature change, not a cleanup.
-- [ ] **BLOCKED #45 — Get product sign-off for the `wheelchair_accessible` column drop** — _awaiting product._
+- [x] **#45 — Sign-off received; PR2 column drop shipped in Wave 5** (commits `ffb0632` + `2ae9673`).
   _Why:_ The column still powers search, 4 detail pages, cards, and SEO. Removing the UI dropdowns is safe; dropping the column is not.
 - [x] **#50 — CLOSED on GitHub** (2026-05-25, duplicate of #57)
   _Why:_ The Hours `<TimeInput>` is a native control whose 12/24-hour mode is set by the browser/OS locale — it cannot be forced in code, so this ticket's scope is invalid.
@@ -130,13 +130,17 @@ Re-grep every section slug against current code first — these ticket bodies ar
 
 ## Wave 5 — Deferred destructive column drops (after soak + sign-off)
 
-Irreversible — do these deliberately, last, never bundled into a UI PR.
+Irreversible — done deliberately, last, never bundled into a UI PR.
 
-- [ ] **#33 / #34 (Migration B) — Actually drop the renamed `_deprecated_*` columns after a soak period**
+- [x] **#33 / #34 (Migration B) — Dropped the renamed `_deprecated_*` columns** (commit `91eecde`, migrations `w33b_001` + `w34b_001`).
   _Why:_ The two-phase split lets the rename settle in production before the irreversible drop.
-- [ ] **#36 — Drop the dead columns once product has signed off and search wiring is removed**
+- [ ] **#36 — Awaiting product decision** — separate chat scheduled with @manav before scoping.
   _Why:_ 4 of the 5 columns feed live search; they can only go after the search engine stops reading them.
-- [ ] **#45 (PR2) — Drop the `wheelchair_accessible` column once product has signed off**
+- [x] **#45 (PR2) — Dropped the `wheelchair_accessible` column** (commits `ffb0632` + `2ae9673`, migrations `w45a_001` + `w45b_001`).
   _Why:_ The column powers search/SEO/detail pages; its removal must be a deliberate, approved change.
-- [ ] **#63 (Migration B) — Drop the legacy `trail_exit` fields after the new structure is live and soaked**
+- [x] **#63 (Migration B + C) — Migrated `trail_exit_*` into `access_points[]` and dropped legacy columns** (commits `5451ce9` + `0120de0` + `277de2e` linearization, migrations `w63b_001` + `w63c_001`).
   _Why:_ Trail data must be safely migrated into the new structure before the old fields are removed.
+
+**Alembic chain head**: `w63c_001` — final order `i69_001 → w33b_001 → w34b_001 → w45a_001 → w45b_001 → w63b_001 → w63c_001`.
+
+**Reviewers**: R4 (#45 PR2), R5 (#63 B+C), R6 (#33-B + #34-B) — all PASS via clean-context multi-agents 2026-05-25.
