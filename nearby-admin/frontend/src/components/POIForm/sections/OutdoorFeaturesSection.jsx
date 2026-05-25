@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Stack, SimpleGrid, Checkbox, Divider, Radio, Switch, TextInput, NumberInput,
   Button, Card, Text
@@ -7,17 +7,50 @@ import { IconPlus } from '@tabler/icons-react';
 import RichTextEditor from '../../RichTextEditor';
 import { getCheckboxGroupProps } from '../constants/helpers';
 import {
-  NATURAL_FEATURES, OUTDOOR_TYPES, HUNTING_FISHING_OPTIONS,
+  NATURAL_FEATURES, HUNTING_FISHING_OPTIONS,
   FISHING_OPTIONS, HUNTING_TYPES, FISHING_TYPES, LICENSE_TYPES,
   PLAYGROUND_TYPES, PLAYGROUND_SURFACES
 } from '../../../utils/outdoorConstants';
 import { PET_OPTIONS } from '../../../utils/constants';
+import { api } from '../../../utils/api';
 import {
   PlaygroundPhotosUpload,
   shouldUseImageUpload
 } from '../ImageIntegration';
 
+// Issue #68: replace the dead `OUTDOOR_TYPES` constant with a live fetch from
+// the categories API. The Trail layout (and any other consumer of the
+// outdoor_types Checkbox.Group) now sees the same dynamic option set that
+// `ParkLayout.jsx:39` already uses.
+function useOutdoorTypeOptions() {
+  const [options, setOptions] = useState([]);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const resp = await api.get('/categories/by-poi-type/PARK');
+        if (!resp.ok || cancelled) return;
+        const data = await resp.json();
+        const list = Array.isArray(data) ? data : (data.items || []);
+        // Use category name as the stored value to stay backward-compatible
+        // with existing rows (outdoor_types currently stores a list of name
+        // strings). Slug is exposed on the option so we can switch later.
+        setOptions(
+          list.map((c) => ({
+            value: c.name,
+            label: c.name,
+            slug: c.slug,
+          }))
+        );
+      } catch (_e) { /* network / startup race — render empty list */ }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+  return options;
+}
+
 export const OutdoorFeaturesSection = React.memo(function OutdoorFeaturesSection({ form }) {
+  const outdoorTypeOptions = useOutdoorTypeOptions();
   return (
     <Stack>
       <Divider my="md" label="Natural Features" />
@@ -32,9 +65,15 @@ export const OutdoorFeaturesSection = React.memo(function OutdoorFeaturesSection
       <Divider my="md" label="Outdoor Types" />
       <Checkbox.Group {...getCheckboxGroupProps(form, 'outdoor_types')}>
         <SimpleGrid cols={{ base: 2, sm: 3 }}>
-          {OUTDOOR_TYPES.map(type => (
-            <Checkbox key={type} value={type} label={type} />
-          ))}
+          {outdoorTypeOptions.length === 0 ? (
+            <Text size="sm" c="dimmed">
+              Loading outdoor types…
+            </Text>
+          ) : (
+            outdoorTypeOptions.map(({ value, label }) => (
+              <Checkbox key={value} value={value} label={label} />
+            ))
+          )}
         </SimpleGrid>
       </Checkbox.Group>
 
