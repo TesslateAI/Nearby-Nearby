@@ -484,6 +484,10 @@ class PointOfInterestBase(BaseModel):
     # key_facilities - DEPRECATED: renamed _deprecated_key_facilities (Migration A #34)
     alcohol_options: Optional[List[str]] = None
     alcohol_policy_details: Optional[str] = None
+    # Issue #69 — granular alcohol detail.
+    alcohol_availability: Optional[List[str]] = None
+    byob_allowed: Optional[bool] = False
+    alcohol_notes: Optional[str] = None
     wheelchair_accessible: Optional[List[str]] = None
     wheelchair_details: Optional[str] = None
     smoking_options: Optional[List[str]] = None
@@ -687,6 +691,10 @@ class PointOfInterestUpdate(BaseModel):
     # key_facilities - DEPRECATED: renamed _deprecated_key_facilities (Migration A #34)
     alcohol_options: Optional[List[str]] = None
     alcohol_policy_details: Optional[str] = None
+    # Issue #69 — granular alcohol detail.
+    alcohol_availability: Optional[List[str]] = None
+    byob_allowed: Optional[bool] = False
+    alcohol_notes: Optional[str] = None
     wheelchair_accessible: Optional[List[str]] = None
     wheelchair_details: Optional[str] = None
     smoking_options: Optional[List[str]] = None

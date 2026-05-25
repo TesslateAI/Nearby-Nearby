@@ -24,10 +24,11 @@ import HoursSelector from '../../HoursSelector';
 import DynamicAttributeForm from '../../DynamicAttributeForm';
 
 import ServiceAnimalAlert from '../components/ServiceAnimalAlert';
+import AlcoholAccordionItem from '../components/AlcoholAccordionItem';
 import {
   AdminOnlyAccordionItem, IdealForGrouped, ArrivalMethodsGroup, What3WordsInput,
   AccessibleParkingChecklist, FullAmenitiesBlock, ConnectivityRow,
-  AlcoholAvailableSelect, PAYMENT_METHODS, DISCOUNT_TYPES
+  PAYMENT_METHODS, DISCOUNT_TYPES
 } from './_shared';
 import { PRICE_RANGE_OPTIONS } from '../../../utils/constants';
 
@@ -235,19 +236,10 @@ export default function BusinessPaidLayout({ form, userRole, poiId }) {
         </Accordion.Panel>
       </Accordion.Item>
 
-      {/* 15. Alcohol + Smoking — Alcohol gate only for now.
-              Smoking is a JSONB list (smoking_options + smoking_details) that
-              needs its own MultiSelect; full Smoking UI ships with Phase 2 #69
-              rebuild. Do NOT bind a boolean to a non-existent column. */}
-      <Accordion.Item value="s15-alcohol">
-        <Accordion.Control><Text fw={600}>Alcohol + Smoking</Text></Accordion.Control>
-        <Accordion.Panel>
-          <Stack>
-            <AlcoholAvailableSelect form={form} />
-            {/* TODO #69: Smoking MultiSelect (smoking_options JSONB) + smoking_details Textarea */}
-          </Stack>
-        </Accordion.Panel>
-      </Accordion.Item>
+      {/* 15. Alcohol — Issue #69 accordion with conditional sub-options
+              (granular availability, BYOB, notes) surfaced when
+              alcohol_available !== 'no'. Smoking UI deferred to Phase 2. */}
+      <AlcoholAccordionItem form={form} value="s15-alcohol" />
 
       {/* 16. Pet Policy — PetPolicySection + ServiceAnimalAlert (Wave 3 #48). */}
       <Accordion.Item value="s16-pets">
