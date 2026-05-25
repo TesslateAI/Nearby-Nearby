@@ -17,6 +17,7 @@ import {
   shouldUseImageUpload
 } from '../ImageIntegration';
 import { CheckboxGroupSection } from '../components/CheckboxGroupSection';
+import { AccessibleRestroomChecklist } from '../layouts/_shared';
 
 export const FacilitiesSection = React.memo(function FacilitiesSection({
   form,
@@ -310,6 +311,10 @@ export const PublicAmenitiesSection = React.memo(function PublicAmenitiesSection
               ))}
             </SimpleGrid>
           </Checkbox.Group>
+
+          {/* ADA checklist appears inline only when "Wheelchair + ADA Accessible"
+              is selected above. Component returns null otherwise. (Wave 3 #47) */}
+          <AccessibleRestroomChecklist form={form} />
 
           {/* Enhanced toilet locations for Parks, Trails, and Events */}
           {(isPark || isTrail || isEvent) ? (

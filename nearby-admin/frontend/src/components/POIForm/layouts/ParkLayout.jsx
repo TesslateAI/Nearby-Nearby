@@ -24,7 +24,7 @@ import DynamicAttributeForm from '../../DynamicAttributeForm';
 import ServiceAnimalAlert from '../components/ServiceAnimalAlert';
 import {
   AdminOnlyAccordionItem, IdealForGrouped, ArrivalMethodsGroup, What3WordsInput,
-  AccessibleParkingChecklist, AccessibleRestroomChecklist, FullAmenitiesBlock,
+  AccessibleParkingChecklist, FullAmenitiesBlock,
   ConnectivityRow
 } from './_shared';
 import { PLAYGROUND_AGE_GROUPS, PLAYGROUND_ADA_CHECKLIST } from '../../../utils/outdoorConstants';
@@ -191,10 +191,7 @@ export default function ParkLayout({ form, userRole, poiId }) {
       <Accordion.Item value="s12-restrooms">
         <Accordion.Control><Text fw={600}>Public Restrooms</Text></Accordion.Control>
         <Accordion.Panel>
-          <Stack>
-            <PublicAmenitiesSection form={form} isPark id={poiId} />
-            <AccessibleRestroomChecklist form={form} />
-          </Stack>
+          <PublicAmenitiesSection form={form} isPark id={poiId} />
         </Accordion.Panel>
       </Accordion.Item>
 

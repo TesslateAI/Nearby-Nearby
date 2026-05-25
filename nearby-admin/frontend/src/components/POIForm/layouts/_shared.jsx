@@ -206,29 +206,64 @@ export function AccessibleParkingChecklist({ form }) {
 }
 
 // -----------------------------------------------------------------------------
-// Accessible Restroom ADA checklist + auto-derived boolean
+// Accessible Restroom ADA checklist (Wave 3 #47)
+//
+// Renders ONLY when `public_toilets` includes "Wheelchair + ADA Accessible".
+// Groups checklist items by group header. Does NOT mirror to
+// `accessible_restroom` from the client — backend `compute_accessible_restroom`
+// is authoritative (strict ALL-THREE rule) and runs on save.
 // -----------------------------------------------------------------------------
 export function AccessibleRestroomChecklist({ form }) {
-  const value = form.values.accessible_restroom_details || [];
-  const toggle = (v) => {
-    const arr = Array.isArray(value) ? value : [];
-    const next = arr.includes(v) ? arr.filter(x => x !== v) : [...arr, v];
+  const publicToilets = Array.isArray(form.values.public_toilets)
+    ? form.values.public_toilets
+    : [];
+  if (!publicToilets.includes('Wheelchair + ADA Accessible')) {
+    return null;
+  }
+
+  const value = Array.isArray(form.values.accessible_restroom_details)
+    ? form.values.accessible_restroom_details
+    : [];
+  const toggle = (label) => {
+    const next = value.includes(label)
+      ? value.filter((x) => x !== label)
+      : [...value, label];
     form.setFieldValue('accessible_restroom_details', next);
-    form.setFieldValue('accessible_restroom', next.length > 0);
   };
+
+  // Group items by `group`, preserving insertion order.
+  const groups = [];
+  const groupIndex = new Map();
+  for (const item of RESTROOM_ADA_CHECKLIST) {
+    if (!groupIndex.has(item.group)) {
+      groupIndex.set(item.group, groups.length);
+      groups.push({ group: item.group, items: [] });
+    }
+    groups[groupIndex.get(item.group)].items.push(item);
+  }
+
   return (
-    <Stack gap="xs">
-      <Text fw={500}>Accessible Restroom Details (ADA)</Text>
-      <SimpleGrid cols={{ base: 1, sm: 2 }}>
-        {RESTROOM_ADA_CHECKLIST.map(opt => (
-          <Checkbox
-            key={opt}
-            label={opt}
-            checked={(Array.isArray(value) ? value : []).includes(opt)}
-            onChange={() => toggle(opt)}
-          />
-        ))}
-      </SimpleGrid>
+    <Stack gap="md" mt="xs" pl="md" style={{ borderLeft: '2px solid var(--mantine-color-gray-3)' }}>
+      <Text fw={600}>Accessible Restroom Details (ADA)</Text>
+      <Text size="xs" c="dimmed">
+        Wheelchair-accessibility is computed strictly: a wide door (32" min) + a
+        side OR rear grab bar + level entry must all be checked.
+      </Text>
+      {groups.map(({ group, items }) => (
+        <Stack key={group} gap={4}>
+          <Text size="sm" fw={500} c="dimmed">{group}</Text>
+          <SimpleGrid cols={{ base: 1, sm: 2 }}>
+            {items.map((opt) => (
+              <Checkbox
+                key={opt.label}
+                label={opt.label}
+                checked={value.includes(opt.label)}
+                onChange={() => toggle(opt.label)}
+              />
+            ))}
+          </SimpleGrid>
+        </Stack>
+      ))}
     </Stack>
   );
 }
