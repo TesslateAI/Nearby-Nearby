@@ -235,19 +235,16 @@ export default function BusinessPaidLayout({ form, userRole, poiId }) {
         </Accordion.Panel>
       </Accordion.Item>
 
-      {/* 15. Alcohol + Smoking — simple gate only (Phase 2 #69 rebuild deferred).
-              Uses canonical AlcoholAvailableSelect from _shared.jsx plus a
-              smoking_allowed Switch. */}
+      {/* 15. Alcohol + Smoking — Alcohol gate only for now.
+              Smoking is a JSONB list (smoking_options + smoking_details) that
+              needs its own MultiSelect; full Smoking UI ships with Phase 2 #69
+              rebuild. Do NOT bind a boolean to a non-existent column. */}
       <Accordion.Item value="s15-alcohol">
         <Accordion.Control><Text fw={600}>Alcohol + Smoking</Text></Accordion.Control>
         <Accordion.Panel>
           <Stack>
             <AlcoholAvailableSelect form={form} />
-            <Switch
-              label="Smoking allowed on premises"
-              checked={!!form.values.smoking_allowed}
-              onChange={(e) => form.setFieldValue('smoking_allowed', e.currentTarget.checked)}
-            />
+            {/* TODO #69: Smoking MultiSelect (smoking_options JSONB) + smoking_details Textarea */}
           </Stack>
         </Accordion.Panel>
       </Accordion.Item>
