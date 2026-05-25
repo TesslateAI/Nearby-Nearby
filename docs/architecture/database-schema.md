@@ -173,7 +173,7 @@ Main POI table with all shared fields.
 | **Parking & Facilities (JSONB)** |
 | parking_locations | JSONB | | Array of {name, lat, lng} parking lots |
 | toilet_locations | JSONB | | Array of {lat, lng, description} restrooms |
-| playground_location | JSONB | | Array of {lat, lng, types, surfaces, notes} playgrounds |
+| playground_locations | JSONB | | Array of {lat, lng, types, surfaces, notes} playgrounds (renamed from singular `playground_location` by migration g67_001) |
 | **Primary Parking** |
 | primary_parking_lat | FLOAT | | Primary parking lot latitude |
 | primary_parking_lng | FLOAT | | Primary parking lot longitude |

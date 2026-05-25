@@ -50,7 +50,7 @@ class TestCreateParkAllFields:
             "playground_types": ["Swings", "Climbing"],
             "playground_surface_types": ["Rubber", "Sand"],
             "playground_notes": "Ages 5-12 playground near entrance",
-            "playground_location": {"lat": 35.9, "lng": -79.1},
+            "playground_locations": [{"lat": 35.9, "lng": -79.1}],
             "natural_features": ["Lake", "Waterfall", "Old Growth Forest"],
             "outdoor_types": ["State Park", "Recreation Area"],
             "things_to_do": ["Hiking", "Swimming", "Fishing", "Kayaking"],

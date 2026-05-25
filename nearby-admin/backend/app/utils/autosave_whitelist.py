@@ -169,7 +169,7 @@ AUTOSAVE_ALLOWED_FIELDS: set[str] = {
     'playground_types',
     'playground_surface_types',
     'playground_notes',
-    'playground_location',
+    'playground_locations',
     'playground_age_groups',
     'playground_ada_checklist',
     'inclusive_playground',

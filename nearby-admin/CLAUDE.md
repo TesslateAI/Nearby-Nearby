@@ -243,6 +243,8 @@ The system manages four POI types with shared base attributes and extensive type
 - Production domain support via `PRODUCTION_DOMAIN`
 - Image storage configuration: `IMAGE_STORAGE_PATH` and `IMAGE_BASE_URL`
 - Frontend API base URL: `VITE_API_BASE_URL`
+- To enable What3Words coordinate lookup, set `WHAT3WORDS_API_KEY` in your `.env`.
+  In prod, set as SSM SecureString at `/nearbynearby/prod/what3words-api-key` and inject it as the env var on the admin ECS task.
 
 ## Workflow Preferences
 - Focus only on task-relevant code areas

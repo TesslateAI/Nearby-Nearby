@@ -185,7 +185,7 @@ class PointOfInterest(Base):
     playground_surface_types = Column(JSONB)  # List of surface types
     playground_notes = Column(Text)
     # playground_photos moved to Images table (image_type='playground')
-    playground_location = Column(JSONB)  # {"lat": 0, "lng": 0}
+    playground_locations = Column(JSONB)  # [{"lat": 0, "lng": 0, "types": [...], "surfaces": [...], "notes": ""}] — plural array, migration g67_001
     playground_age_groups    = Column(JSONB)
     playground_ada_checklist = Column(JSONB)
     inclusive_playground     = Column(Boolean, nullable=False, server_default='false', default=False)

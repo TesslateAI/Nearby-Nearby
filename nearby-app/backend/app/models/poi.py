@@ -124,7 +124,7 @@ class PointOfInterest(Base):
     playground_surface_types = Column(JSONB)
     playground_notes = Column(Text)
     # playground_photos moved to Images table (image_type='playground')
-    playground_location = Column(JSONB)
+    playground_locations = Column(JSONB)  # Plural array; renamed by migration g67_001.
     playground_age_groups    = Column(JSONB)
     playground_ada_checklist = Column(JSONB)
     inclusive_playground     = Column(Boolean, nullable=False, server_default='false', default=False)
