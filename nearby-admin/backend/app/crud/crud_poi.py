@@ -21,9 +21,11 @@ def compute_icon_booleans(poi: dict) -> dict:
         'Free Public Wifi' in wifi_opts or 'Free Wifi' in wifi_opts
         or amenities.get('wifi') == 'Free Wifi'
     )
+    # Issue #48: pet_options list no longer contains negative items
+    # (handled by the "Are pets allowed?" Yes/No gate). Any non-empty list
+    # of pet_options means the POI is pet friendly.
     pets = poi.get('pet_options') or []
-    negatives = {'No Pets Allowed','No Dogs Allowed','No Cats Allowed','Not Allowed','No Dogs'}
-    poi['icon_pet_friendly'] = bool(pets) and any(p not in negatives for p in pets)
+    poi['icon_pet_friendly'] = bool(pets)
     toilets = poi.get('public_toilets') or []
     poi['icon_public_restroom'] = bool(toilets) and toilets != ['No Public Restroom'] and toilets != ['No']
     acc_parking = poi.get('accessible_parking_details') or []

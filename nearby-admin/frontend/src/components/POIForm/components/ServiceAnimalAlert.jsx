@@ -9,13 +9,15 @@ export default function ServiceAnimalAlert() {
   return (
     <Alert variant="light" color="blue" title="Service Animals">
       <Text size="sm">
-        Under the Americans with Disabilities Act (ADA), service animals are
-        permitted in all areas where members of the public are allowed to go,
-        regardless of the venue's general pet policy. A service animal is a
-        dog (or in some cases a miniature horse) individually trained to
-        perform work or tasks for a person with a disability. Emotional
-        support, comfort, or therapy animals are not classified as service
-        animals under the ADA.
+        Service animals are welcome as required by law. If your location has
+        any physical limitations or special considerations that may affect
+        service animal access, such as stairs, narrow pathways, or terrain
+        challenges, please note them here so visitors can plan accordingly.
+        Under the ADA, a service animal is generally a dog that is
+        individually trained to do work or perform tasks for a person with a
+        disability. In some cases, miniature horses must also be reasonably
+        accommodated under separate ADA rules. Some state or local laws may
+        provide broader protections, so please check your applicable laws.
       </Text>
     </Alert>
   );

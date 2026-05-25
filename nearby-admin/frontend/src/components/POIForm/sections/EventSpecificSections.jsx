@@ -683,6 +683,16 @@ export const EventSponsorsSection = React.memo(function EventSponsorsSection({ f
         return (
           <Card key={index} withBorder p="sm" mb="xs">
             <Stack gap="xs">
+              {/* Issue #51: Tier renders first in the sponsor card, required, not clearable */}
+              <Select
+                label="Tier"
+                placeholder="Select sponsor tier"
+                data={SPONSOR_TIERS}
+                value={sponsor.tier || ''}
+                onChange={(val) => updateSponsorField(index, 'tier', val)}
+                required
+              />
+
               <Switch
                 label="Link to POI"
                 description="Link this sponsor to an existing business in the directory"
@@ -719,15 +729,6 @@ export const EventSponsorsSection = React.memo(function EventSponsorsSection({ f
                   />
                 </>
               )}
-
-              <Select
-                label="Tier"
-                placeholder="Select sponsor tier"
-                data={SPONSOR_TIERS}
-                value={sponsor.tier || ''}
-                onChange={(val) => updateSponsorField(index, 'tier', val)}
-                clearable
-              />
 
               <Button
                 color="red"
