@@ -570,6 +570,7 @@ function normalizeHoursData(hoursData) {
     exceptions: hoursData.exceptions,
     holidays: hoursData.holidays,
     seasonal: hoursData.seasonal,
+    seasonal_only: hoursData.seasonal_only,
   };
 }
 
@@ -626,7 +627,17 @@ export function getEffectiveHoursForDate(hoursData, date) {
     }
   }
 
-  // 4. Fall back to regular hours
+  // 4. Fall back to regular hours — UNLESS this location is seasonal-only (#46).
+  // When seasonal_only===true and no seasonal period is active for today, report
+  // closed-by-seasonal-schedule rather than leaking stale regular hours.
+  if (hoursData.seasonal_only === true) {
+    return {
+      hours: { status: 'closed' },
+      source: 'seasonal',
+      label: 'Closed — see seasonal schedule',
+    };
+  }
+
   const regularHours = hoursData.regular?.[dayName];
   return { hours: regularHours, source: 'regular', label: null };
 }
