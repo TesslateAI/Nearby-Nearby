@@ -78,7 +78,10 @@ class PointOfInterest(Base):
     discounts = Column(JSONB)
     gift_cards = Column(String)
     hours = Column(JSONB)
-    holiday_hours = Column(JSONB)
+    # holiday_hours — DEPRECATED (Issue #70). Renamed to
+    # `_deprecated_holiday_hours` by migration g70_001 (in nearby-admin).
+    # Not mapped here so SELECTs skip the legacy column; holiday hours live
+    # at `hours.holidays`.
     appointment_booking_url = Column(String)
     hours_but_appointment_required = Column(Boolean)
     parking_types = Column(JSONB)
@@ -263,8 +266,10 @@ class Event(Base):
     contact_organizer_toggle = Column(Boolean)
     new_event_link = Column(String)
     rescheduled_from_event_id = Column(PG_UUID(as_uuid=True), nullable=True)
-    # Task 137: Primary Display Category
-    primary_display_category = Column(String(100))
+    # Task 137: Primary Display Category — DEPRECATED (Issue #42).
+    # Column is renamed to `_deprecated_primary_display_category` by Alembic
+    # migration g42_001 (in nearby-admin). Not mapped here so SELECTs ignore
+    # the legacy data.
     # Task 138: Extended Organizer
     organizer_email = Column(String)
     organizer_phone = Column(String)

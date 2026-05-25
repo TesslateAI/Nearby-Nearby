@@ -224,8 +224,10 @@ export const emptyInitialValues = {
     online_event_url: '',
     rescheduled_start_datetime: null,
     rescheduled_end_datetime: null,
-    // Task 137: Primary Display Category
-    primary_display_category: '',
+    // Task 137: Primary Display Category — DEPRECATED (Issue #42).
+    // Use main_category_id (canonical, UUID-based) from MainCategorySelector
+    // instead. The legacy column is being deprecated by Alembic migration
+    // g42_001.
     // Task 138: Extended Organizer
     organizer_email: '',
     organizer_phone: '',
@@ -241,7 +243,8 @@ export const emptyInitialValues = {
   // Other fields
   photos: { featured: null, gallery: [] },
   hours: {},
-  holiday_hours: {},
+  // holiday_hours — DEPRECATED (Issue #70). Holiday hours now live under
+  // `hours.holidays`; HoursSelector writes only there.
   amenities: {},
   // Phase 1 — ideal_for is now grouped (was flat list)
   ideal_for: { atmosphere: [], age_group: [], social_settings: [], local_special: [] },
