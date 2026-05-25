@@ -2,6 +2,30 @@ import { memo, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from 'react-leaflet';
 import { Box, Skeleton, Paper, Text, Group } from '@mantine/core';
 
+// Invalidates Leaflet's cached 0×0 dimensions when the map mounts inside a
+// collapsed Accordion panel (Address section). Uses a short setTimeout for the
+// initial paint and a ResizeObserver to catch every subsequent expand/collapse.
+function MapResizeHandler() {
+  const map = useMap();
+  useEffect(() => {
+    const initialTimer = setTimeout(() => {
+      map.invalidateSize({ animate: false });
+    }, 100);
+
+    const container = map.getContainer();
+    const observer = new ResizeObserver(() => {
+      map.invalidateSize({ animate: false });
+    });
+    observer.observe(container);
+
+    return () => {
+      clearTimeout(initialTimer);
+      observer.disconnect();
+    };
+  }, [map]);
+  return null;
+}
+
 // Map helper components
 function DraggableMarker({ position, onPositionChange }) {
   const map = useMap();
@@ -85,6 +109,7 @@ const LocationMap = memo(({ latitude, longitude, onLocationChange }) => {
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           />
+          <MapResizeHandler />
           <MapRecenter center={currentPosition} />
           <DraggableMarker
             position={currentPosition}
