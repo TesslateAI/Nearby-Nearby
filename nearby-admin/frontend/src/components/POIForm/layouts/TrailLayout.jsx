@@ -325,7 +325,7 @@ export default function TrailLayout({ form, userRole, poiId }) {
         <Accordion.Panel>
           <Stack>
             <FacilitiesSection form={form} isTrail id={poiId} />
-            <FullAmenitiesBlock form={form} />
+            <FullAmenitiesBlock form={form} poiType="TRAIL" />
             <ConnectivityRow form={form} />
           </Stack>
         </Accordion.Panel>

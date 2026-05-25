@@ -220,7 +220,7 @@ export default function BusinessPaidLayout({ form, userRole, poiId }) {
         <Accordion.Panel>
           <Stack>
             <FacilitiesSection form={form} isBusiness isFreeListing={false} id={poiId} />
-            <FullAmenitiesBlock form={form} />
+            <FullAmenitiesBlock form={form} poiType="BUSINESS" />
             <ConnectivityRow form={form} />
           </Stack>
         </Accordion.Panel>

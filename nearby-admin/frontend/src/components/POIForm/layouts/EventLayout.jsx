@@ -288,7 +288,7 @@ export default function EventLayout({ form, userRole, poiId }) {
         <Accordion.Panel>
           <Stack>
             <EventAmenitiesSection form={form} id={poiId} />
-            <FullAmenitiesBlock form={form} />
+            <FullAmenitiesBlock form={form} poiType="EVENT" />
             <ConnectivityRow form={form} />
           </Stack>
         </Accordion.Panel>

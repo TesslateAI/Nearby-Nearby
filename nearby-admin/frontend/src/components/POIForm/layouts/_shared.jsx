@@ -13,6 +13,7 @@ import {
   PARKING_OPTIONS, PARKING_ADA_CHECKLIST, ARRIVAL_METHOD_OPTIONS,
   RESTROOM_ADA_CHECKLIST, PUBLIC_TOILET_OPTIONS,
   AMENITIES_GENERAL, AMENITIES_FAMILY_YOUTH, AMENITIES_WATER_BOATING, AMENITIES_DINING_SEATING,
+  AMENITY_SUBSELECT_OPTIONS, AMENITY_ADA_CHECKLISTS, isAmenityVisibleForPoiType,
   ALCOHOL_AVAILABLE_OPTIONS, WIFI_OPTIONS, CELL_SERVICE_OPTIONS,
   PET_OPTIONS, PAYMENT_METHODS, DISCOUNT_TYPES,
   PLAYGROUND_AGE_GROUPS, PLAYGROUND_ADA_CATEGORIES,
@@ -358,24 +359,161 @@ export function AccessibleRestroomChecklist({ form }) {
 }
 
 // -----------------------------------------------------------------------------
-// Grouped Amenities block (4 groups), used in Paid Business / Park / Trail / Event
+// Facilities + Amenities block — Issue #55 rebuild.
+//
+// Renders the four Phase-1 groups (General, Family + Youth, Water + Boating,
+// Dining/Seating/Gathering) as filterable Checkbox.Group blocks per POI type,
+// plus the top-level Wifi (required) and Cell Service single-selects, plus all
+// conditional sub-option panels and ADA inline checklists from the spec.
+//
+// Data shape — everything serializes into the existing `amenities` JSONB blob
+// on points_of_interest (no migration needed):
+//   amenities.wifi               -> string
+//   amenities.cell_service       -> string
+//   amenities.general            -> string[]  (selected item `value`s)
+//   amenities.family_youth       -> string[]
+//   amenities.water_boating      -> string[]
+//   amenities.dining_seating     -> string[]
+//   amenities.{slug}_options     -> string[]  (sub-select panels)
+//   amenities.{slug}_ada         -> string[]  (ADA inline checklists)
+//   amenities.ev_charging_station_count -> number
 // -----------------------------------------------------------------------------
-export function FullAmenitiesBlock({ form }) {
+const AMENITY_GROUPS = [
+  { key: 'general',        label: 'General',                       items: AMENITIES_GENERAL },
+  { key: 'family_youth',   label: 'Family + Youth',                items: AMENITIES_FAMILY_YOUTH },
+  { key: 'water_boating',  label: 'Water + Boating',               items: AMENITIES_WATER_BOATING },
+  { key: 'dining_seating', label: 'Dining, Seating + Gathering',   items: AMENITIES_DINING_SEATING },
+];
+
+function AmenitySubSelectPanel({ form, parentItem, poiType }) {
+  const slug = parentItem.hasSubSelect;
+  const opts = AMENITY_SUBSELECT_OPTIONS[slug] || [];
+  const visibleOpts = opts.filter((o) => isAmenityVisibleForPoiType(o, poiType));
+  const fieldPath = `amenities.${parentItem.value}_options`;
+  const value = form.values.amenities?.[`${parentItem.value}_options`] || [];
+
+  return (
+    <Stack
+      gap="xs"
+      mt="xs"
+      pl="md"
+      style={{ borderLeft: '2px solid var(--mantine-color-gray-3)' }}
+    >
+      <Text size="sm" fw={500} c="dimmed">
+        {parentItem.label} — select all that apply
+      </Text>
+      <Checkbox.Group
+        value={value}
+        onChange={(vals) => form.setFieldValue(fieldPath, vals)}
+      >
+        <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="xs">
+          {visibleOpts.map((opt) => (
+            <Checkbox key={opt.value} value={opt.value} label={opt.label} />
+          ))}
+        </SimpleGrid>
+      </Checkbox.Group>
+
+      {slug === 'ev_charging' && (
+        <NumberInput
+          label="Number of stations"
+          min={0}
+          value={form.values.amenities?.ev_charging_station_count ?? ''}
+          onChange={(v) => form.setFieldValue('amenities.ev_charging_station_count', v)}
+        />
+      )}
+    </Stack>
+  );
+}
+
+function AmenityAdaChecklist({ form, parentItem }) {
+  const slug = parentItem.hasAdaChecklist;
+  const items = AMENITY_ADA_CHECKLISTS[slug] || [];
+  const fieldPath = `amenities.${parentItem.value}_ada`;
+  const value = form.values.amenities?.[`${parentItem.value}_ada`] || [];
+  return (
+    <Stack
+      gap="xs"
+      mt="xs"
+      pl="md"
+      style={{ borderLeft: '2px solid var(--mantine-color-gray-3)' }}
+    >
+      <Text size="sm" fw={500} c="dimmed">
+        ADA Accessibility — {parentItem.label}
+      </Text>
+      <Checkbox.Group
+        value={value}
+        onChange={(vals) => form.setFieldValue(fieldPath, vals)}
+      >
+        <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="xs">
+          {items.map((label) => (
+            <Checkbox key={label} value={label} label={label} />
+          ))}
+        </SimpleGrid>
+      </Checkbox.Group>
+    </Stack>
+  );
+}
+
+export function FullAmenitiesBlock({ form, poiType = 'BUSINESS' }) {
   return (
     <Stack>
-      <Title order={5}>Amenities</Title>
-      <MultiSelect label="General" searchable data={AMENITIES_GENERAL}
-        value={form.values.amenities_general || []}
-        onChange={(v) => form.setFieldValue('amenities_general', v)} />
-      <MultiSelect label="Family / Youth" searchable data={AMENITIES_FAMILY_YOUTH}
-        value={form.values.amenities_family_youth || []}
-        onChange={(v) => form.setFieldValue('amenities_family_youth', v)} />
-      <MultiSelect label="Water / Boating" searchable data={AMENITIES_WATER_BOATING}
-        value={form.values.amenities_water_boating || []}
-        onChange={(v) => form.setFieldValue('amenities_water_boating', v)} />
-      <MultiSelect label="Dining / Seating" searchable data={AMENITIES_DINING_SEATING}
-        value={form.values.amenities_dining_seating || []}
-        onChange={(v) => form.setFieldValue('amenities_dining_seating', v)} />
+      <Title order={5}>Facilities + Amenities</Title>
+
+      <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="sm">
+        <Select
+          label="Wifi"
+          description="Required"
+          required
+          data={WIFI_OPTIONS}
+          value={form.values.amenities?.wifi || null}
+          onChange={(v) => form.setFieldValue('amenities.wifi', v)}
+        />
+        <Select
+          label="Cell Service"
+          data={CELL_SERVICE_OPTIONS}
+          clearable
+          value={form.values.amenities?.cell_service || null}
+          onChange={(v) => form.setFieldValue('amenities.cell_service', v)}
+        />
+      </SimpleGrid>
+
+      {AMENITY_GROUPS.map(({ key, label, items }) => {
+        const visibleItems = items.filter((it) => isAmenityVisibleForPoiType(it, poiType));
+        if (visibleItems.length === 0) return null;
+        const fieldPath = `amenities.${key}`;
+        const value = form.values.amenities?.[key] || [];
+
+        return (
+          <Stack key={key} gap="xs">
+            <Divider label={label} labelPosition="left" />
+            <Checkbox.Group
+              value={value}
+              onChange={(vals) => form.setFieldValue(fieldPath, vals)}
+            >
+              <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="xs">
+                {visibleItems.map((it) => (
+                  <Checkbox key={it.value} value={it.value} label={it.label} />
+                ))}
+              </SimpleGrid>
+            </Checkbox.Group>
+
+            {/* Conditional panels — only render when the parent item is checked. */}
+            {visibleItems.map((it) => {
+              if (!value.includes(it.value)) return null;
+              return (
+                <React.Fragment key={`${it.value}-extras`}>
+                  {it.hasSubSelect && (
+                    <AmenitySubSelectPanel form={form} parentItem={it} poiType={poiType} />
+                  )}
+                  {it.hasAdaChecklist && (
+                    <AmenityAdaChecklist form={form} parentItem={it} />
+                  )}
+                </React.Fragment>
+              );
+            })}
+          </Stack>
+        );
+      })}
     </Stack>
   );
 }

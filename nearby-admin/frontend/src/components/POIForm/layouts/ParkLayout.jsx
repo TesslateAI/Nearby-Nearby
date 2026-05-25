@@ -164,7 +164,7 @@ export default function ParkLayout({ form, userRole, poiId }) {
         <Accordion.Panel>
           <Stack>
             <FacilitiesSection form={form} isPark id={poiId} />
-            <FullAmenitiesBlock form={form} />
+            <FullAmenitiesBlock form={form} poiType="PARK" />
             <ConnectivityRow form={form} />
           </Stack>
         </Accordion.Panel>
