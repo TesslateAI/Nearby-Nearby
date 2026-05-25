@@ -146,8 +146,8 @@ export const usePOIHandlers = (id, isEditing, form, setPoiId) => {
           }
 
           // Derive UI control fields from actual data arrays
-          // These fields don't exist in backend - they're derived from the actual data
-          formData.alcohol_available = (formData.alcohol_options && formData.alcohol_options.length > 0) ? 'yes' : 'no';
+          // (alcohol_available is now a real persisted column — Issue #69 — so it
+          // is NOT derived; it loads directly from the backend.)
           formData.public_toilets_available = (formData.public_toilets && formData.public_toilets.length > 0) ? 'yes' : 'no';
           formData.pets_allowed = (formData.pet_options && formData.pet_options.length > 0) ? 'yes' : 'no';
 

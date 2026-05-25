@@ -5,9 +5,8 @@ import {
 } from '@mantine/core';
 import { IconPlus } from '@tabler/icons-react';
 import RichTextEditor from '../../RichTextEditor';
-import { getCheckboxGroupProps } from '../constants/helpers';
 import {
-  KEY_FACILITIES, PAYMENT_METHODS, ALCOHOL_OPTIONS,
+  KEY_FACILITIES, PAYMENT_METHODS,
   SMOKING_OPTIONS, WIFI_OPTIONS, PET_OPTIONS,
   PUBLIC_TOILET_OPTIONS, ENTERTAINMENT_OPTIONS, PARK_FACILITIES,
   PLAYGROUND_TYPES, PARK_PLAYGROUND_SURFACES
@@ -135,44 +134,11 @@ export const FacilitiesSection = React.memo(function FacilitiesSection({
         />
       )}
 
-      <Divider my="md" label="Alcohol Availability" />
-      <Radio.Group
-        label="Is alcohol available?"
-        value={form.values.alcohol_available || 'no'}
-        onChange={(value) => {
-          form.setFieldValue('alcohol_available', value);
-          if (value === 'no') {
-            form.setFieldValue('alcohol_options', []);
-          }
-        }}
-      >
-        <Stack mt="xs">
-          <Radio value="yes" label="Yes" />
-          <Radio value="no" label="No" />
-        </Stack>
-      </Radio.Group>
-
-      {form.values.alcohol_available === 'yes' && (
-        <>
-          <Checkbox.Group
-            label="Alcohol Options"
-            {...getCheckboxGroupProps(form, 'alcohol_options')}
-          >
-            <SimpleGrid cols={{ base: 2, sm: 3 }}>
-              {ALCOHOL_OPTIONS.filter(option => !['Yes', 'No Alcohol Allowed'].includes(option)).map(option => (
-                <Checkbox key={option} value={option} label={option} />
-              ))}
-            </SimpleGrid>
-          </Checkbox.Group>
-          <RichTextEditor
-            label="Alcohol Policy Details"
-            placeholder="BYOB policy, concession details, restrictions, etc."
-            value={form.values.alcohol_policy_details || ''}
-            onChange={(html) => form.setFieldValue('alcohol_policy_details', html)}
-            error={form.errors.alcohol_policy_details}
-          />
-        </>
-      )}
+      {/* Alcohol UI moved out of Facilities + Amenities per Issue #55 + #69.
+          The dedicated <AlcoholAccordionItem> owns the gate, granular
+          availability types, BYOB, and notes. Keeping a duplicate here
+          previously caused two UIs to write incompatible values to
+          alcohol_available. */}
 
       <RichTextEditor
         label="Additional Accessibility Details"

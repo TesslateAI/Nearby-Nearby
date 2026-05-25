@@ -18,6 +18,15 @@ import { ImageUploadField } from '../../ImageUpload/ImageUploadField';
 /**
  * Issue #63 — Trailhead + Access Points (consolidated).
  *
+ * Design deviation: the AUTHORITATIVE comment recommends a dedicated
+ * `primary_trailhead_name` String column on the trails table. This
+ * implementation stores the name as the `.name` key of the existing
+ * `trail.trailhead_location` JSONB instead, which keeps the name + coords
+ * + photos co-located and avoids an additional DDL migration. Functionally
+ * equivalent — the field round-trips through autosave and the public app
+ * via the JSONB. If a column becomes necessary (indexing/queries), a
+ * follow-up backfill from the JSONB key is straightforward.
+ *
  * Renders three blocks in this order:
  *   1. Trailhead (single)        — name (stored inside trail.trailhead_location
  *                                  JSONB), CoordinateInput bound to the flat
