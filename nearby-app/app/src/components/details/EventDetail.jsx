@@ -391,7 +391,11 @@ function EventDetail({ poi }) {
             {poi.pet_options.map((p, i) => <span key={i} className="poi_chip">{p}</span>)}
           </div>
         </InfoRow>
-        {hasContent(poi.pet_policy) && <InfoRow label="Policy">{poi.pet_policy}</InfoRow>}
+        {hasContent(poi.pet_policy) && (
+          <InfoRow label="Policy">
+            <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(poi.pet_policy) }} />
+          </InfoRow>
+        )}
         <ServiceAnimalAlert />
       </>
     );
@@ -406,7 +410,11 @@ function EventDetail({ poi }) {
             {Array.isArray(poi.drone_usage) ? poi.drone_usage.join(', ') : poi.drone_usage}
           </InfoRow>
         )}
-        {hasContent(poi.drone_policy) && <InfoRow label="Policy">{poi.drone_policy}</InfoRow>}
+        {hasContent(poi.drone_policy) && (
+          <InfoRow label="Policy">
+            <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(poi.drone_policy) }} />
+          </InfoRow>
+        )}
       </>
     );
   };
@@ -439,7 +447,11 @@ function EventDetail({ poi }) {
             {Array.isArray(poi.rental_options) ? poi.rental_options.join(', ') : poi.rental_options}
           </InfoRow>
         )}
-        {hasContent(poi.rental_info) && <InfoRow label="Details">{poi.rental_info}</InfoRow>}
+        {hasContent(poi.rental_info) && (
+          <InfoRow label="Details">
+            <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(poi.rental_info) }} />
+          </InfoRow>
+        )}
       </>
     );
   };
@@ -453,10 +465,26 @@ function EventDetail({ poi }) {
     if (!hasAny) return null;
     return (
       <>
-        {hasContent(poi.locally_found) && <InfoRow label="Locally Found">{poi.locally_found}</InfoRow>}
-        {hasContent(poi.history) && <InfoRow label="History">{poi.history}</InfoRow>}
-        {hasContent(poi.history_paragraph) && <InfoRow label="History">{poi.history_paragraph}</InfoRow>}
-        {hasContent(poi.community_impact) && <InfoRow label="Community Impact">{poi.community_impact}</InfoRow>}
+        {hasContent(poi.locally_found) && (
+          <InfoRow label="Locally Found">
+            <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(poi.locally_found) }} />
+          </InfoRow>
+        )}
+        {hasContent(poi.history) && (
+          <InfoRow label="History">
+            <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(poi.history) }} />
+          </InfoRow>
+        )}
+        {hasContent(poi.history_paragraph) && (
+          <InfoRow label="History">
+            <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(poi.history_paragraph) }} />
+          </InfoRow>
+        )}
+        {hasContent(poi.community_impact) && (
+          <InfoRow label="Community Impact">
+            <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(poi.community_impact) }} />
+          </InfoRow>
+        )}
       </>
     );
   };

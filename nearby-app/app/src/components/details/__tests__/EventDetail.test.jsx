@@ -231,6 +231,33 @@ describe('EventDetail', () => {
     expect(strong).toHaveTextContent('Bold text');
   });
 
+  // --- #30: Rich-text fields rendered via dangerouslySetInnerHTML ---
+
+  it('renders pet_policy as HTML (not escaped text)', () => {
+    renderDetail({ pet_options: ['Dogs'], pet_policy: '<p>Dogs on leash only.</p>' });
+    // The <p> tag should be rendered as a DOM element, not shown as literal text
+    expect(screen.queryByText('<p>Dogs on leash only.</p>')).not.toBeInTheDocument();
+    expect(screen.getByText('Dogs on leash only.')).toBeInTheDocument();
+  });
+
+  it('renders drone_policy as HTML (not escaped text)', () => {
+    renderDetail({ drone_usage: ['Allowed'], drone_policy: '<p>FAA rules apply.</p>' });
+    expect(screen.queryByText('<p>FAA rules apply.</p>')).not.toBeInTheDocument();
+    expect(screen.getByText('FAA rules apply.')).toBeInTheDocument();
+  });
+
+  it('renders rental_info as HTML (not escaped text)', () => {
+    renderDetail({ available_for_rent: true, rental_info: '<p>Contact us to book.</p>' });
+    expect(screen.queryByText('<p>Contact us to book.</p>')).not.toBeInTheDocument();
+    expect(screen.getByText('Contact us to book.')).toBeInTheDocument();
+  });
+
+  it('renders community_impact as HTML (not escaped text)', () => {
+    renderDetail({ community_impact: '<p>Supports local charities.</p>' });
+    expect(screen.queryByText('<p>Supports local charities.</p>')).not.toBeInTheDocument();
+    expect(screen.getByText('Supports local charities.')).toBeInTheDocument();
+  });
+
   // --- General rendering ---
 
   it('renders the event name as the main title', () => {
