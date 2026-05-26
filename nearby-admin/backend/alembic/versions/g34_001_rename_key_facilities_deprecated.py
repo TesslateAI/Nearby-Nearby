@@ -1,7 +1,7 @@
 """Migration A (#34): rename key_facilities → _deprecated_key_facilities.
 
-Revision ID: g34_001_rename_key_facilities_deprecated
-Revises: g33_001_rename_public_transit_info_deprecated
+Revision ID: g34_001
+Revises: g33_001
 Create Date: 2026-05-25
 
 Phase A of a two-phase deferred-destructive cleanup. key_facilities was
@@ -21,8 +21,8 @@ from alembic import op
 from sqlalchemy.dialects import postgresql
 
 
-revision = 'g34_001_rename_key_facilities_deprecated'
-down_revision = 'g33_001_rename_public_transit_info_deprecated'
+revision = 'g34_001'
+down_revision = 'g33_001'
 branch_labels = None
 depends_on = None
 

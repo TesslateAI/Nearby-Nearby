@@ -1,7 +1,7 @@
 """Issue #42 — rename Event.primary_display_category to deprecated alias.
 
 Revision ID: g42_001
-Revises: g34_001_rename_key_facilities_deprecated
+Revises: g34_001
 Create Date: 2026-05-25
 
 The `events.primary_display_category` string column is redundant with the
@@ -22,7 +22,7 @@ from alembic import op
 
 
 revision = 'g42_001'
-down_revision = 'g34_001_rename_key_facilities_deprecated'
+down_revision = 'g34_001'
 branch_labels = None
 depends_on = None
 

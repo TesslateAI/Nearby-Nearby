@@ -1,6 +1,6 @@
 """Migration A (#33): rename public_transit_info → _deprecated_public_transit_info.
 
-Revision ID: g33_001_rename_public_transit_info_deprecated
+Revision ID: g33_001
 Revises: p1_002_repair_amenities_arrays
 Create Date: 2026-05-25
 
@@ -18,7 +18,7 @@ VenueSelector, usePOIHandlers, PoiDetailPage).
 from alembic import op
 
 
-revision = 'g33_001_rename_public_transit_info_deprecated'
+revision = 'g33_001'
 down_revision = 'p1_002_repair_amenities_arrays'
 branch_labels = None
 depends_on = None
