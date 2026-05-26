@@ -70,6 +70,10 @@ export const emptyInitialValues = {
   alcohol_available: null,
   alcohol_options: [],
   alcohol_policy_details: '',
+  // Issue #69 — new persisted alcohol sub-fields (migration i69_001).
+  alcohol_availability: [],
+  byob_allowed: false,
+  alcohol_notes: '',
   wheelchair_details: '',
   smoking_options: [],
   smoking_details: '',
