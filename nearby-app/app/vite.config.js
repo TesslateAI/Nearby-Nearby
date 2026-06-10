@@ -24,6 +24,30 @@ export default defineConfig({
         target: 'http://nearby-app-backend-1:8000',  // Use explicit container name to avoid DNS collision
         changeOrigin: true,
       },
+      '/sitemap.xml': {
+        target: 'http://nearby-app-backend-1:8000',
+        changeOrigin: true,
+      },
+      '/sitemap-pages.xml': {
+        target: 'http://nearby-app-backend-1:8000',
+        changeOrigin: true,
+      },
+      '/sitemap-places.xml': {
+        target: 'http://nearby-app-backend-1:8000',
+        changeOrigin: true,
+      },
+      '/sitemap-parks.xml': {
+        target: 'http://nearby-app-backend-1:8000',
+        changeOrigin: true,
+      },
+      '/sitemap-trails.xml': {
+        target: 'http://nearby-app-backend-1:8000',
+        changeOrigin: true,
+      },
+      '/sitemap-events.xml': {
+        target: 'http://nearby-app-backend-1:8000',
+        changeOrigin: true,
+      },
     },
   },
 })

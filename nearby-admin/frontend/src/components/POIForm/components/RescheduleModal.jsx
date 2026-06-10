@@ -46,6 +46,7 @@ export default function RescheduleModal({ opened, onClose, onConfirm }) {
         <DateTimePicker
           label="New Start Date & Time"
           placeholder="Select new start date and time"
+          timePickerProps={{ format: '12h', withDropdown: true }}
           value={newStartDatetime}
           onChange={setNewStartDatetime}
           required
@@ -55,6 +56,7 @@ export default function RescheduleModal({ opened, onClose, onConfirm }) {
         <DateTimePicker
           label="New End Date & Time"
           placeholder="Select new end date and time (optional)"
+          timePickerProps={{ format: '12h', withDropdown: true }}
           value={newEndDatetime}
           onChange={setNewEndDatetime}
           withSeconds={false}

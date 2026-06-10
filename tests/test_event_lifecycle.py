@@ -78,7 +78,7 @@ class TestEventBasePoiFields:
             },
             parking_types=["Public Parking Lot", "Street Parking"],
             parking_notes="Free parking in the courthouse lot.",
-            wheelchair_accessible=["Accessible Bathrooms", "Paved Paths"],
+            # wheelchair_accessible removed — column dropped (Issue #45 PR2 Migration B)
             pet_options=["Dog Friendly"],
             ideal_for=["All Ages", "Families"],
             cost="$15",
@@ -93,7 +93,7 @@ class TestEventBasePoiFields:
         assert data["address_city"] == "Pittsboro"
         assert data["hours"]["saturday"][0]["open"] == "10:00"
         assert data["parking_types"] == ["Public Parking Lot", "Street Parking"]
-        assert data["wheelchair_accessible"] == ["Accessible Bathrooms", "Paved Paths"]
+        # wheelchair_accessible assertion removed — column dropped (Issue #45 PR2 Migration B)
         assert data["pet_options"] == ["Dog Friendly"]
         # Phase 1: ideal_for is a grouped dict. "All Ages" -> age_group, "Families" -> age_group.
         assert isinstance(data["ideal_for"], dict)
@@ -285,14 +285,16 @@ class TestEventCrossApp:
         assert data["hours"]["saturday"][0]["open"] == "09:00"
 
     def test_event_parking_and_accessibility_on_detail(self, db_session, app_client):
-        """Event with parking and wheelchair fields → visible via app."""
+        """Event with parking fields → visible via app.
+
+        Note: wheelchair_accessible removed — column dropped (Issue #45 PR2 Migration B).
+        """
         poi = orm_create_event(
             db_session,
             name="Accessible Event",
             published=True,
             parking_types=["Public Parking Lot"],
             parking_notes="Free lot behind the venue.",
-            wheelchair_accessible=["Accessible Bathrooms", "Ramp Entry"],
         )
         db_session.commit()
 
@@ -301,7 +303,6 @@ class TestEventCrossApp:
         data = resp.json()
         assert data["parking_types"] == ["Public Parking Lot"]
         assert data["parking_notes"] == "Free lot behind the venue."
-        assert "Accessible Bathrooms" in data["wheelchair_accessible"]
 
 
 # ---------------------------------------------------------------------------

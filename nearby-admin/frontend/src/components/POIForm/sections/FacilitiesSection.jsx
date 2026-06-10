@@ -1,15 +1,15 @@
 import React from 'react';
 import {
   Stack, SimpleGrid, Checkbox, Divider, Radio, Select, Card,
-  NumberInput, TextInput, Button, Switch, Text
+  NumberInput, TextInput, Button, Switch, Text, MultiSelect
 } from '@mantine/core';
 import { IconPlus } from '@tabler/icons-react';
 import RichTextEditor from '../../RichTextEditor';
-import { getCheckboxGroupProps } from '../constants/helpers';
 import {
-  KEY_FACILITIES, PAYMENT_METHODS, ALCOHOL_OPTIONS, WHEELCHAIR_OPTIONS,
-  SMOKING_OPTIONS, WIFI_OPTIONS, DRONE_USAGE_OPTIONS, PET_OPTIONS,
-  PUBLIC_TOILET_OPTIONS, ENTERTAINMENT_OPTIONS, PARK_FACILITIES
+  KEY_FACILITIES, PAYMENT_METHODS,
+  SMOKING_OPTIONS, WIFI_OPTIONS, PET_OPTIONS,
+  PUBLIC_TOILET_OPTIONS, ENTERTAINMENT_OPTIONS, PARK_FACILITIES,
+  PLAYGROUND_TYPES, PARK_PLAYGROUND_SURFACES
 } from '../../../utils/constants';
 import {
   RestroomPhotosUpload,
@@ -17,6 +17,7 @@ import {
   shouldUseImageUpload
 } from '../ImageIntegration';
 import { CheckboxGroupSection } from '../components/CheckboxGroupSection';
+import { AccessibleRestroomChecklist, RepeatableLocationGroup } from '../layouts/_shared';
 
 export const FacilitiesSection = React.memo(function FacilitiesSection({
   form,
@@ -133,52 +134,12 @@ export const FacilitiesSection = React.memo(function FacilitiesSection({
         />
       )}
 
-      <Divider my="md" label="Alcohol Availability" />
-      <Radio.Group
-        label="Is alcohol available?"
-        value={form.values.alcohol_available || 'no'}
-        onChange={(value) => {
-          form.setFieldValue('alcohol_available', value);
-          if (value === 'no') {
-            form.setFieldValue('alcohol_options', []);
-          }
-        }}
-      >
-        <Stack mt="xs">
-          <Radio value="yes" label="Yes" />
-          <Radio value="no" label="No" />
-        </Stack>
-      </Radio.Group>
+      {/* Alcohol UI moved out of Facilities + Amenities per Issue #55 + #69.
+          The dedicated <AlcoholAccordionItem> owns the gate, granular
+          availability types, BYOB, and notes. Keeping a duplicate here
+          previously caused two UIs to write incompatible values to
+          alcohol_available. */}
 
-      {form.values.alcohol_available === 'yes' && (
-        <>
-          <Checkbox.Group
-            label="Alcohol Options"
-            {...getCheckboxGroupProps(form, 'alcohol_options')}
-          >
-            <SimpleGrid cols={{ base: 2, sm: 3 }}>
-              {ALCOHOL_OPTIONS.filter(option => !['Yes', 'No Alcohol Allowed'].includes(option)).map(option => (
-                <Checkbox key={option} value={option} label={option} />
-              ))}
-            </SimpleGrid>
-          </Checkbox.Group>
-          <RichTextEditor
-            label="Alcohol Policy Details"
-            placeholder="BYOB policy, concession details, restrictions, etc."
-            value={form.values.alcohol_policy_details || ''}
-            onChange={(html) => form.setFieldValue('alcohol_policy_details', html)}
-            error={form.errors.alcohol_policy_details}
-          />
-        </>
-      )}
-
-      <CheckboxGroupSection
-        label="Wheelchair and Mobility Access"
-        fieldName="wheelchair_accessible"
-        options={WHEELCHAIR_OPTIONS}
-        cols={{ base: 2, sm: 3 }}
-        form={form}
-      />
       <RichTextEditor
         label="Additional Accessibility Details"
         placeholder="Describe accessibility features"
@@ -225,29 +186,6 @@ export const FacilitiesSection = React.memo(function FacilitiesSection({
           value={form.values.mobility_access?.ground_level_service || ''}
           onChange={(value) => form.setFieldValue('mobility_access.ground_level_service', value)}
         />
-        <Select
-          label="Accessible Restroom Available"
-          placeholder="Select..."
-          data={[
-            { value: 'yes', label: 'Yes' },
-            { value: 'no', label: 'No' },
-            { value: 'unknown', label: 'Unknown' }
-          ]}
-          value={form.values.mobility_access?.accessible_restroom || ''}
-          onChange={(value) => form.setFieldValue('mobility_access.accessible_restroom', value)}
-        />
-        <Select
-          label="Accessible Parking"
-          placeholder="Select..."
-          data={[
-            { value: 'dedicated_ada', label: 'Dedicated ADA Spots' },
-            { value: 'street_level', label: 'Street Level' },
-            { value: 'none', label: 'None' },
-            { value: 'unknown', label: 'Unknown' }
-          ]}
-          value={form.values.mobility_access?.accessible_parking || ''}
-          onChange={(value) => form.setFieldValue('mobility_access.accessible_parking', value)}
-        />
       </SimpleGrid>
 
       <CheckboxGroupSection
@@ -275,24 +213,9 @@ export const FacilitiesSection = React.memo(function FacilitiesSection({
         />
       )}
 
-      {(isEvent || isPark || isTrail) && (
-        <>
-          <Divider my="md" label="Drone Policy" />
-          <Select
-            label="Drone Usage"
-            placeholder="Select drone policy"
-            data={DRONE_USAGE_OPTIONS}
-            {...form.getInputProps('drone_usage')}
-          />
-          <RichTextEditor
-            label="Drone Policy Details"
-            placeholder="Additional drone policy information"
-            value={form.values.drone_policy || ''}
-            onChange={(html) => form.setFieldValue('drone_policy', html)}
-            error={form.errors.drone_policy}
-          />
-        </>
-      )}
+      {/* Issue #60 — Drone Policy controls moved out of FacilitiesSection
+          into a dedicated Park layout section (s14-drone-policy). Do not
+          re-add drone controls here. */}
     </Stack>
   );
 });
@@ -340,6 +263,10 @@ export const PublicAmenitiesSection = React.memo(function PublicAmenitiesSection
               ))}
             </SimpleGrid>
           </Checkbox.Group>
+
+          {/* ADA checklist appears inline only when "Wheelchair + ADA Accessible"
+              is selected above. Component returns null otherwise. (Wave 3 #47) */}
+          <AccessibleRestroomChecklist form={form} />
 
           {/* Enhanced toilet locations for Parks, Trails, and Events */}
           {(isPark || isTrail || isEvent) ? (
@@ -503,6 +430,67 @@ export const PublicAmenitiesSection = React.memo(function PublicAmenitiesSection
         </>
       )}
 
+    </Stack>
+  );
+});
+
+// -----------------------------------------------------------------------------
+// PlaygroundsSection — #49: reorganized playground UI.
+//
+// Renders:
+//   - "Playground Available" switch (form.values.playground_available)
+//   - Refreshed POI-level playground TYPES + SURFACES multi-selects
+//   - RepeatableLocationGroup bound to playground_locations[] with the
+//     per-row age_groups MultiSelect + 4-category ADA checklist
+//
+// NOTE: the previous flat POI-level "ADA Playground Checklist" + POI-level
+// age_groups MultiSelect have been REMOVED from the layout that mounts this
+// section. That data now lives inside each playground_locations[idx].
+// -----------------------------------------------------------------------------
+export const PlaygroundsSection = React.memo(function PlaygroundsSection({ form }) {
+  return (
+    <Stack>
+      <Switch
+        label="This POI has a playground"
+        checked={!!form.values.playground_available}
+        onChange={(e) => form.setFieldValue('playground_available', e.currentTarget.checked)}
+      />
+
+      {form.values.playground_available && (
+        <>
+          <MultiSelect
+            label="Playground Types"
+            placeholder="Select one or more"
+            data={PLAYGROUND_TYPES}
+            value={form.values.playground_types || []}
+            onChange={(v) => form.setFieldValue('playground_types', v)}
+            searchable
+            clearable
+          />
+
+          <MultiSelect
+            label="Playground Surface(s)"
+            placeholder="Select one or more"
+            data={PARK_PLAYGROUND_SURFACES}
+            value={form.values.playground_surface_types || []}
+            onChange={(v) => form.setFieldValue('playground_surface_types', v)}
+            searchable
+            clearable
+          />
+
+          <Divider my="xs" label="Playground Locations" />
+          <Text size="xs" c="dimmed">
+            Add one entry per playground. Each playground has its own age groups and ADA checklist.
+          </Text>
+
+          <RepeatableLocationGroup
+            form={form}
+            fieldName="playground_locations"
+            extraFields="playground"
+            addLabel="Add a playground"
+          />
+        </>
+      )}
     </Stack>
   );
 });

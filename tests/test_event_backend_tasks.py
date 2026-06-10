@@ -157,10 +157,19 @@ class TestReschedule:
 
 
 # ============================================================================
-# Task 137: Primary Display Category
+# Task 137: Primary Display Category — DEPRECATED (Issue #42)
 # ============================================================================
+# The legacy string column `events.primary_display_category` has been replaced
+# by the canonical UUID-based `main_category_id` / `is_main` mechanism on
+# `poi_categories`. Alembic migration `g42_001_rename_primary_display_category_deprecated`
+# renames the column to `_deprecated_primary_display_category`; the old tests
+# are kept as xfail to document the deprecation.
+@pytest.mark.xfail(
+    reason="Issue #42: primary_display_category is deprecated; replaced by main_category_id",
+    strict=False,
+)
 class TestPrimaryDisplayCategory:
-    """primary_display_category string field on events."""
+    """primary_display_category string field on events — DEPRECATED (#42)."""
 
     def test_set_primary_display_category(self, admin_client):
         data = create_event(
@@ -726,7 +735,7 @@ class TestAllNewFieldsRoundtrip:
                 "event_status": "Scheduled",
                 "cancellation_paragraph": "",
                 "contact_organizer_toggle": False,
-                "primary_display_category": "Festival",
+                # primary_display_category removed (Issue #42): use main_category_id.
                 "organizer_email": "org@example.com",
                 "organizer_phone": "919-555-0100",
                 "organizer_website": "https://community.org",
@@ -748,7 +757,7 @@ class TestAllNewFieldsRoundtrip:
 
         # Verify all new event fields
         assert event["event_status"] == "Scheduled"
-        assert event["primary_display_category"] == "Festival"
+        # primary_display_category is deprecated (#42); field removed from response.
         assert event["organizer_email"] == "org@example.com"
         assert event["organizer_phone"] == "919-555-0100"
         assert event["organizer_website"] == "https://community.org"
@@ -770,7 +779,7 @@ class TestAllNewFieldsRoundtrip:
         get_data = get_resp.json()
         get_event = get_data["event"]
         assert get_event["event_status"] == "Scheduled"
-        assert get_event["primary_display_category"] == "Festival"
+        # primary_display_category is deprecated (#42); field removed from response.
         assert get_event["organizer_email"] == "org@example.com"
         assert get_event["cost_type"] == "range"
         assert len(get_event["ticket_links"]) == 1

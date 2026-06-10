@@ -50,7 +50,7 @@ class TestVenueData:
             website_url="https://venuebiz.com",
             parking_types=["Lot"],
             parking_notes="Free lot behind building",
-            wheelchair_accessible=["Entrance"],
+            # wheelchair_accessible removed — column dropped (Issue #45 PR2 Migration B)
             wheelchair_details="Ramp at front",
             public_toilets=["Indoor"],
             toilet_description="ADA compliant",
@@ -65,7 +65,7 @@ class TestVenueData:
         assert data["address_city"] == "Pittsboro"
         assert data["phone_number"] == "919-555-1234"
         assert data["parking_types"] == ["Lot"]
-        assert data["wheelchair_accessible"] == ["Entrance"]
+        # wheelchair_accessible assertion removed — column dropped (Issue #45 PR2 Migration B)
         assert data["public_toilets"] == ["Indoor"]
         assert data["hours"]["monday"]["open"] == "09:00"
 

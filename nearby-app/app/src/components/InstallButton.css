@@ -1,15 +1,15 @@
 .install-button {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  background: var(--nn-teal2);
-  color: white;
-  padding: 12px 20px;
-  border-radius: 8px;
-  font-weight: 600;
-  font-size: 14px;
-  border: none;
-  cursor: pointer;
+  /* gap: 8px; */
+  /* background: var(--nn-teal1); */
+  /* color: white; */
+  /* padding: 12px 20px; */
+  /* border-radius: 8px; */
+  /* font-weight: 600; */
+  /* font-size: 14px; */
+  /* border: none; */
+  /* cursor: pointer; */
   transition: background-color 0.2s ease, transform 0.1s ease;
   text-decoration: none;
 }
@@ -35,14 +35,15 @@
 
 .install-button--footer {
   background: transparent;
-  border: 2px solid var(--nn-teal2);
+  border: 2px solid var(--nn-teal1);
   color: var(--nn-teal2);
   padding: 10px 18px;
   font-size: 13px;
 }
 
 .install-button--footer:hover {
-  background: var(--nn-teal2);
+  background: var(--nn-teal3);
+  border: 2px solid var(--nn-teal3);
   color: white;
 }
 

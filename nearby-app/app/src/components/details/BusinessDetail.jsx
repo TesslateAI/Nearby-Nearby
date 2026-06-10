@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 
 import {
@@ -10,11 +10,12 @@ import HoursDisplay from '../common/HoursDisplay';
 import ServiceAnimalAlert from './ServiceAnimalAlert';
 import { SvgDirections, SvgLatLong } from './PoiHeader';
 import { LocalBusinessJsonLd } from '../seo/index';
+import DirectionsModal from '../common/DirectionsModal';
 
-import { isCurrentlyOpen } from '../../utils/hoursUtils';
+import { getOpenCloseStatusLabel } from '../../utils/hoursUtils';
 import { getDisplayableLocation } from '../../utils/getDisplayableLocation';
 import { isPaidTier } from '../../utils/poiTier';
-import { copyToClipboard, getCoordinates, openDirections } from './shared/poiDetailUtils';
+import { copyToClipboard, getCoordinates } from './shared/poiDetailUtils';
 import { sanitizeHtml } from '../../utils/sanitize';
 
 const ALCOHOL_LABELS = {
@@ -37,11 +38,17 @@ export default function BusinessDetail({ poi }) {
     if (tierParam === 'paid') return true;
     return isPaidTier(poi);
   }, [tierParam, poi]);
+  const [directionsOpen, setDirectionsOpen] = useState(false);
 
   const displayLoc = getDisplayableLocation(poi);
   const hideExact = displayLoc.hideExact;
   const coords = getCoordinates(poi, hideExact);
-  const openStatus = poi?.hours ? isCurrentlyOpen(poi.hours) : null;
+  const _coords = poi?.location?.coordinates;
+  const _lat = Array.isArray(_coords) ? _coords[1] : null;
+  const _lng = Array.isArray(_coords) ? _coords[0] : null;
+  const { variant: _statusVariant, label: _statusLabel } = poi?.hours
+    ? getOpenCloseStatusLabel(poi.hours, new Date(), _lat, _lng)
+    : { variant: null, label: null };
   const images = useMemo(() => getImages(poi), [poi]);
 
   const primaryCategory = poi?.categories?.[0]?.name || poi?.business?.primary_category || '';
@@ -117,7 +124,8 @@ export default function BusinessDetail({ poi }) {
     hasVal(poi?.hours) && (
       <ContentGroup key="hours" title="Hours">
         <div className="acc_content_text">
-          <HoursDisplay hours={poi.hours} holidayHours={poi.holiday_hours} appointmentBookingUrl={poi.appointment_booking_url} appointmentRequired={poi.hours_but_appointment_required} hoursNotes={poi.hours_notes} />
+          {/* Issue #70: holiday_hours top-level field removed; holidays live in hours.holidays */}
+          <HoursDisplay hours={poi.hours} appointmentBookingUrl={poi.appointment_booking_url} appointmentRequired={poi.hours_but_appointment_required} hoursNotes={poi.hours_notes} />
         </div>
       </ContentGroup>
     ),
@@ -128,7 +136,7 @@ export default function BusinessDetail({ poi }) {
       <div className="acc_content_text">
         {addressLine && <div>{addressLine}</div>}
         <div className="pd-addr__actions" style={{ marginTop: 10 }}>
-          <button type="button" className="btn_reset button btn_outline_teal btn_poi_button_1" onClick={() => openDirections(poi, coords)}>
+          <button type="button" className="btn_reset button btn_outline_teal btn_poi_button_1" onClick={() => setDirectionsOpen(true)}>
             <SvgDirections /> <span className="poi_button_title">Directions</span>
           </button>
           {coords && (
@@ -185,7 +193,7 @@ export default function BusinessDetail({ poi }) {
   ].filter(Boolean);
 
   const wheelchairCol1 = [
-    hasVal(poi?.wheelchair_accessible) && <ContentGroup key="wa" title="Wheelchair Accessible"><ChipList items={poi.wheelchair_accessible} /></ContentGroup>,
+    // wheelchair_accessible chip removed — column dropped (Issue #45 PR2 Migration B)
     hasVal(poi?.wheelchair_details) && <ContentGroup key="wd" title="Details"><div className="acc_content_text">{poi.wheelchair_details}</div></ContentGroup>,
   ].filter(Boolean);
   const wheelchairCol2 = [
@@ -240,18 +248,13 @@ export default function BusinessDetail({ poi }) {
   ];
   const sections = (paid ? PAID_SECTIONS : FREE_SECTIONS).filter((s) => s.col1.length > 0 || s.col2.length > 0);
 
-  const statusOpen = openStatus?.isOpen;
-  const statusVariant = statusOpen ? 'open' : (openStatus?.status && /opens? at/i.test(openStatus.status) ? 'opensoon' : 'closed');
-  const statusLabel = openStatus
-    ? (statusOpen ? `Open Now${openStatus.status ? ` – ${openStatus.status}` : ''}` : (openStatus.status || 'Closed'))
-    : null;
-
   return (
+    <>
     <POIDetailLayout
       poi={poi}
       mainCategory={primaryCategory}
-      statusVariant={openStatus ? statusVariant : undefined}
-      statusLabel={statusLabel}
+      statusVariant={_statusVariant || undefined}
+      statusLabel={_statusLabel}
       seoComponent={<LocalBusinessJsonLd poi={poi} />}
     >
       {({ images: imgs, openLightbox }) => (
@@ -287,5 +290,13 @@ export default function BusinessDetail({ poi }) {
         </>
       )}
     </POIDetailLayout>
+    <DirectionsModal
+      isOpen={directionsOpen}
+      onClose={() => setDirectionsOpen(false)}
+      poiName={poi?.name}
+      coords={coords}
+      poi={poi}
+    />
+    </>
   );
 }

@@ -89,17 +89,22 @@ class PointOfInterest(Base):
     parking_locations = Column(JSONB)  # [{"lat": 0, "lng": 0, "name": "Main lot"}]
     parking_notes = Column(Text)
     # parking_photos moved to Images table (image_type='parking')
-    public_transit_info = Column(Text)
+    # public_transit_info renamed to _deprecated_public_transit_info (Migration A #33)
     expect_to_pay_parking = Column(String)  # 'yes', 'no', 'sometimes'
     
     # Additional Info
     downloadable_maps = Column(JSONB)  # [{"name": "Trail Map", "url": "..."}]
     payment_methods = Column(JSONB)  # List of accepted payment methods
-    key_facilities = Column(JSONB)  # For Events, Parks, Trails
+    # key_facilities renamed to _deprecated_key_facilities (Migration A #34)
     alcohol_options = Column(JSONB)  # List of alcohol availability options
     alcohol_policy_details = Column(Text)  # Additional alcohol policy details
     alcohol_available = Column(String(50))
-    wheelchair_accessible = Column(JSONB)  # List of accessibility options
+    # Issue #69 — granular alcohol detail surfaced inside the Alcohol accordion
+    # only when alcohol_available != 'no_alcohol'.
+    alcohol_availability = Column(JSONB)  # List of granular alcohol types (beer/wine/...)
+    byob_allowed = Column(Boolean, nullable=False, server_default='false', default=False)
+    alcohol_notes = Column(Text)
+    # wheelchair_accessible removed — column dropped (Issue #45 PR2 Migration B)
     wheelchair_details = Column(Text)
     accessible_parking_details  = Column(JSONB)
     accessible_restroom         = Column(Boolean, nullable=False, server_default='false', default=False)
@@ -107,7 +112,11 @@ class PointOfInterest(Base):
     smoking_options = Column(JSONB)  # List of smoking options
     smoking_details = Column(Text)
     wifi_options = Column(JSONB)  # For Events only
-    drone_usage = Column(String)  # For Events, Parks, Trails
+    # Drone fields surface only in Park (s14) + Trail (s15) admin layouts.
+    # Events deliberately render NO drone section (Wave 4 #59 spec — FAA
+    # crowd-area rules), so drone_usage / drone_policy are write-orphans for
+    # POI rows where poi_type='EVENT'. Reads still work; the columns stay.
+    drone_usage = Column(String)
     drone_policy = Column(Text)
     pet_options = Column(JSONB)  # List of pet policy options
     pet_policy = Column(Text)
@@ -185,7 +194,7 @@ class PointOfInterest(Base):
     playground_surface_types = Column(JSONB)  # List of surface types
     playground_notes = Column(Text)
     # playground_photos moved to Images table (image_type='playground')
-    playground_location = Column(JSONB)  # {"lat": 0, "lng": 0}
+    playground_locations = Column(JSONB)  # [{"lat": 0, "lng": 0, "types": [...], "surfaces": [...], "notes": ""}] — plural array, migration g67_001
     playground_age_groups    = Column(JSONB)
     playground_ada_checklist = Column(JSONB)
     inclusive_playground     = Column(Boolean, nullable=False, server_default='false', default=False)
@@ -221,8 +230,12 @@ class PointOfInterest(Base):
     
     # JSONB fields for flexible attributes
     photos = Column(JSONB)  # {"featured": "url", "gallery": ["url1", "url2"]}
-    hours = Column(JSONB)   # Complex hours structure with multiple periods, seasonal, dawn/dusk
-    holiday_hours = Column(JSONB)  # Recurring holiday hours {"christmas": "closed", "thanksgiving": {"open": "10:00", "close": "14:00"}}
+    hours = Column(JSONB)   # Complex hours structure with multiple periods, seasonal, dawn/dusk, holidays
+    # holiday_hours — DEPRECATED (Issue #70). Column renamed to
+    # `_deprecated_holiday_hours` by Alembic migration g70_001. Holiday hours
+    # now live under `hours.holidays`. Not mapped on the ORM so SELECTs ignore
+    # the legacy column; the data was backfilled into hours.holidays by the
+    # migration. The column will be dropped in a later wave.
     amenities = Column(JSONB)  # {"payment_methods": ["Cash", "Credit Card"]}
     ideal_for = Column(JSONB)  # List of ideal_for options
     contact_info = Column(JSONB)  # {"best": {"name": "Rhonda", ...}, "emergency": {...}}
@@ -343,13 +356,11 @@ class Trail(Base):
     trailhead_location = Column(JSONB)  # {"lat": 0, "lng": 0}
     trailhead_latitude = Column(Numeric(precision=10, scale=7))  # Separate lat field for trailhead
     trailhead_longitude = Column(Numeric(precision=10, scale=7))  # Separate lng field for trailhead
-    trailhead_entrance_photo = Column(String)
-    # trailhead_photo moved to Images table (image_type='trail_head')
-    trailhead_exit_location = Column(JSONB)  # {"lat": 0, "lng": 0}
-    trail_exit_latitude = Column(Numeric(precision=10, scale=7))  # Separate lat field for trail exit
-    trail_exit_longitude = Column(Numeric(precision=10, scale=7))  # Separate lng field for trail exit
-    trailhead_exit_photo = Column(String)
-    # trail_exit_photo moved to Images table (image_type='trail_exit')
+    # trailhead_entrance_photo / trailhead_exit_photo / trail_exit_* / trailhead_exit_location
+    # were dropped by migration w63c_001. Photo URLs moved to the Images table
+    # (image_type='trail_head' / 'access_point') and exit coordinates moved into
+    # ``access_points`` JSONB entries — see w63b_001 for the data migration.
+    # trailhead_photo / trail_exit_photo had previously moved to the Images table.
     trail_markings = Column(Text)
     trailhead_access_details = Column(Text)
     downloadable_trail_map = Column(String)  # URL to map file
@@ -368,6 +379,7 @@ class Trail(Base):
     trail_guide_notes     = Column(Text)
     trail_lighting        = Column(String(30))
     access_points         = Column(JSONB)
+    trail_entry_notes     = Column(Text)
 
     poi = relationship("PointOfInterest", back_populates="trail")
 
@@ -418,8 +430,12 @@ class Event(Base):
     new_event_link = Column(String)  # Stores UUID string of the new event POI (not a FK for flexibility)
     rescheduled_from_event_id = Column(UUID(as_uuid=True), ForeignKey("events.poi_id"), nullable=True)
 
-    # Task 137: Primary Display Category
-    primary_display_category = Column(String(100))
+    # Task 137: Primary Display Category — DEPRECATED (Issue #42).
+    # Column renamed to `_deprecated_primary_display_category` by Alembic
+    # migration g42_001. Canonical primary-category storage is
+    # `poi_categories.is_main` + `points_of_interest.main_category_id`.
+    # Intentionally not mapped on the ORM model so SELECTs ignore the legacy
+    # data; the column will be dropped in a later wave.
 
     # Task 138: Extended Organizer
     organizer_email = Column(String)

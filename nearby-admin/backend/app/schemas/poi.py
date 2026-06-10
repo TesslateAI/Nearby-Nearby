@@ -110,13 +110,9 @@ class TrailBase(BaseModel):
     trailhead_location: Optional[Dict[str, Any]] = None
     trailhead_latitude: Optional[float] = None
     trailhead_longitude: Optional[float] = None
-    trailhead_entrance_photo: Optional[str] = None
-    # trailhead_photo - DEPRECATED: moved to Images table (image_type='trail_head')
-    trailhead_exit_location: Optional[Dict[str, Any]] = None
-    trail_exit_latitude: Optional[float] = None
-    trail_exit_longitude: Optional[float] = None
-    trailhead_exit_photo: Optional[str] = None
-    # trail_exit_photo - DEPRECATED: moved to Images table (image_type='trail_exit')
+    # Legacy trailhead/exit photo URL columns and exit coordinate columns dropped
+    # by migration w63c_001. Photos now live in the Images table; exit
+    # coordinates live inside ``access_points`` JSONB entries.
     trail_markings: Optional[str] = None
     trailhead_access_details: Optional[str] = None
     downloadable_trail_map: Optional[str] = None
@@ -134,6 +130,7 @@ class TrailBase(BaseModel):
     trail_guide_notes: Optional[str] = None
     trail_lighting: Optional[TRAIL_LIGHTING] = None
     access_points: Optional[List[Dict[str, Any]]] = None
+    trail_entry_notes: Optional[str] = None
 
 class TrailCreate(TrailBase): pass
 class Trail(TrailBase):
@@ -182,8 +179,11 @@ class EventBase(BaseModel):
     contact_organizer_toggle: bool = False
     new_event_link: Optional[str] = None
     rescheduled_from_event_id: Optional[uuid.UUID] = None
-    # Task 137: Primary Display Category
-    primary_display_category: Optional[str] = None
+    # Task 137: Primary Display Category — DEPRECATED (Issue #42).
+    # The canonical primary-category mechanism is the UUID-based
+    # `main_category_id` / `is_main` on `poi_categories`. This string field is
+    # no longer accepted on Event payloads; the column is renamed to
+    # `_deprecated_primary_display_category` by Alembic migration g42_001.
     # Task 138: Extended Organizer
     organizer_email: Optional[str] = None
     organizer_phone: Optional[str] = None
@@ -195,6 +195,28 @@ class EventBase(BaseModel):
     ticket_links: Optional[List[Dict[str, str]]] = None
     # Task 140: Sponsors
     sponsors: Optional[List[Dict[str, Any]]] = None
+
+    # Issue #51: every sponsor must have a tier in Tier 1..Tier 5
+    @field_validator('sponsors')
+    @classmethod
+    def validate_sponsor_tiers(cls, v):
+        if v is None:
+            return v
+        valid_tiers = {'Tier 1', 'Tier 2', 'Tier 3', 'Tier 4', 'Tier 5'}
+        for idx, sponsor in enumerate(v):
+            if not isinstance(sponsor, dict):
+                raise ValueError(f'Sponsor at position {idx + 1} must be an object')
+            tier = sponsor.get('tier')
+            if not tier:
+                raise ValueError(
+                    f'Sponsor at position {idx + 1} is missing required Tier value'
+                )
+            if tier not in valid_tiers:
+                raise ValueError(
+                    f'Sponsor at position {idx + 1} has invalid Tier value: {tier!r} '
+                    f'(must be one of Tier 1, Tier 2, Tier 3, Tier 4, Tier 5)'
+                )
+        return v
 
 class EventCreate(EventBase): pass
 class EventUpdate(BaseModel):
@@ -231,8 +253,7 @@ class EventUpdate(BaseModel):
     contact_organizer_toggle: Optional[bool] = None
     new_event_link: Optional[str] = None
     rescheduled_from_event_id: Optional[uuid.UUID] = None
-    # Task 137: Primary Display Category
-    primary_display_category: Optional[str] = None
+    # Task 137: Primary Display Category — DEPRECATED (Issue #42), see EventBase.
     # Task 138: Extended Organizer
     organizer_email: Optional[str] = None
     organizer_phone: Optional[str] = None
@@ -244,6 +265,28 @@ class EventUpdate(BaseModel):
     ticket_links: Optional[List[Dict[str, str]]] = None
     # Task 140: Sponsors
     sponsors: Optional[List[Dict[str, Any]]] = None
+
+    # Issue #51: every sponsor must have a tier in Tier 1..Tier 5
+    @field_validator('sponsors')
+    @classmethod
+    def validate_sponsor_tiers(cls, v):
+        if v is None:
+            return v
+        valid_tiers = {'Tier 1', 'Tier 2', 'Tier 3', 'Tier 4', 'Tier 5'}
+        for idx, sponsor in enumerate(v):
+            if not isinstance(sponsor, dict):
+                raise ValueError(f'Sponsor at position {idx + 1} must be an object')
+            tier = sponsor.get('tier')
+            if not tier:
+                raise ValueError(
+                    f'Sponsor at position {idx + 1} is missing required Tier value'
+                )
+            if tier not in valid_tiers:
+                raise ValueError(
+                    f'Sponsor at position {idx + 1} has invalid Tier value: {tier!r} '
+                    f'(must be one of Tier 1, Tier 2, Tier 3, Tier 4, Tier 5)'
+                )
+        return v
 class Event(EventBase):
     poi_id: uuid.UUID
     model_config = ConfigDict(from_attributes=True)
@@ -428,16 +471,20 @@ class PointOfInterestBase(BaseModel):
     parking_locations: Optional[List[Dict[str, Any]]] = None
     parking_notes: Optional[str] = None
     # parking_photos - DEPRECATED: moved to Images table (image_type='parking')
-    public_transit_info: Optional[str] = None
+    # public_transit_info - DEPRECATED: renamed _deprecated_public_transit_info (Migration A #33)
     expect_to_pay_parking: Optional[Literal['yes', 'no', 'sometimes']] = None
 
     # Additional Info
     downloadable_maps: Optional[List[Dict[str, str]]] = None
     payment_methods: Optional[List[str]] = None
-    key_facilities: Optional[List[str]] = None
+    # key_facilities - DEPRECATED: renamed _deprecated_key_facilities (Migration A #34)
     alcohol_options: Optional[List[str]] = None
     alcohol_policy_details: Optional[str] = None
-    wheelchair_accessible: Optional[List[str]] = None
+    # Issue #69 — granular alcohol detail.
+    alcohol_availability: Optional[List[str]] = None
+    byob_allowed: Optional[bool] = False
+    alcohol_notes: Optional[str] = None
+    # wheelchair_accessible - DROPPED (Issue #45 PR2 Migration B)
     wheelchair_details: Optional[str] = None
     smoking_options: Optional[List[str]] = None
     smoking_details: Optional[str] = None
@@ -465,7 +512,7 @@ class PointOfInterestBase(BaseModel):
     playground_surface_types: Optional[List[str]] = None
     playground_notes: Optional[str] = None
     # playground_photos - DEPRECATED: moved to Images table (image_type='playground')
-    playground_location: Optional[Any] = None  # Single dict or list of dicts (multiple playgrounds)
+    playground_locations: Optional[Any] = None  # List of dicts (multiple playgrounds). Accepts a single dict for backward-compat; migration g67_001 wraps legacy singular rows.
 
     # Parks & Trails Additional Info
     payphone_location: Optional[Dict[str, Any]] = None
@@ -498,8 +545,10 @@ class PointOfInterestBase(BaseModel):
     
     # JSONB fields
     photos: Optional[Dict[str, Any]] = None
-    hours: Optional[Dict[str, Any]] = None  # Complex hours with multiple periods, seasonal
-    holiday_hours: Optional[Dict[str, Any]] = None  # Recurring holiday hours
+    hours: Optional[Dict[str, Any]] = None  # Complex hours with multiple periods, seasonal, and holidays (nested at hours.holidays)
+    # holiday_hours — DEPRECATED (Issue #70). Holiday hours now live under
+    # `hours.holidays`. Schema no longer exposes the top-level field; the
+    # column is renamed to `_deprecated_holiday_hours` by migration g70_001.
     amenities: Optional[Dict[str, Any]] = None
     ideal_for: Optional[Union[Dict[str, List[str]], List[str]]] = None  # Grouped dict preferred; flat list accepted for back-compat
     contact_info: Optional[Dict[str, Any]] = None
@@ -631,14 +680,18 @@ class PointOfInterestUpdate(BaseModel):
     parking_locations: Optional[List[Dict[str, Any]]] = None
     parking_notes: Optional[str] = None
     # parking_photos - DEPRECATED: moved to Images table (image_type='parking')
-    public_transit_info: Optional[str] = None
+    # public_transit_info - DEPRECATED: renamed _deprecated_public_transit_info (Migration A #33)
     expect_to_pay_parking: Optional[Literal['yes', 'no', 'sometimes']] = None
     downloadable_maps: Optional[List[Dict[str, str]]] = None
     payment_methods: Optional[List[str]] = None
-    key_facilities: Optional[List[str]] = None
+    # key_facilities - DEPRECATED: renamed _deprecated_key_facilities (Migration A #34)
     alcohol_options: Optional[List[str]] = None
     alcohol_policy_details: Optional[str] = None
-    wheelchair_accessible: Optional[List[str]] = None
+    # Issue #69 — granular alcohol detail.
+    alcohol_availability: Optional[List[str]] = None
+    byob_allowed: Optional[bool] = False
+    alcohol_notes: Optional[str] = None
+    # wheelchair_accessible - DROPPED (Issue #45 PR2 Migration B)
     wheelchair_details: Optional[str] = None
     smoking_options: Optional[List[str]] = None
     smoking_details: Optional[str] = None
@@ -660,7 +713,7 @@ class PointOfInterestUpdate(BaseModel):
     playground_surface_types: Optional[List[str]] = None
     playground_notes: Optional[str] = None
     # playground_photos - DEPRECATED: moved to Images table (image_type='playground')
-    playground_location: Optional[Any] = None  # Single dict or list of dicts (multiple playgrounds)
+    playground_locations: Optional[Any] = None  # List of dicts (multiple playgrounds). Accepts a single dict for backward-compat; migration g67_001 wraps legacy singular rows.
     payphone_location: Optional[Dict[str, Any]] = None
     payphone_locations: Optional[List[Dict[str, Any]]] = None
     park_entry_notes: Optional[str] = None
@@ -684,7 +737,7 @@ class PointOfInterestUpdate(BaseModel):
     camping_lodging: Optional[str] = None
     photos: Optional[Dict[str, Any]] = None
     hours: Optional[Dict[str, Any]] = None
-    holiday_hours: Optional[Dict[str, Any]] = None
+    # holiday_hours — DEPRECATED (Issue #70); use hours.holidays.
     amenities: Optional[Dict[str, Any]] = None
     ideal_for: Optional[Union[Dict[str, List[str]], List[str]]] = None
     contact_info: Optional[Dict[str, Any]] = None
@@ -786,10 +839,10 @@ class VenueDataForEvent(BaseModel):
     parking_notes: Optional[str] = None
     parking_locations: Optional[List[Dict[str, Any]]] = None
     expect_to_pay_parking: Optional[str] = None
-    public_transit_info: Optional[str] = None
+    # public_transit_info - DEPRECATED: renamed _deprecated_public_transit_info (Migration A #33)
 
     # Accessibility
-    wheelchair_accessible: Optional[List[str]] = None
+    # wheelchair_accessible - DROPPED (Issue #45 PR2 Migration B)
     wheelchair_details: Optional[str] = None
 
     # Restroom

@@ -23,10 +23,16 @@ const SearchBar = forwardRef(function SearchBar({
   const inputRef = useRef(null);
   const navigate = useNavigate();
 
-  // Expose query value and focus to parent via ref
+  // Expose query value, focus, and closeDropdown to parent via ref
   useImperativeHandle(ref, () => ({
     getQuery: () => searchQuery,
     focus: () => inputRef.current?.focus(),
+    closeDropdown: () => {
+      setShowDropdown(false);
+      setSearchResults([]);
+      setSelectedIndex(-1);
+      // Do NOT clear searchQuery — it persists via the URL to Explore.
+    },
   }));
 
   // Sync initialQuery prop changes

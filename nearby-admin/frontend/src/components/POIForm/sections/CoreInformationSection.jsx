@@ -7,12 +7,12 @@ import { IconPlus } from '@tabler/icons-react';
 import RichTextEditor from '../../RichTextEditor';
 import { DebouncedTextInput } from '../../DebouncedTextInput';
 import { getDebouncedInputProps } from '../constants/helpers';
-import { getStatusOptions, KEY_FACILITIES } from '../../../utils/constants';
+import { getStatusOptions } from '../../../utils/constants'; // KEY_FACILITIES removed (Migration A #34)
 import {
   FeaturedImageUpload,
   shouldUseImageUpload
 } from '../ImageIntegration';
-import { CheckboxGroupSection } from '../components/CheckboxGroupSection';
+// CheckboxGroupSection import removed — no longer used after key_facilities removal (Migration A #34)
 
 export const CoreInformationSection = React.memo(function CoreInformationSection({
   form,
@@ -132,14 +132,7 @@ export const CoreInformationSection = React.memo(function CoreInformationSection
         )}
       </SimpleGrid>
 
-      {/* Key Facilities - available for all POI types */}
-      <CheckboxGroupSection
-        label="Key Facilities"
-        fieldName="key_facilities"
-        options={KEY_FACILITIES}
-        cols={{ base: 2, sm: 3 }}
-        form={form}
-      />
+      {/* key_facilities removed — renamed _deprecated_key_facilities (Migration A #34) */}
 
       {isEvent && (
         <>
@@ -156,6 +149,7 @@ export const CoreInformationSection = React.memo(function CoreInformationSection
               label="Start Date & Time"
               placeholder="Select start date and time"
               valueFormat="MM/DD/YYYY hh:mm A"
+              timePickerProps={{ format: '12h', withDropdown: true }}
               value={form.values.event?.start_datetime instanceof Date ? form.values.event.start_datetime : (form.values.event?.start_datetime ? new Date(form.values.event.start_datetime) : null)}
               onChange={(val) => form.setFieldValue('event.start_datetime', val)}
               error={form.errors['event.start_datetime']}
@@ -164,6 +158,7 @@ export const CoreInformationSection = React.memo(function CoreInformationSection
               label="End Date & Time"
               placeholder="Select end date and time"
               valueFormat="MM/DD/YYYY hh:mm A"
+              timePickerProps={{ format: '12h', withDropdown: true }}
               value={form.values.event?.end_datetime instanceof Date ? form.values.event.end_datetime : (form.values.event?.end_datetime ? new Date(form.values.event.end_datetime) : null)}
               onChange={(val) => form.setFieldValue('event.end_datetime', val)}
               error={form.errors['event.end_datetime']}

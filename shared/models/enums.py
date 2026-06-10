@@ -39,5 +39,6 @@ class ImageType(enum.Enum):
     menu = "menu"
     trail_head = "trail_head"
     trail_exit = "trail_exit"
+    access_point = "access_point"
     map = "map"
     downloadable_map = "downloadable_map"

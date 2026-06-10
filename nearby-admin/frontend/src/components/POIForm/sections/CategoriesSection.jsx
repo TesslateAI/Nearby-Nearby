@@ -1,12 +1,12 @@
 import React from 'react';
 import {
-  Stack, Alert, Divider, Text, Title, SimpleGrid, Checkbox
+  Stack, Alert, Divider, Text
 } from '@mantine/core';
 import { MainCategorySelector } from '../../MainCategorySelector';
 import { TreeCategorySelector } from '../../TreeCategorySelector';
-import { IdealForSelector } from '../../IdealForSelector';
 import { PrimaryTypeSelector } from '../../PrimaryTypeSelector';
-import { getLegacyFieldsForListingType as getFieldsForListingType, IDEAL_FOR_KEY_OPTIONS } from '../../../utils/constants';
+import { getLegacyFieldsForListingType as getFieldsForListingType } from '../../../utils/constants';
+import { FeaturedIdealForChips } from '../layouts/_shared';
 
 export const CategoriesSection = React.memo(function CategoriesSection({
   form,
@@ -55,58 +55,12 @@ export const CategoriesSection = React.memo(function CategoriesSection({
         </Alert>
       )}
 
-      {/* Ideal For */}
-      <Divider my="md" label="Target Audience" />
-
-      {/* Key Ideal For - For Business listings (both free and paid) */}
-      {isBusiness && (
-        <Stack mb="md">
-          <Title order={5}>Key Ideal For</Title>
-          <Text size="sm" c="dimmed">
-            Select up to 3 primary audiences (these will be prominently displayed)
-          </Text>
-          <SimpleGrid cols={{ base: 1, sm: 2 }}>
-            {IDEAL_FOR_KEY_OPTIONS.map((option) => (
-              <Checkbox
-                key={option}
-                label={option}
-                checked={(form.values.ideal_for_key || []).includes(option)}
-                onChange={(event) => {
-                  const checked = event.currentTarget.checked;
-                  if (checked && (form.values.ideal_for_key?.length || 0) < 3) {
-                    form.setFieldValue('ideal_for_key', [...(form.values.ideal_for_key || []), option]);
-                  } else if (!checked) {
-                    form.setFieldValue('ideal_for_key', (form.values.ideal_for_key || []).filter(v => v !== option));
-                  }
-                }}
-                disabled={
-                  form.values.ideal_for_key?.length >= 3 &&
-                  !(form.values.ideal_for_key || []).includes(option)
-                }
-              />
-            ))}
-          </SimpleGrid>
-          <Text size="xs" c="dimmed">
-            {form.values.ideal_for_key?.length || 0} / 3 selected
-          </Text>
-        </Stack>
-      )}
-
-      {/* Full Ideal For */}
-      <Stack>
-        <Title order={5}>Ideal For</Title>
-        <Text size="sm" c="dimmed">
-          Select all audiences that would enjoy this {form.values.poi_type?.toLowerCase() || 'POI'}
-          {isFreeListing && ' (up to 5 total)'}
-        </Text>
-        <IdealForSelector
-          value={form.values.ideal_for || []}
-          onChange={(value) => form.setFieldValue('ideal_for', value)}
-          keyIdealFor={form.values.ideal_for_key || []}
-          maxSelections={isFreeListing ? 5 : undefined}
-          showAll={true}
-        />
-      </Stack>
+      {/* Issue #43: Featured Ideal For chips (read-only, surfaces what's
+          selected in IdealForGrouped). The old flat 75-checkbox "Key Ideal For"
+          block and the legacy <IdealForSelector /> stack are removed.
+          IdealForGrouped is rendered by the layout, not here. */}
+      <Divider my="md" label="Featured Ideal For" />
+      <FeaturedIdealForChips form={form} />
     </Stack>
   );
 });

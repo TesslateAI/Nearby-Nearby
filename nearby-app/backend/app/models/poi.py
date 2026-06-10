@@ -78,7 +78,10 @@ class PointOfInterest(Base):
     discounts = Column(JSONB)
     gift_cards = Column(String)
     hours = Column(JSONB)
-    holiday_hours = Column(JSONB)
+    # holiday_hours — DEPRECATED (Issue #70). Renamed to
+    # `_deprecated_holiday_hours` by migration g70_001 (in nearby-admin).
+    # Not mapped here so SELECTs skip the legacy column; holiday hours live
+    # at `hours.holidays`.
     appointment_booking_url = Column(String)
     hours_but_appointment_required = Column(Boolean)
     parking_types = Column(JSONB)
@@ -86,17 +89,22 @@ class PointOfInterest(Base):
     parking_notes = Column(Text)
     # parking_photos moved to Images table (image_type='parking')
     # parking_lot_photo moved to Images table (image_type='parking')
-    public_transit_info = Column(Text)
+    # public_transit_info renamed to _deprecated_public_transit_info (Migration A #33)
     expect_to_pay_parking = Column(String)
     amenities = Column(JSONB)
     ideal_for = Column(JSONB)
     ideal_for_key = Column(JSONB)
-    key_facilities = Column(JSONB)
+    # key_facilities renamed to _deprecated_key_facilities (Migration A #34)
     payment_methods = Column(JSONB)
     alcohol_options = Column(JSONB)
     alcohol_policy_details = Column(Text)
     alcohol_available = Column(String(50))
-    wheelchair_accessible = Column(JSONB)
+    # Issue #69 — granular alcohol detail surfaced inside the Alcohol accordion
+    # only when alcohol_available != 'no_alcohol'.
+    alcohol_availability = Column(JSONB)
+    byob_allowed = Column(Boolean, nullable=False, server_default='false', default=False)
+    alcohol_notes = Column(Text)
+    # wheelchair_accessible removed — column dropped (Issue #45 PR2 Migration B)
     wheelchair_details = Column(Text)
     accessible_parking_details  = Column(JSONB)
     accessible_restroom         = Column(Boolean, nullable=False, server_default='false', default=False)
@@ -124,7 +132,7 @@ class PointOfInterest(Base):
     playground_surface_types = Column(JSONB)
     playground_notes = Column(Text)
     # playground_photos moved to Images table (image_type='playground')
-    playground_location = Column(JSONB)
+    playground_locations = Column(JSONB)  # Plural array; renamed by migration g67_001.
     playground_age_groups    = Column(JSONB)
     playground_ada_checklist = Column(JSONB)
     inclusive_playground     = Column(Boolean, nullable=False, server_default='false', default=False)
@@ -207,11 +215,8 @@ class Trail(Base):
     trailhead_location = Column(JSONB)
     trailhead_latitude = Column(Numeric(10, 7))
     trailhead_longitude = Column(Numeric(10, 7))
-    trailhead_entrance_photo = Column(String)
-    trailhead_exit_location = Column(JSONB)
-    trail_exit_latitude = Column(Numeric(10, 7))
-    trail_exit_longitude = Column(Numeric(10, 7))
-    trailhead_exit_photo = Column(String)
+    # trailhead_entrance_photo / trailhead_exit_photo / trail_exit_* / trailhead_exit_location
+    # dropped by migration w63c_001 — see nearby-admin/backend/alembic/versions/w63b_001*.
     trail_markings = Column(Text)
     trailhead_access_details = Column(Text)
     downloadable_trail_map = Column(String)
@@ -225,6 +230,7 @@ class Trail(Base):
     trail_guide_notes     = Column(Text)
     trail_lighting        = Column(String(30))
     access_points         = Column(JSONB)
+    trail_entry_notes     = Column(Text)
     poi = relationship("PointOfInterest", back_populates="trail")
 
 class Event(Base):
@@ -263,8 +269,10 @@ class Event(Base):
     contact_organizer_toggle = Column(Boolean)
     new_event_link = Column(String)
     rescheduled_from_event_id = Column(PG_UUID(as_uuid=True), nullable=True)
-    # Task 137: Primary Display Category
-    primary_display_category = Column(String(100))
+    # Task 137: Primary Display Category — DEPRECATED (Issue #42).
+    # Column is renamed to `_deprecated_primary_display_category` by Alembic
+    # migration g42_001 (in nearby-admin). Not mapped here so SELECTs ignore
+    # the legacy data.
     # Task 138: Extended Organizer
     organizer_email = Column(String)
     organizer_phone = Column(String)

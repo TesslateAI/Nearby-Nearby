@@ -84,20 +84,59 @@ export const IDEAL_FOR_LOCAL_SPECIAL = [
   'Takeout Available',
   'Veteran Owned',
   'Virtual Consults Available',
-  'Virtual Events Available',
   'Virtual Services Available',
   'Walk Ins Welcome',
   'We Come to You',
   'Volunteer Opportunities'
 ];
 
-// Ideal For Key Box options — flat union of the 4 Phase-1 groups so existing
-// importers (KeyIdealFor pickers, etc.) keep working.
+// Issue #43 — 32 condition checkboxes. Multi-select. Stored under
+// ideal_for.special_needs (JSONB). Backend label: "Supports These Special Needs".
+// Frontend (public) label: "Special Needs Supported".
+export const IDEAL_FOR_SPECIAL_NEEDS = [
+  'Acquired Disability',
+  'ADHD',
+  'Anxiety Disorders',
+  "Asperger's Syndrome",
+  'Autism',
+  'Behavioral Issues',
+  'Blind + Low Vision',
+  'Cerebral Palsy',
+  'Chronic Illness',
+  'Deaf or Hard of Hearing',
+  'Dementia + Memory Care',
+  'Developmental Issues',
+  'Down Syndrome',
+  'Epilepsy + Seizure Disorders',
+  'Intellectual Disability',
+  'Learning Issues',
+  'Medical Issues',
+  'Mental Health',
+  'Mobility Impaired',
+  'Multiple Sclerosis',
+  'Muscular Dystrophy',
+  'Nonverbal',
+  'OCD',
+  'ODD',
+  'Processing Disorders',
+  'PTSD',
+  'Schizophrenia',
+  'Selective Mutism',
+  'Sensory Impaired',
+  'Speech + Language Disorders',
+  'Tourette Syndrome',
+  'Traumatic Brain Injury'
+];
+
+// Ideal For Key Box options — flat union of all 5 Ideal For groups so existing
+// importers (KeyIdealFor pickers, etc.) keep working. The admin form no longer
+// surfaces this flat list as a checkbox UI — see IdealForGrouped.
 export const IDEAL_FOR_KEY_OPTIONS = [
   ...IDEAL_FOR_ATMOSPHERE,
   ...IDEAL_FOR_AGE_GROUP,
   ...IDEAL_FOR_SOCIAL_SETTINGS,
-  ...IDEAL_FOR_LOCAL_SPECIAL
+  ...IDEAL_FOR_LOCAL_SPECIAL,
+  ...IDEAL_FOR_SPECIAL_NEEDS
 ];
 
 // Parking options — Phase 1 replaced list (24 values)
@@ -243,100 +282,215 @@ export const CELL_SERVICE_OPTIONS = [
   'None'
 ];
 
-// Phase 1 — Amenities (grouped for new forms)
+// ---------------------------------------------------------------------------
+// Phase 1 / Issue #55 — Facilities + Amenities rebuild.
+//
+// Item shape: { value, label, visibility, hasSubSelect?, hasAdaChecklist? }
+//   - visibility: 'ALL' (visible to every POI type), 'PT' (Parks + Trails only),
+//                 or 'B+E' (Business + Events only). Defaults to 'ALL' when
+//                 omitted.
+//   - hasSubSelect: keyed slug whose options live in AMENITY_SUBSELECT_OPTIONS.
+//                   When the parent checkbox is checked, the corresponding
+//                   multi-select panel renders directly below.
+//   - hasAdaChecklist: keyed slug whose checklist lives in AMENITY_ADA_CHECKLISTS.
+//                      Renders an ADA inline checklist when checked.
+//
+// All values for these groups serialize into the existing `amenities` JSONB
+// column on `points_of_interest`. No migration is required — fields are
+// additive sub-keys under that JSONB blob.
+// ---------------------------------------------------------------------------
 export const AMENITIES_GENERAL = [
-  'ATM',
-  'Baby Changing Station',
-  'Benches',
-  'Bike Rack',
-  'Bike Repair Station',
-  'Bottle Filling Station',
-  'Bug Spray Station',
-  'Bulletin Board + Community Board',
-  'Campfire Ring + Fire Pit',
-  'Chargepoint Station + EV Charging',
-  'Coat Check',
-  'Covered Shelter + Pavilion',
-  'Covered Trail Shelter',
-  'Drinking Fountain',
-  'Drinking Fountain At Trailhead',
-  'Drinking Fountain On Trail',
-  'Elevator',
-  'Emergency Phone + Call Box',
-  'First Aid Station',
-  'Flag Pole',
-  'Grill + BBQ',
-  'Handicap Accessible Entrance',
-  'Hand Sanitizer Station',
-  'Information Kiosk + Visitor Center',
-  'Lactation Room',
-  'Lighting + Lit Pathways',
-  'Lockers',
-  'Lost and Found',
-  'No Drinking Water on Trail',
-  'Outdoor Classroom',
-  'Outdoor Shower',
-  'Picnic Area - Covered',
-  'Picnic Area - Uncovered',
-  'Public Phone + Payphone',
-  'Recycling Station',
-  'Rental Equipment',
-  'Rental Space',
-  'Shade Structures',
-  'Sunscreen Station',
-  'Trash Cans',
-  'Vending Machines',
-  'Water Fountain + Splash Pad',
-  'Weather Shelter'
+  { value: 'amphitheater',            label: 'Amphitheater',                       visibility: 'ALL' },
+  { value: 'atm',                     label: 'ATM',                                visibility: 'ALL' },
+  { value: 'bag_check',               label: 'Bag Check',                          visibility: 'ALL' },
+  { value: 'bike_rack',               label: 'Bike Rack',                          visibility: 'ALL' },
+  { value: 'bike_repair_station',     label: 'Bike Repair Station',                visibility: 'ALL' },
+  { value: 'caretaker_on_site',       label: 'Caretaker On Site',                  visibility: 'ALL' },
+  { value: 'coat_check',              label: 'Coat Check',                         visibility: 'B+E', hasSubSelect: 'coat_check' },
+  { value: 'coin_change_machine',     label: 'Coin Change Machine',                visibility: 'ALL' },
+  { value: 'covered_trail_shelter',   label: 'Covered Trail Shelter',              visibility: 'PT' },
+  { value: 'darts',                   label: 'Darts',                              visibility: 'B+E' },
+  { value: 'drive_up_pickup_area',    label: 'Drive-Up Pickup Area',               visibility: 'B+E' },
+  { value: 'drinking_fountain',       label: 'Drinking Fountain',                  visibility: 'ALL', hasSubSelect: 'drinking_fountain' },
+  { value: 'dump_station_rvs',        label: 'Dump Station for RVs',               visibility: 'ALL' },
+  { value: 'equestrian_facilities',   label: 'Equestrian Facilities',              visibility: 'ALL', hasSubSelect: 'equestrian' },
+  { value: 'equipment_storage',       label: 'Equipment Storage',                  visibility: 'ALL' },
+  { value: 'ev_charging',             label: 'EV Charging',                        visibility: 'ALL', hasSubSelect: 'ev_charging' },
+  { value: 'fire_pit',                label: 'Fire Pit',                           visibility: 'ALL' },
+  { value: 'fire_ring',               label: 'Fire Ring',                          visibility: 'ALL' },
+  { value: 'first_aid_station',       label: 'First Aid Station',                  visibility: 'ALL' },
+  { value: 'gated_access',            label: 'Gated Access',                       visibility: 'ALL' },
+  { value: 'gazebo',                  label: 'Gazebo',                             visibility: 'ALL' },
+  { value: 'gift_shop',               label: 'Gift Shop',                          visibility: 'ALL' },
+  { value: 'grill',                   label: 'Grill',                              visibility: 'ALL' },
+  { value: 'information_kiosk',       label: 'Information Kiosk + Map Board',      visibility: 'ALL' },
+  { value: 'laundry_facilities',      label: 'Laundry Facilities',                 visibility: 'ALL' },
+  { value: 'lockers_storage',         label: 'Lockers + Storage',                  visibility: 'ALL' },
+  { value: 'lost_and_found',          label: 'Lost + Found',                       visibility: 'ALL' },
+  { value: 'multilingual_signage',    label: 'Multilingual Signage',               visibility: 'ALL' },
+  { value: 'outdoor_classroom',       label: 'Outdoor Classroom',                  visibility: 'ALL' },
+  { value: 'overflow_parking',        label: 'Overflow Parking',                   visibility: 'ALL' },
+  { value: 'performance_stage',       label: 'Performance Stage',                  visibility: 'ALL' },
+  { value: 'pool_tables',             label: 'Pool Tables',                        visibility: 'B+E' },
+  { value: 'public_spring_water',     label: 'Public Spring Water Collection Point', visibility: 'ALL' },
+  { value: 'recycling_stations',      label: 'Recycling Stations',                 visibility: 'ALL' },
+  { value: 'seasonal_access',         label: 'Seasonal Access',                    visibility: 'ALL' },
+  { value: 'security_on_site',        label: 'Security On Site',                   visibility: 'ALL' },
+  { value: 'showers',                 label: 'Showers',                            visibility: 'ALL' },
+  { value: 'shuttle_trolley_service', label: 'Shuttle + Trolley Service',          visibility: 'ALL' },
+  { value: 'sports_on_tv',            label: 'Sports on TV',                       visibility: 'B+E' },
+  { value: 'stroller_check',          label: 'Stroller Check',                     visibility: 'ALL' },
+  { value: 'vending_machines',        label: 'Vending Machines',                   visibility: 'ALL' },
+  { value: 'weather_station',         label: 'Weather Station',                    visibility: 'ALL' },
+  { value: 'wildlife_observation',    label: 'Wildlife Observation Platform',      visibility: 'ALL' },
 ];
 
 export const AMENITIES_FAMILY_YOUTH = [
-  'Booster Seat',
-  'Childcare Available',
-  'Cribs',
-  'Family Spaces',
-  'High Chair',
-  'Kid Friendly Menus',
-  'Lactation Room',
-  'Play Area - Indoor',
-  'Play Area - Outdoor',
-  'Playpens',
-  'Stroller Friendly',
-  'Stroller Parking',
-  'Stroller Rental',
-  'Youth Program'
+  { value: 'booster_seat',         label: 'Booster Seat',         visibility: 'ALL' },
+  { value: 'changing_table',       label: 'Changing Table',       visibility: 'ALL' },
+  { value: 'childcare_available',  label: 'Childcare Available',  visibility: 'B+E' },
+  { value: 'cribs',                label: 'Cribs',                visibility: 'B+E' },
+  { value: 'family_spaces',        label: 'Family Spaces',        visibility: 'ALL' },
+  { value: 'high_chair',           label: 'High Chair',           visibility: 'ALL' },
+  { value: 'kids_activity_area',   label: 'Kids Activity Area',   visibility: 'ALL' },
+  { value: 'kid_friendly_menus',   label: 'Kid Friendly Menus',   visibility: 'B+E' },
+  { value: 'lactation_room',       label: 'Lactation Room',       visibility: 'ALL' },
+  { value: 'play_area_indoor',     label: 'Play Area — Indoor',   visibility: 'ALL' },
+  { value: 'play_area_outdoor',    label: 'Play Area — Outdoor',  visibility: 'ALL' },
+  { value: 'playpens',             label: 'Playpens',             visibility: 'B+E' },
+  { value: 'stroller_parking',     label: 'Stroller Parking',     visibility: 'ALL' },
+  { value: 'stroller_rental',      label: 'Stroller Rental',      visibility: 'ALL' },
 ];
 
 export const AMENITIES_WATER_BOATING = [
-  'Boat Dock',
-  'Boat Launch',
-  'Boat Ramp',
-  'Canoe + Kayak Access',
-  'Fishing Pier',
-  'Fishing Access',
-  'Marina',
-  'Paddle Craft Rental',
-  'Swim Area',
-  'Swim Beach'
+  { value: 'beach_access',     label: 'Beach Access',                          visibility: 'ALL' },
+  { value: 'boat_dock',        label: 'Boat Dock',                             visibility: 'ALL', hasAdaChecklist: 'boat_dock' },
+  { value: 'boat_launch',      label: 'Boat Launch',                           visibility: 'ALL', hasAdaChecklist: 'boat_launch' },
+  { value: 'boat_ramp',        label: 'Boat Ramp',                             visibility: 'ALL', hasAdaChecklist: 'boat_ramp' },
+  { value: 'boat_storage',     label: 'Boat Storage',                          visibility: 'ALL' },
+  { value: 'fuel_station',     label: 'Fuel Station for Boats',                visibility: 'ALL' },
+  { value: 'kayak_launch',     label: 'Kayak, Canoe + Paddleboard Launch',     visibility: 'ALL', hasAdaChecklist: 'kayak_launch' },
+  { value: 'marina',           label: 'Marina',                                visibility: 'ALL' },
 ];
 
 export const AMENITIES_DINING_SEATING = [
-  'Bar Seating',
-  'Booth Seating',
-  'Communal Tables',
-  'Counter Seating',
-  'Dining Room',
-  'Food Court',
-  'Indoor Seating',
-  'Outdoor Seating',
-  'Patio',
-  'Picnic Tables',
-  'Private Dining Room',
-  'Rooftop Seating',
-  'Standing Room',
-  'Sidewalk Seating',
-  'Waterfront Seating'
+  { value: 'bar_seating',            label: 'Bar Seating',                          visibility: 'B+E' },
+  { value: 'benches_rest_areas',     label: 'Benches + Rest Areas',                 visibility: 'ALL' },
+  { value: 'catering_pickup_area',   label: 'Catering Pickup Area',                 visibility: 'B+E' },
+  { value: 'concession_stand',       label: 'Concession Stand',                     visibility: 'ALL' },
+  { value: 'coworking_seating',      label: 'Coworking + Work Friendly Seating',    visibility: 'B+E' },
+  { value: 'group_shelter',          label: 'Group Shelter',                        visibility: 'ALL' },
+  { value: 'indoor_seating',         label: 'Indoor Seating',                       visibility: 'ALL' },
+  { value: 'meeting_room',           label: 'Meeting Room',                         visibility: 'B+E' },
+  { value: 'kitchen',                label: 'On-Site Kitchen Facility',             visibility: 'ALL', hasSubSelect: 'kitchen' },
+  { value: 'outdoor_bar',            label: 'Outdoor Bar',                          visibility: 'B+E' },
+  { value: 'outdoor_seating',        label: 'Outdoor Seating',                      visibility: 'ALL', hasSubSelect: 'outdoor_seating' },
+  { value: 'picnic_area',            label: 'Picnic Area',                          visibility: 'ALL', hasSubSelect: 'picnic_area' },
+  { value: 'private_event_space',    label: 'Private Event Space',                  visibility: 'ALL' },
 ];
+
+// Conditional sub-option panels rendered under specific parent amenities.
+// Keys are the slugs referenced by `hasSubSelect` on the item.
+export const AMENITY_SUBSELECT_OPTIONS = {
+  coat_check: [
+    { value: 'complimentary', label: 'Complimentary' },
+    { value: 'fee_based',     label: 'Fee Based' },
+  ],
+  drinking_fountain: [
+    { value: 'at_trailhead',                label: 'At Trailhead',                  visibility: 'PT' },
+    { value: 'on_trail',                    label: 'On Trail',                      visibility: 'PT' },
+    { value: 'standard',                    label: 'Standard Drinking Fountain' },
+    { value: 'bottle_refill',               label: 'Bottle Refill Station' },
+    { value: 'pet_water',                   label: 'Pet Water Station' },
+    { value: 'no_drinking_water_on_site',   label: 'No Drinking Water on Site' },
+    { value: 'no_drinking_water_on_trail',  label: 'No Drinking Water on Trail',    visibility: 'PT' },
+  ],
+  equestrian: [
+    { value: 'tie_up_hitching_post', label: 'Equestrian Tie-Up + Hitching Post' },
+    { value: 'horse_water_trough',   label: 'Horse Water Trough' },
+    { value: 'horse_trailer_parking',label: 'Horse Trailer Parking' },
+    { value: 'staging_area',         label: 'Equestrian Staging Area' },
+  ],
+  ev_charging: [
+    { value: 'standard_level_2',     label: 'Standard Charging (Level 2)' },
+    { value: 'fast_dc_level_3',      label: 'Fast Charging (DC Fast Charge / Level 3)' },
+    { value: 'tesla_supercharger',   label: 'Tesla Supercharger' },
+  ],
+  kitchen: [
+    { value: 'has_power',            label: 'Has Power' },
+    { value: 'has_running_water',    label: 'Has Running Water' },
+  ],
+  outdoor_seating: [
+    { value: 'cooled',  label: 'Cooled Outdoor Seating' },
+    { value: 'covered', label: 'Covered Outdoor Seating' },
+    { value: 'heated',  label: 'Heated Outdoor Seating' },
+  ],
+  picnic_area: [
+    { value: 'covered',   label: 'Covered' },
+    { value: 'uncovered', label: 'Uncovered' },
+  ],
+};
+
+// ADA inline checklists rendered beneath specific Water + Boating items.
+// Wording must match the spec exactly so downstream rendering / filtering can
+// substring-match the labels.
+export const AMENITY_ADA_CHECKLISTS = {
+  boat_dock: [
+    'Stationary fixed dock (no movement)',
+    'Floating dock (moves with water level)',
+    'Accessible path to dock entrance',
+    'Dock width 60"+ throughout',
+    'Non-slip surface',
+    'Lowered or open railing sections for fishing or water access',
+    'Cleats and tie-up points reachable from wheelchair height',
+    'Seating available',
+  ],
+  boat_launch: [
+    'Paved or firm surface path to staging area (minimum 5 feet wide)',
+    '1:12 slope gangway or ramp (1 foot length for every inch of drop)',
+    'Continuous handrail along gangway — 36" high',
+    'Floating dock or stable launch platform',
+    'Transfer bench available — 16" high',
+    'Grab bars and handrails at water entry point',
+    'Boat slide or guide rails',
+    'Accessible parking within reasonable distance',
+    'Staging area width 60"+ for wheelchair',
+  ],
+  boat_ramp: [
+    'Non-slip surface on ramp',
+    '1:12 slope — 1 foot length for every inch of drop',
+    'Handrails on both sides',
+    'Handrail height 36"',
+    'Level landing area at bottom of ramp',
+    'Accessible parking within reasonable distance',
+    'Firm surface alongside ramp for wheelchair access',
+    'Staging area width 60"+ at top and bottom of ramp',
+  ],
+  kayak_launch: [
+    'Paved or firm surface path to launch (at least 5 feet wide)',
+    '1:12 slope gangway or ramp (1 foot length for every inch of drop)',
+    'Continuous handrail along gangway (36" high)',
+    'Floating dock or stable launch platform',
+    'Transfer bench available (16" high — standard for wheelchair transfers)',
+    'Grab bars and handrails at water entry point',
+    'Roll cage or stabilizing frame around vessel (holds kayak/canoe steady during transfer)',
+    'Boat slide or guide rails (allows vessel to be eased into water)',
+    'Accessible parking within reasonable distance',
+    'Staging area width 60"+ for wheelchair',
+  ],
+};
+
+// Helper — used by FullAmenitiesBlock and any caller that needs to filter
+// amenity items by the current POI type. Items without a `visibility` field
+// (or explicitly 'ALL') are always visible.
+export const isAmenityVisibleForPoiType = (item, poiType) => {
+  if (!item || !item.visibility || item.visibility === 'ALL') return true;
+  const isBusinessOrEvent = poiType === 'BUSINESS' || poiType === 'EVENT';
+  const isParkOrTrail = poiType === 'PARK' || poiType === 'TRAIL';
+  if (item.visibility === 'B+E') return isBusinessOrEvent;
+  if (item.visibility === 'PT')  return isParkOrTrail;
+  return true;
+};
 
 export const ALCOHOL_AVAILABLE_OPTIONS = [
   { value: 'full_bar', label: 'Full Bar' },
@@ -345,6 +499,19 @@ export const ALCOHOL_AVAILABLE_OPTIONS = [
   { value: 'no_alcohol', label: 'No Alcohol' },
   { value: 'seasonal', label: 'Seasonal/Event Only' },
   { value: 'nearby', label: 'Adjacent/Nearby Available' }
+];
+
+// Issue #69 — granular alcohol availability types. Surfaces under the Alcohol
+// accordion only when alcohol_available !== 'no_alcohol'. Multi-select; values
+// persist to the `alcohol_availability` JSONB column.
+export const ALCOHOL_AVAILABILITY_OPTIONS = [
+  { value: 'beer',          label: 'Beer' },
+  { value: 'wine',          label: 'Wine' },
+  { value: 'cider',         label: 'Cider' },
+  { value: 'mead',          label: 'Mead' },
+  { value: 'spirits',       label: 'Spirits / Liquor' },
+  { value: 'cocktails',     label: 'Cocktails' },
+  { value: 'non_alcoholic', label: 'Non-Alcoholic Options' },
 ];
 
 export const SPONSOR_LEVEL_OPTIONS = [
@@ -361,87 +528,178 @@ export const DRONE_USAGE_OPTIONS = [
   'No'
 ];
 
-// Pet options — Phase 1 replaced (38 values)
+// Pet options — Issue #48 replaced (43 values)
 export const PET_OPTIONS = [
-  'Pet Friendly',
-  'Dogs Welcome',
-  'Cats Welcome',
-  'Small Pets Welcome',
-  'Dogs On Leash Required',
-  'Dogs Off Leash Permitted',
-  'Dog Park On Site',
-  'Dog Waste Bags Provided',
-  'Dog Waste Stations',
-  'Dog Water Bowls Provided',
-  'Dog Treats Available',
-  'Dog Menu Available',
-  'Pet Patio + Outdoor Only',
-  'Pet Patio + Covered',
-  'Service Animals Welcome',
-  'Emotional Support Animals Welcome',
-  'No Pets Allowed',
-  'No Dogs Allowed',
-  'No Cats Allowed',
-  'Small Dogs Only',
-  'Large Dogs Welcome',
-  'Breed Restrictions Apply',
-  'Weight Limits Apply',
-  'Vaccination Records Required',
-  'Pet Deposit Required',
-  'Pet Fee Required',
-  'Pet Sitting Available',
-  'Pet Boarding Available',
-  'Pet Grooming Available',
-  'Horses Welcome',
+  'Any Well Behaved Pet',
+  'Breed Restriction — see notes',
+  'Cats Allowed',
+  'Clean Up Stations',
+  'Dogs Allowed',
+  'Dogs Only',
+  'Fenced in Area',
+  'Hot Surface Warning',
   'Horse Boarding',
+  'Horses Welcome',
+  'Kennels Available for Rent',
+  'Leash Required — 6 Feet Maximum',
+  'Leash Required — Length Not Specified',
   'Livestock Permitted',
-  'Exotic Pets Welcome',
-  'Pet Washing Station',
+  'Maximum Number of Dogs Per Person — see notes',
+  'No Pets Left Unattended',
+  'Off Leash',
+  'Pet Friendly Seating Areas',
+  'Pack Out Waste — No Trash Cans Available',
   'Pet Relief Area',
-  'Pet Photo Ops',
-  'Pet Events Hosted',
-  'Pets in Carriers Only'
+  'Pet Waste Bags Available',
+  'Trash Cans Available for Waste Bags',
+  'Pet Fee Required',
+  'Pet Swimming Area — Beach Access',
+  'Pet Swimming Area — Designated + Marked',
+  'Pet Swimming Area — Lake or Pond Access',
+  'Pet Swimming Area — River or Creek Access',
+  'Pet Washing Station',
+  'Pets Allowed in Designated Areas Only',
+  'Small Pets Only',
+  'Size Restriction — Under 25 lbs',
+  'Size Restriction — Under 50 lbs',
+  'Size Restriction — No Size Restriction',
+  'Pets Must Stay on Trail',
+  'Pets Not Allowed in Buildings',
+  'Seasonal Restrictions Apply — see notes',
+  'Shade Available Along Route',
+  'Spayed + Neutered Required',
+  'Toxic Plant Warning',
+  'Vaccination Proof Required',
+  'Voice Control Accepted in Designated Areas',
+  'Water Source',
+  'Wildlife Hazard Area — see notes'
 ];
 
-// Public toilet options — Phase 1 replaced (18 values)
+// Public toilet options — Wave 3 #47 (19 values; "Wheelchair + ADA Accessible"
+// triggers the inline AccessibleRestroomChecklist below).
 export const PUBLIC_TOILET_OPTIONS = [
-  'Accessible Restroom',
-  "Men's Restroom",
-  "Women's Restroom",
-  'All-Gender / Unisex',
+  'Single Stall',
+  'Multi Stall',
   'Family Restroom',
   'Baby Changing Station',
-  'Flush Toilets',
+  'Wheelchair + ADA Accessible',
+  'All Gender',
+  'Climate Controlled Restroom',
+  'Key Required',
+  'Code Required',
+  'Customers Only',
+  'Attendant on Duty',
+  'Pay Toilet',
+  'Porta Potti',
+  'Outdoor + Pit Toilet',
   'Vault Toilet',
-  'Pit Toilet',
-  'Portable Toilet',
-  'Composting Toilet',
-  'Seasonal Restroom',
-  'Restroom at Trailhead',
-  'Restroom On Trail',
-  'Outdoor Shower',
-  'Indoor Shower',
-  'Key/Code Required',
-  'No Public Restroom'
+  'Trailer Restroom',
+  'Seasonal Only',
+  '24 Hour Access'
 ];
 
-// Phase 1 — ADA restroom checklist
+// Phase 1 / #49 — Playground option lists (refreshed) — per-playground data
+// stored inside each item of playground_locations[] JSONB array. Item shape:
+// { lat, lng, name?, age_groups: string[], ada_checklist: { [groupKey]: [] } }.
+export const PLAYGROUND_TYPES = [
+  { value: 'traditional',          label: 'Traditional / Climbing Structure' },
+  { value: 'nature',               label: 'Nature Playground' },
+  { value: 'inclusive',            label: 'Inclusive / All-Abilities' },
+  { value: 'sensory',              label: 'Sensory Playground' },
+  { value: 'adventure',            label: 'Adventure Course / Ropes / Ninja' },
+  { value: 'water',                label: 'Water / Splash Play' },
+  { value: 'musical',              label: 'Musical Instruments' },
+  { value: 'imaginative',          label: 'Imaginative / Themed' },
+  { value: 'sports',               label: 'Sport-Focused (Mini Pitch / Court)' },
+  { value: 'other',                label: 'Other' },
+];
+
+export const PARK_PLAYGROUND_SURFACES = [
+  { value: 'poured_rubber',        label: 'Poured Rubber' },
+  { value: 'rubber_tiles',         label: 'Rubber Tiles' },
+  { value: 'engineered_woodchip',  label: 'Engineered Wood Fiber / Mulch' },
+  { value: 'sand',                 label: 'Sand' },
+  { value: 'pea_gravel',           label: 'Pea Gravel' },
+  { value: 'turf',                 label: 'Artificial Turf' },
+  { value: 'grass',                label: 'Grass' },
+  { value: 'concrete',             label: 'Concrete / Pavement' },
+  { value: 'mixed',                label: 'Mixed Surface' },
+  { value: 'other',                label: 'Other' },
+];
+
+export const PLAYGROUND_AGE_GROUPS = [
+  { value: 'infant_toddler', label: 'Infant / Toddler (0–2)' },
+  { value: 'preschool',      label: 'Preschool (3–5)' },
+  { value: 'school_age',     label: 'School Age (6–12)' },
+  { value: 'teen',           label: 'Teen / Adult' },
+  { value: 'all_ages',       label: 'All Ages' },
+];
+
+// ADA checklist grouped into 4 categories per #49.
+export const PLAYGROUND_ADA_CATEGORIES = {
+  surface_access: {
+    label: 'Surface + Access',
+    items: [
+      { value: 'firm_stable_surface',   label: 'Firm + stable surface (rubber tile, poured-in-place, engineered wood fiber)' },
+      { value: 'accessible_route',      label: 'Accessible route from parking / sidewalk to play area' },
+      { value: 'level_transitions',     label: 'No abrupt level changes / ramped transitions' },
+      { value: 'maneuvering_clearance', label: '60"+ maneuvering clearance at entries' },
+    ],
+  },
+  play_equipment: {
+    label: 'Play Equipment',
+    items: [
+      { value: 'transfer_platform',  label: 'Transfer platform at composite structure' },
+      { value: 'accessible_swing',   label: 'Accessible swing (full-back / harness)' },
+      { value: 'ground_level_play', label: 'Ground-level play components reachable from wheelchair' },
+      { value: 'sensory_panel',      label: 'Sensory / interactive panel at wheelchair height' },
+      { value: 'inclusive_carousel', label: 'Inclusive carousel or spinner (wheelchair-friendly)' },
+    ],
+  },
+  seating_shade: {
+    label: 'Seating + Shade',
+    items: [
+      { value: 'accessible_seating', label: 'Accessible bench with armrests + back' },
+      { value: 'shade_structure',    label: 'Shade structure or natural shade over play area' },
+      { value: 'companion_seating',  label: 'Companion seating beside accessible seats' },
+    ],
+  },
+  amenities: {
+    label: 'Amenities Nearby',
+    items: [
+      { value: 'accessible_water',    label: 'Accessible drinking fountain or bottle-fill' },
+      { value: 'accessible_restroom', label: 'Accessible restroom within sight / short distance' },
+      { value: 'accessible_parking',  label: 'Accessible parking with curb cut' },
+    ],
+  },
+};
+
+// Wave 3 #47 — grouped ADA restroom checklist (15 items, 6 groups). Each entry
+// is { group, label }. Renderer groups by `group`. Label wording must match
+// shared/constants/field_options.py RESTROOM_ADA_CHECKLIST exactly because
+// backend compute_accessible_restroom substring-matches on it.
 export const RESTROOM_ADA_CHECKLIST = [
-  'Accessible stall present',
-  'Stall 60 in. turning radius or greater',
-  'Grab bars installed',
-  'Accessible route to restroom',
-  'Door hardware lever or auto',
-  'Sink height 34 in. or lower',
-  'Sink knee clearance',
-  'Mirror 40 in. to bottom edge or lower',
-  'Accessible soap + towel dispenser',
-  'Accessible baby changing',
-  'Emergency pull cord',
-  'Firm stable flooring',
-  'Signage with braille',
-  'Lighting adequate',
-  'Adult changing table'
+  // Space + Size
+  { group: 'Space + Size', label: 'Accessible stall size — minimum 60" x 56" (wall-mounted toilet) or 60" x 59" (floor-mounted)' },
+  { group: 'Space + Size', label: '60 inch turning radius clear floor space' },
+  // Grab Bars
+  { group: 'Grab Bars', label: 'Side grab bar installed' },
+  { group: 'Grab Bars', label: 'Rear grab bar installed' },
+  { group: 'Grab Bars', label: 'Grab bars mounted 33-36 inches from floor' },
+  // Door
+  { group: 'Door', label: 'Wide door — minimum 32 inches clear width' },
+  { group: 'Door', label: 'Outward swinging or sliding door' },
+  { group: 'Door', label: 'Lever or loop door handle' },
+  // Toilet
+  { group: 'Toilet', label: 'Accessible toilet height — 17-19 inches from floor' },
+  // Sink + Fixtures
+  { group: 'Sink + Fixtures', label: 'Sink height 34 inches or lower' },
+  { group: 'Sink + Fixtures', label: 'Clear knee space under sink' },
+  { group: 'Sink + Fixtures', label: 'Lever or sensor faucet' },
+  { group: 'Sink + Fixtures', label: 'No exposed hot water or drain pipes under sink' },
+  // General
+  { group: 'General', label: 'Level entry — no lip or step' },
+  { group: 'General', label: 'Accessible route to restroom' }
 ];
 
 // Price Range Per Person (Business only)
@@ -675,112 +933,6 @@ export const EVENT_STATUS_OPTIONS = [
   'Unofficial Proposed Date'
 ];
 
-export const IDEAL_FOR_OPTIONS = [
-  // Atmosphere
-  { value: 'Casual + Welcoming', label: 'Casual + Welcoming', group: 'Atmosphere' },
-  { value: 'Formal + Refined', label: 'Formal + Refined', group: 'Atmosphere' },
-  { value: 'Loud + Lively', label: 'Loud + Lively', group: 'Atmosphere' },
-  { value: 'Quiet + Reflective', label: 'Quiet + Reflective', group: 'Atmosphere' },
-  
-  // Age Groups
-  { value: 'All Ages', label: 'All Ages', group: 'Age Groups' },
-  { value: 'Families', label: 'Families', group: 'Age Groups' },
-  { value: 'For the Kids', label: 'For the Kids', group: 'Age Groups' },
-  { value: 'Pet Friendly', label: 'Pet Friendly', group: 'Age Groups' },
-  { value: 'Ages 18+', label: 'Ages 18+', group: 'Age Groups' },
-  { value: 'Ages 21+', label: 'Ages 21+', group: 'Age Groups' },
-  { value: 'Golden Years Ages 55+', label: 'Golden Years Ages 55+', group: 'Age Groups' },
-  
-  // Social Settings
-  { value: 'Date Night - Romance', label: 'Date Night - Romance', group: 'Social Settings' },
-  { value: 'Girls Night - Hanging out with Girlfriends', label: 'Girls Night - Hanging out with Girlfriends', group: 'Social Settings' },
-  { value: 'Guys Night - Hanging out with Guys', label: 'Guys Night - Hanging out with Guys', group: 'Social Settings' },
-  { value: 'Large Groups 10+', label: 'Large Groups 10+', group: 'Social Settings' },
-  
-  // Local & Special
-  { value: 'Local Artists', label: 'Local Artists', group: 'Local & Special' },
-  { value: 'Locally Sourced Ingredients', label: 'Locally Sourced Ingredients', group: 'Local & Special' },
-  { value: 'Budget Friendly', label: 'Budget Friendly', group: 'Local & Special' },
-  { value: 'Eco Friendly', label: 'Eco Friendly', group: 'Local & Special' },
-  { value: 'Luxury', label: 'Luxury', group: 'Local & Special' },
-  { value: 'Night Owls Open Late (past 10pm)', label: 'Night Owls Open Late (past 10pm)', group: 'Local & Special' },
-  { value: 'Reservations', label: 'Reservations', group: 'Local & Special' },
-  
-  // Special Needs Adult (18+)
-  { value: 'Special Needs Adult (18+)', label: 'Special Needs Adult (18+)', group: 'Special Needs Adult' },
-  { value: 'ADD Attention-Deficit-Disorder', label: 'ADD Attention-Deficit-Disorder', group: 'Special Needs Adult' },
-  { value: 'ADHD Attention-Deficit-Hyperactivity Disorder', label: 'ADHD Attention-Deficit-Hyperactivity Disorder', group: 'Special Needs Adult' },
-  { value: 'Asperger\'s Syndrome', label: 'Asperger\'s Syndrome', group: 'Special Needs Adult' },
-  { value: 'Autism', label: 'Autism', group: 'Special Needs Adult' },
-  { value: 'Behavioral Issues', label: 'Behavioral Issues', group: 'Special Needs Adult' },
-  { value: 'Blind', label: 'Blind', group: 'Special Needs Adult' },
-  { value: 'Deaf or Hard of Hearing', label: 'Deaf or Hard of Hearing', group: 'Special Needs Adult' },
-  { value: 'Developmental Issues', label: 'Developmental Issues', group: 'Special Needs Adult' },
-  { value: 'Down Syndrome', label: 'Down Syndrome', group: 'Special Needs Adult' },
-  { value: 'Learning Issues', label: 'Learning Issues', group: 'Special Needs Adult' },
-  { value: 'Medical Issues', label: 'Medical Issues', group: 'Special Needs Adult' },
-  { value: 'Mental Health', label: 'Mental Health', group: 'Special Needs Adult' },
-  { value: 'Processing Disorders', label: 'Processing Disorders', group: 'Special Needs Adult' },
-  { value: 'PTSD (Post-Traumatic-Stress Disorder)', label: 'PTSD (Post-Traumatic-Stress Disorder)', group: 'Special Needs Adult' },
-  { value: 'Sensory Impaired', label: 'Sensory Impaired', group: 'Special Needs Adult' },
-  { value: 'Visually Impaired', label: 'Visually Impaired', group: 'Special Needs Adult' },
-  { value: 'Wheelchair Friendly', label: 'Wheelchair Friendly', group: 'Special Needs Adult' },
-  
-  // Youth WITH Adult
-  { value: 'Youth WITH Adult - All', label: 'All', group: 'Youth WITH Adult' },
-  { value: 'Youth WITH Adult - Infant (non walking)', label: 'Infant (non walking)', group: 'Youth WITH Adult' },
-  { value: 'Youth WITH Adult - Toddler', label: 'Toddler', group: 'Youth WITH Adult' },
-  { value: 'Youth WITH Adult - Pre K', label: 'Pre K', group: 'Youth WITH Adult' },
-  { value: 'Youth WITH Adult - Elementary School (Age 5yrs-10yrs)', label: 'Elementary School (Age 5yrs-10yrs)', group: 'Youth WITH Adult' },
-  { value: 'Youth WITH Adult - Middle School (Age 10yrs-14yrs)', label: 'Middle School (Age 10yrs-14yrs)', group: 'Youth WITH Adult' },
-  { value: 'Youth WITH Adult - High School (Age 14yrs-18yrs)', label: 'High School (Age 14yrs-18yrs)', group: 'Youth WITH Adult' },
-  { value: 'Youth WITH Adult - Homeschooling', label: 'Homeschooling', group: 'Youth WITH Adult' },
-  { value: 'Youth WITH Adult - Special Needs', label: 'Special Needs', group: 'Youth WITH Adult' },
-  { value: 'Youth WITH Adult - ADD', label: 'ADD', group: 'Youth WITH Adult' },
-  { value: 'Youth WITH Adult - ADHD', label: 'ADHD', group: 'Youth WITH Adult' },
-  { value: 'Youth WITH Adult - Asperger\'s Syndrome', label: 'Asperger\'s Syndrome', group: 'Youth WITH Adult' },
-  { value: 'Youth WITH Adult - Autism', label: 'Autism', group: 'Youth WITH Adult' },
-  { value: 'Youth WITH Adult - Behavioral Issues', label: 'Behavioral Issues', group: 'Youth WITH Adult' },
-  { value: 'Youth WITH Adult - Blind', label: 'Blind', group: 'Youth WITH Adult' },
-  { value: 'Youth WITH Adult - Deaf or Hard of Hearing', label: 'Deaf or Hard of Hearing', group: 'Youth WITH Adult' },
-  { value: 'Youth WITH Adult - Developmental Issues', label: 'Developmental Issues', group: 'Youth WITH Adult' },
-  { value: 'Youth WITH Adult - Down Syndrome', label: 'Down Syndrome', group: 'Youth WITH Adult' },
-  { value: 'Youth WITH Adult - Learning Issues', label: 'Learning Issues', group: 'Youth WITH Adult' },
-  { value: 'Youth WITH Adult - Medical Issues', label: 'Medical Issues', group: 'Youth WITH Adult' },
-  { value: 'Youth WITH Adult - Mental Health', label: 'Mental Health', group: 'Youth WITH Adult' },
-  { value: 'Youth WITH Adult - Processing Disorders', label: 'Processing Disorders', group: 'Youth WITH Adult' },
-  { value: 'Youth WITH Adult - PTSD', label: 'PTSD', group: 'Youth WITH Adult' },
-  { value: 'Youth WITH Adult - Sensory Impaired', label: 'Sensory Impaired', group: 'Youth WITH Adult' },
-  { value: 'Youth WITH Adult - Visually Impaired', label: 'Visually Impaired', group: 'Youth WITH Adult' },
-  
-  // Youth WITHOUT Adult
-  { value: 'Youth WITHOUT Adult - All', label: 'All', group: 'Youth WITHOUT Adult' },
-  { value: 'Youth WITHOUT Adult - Infant (non walking)', label: 'Infant (non walking)', group: 'Youth WITHOUT Adult' },
-  { value: 'Youth WITHOUT Adult - Toddler', label: 'Toddler', group: 'Youth WITHOUT Adult' },
-  { value: 'Youth WITHOUT Adult - Pre K', label: 'Pre K', group: 'Youth WITHOUT Adult' },
-  { value: 'Youth WITHOUT Adult - Elementary School (Age 5yrs-10yrs)', label: 'Elementary School (Age 5yrs-10yrs)', group: 'Youth WITHOUT Adult' },
-  { value: 'Youth WITHOUT Adult - Middle School (Age 10yrs-14yrs)', label: 'Middle School (Age 10yrs-14yrs)', group: 'Youth WITHOUT Adult' },
-  { value: 'Youth WITHOUT Adult - High School (Age 14yrs-18yrs)', label: 'High School (Age 14yrs-18yrs)', group: 'Youth WITHOUT Adult' },
-  { value: 'Youth WITHOUT Adult - Homeschooling', label: 'Homeschooling', group: 'Youth WITHOUT Adult' },
-  { value: 'Youth WITHOUT Adult - Special Needs', label: 'Special Needs', group: 'Youth WITHOUT Adult' },
-  { value: 'Youth WITHOUT Adult - ADD', label: 'ADD', group: 'Youth WITHOUT Adult' },
-  { value: 'Youth WITHOUT Adult - ADHD', label: 'ADHD', group: 'Youth WITHOUT Adult' },
-  { value: 'Youth WITHOUT Adult - Asperger\'s Syndrome', label: 'Asperger\'s Syndrome', group: 'Youth WITHOUT Adult' },
-  { value: 'Youth WITHOUT Adult - Autism', label: 'Autism', group: 'Youth WITHOUT Adult' },
-  { value: 'Youth WITHOUT Adult - Behavioral Issues', label: 'Behavioral Issues', group: 'Youth WITHOUT Adult' },
-  { value: 'Youth WITHOUT Adult - Blind', label: 'Blind', group: 'Youth WITHOUT Adult' },
-  { value: 'Youth WITHOUT Adult - Deaf or Hard of Hearing', label: 'Deaf or Hard of Hearing', group: 'Youth WITHOUT Adult' },
-  { value: 'Youth WITHOUT Adult - Developmental Issues', label: 'Developmental Issues', group: 'Youth WITHOUT Adult' },
-  { value: 'Youth WITHOUT Adult - Down Syndrome', label: 'Down Syndrome', group: 'Youth WITHOUT Adult' },
-  { value: 'Youth WITHOUT Adult - Learning Issues', label: 'Learning Issues', group: 'Youth WITHOUT Adult' },
-  { value: 'Youth WITHOUT Adult - Medical Issues', label: 'Medical Issues', group: 'Youth WITHOUT Adult' },
-  { value: 'Youth WITHOUT Adult - Mental Health', label: 'Mental Health', group: 'Youth WITHOUT Adult' },
-  { value: 'Youth WITHOUT Adult - Processing Disorders', label: 'Processing Disorders', group: 'Youth WITHOUT Adult' },
-  { value: 'Youth WITHOUT Adult - PTSD', label: 'PTSD', group: 'Youth WITHOUT Adult' },
-  { value: 'Youth WITHOUT Adult - Sensory Impaired', label: 'Sensory Impaired', group: 'Youth WITHOUT Adult' },
-  { value: 'Youth WITHOUT Adult - Visually Impaired', label: 'Visually Impaired', group: 'Youth WITHOUT Adult' }
-];
-
 // Event Cost Types (Task 139)
 export const EVENT_COST_TYPES = [
   { value: 'free', label: 'Free' },
@@ -826,13 +978,13 @@ export const REPEAT_FREQUENCY_OPTIONS = [
   { value: 'yearly', label: 'Yearly' },
 ];
 
-// Sponsor tier options for event sponsors
+// Sponsor tier options for event sponsors (Issue #51)
 export const SPONSOR_TIERS = [
-  { value: 'Platinum', label: 'Platinum' },
-  { value: 'Gold', label: 'Gold' },
-  { value: 'Silver', label: 'Silver' },
-  { value: 'Bronze', label: 'Bronze' },
-  { value: 'Community', label: 'Community' },
+  { value: 'Tier 1', label: 'Tier 1' },
+  { value: 'Tier 2', label: 'Tier 2' },
+  { value: 'Tier 3', label: 'Tier 3' },
+  { value: 'Tier 4', label: 'Tier 4' },
+  { value: 'Tier 5', label: 'Tier 5' },
 ];
 
 // Phase 1 helper — returns feature flags for a (poi_type, listing_type) pair.

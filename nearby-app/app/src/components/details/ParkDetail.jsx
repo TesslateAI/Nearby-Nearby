@@ -4,14 +4,15 @@ import { MapPin, Navigation, Copy, Check, ExternalLink } from 'lucide-react';
 import {
   AccSection, ContentGroup, ChipList, QuickInfoRow, InfoPair,
   POIDetailLayout, QuickInfoPhotosBox, AmenitiesBox,
-  hasVal, asArray, copyToClipboard, getCoordinates, openDirections, getImages,
+  hasVal, asArray, copyToClipboard, getCoordinates, getImages,
   isYes,
 } from './shared';
 import HoursDisplay from '../common/HoursDisplay';
 import ServiceAnimalAlert from './ServiceAnimalAlert';
+import DirectionsModal from '../common/DirectionsModal';
 import { getDisplayableLocation } from '../../utils/getDisplayableLocation';
 import { isPaidTier } from '../../utils/poiTier';
-import { isCurrentlyOpen } from '../../utils/hoursUtils';
+import { getOpenCloseStatusLabel } from '../../utils/hoursUtils';
 import { sanitizeHtml } from '../../utils/sanitize';
 
 /* ------------------------------------------------------------------ */
@@ -54,9 +55,9 @@ function buildSections(poi, helpers) {
       hasVal(poi.hours) && (
         <ContentGroup key="hours" title="Hours">
           <div className="acc_content_text">
+            {/* Issue #70: holiday_hours top-level field removed; holidays live in hours.holidays */}
             <HoursDisplay
               hours={poi.hours}
-              holidayHours={poi.holiday_hours}
               appointmentBookingUrl={poi.appointment_booking_url}
               appointmentRequired={poi.hours_but_appointment_required}
               hoursNotes={poi.hours_notes}
@@ -186,7 +187,8 @@ function buildSections(poi, helpers) {
 
   /* WHEELCHAIR + MOBILITY ACCESS */
   {
-    const col1 = hasVal(poi.wheelchair_accessible) ? [<ContentGroup key="wa" title="Wheelchair Accessible"><ChipList items={poi.wheelchair_accessible} /></ContentGroup>] : [];
+    // wheelchair_accessible chip removed — column dropped (Issue #45 PR2 Migration B)
+    const col1 = [];
     const col2 = hasVal(poi.wheelchair_details) ? [<ContentGroup key="wd"><div className="acc_content_text" dangerouslySetInnerHTML={{ __html: sanitizeHtml(poi.wheelchair_details) }} /></ContentGroup>] : [];
     if (col1.length || col2.length) out.push({ id: 'mobility_access', title: 'Wheelchair and Mobility Access', col1, col2 });
   }
@@ -339,14 +341,20 @@ function buildSections(poi, helpers) {
 export default function ParkDetail({ poi }) {
   const [copiedCoords, setCopiedCoords] = useState(false);
   const [copiedAddress, setCopiedAddress] = useState(false);
+  const [directionsOpen, setDirectionsOpen] = useState(false);
 
   const displayLoc = getDisplayableLocation(poi);
   const paid = isPaidTier(poi);
   const coords = getCoordinates(poi, displayLoc.hideExact);
   const images = useMemo(() => getImages(poi), [poi]);
-  const openStatus = poi.hours ? isCurrentlyOpen(poi.hours) : null;
+  const _coords = poi?.location?.coordinates;
+  const _lat = Array.isArray(_coords) ? _coords[1] : null;
+  const _lng = Array.isArray(_coords) ? _coords[0] : null;
+  const { variant: _statusVariant, label: _statusLabel } = poi.hours
+    ? getOpenCloseStatusLabel(poi.hours, new Date(), _lat, _lng)
+    : { variant: null, label: null };
 
-  const handleDirections = () => openDirections(poi, coords);
+  const handleDirections = () => setDirectionsOpen(true);
   const handleCopyCoords = async () => {
     if (!coords) return;
     if (await copyToClipboard(`${coords.lat}, ${coords.lng}`)) {
@@ -378,13 +386,12 @@ export default function ParkDetail({ poi }) {
   });
 
   return (
+    <>
     <POIDetailLayout
       poi={poi}
       mainCategory={subtitle}
-      statusVariant={openStatus ? (openStatus.isOpen ? 'open' : 'closed') : undefined}
-      statusLabel={openStatus ? (openStatus.isOpen
-        ? (openStatus.status ? `Open Now – ${openStatus.status}` : 'Open Now')
-        : (openStatus.status || 'Closed')) : undefined}
+      statusVariant={_statusVariant || undefined}
+      statusLabel={_statusLabel}
     >
       {({ images: imgs, openLightbox }) => (
         <>
@@ -423,5 +430,13 @@ export default function ParkDetail({ poi }) {
         </>
       )}
     </POIDetailLayout>
+    <DirectionsModal
+      isOpen={directionsOpen}
+      onClose={() => setDirectionsOpen(false)}
+      poiName={poi?.name}
+      coords={coords}
+      poi={poi}
+    />
+    </>
   );
 }

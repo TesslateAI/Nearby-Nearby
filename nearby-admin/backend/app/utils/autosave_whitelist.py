@@ -79,17 +79,20 @@ AUTOSAVE_ALLOWED_FIELDS: set[str] = {
     'parking_types',
     'parking_locations',
     'parking_notes',
-    'public_transit_info',
+    # 'public_transit_info' removed — renamed to _deprecated_public_transit_info (Migration A #33)
     'expect_to_pay_parking',
 
     # Additional info
     'downloadable_maps',
     'payment_methods',
-    'key_facilities',
+    # 'key_facilities' removed — renamed to _deprecated_key_facilities (Migration A #34)
     'alcohol_options',
     'alcohol_policy_details',
     'alcohol_available',
-    'wheelchair_accessible',
+    'alcohol_availability',  # Issue #69 — granular alcohol types
+    'byob_allowed',          # Issue #69
+    'alcohol_notes',         # Issue #69
+    # 'wheelchair_accessible' removed — column dropped (Issue #45 PR2 Migration B)
     'wheelchair_details',
     'accessible_parking_details',
     'accessible_restroom',
@@ -155,7 +158,8 @@ AUTOSAVE_ALLOWED_FIELDS: set[str] = {
     'appointment_booking_url',
     'hours_but_appointment_required',
     'hours',
-    'holiday_hours',
+    # 'holiday_hours' — DEPRECATED (Issue #70). Use hours.holidays inside
+    # the `hours` JSONB blob instead.
 
     # Services / community
     'service_locations',
@@ -169,7 +173,7 @@ AUTOSAVE_ALLOWED_FIELDS: set[str] = {
     'playground_types',
     'playground_surface_types',
     'playground_notes',
-    'playground_location',
+    'playground_locations',
     'playground_age_groups',
     'playground_ada_checklist',
     'inclusive_playground',
@@ -221,11 +225,8 @@ AUTOSAVE_ALLOWED_FIELDS: set[str] = {
     'trailhead_location',
     'trailhead_latitude',
     'trailhead_longitude',
-    'trailhead_entrance_photo',
-    'trailhead_exit_location',
-    'trail_exit_latitude',
-    'trail_exit_longitude',
-    'trailhead_exit_photo',
+    # trailhead_entrance_photo / trailhead_exit_photo / trailhead_exit_location /
+    # trail_exit_latitude / trail_exit_longitude dropped by migration w63c_001.
     'trail_markings',
     'trailhead_access_details',
     'downloadable_trail_map',
@@ -239,6 +240,7 @@ AUTOSAVE_ALLOWED_FIELDS: set[str] = {
     'trail_guide_notes',
     'trail_lighting',
     'access_points',
+    'trail_entry_notes',
 
     # --- Event subtype ---
     'start_datetime',
@@ -270,7 +272,8 @@ AUTOSAVE_ALLOWED_FIELDS: set[str] = {
     'contact_organizer_toggle',
     'new_event_link',
     'rescheduled_from_event_id',
-    'primary_display_category',
+    # 'primary_display_category' — DEPRECATED (Issue #42). Use main_category_id
+    # via the canonical POI categories association instead.
     'organizer_email',
     'organizer_phone',
     'organizer_website',

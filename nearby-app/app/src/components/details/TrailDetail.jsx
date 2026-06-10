@@ -9,7 +9,8 @@ import {
 } from './shared';
 import HoursDisplay from '../common/HoursDisplay';
 import ServiceAnimalAlert from './ServiceAnimalAlert';
-import { isCurrentlyOpen } from '../../utils/hoursUtils';
+import DirectionsModal from '../common/DirectionsModal';
+import { getOpenCloseStatusLabel } from '../../utils/hoursUtils';
 import { getDisplayableLocation } from '../../utils/getDisplayableLocation';
 import { isPaidTier } from '../../utils/poiTier';
 import { sanitizeHtml } from '../../utils/sanitize';
@@ -31,6 +32,7 @@ const cap = (s) => (typeof s === 'string' && s.length > 0 ? s[0].toUpperCase() +
 export default function TrailDetail({ poi }) {
   const [copiedCoords, setCopiedCoords] = useState(false);
   const [copiedAddress, setCopiedAddress] = useState(false);
+  const [directionsOpen, setDirectionsOpen] = useState(false);
 
   const displayLoc = getDisplayableLocation(poi);
   const trail = poi?.trail || {};
@@ -48,13 +50,7 @@ export default function TrailDetail({ poi }) {
   };
   const coords = getCoords();
 
-  const handleDirections = () => {
-    if (coords) window.open(`https://www.google.com/maps/dir/?api=1&destination=${coords.lat},${coords.lng}`, '_blank');
-    else if (poi.address_street) {
-      const addr = encodeURIComponent([poi.address_street, poi.address_city, poi.address_state, poi.address_zip].filter(Boolean).join(', '));
-      window.open(`https://www.google.com/maps/dir/?api=1&destination=${addr}`, '_blank');
-    }
-  };
+  const handleDirections = () => setDirectionsOpen(true);
   const handleCopyCoords = async () => {
     if (!coords) return;
     if (await copyToClipboard(`${coords.lat}, ${coords.lng}`)) { setCopiedCoords(true); setTimeout(() => setCopiedCoords(false), 2000); }
@@ -72,8 +68,12 @@ export default function TrailDetail({ poi }) {
   if (trail.difficulty) subtitleParts.push(cap(trail.difficulty));
   const subtitleText = subtitleParts.join(', ');
 
-  const openStatus = poi.hours ? isCurrentlyOpen(poi.hours) : null;
-  const statusLabel = openStatus?.isOpen ? 'Fully Open' : (openStatus ? 'Closed' : (poi.status || 'Open'));
+  const _coords = poi?.location?.coordinates;
+  const _lat = Array.isArray(_coords) ? _coords[1] : null;
+  const _lng = Array.isArray(_coords) ? _coords[0] : null;
+  const { variant: statusVariant, label: statusLabel } = poi.hours
+    ? getOpenCloseStatusLabel(poi.hours, new Date(), _lat, _lng)
+    : { variant: null, label: null };
 
   const relList = poi.poi_relationships || poi.relationships || [];
   const trailInParkRel = Array.isArray(relList) ? relList.find((r) => (r.relationship_type || r.type) === 'trail_in_park') : null;
@@ -100,7 +100,8 @@ export default function TrailDetail({ poi }) {
     hasVal(poi.hours) && (
       <ContentGroup key="hours" title="Hours">
         <div className="acc_content_text">
-          <HoursDisplay hours={poi.hours} holidayHours={poi.holiday_hours} appointmentBookingUrl={poi.appointment_booking_url} appointmentRequired={poi.hours_but_appointment_required} hoursNotes={poi.hours_notes} />
+          {/* Issue #70: holiday_hours top-level field removed; holidays live in hours.holidays */}
+          <HoursDisplay hours={poi.hours} appointmentBookingUrl={poi.appointment_booking_url} appointmentRequired={poi.hours_but_appointment_required} hoursNotes={poi.hours_notes} />
         </div>
       </ContentGroup>
     ),
@@ -193,9 +194,10 @@ export default function TrailDetail({ poi }) {
       col1: [hasVal(poi.public_toilets) && <ContentGroup key="pt" title="Available"><ChipList items={poi.public_toilets} /></ContentGroup>, hasVal(poi.toilet_description) && <ContentGroup key="td" title="Details"><div className="acc_content_text" dangerouslySetInnerHTML={{ __html: sanitizeHtml(poi.toilet_description) }} /></ContentGroup>].filter(Boolean),
       col2: [hasVal(poi.accessible_restroom_details) && <ContentGroup key="ada" title="ADA Accessible Restrooms"><ChipList items={poi.accessible_restroom_details} /></ContentGroup>].filter(Boolean),
     },
-    (hasVal(poi.wheelchair_accessible) || hasVal(poi.wheelchair_details)) && {
+    // wheelchair_accessible chip removed — column dropped (Issue #45 PR2 Migration B)
+    hasVal(poi.wheelchair_details) && {
       id: 'mobility', title: 'Wheelchair and Mobility Access',
-      col1: [hasVal(poi.wheelchair_accessible) && <ContentGroup key="wa" title="Wheelchair"><div className="acc_content_text">{asArray(poi.wheelchair_accessible).join(', ')}</div></ContentGroup>, hasVal(poi.wheelchair_details) && <ContentGroup key="wd" title="Details"><div className="acc_content_text" dangerouslySetInnerHTML={{ __html: sanitizeHtml(poi.wheelchair_details) }} /></ContentGroup>].filter(Boolean),
+      col1: [hasVal(poi.wheelchair_details) && <ContentGroup key="wd" title="Details"><div className="acc_content_text" dangerouslySetInnerHTML={{ __html: sanitizeHtml(poi.wheelchair_details) }} /></ContentGroup>].filter(Boolean),
       col2: [hasVal(poi.amenities?.mobility_access) && <ContentGroup key="ma" title="Mobility Access"><ChipList items={poi.amenities.mobility_access} /></ContentGroup>].filter(Boolean),
     },
     (hasVal(poi.pet_options) || hasVal(poi.pet_policy)) && {
@@ -226,10 +228,11 @@ export default function TrailDetail({ poi }) {
   ].filter(Boolean);
 
   return (
+    <>
     <POIDetailLayout
       poi={poi}
       mainCategory={subtitleText}
-      statusVariant={statusLabel && /open/i.test(statusLabel) ? 'open' : (statusLabel ? 'closed' : undefined)}
+      statusVariant={statusVariant || undefined}
       statusLabel={statusLabel}
     >
       {({ images: imgs, openLightbox }) => (
@@ -260,5 +263,13 @@ export default function TrailDetail({ poi }) {
         </>
       )}
     </POIDetailLayout>
+    <DirectionsModal
+      isOpen={directionsOpen}
+      onClose={() => setDirectionsOpen(false)}
+      poiName={poi?.name}
+      coords={coords}
+      poi={poi}
+    />
+    </>
   );
 }

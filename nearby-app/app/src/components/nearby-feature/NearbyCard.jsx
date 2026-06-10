@@ -1,6 +1,7 @@
 import { forwardRef } from 'react';
 import { getDisplayableLocation } from '../../utils/getDisplayableLocation';
 import { isPaidTier } from '../../utils/poiTier';
+import { getOpenCloseStatusLabel, getEffectiveHoursForDate, formatDayHours } from '../../utils/hoursUtils';
 import AmenityPillStrip from '../details/AmenityPillStrip';
 import './NearbyCard.css';
 
@@ -46,54 +47,25 @@ function getHoursForDay(hours, dayName) {
   return null;
 }
 
-// Build the template-style hours line: "Open now - Until 9:00 PM" / "Closed - Opens 8:00 AM" / "Closed today"
-// When `selectedDate` is set, we don't try to compute "now" — just show the day's hours.
-function getStatusLine(hours, selectedDate) {
+// Build the contextual hours status line.
+// When `selectedDate` is set (future date), just show the day's range — "now" doesn't apply.
+// When no selectedDate, delegates to getOpenCloseStatusLabel for dawn/dusk-aware output.
+function getStatusLine(hours, selectedDate, lat, lng) {
   if (!hours || typeof hours !== 'object') return null;
-  const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-  const refDate = selectedDate ? new Date(selectedDate + 'T12:00:00') : new Date();
-  const dayName = days[refDate.getDay()];
-  const reg = hours.regular && typeof hours.regular === 'object' ? hours.regular : null;
-  if (!reg) return getHoursForDay(hours, dayName);
 
-  const today = reg[dayName] || reg[dayName.charAt(0).toUpperCase() + dayName.slice(1)];
-  if (!today) return null;
-  if (today.status === 'closed' || today.status === 'Closed') return 'Closed today';
-
-  const periods = Array.isArray(today.periods) ? today.periods : [];
-  if (today.status !== 'open' || periods.length === 0) return null;
-
-  // For a future date, just show the first period range — "now" doesn't apply.
+  // For a user-selected future date, show the day's hours range without "now" context.
   if (selectedDate) {
-    const p = periods[0];
-    if (p.open?.time && p.close?.time) return `${formatTime(p.open.time)} - ${formatTime(p.close.time)}`;
-    return null;
+    const refDate = new Date(selectedDate + 'T12:00:00');
+    const { hours: dayHours } = getEffectiveHoursForDate(hours, refDate);
+    if (!dayHours) return null;
+    const formatted = formatDayHours(dayHours);
+    if (!formatted || formatted === 'Hours not set') return null;
+    return formatted;
   }
 
-  const now = new Date();
-  const nowMins = now.getHours() * 60 + now.getMinutes();
-  const toMins = (t) => {
-    if (!t) return null;
-    const [h, m] = t.split(':').map(Number);
-    return h * 60 + (m || 0);
-  };
-
-  for (const p of periods) {
-    const openM = toMins(p.open?.time);
-    const closeM = toMins(p.close?.time);
-    if (openM == null || closeM == null) continue;
-    if (nowMins >= openM && nowMins < closeM) {
-      return `Open now - Until ${formatTime(p.close.time)}`;
-    }
-  }
-  // Not open right now — surface next open slot today, otherwise generic "Closed".
-  for (const p of periods) {
-    const openM = toMins(p.open?.time);
-    if (openM != null && nowMins < openM) {
-      return `Closed - Opens ${formatTime(p.open.time)}`;
-    }
-  }
-  return 'Closed';
+  // Real-time path — use the single source of truth.
+  const { label } = getOpenCloseStatusLabel(hours, new Date(), lat, lng);
+  return label || null;
 }
 
 // Format 24h time to 12h
@@ -171,7 +143,7 @@ function hasAmenity(values) {
 function getAmenities(poi) {
   const amenities = [];
   if (hasAmenity(poi.public_toilets))        amenities.push({ icon: <RestroomIcon />,  title: 'Public Restrooms',     key: 'restroom' });
-  if (hasAmenity(poi.wheelchair_accessible)) amenities.push({ icon: <WheelchairIcon />, title: 'Wheelchair Accessible', key: 'wheelchair' });
+  // wheelchair amenity icon removed — wheelchair_accessible column dropped (Issue #45 PR2 Migration B)
   if (hasAmenity(poi.wifi_options))          amenities.push({ icon: <WifiIcon />,       title: 'WiFi Available',        key: 'wifi' });
   if (hasAmenity(poi.pet_options))           amenities.push({ icon: <PetIcon />,        title: 'Pet Friendly',          key: 'pet' });
   return amenities;
@@ -198,8 +170,13 @@ const NearbyCard = forwardRef(function NearbyCard({ poi, index, totalCount = 0, 
   // Get distance display
   const distance = formatDistance(poi.distance_meters);
 
-  // Status line — "Open now - Until 9:00 PM" / "Closed today" / etc. Events use their own date row.
-  const statusLine = !isEvent ? getStatusLine(poi.hours, selectedDate) : null;
+  // Coordinates for dawn/dusk-aware status (GeoJSON order: [lng, lat])
+  const _poiCoords = poi?.location?.coordinates;
+  const _poiLat = Array.isArray(_poiCoords) ? _poiCoords[1] : null;
+  const _poiLng = Array.isArray(_poiCoords) ? _poiCoords[0] : null;
+
+  // Status line — "Open until 8:00 PM" / "Closed · Opens 9am" / etc. Events use their own date row.
+  const statusLine = !isEvent ? getStatusLine(poi.hours, selectedDate, _poiLat, _poiLng) : null;
 
   // City, ST line ("Pittsboro, NC")
   const city = poi.address_city;

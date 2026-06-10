@@ -50,8 +50,8 @@ PARKING_OPTIONS = [
     "Nearby Public Parking Lot",
     "Overflow Parking",
     "Overnight Parking Permitted",
-    "Oversized + Wide Load Vehicle",
-    "Pull-Through Parking",
+    "Oversized + Wide Load Vehicle (military, heavy equipment, double wide)",
+    "Pull-Through Parking (for RVs and large vehicles)",
     "RV Parking (parking only — no hookups)",
     "Seasonal Parking Only",
     "Semi Truck + 18 Wheeler (cab and trailer)",
@@ -239,86 +239,101 @@ ALCOHOL_AVAILABLE_OPTIONS = [
     {"value": "nearby", "label": "Adjacent/Nearby Available"},
 ]
 
-# REPLACED — 38 values
+# REPLACED — 43 values (Issue #48)
 PET_OPTIONS = [
-    "Pet Friendly",
-    "Dogs Welcome",
-    "Cats Welcome",
-    "Small Pets Welcome",
-    "Dogs On Leash Required",
-    "Dogs Off Leash Permitted",
-    "Dog Park On Site",
-    "Dog Waste Bags Provided",
-    "Dog Waste Stations",
-    "Dog Water Bowls Provided",
-    "Dog Treats Available",
-    "Dog Menu Available",
-    "Pet Patio + Outdoor Only",
-    "Pet Patio + Covered",
-    "Service Animals Welcome",
-    "Emotional Support Animals Welcome",
-    "No Pets Allowed",
-    "No Dogs Allowed",
-    "No Cats Allowed",
-    "Small Dogs Only",
-    "Large Dogs Welcome",
-    "Breed Restrictions Apply",
-    "Weight Limits Apply",
-    "Vaccination Records Required",
-    "Pet Deposit Required",
-    "Pet Fee Required",
-    "Pet Sitting Available",
-    "Pet Boarding Available",
-    "Pet Grooming Available",
-    "Horses Welcome",
+    "Any Well Behaved Pet",
+    "Breed Restriction — see notes",
+    "Cats Allowed",
+    "Clean Up Stations",
+    "Dogs Allowed",
+    "Dogs Only",
+    "Fenced in Area",
+    "Hot Surface Warning",
     "Horse Boarding",
+    "Horses Welcome",
+    "Kennels Available for Rent",
+    "Leash Required — 6 Feet Maximum",
+    "Leash Required — Length Not Specified",
     "Livestock Permitted",
-    "Exotic Pets Welcome",
-    "Pet Washing Station",
+    "Maximum Number of Dogs Per Person — see notes",
+    "No Pets Left Unattended",
+    "Off Leash",
+    "Pet Friendly Seating Areas",
+    "Pack Out Waste — No Trash Cans Available",
     "Pet Relief Area",
-    "Pet Photo Ops",
-    "Pet Events Hosted",
-    "Pets in Carriers Only",
+    "Pet Waste Bags Available",
+    "Trash Cans Available for Waste Bags",
+    "Pet Fee Required",
+    "Pet Swimming Area — Beach Access",
+    "Pet Swimming Area — Designated + Marked",
+    "Pet Swimming Area — Lake or Pond Access",
+    "Pet Swimming Area — River or Creek Access",
+    "Pet Washing Station",
+    "Pets Allowed in Designated Areas Only",
+    "Small Pets Only",
+    "Size Restriction — Under 25 lbs",
+    "Size Restriction — Under 50 lbs",
+    "Size Restriction — No Size Restriction",
+    "Pets Must Stay on Trail",
+    "Pets Not Allowed in Buildings",
+    "Seasonal Restrictions Apply — see notes",
+    "Shade Available Along Route",
+    "Spayed + Neutered Required",
+    "Toxic Plant Warning",
+    "Vaccination Proof Required",
+    "Voice Control Accepted in Designated Areas",
+    "Water Source",
+    "Wildlife Hazard Area — see notes",
 ]
 
-# REPLACED — 18 values
+# REPLACED — 19 values (Wave 3 #47)
 PUBLIC_TOILET_OPTIONS = [
-    "Accessible Restroom",
-    "Men's Restroom",
-    "Women's Restroom",
-    "All-Gender / Unisex",
+    "Single Stall",
+    "Multi Stall",
     "Family Restroom",
     "Baby Changing Station",
-    "Flush Toilets",
+    "Wheelchair + ADA Accessible",
+    "All Gender",
+    "Climate Controlled Restroom",
+    "Key Required",
+    "Code Required",
+    "Customers Only",
+    "Attendant on Duty",
+    "Pay Toilet",
+    "Porta Potti",
+    "Outdoor + Pit Toilet",
     "Vault Toilet",
-    "Pit Toilet",
-    "Portable Toilet",
-    "Composting Toilet",
-    "Seasonal Restroom",
-    "Restroom at Trailhead",
-    "Restroom On Trail",
-    "Outdoor Shower",
-    "Indoor Shower",
-    "Key/Code Required",
-    "No Public Restroom",
+    "Trailer Restroom",
+    "Seasonal Only",
+    "24 Hour Access",
 ]
 
+# Grouped ADA restroom checklist (Wave 3 #47).
+# Each entry is {"group": <header>, "label": <checkbox label>}. The form groups
+# items by `group` header. `compute_accessible_restroom` substring-matches the
+# `label` text — keep label wording stable across backend + frontend.
 RESTROOM_ADA_CHECKLIST = [
-    "Accessible stall present",
-    "Stall 60 in. turning radius or greater",
-    "Grab bars installed",
-    "Accessible route to restroom",
-    "Door hardware lever or auto",
-    "Sink height 34 in. or lower",
-    "Sink knee clearance",
-    "Mirror 40 in. to bottom edge or lower",
-    "Accessible soap + towel dispenser",
-    "Accessible baby changing",
-    "Emergency pull cord",
-    "Firm stable flooring",
-    "Signage with braille",
-    "Lighting adequate",
-    "Adult changing table",
+    # Space + Size
+    {"group": "Space + Size", "label": "Accessible stall size — minimum 60\" x 56\" (wall-mounted toilet) or 60\" x 59\" (floor-mounted)"},
+    {"group": "Space + Size", "label": "60 inch turning radius clear floor space"},
+    # Grab Bars
+    {"group": "Grab Bars", "label": "Side grab bar installed"},
+    {"group": "Grab Bars", "label": "Rear grab bar installed"},
+    {"group": "Grab Bars", "label": "Grab bars mounted 33-36 inches from floor"},
+    # Door
+    {"group": "Door", "label": "Wide door — minimum 32 inches clear width"},
+    {"group": "Door", "label": "Outward swinging or sliding door"},
+    {"group": "Door", "label": "Lever or loop door handle"},
+    # Toilet
+    {"group": "Toilet", "label": "Accessible toilet height — 17-19 inches from floor"},
+    # Sink + Fixtures
+    {"group": "Sink + Fixtures", "label": "Sink height 34 inches or lower"},
+    {"group": "Sink + Fixtures", "label": "Clear knee space under sink"},
+    {"group": "Sink + Fixtures", "label": "Lever or sensor faucet"},
+    {"group": "Sink + Fixtures", "label": "No exposed hot water or drain pipes under sink"},
+    # General
+    {"group": "General", "label": "Level entry — no lip or step"},
+    {"group": "General", "label": "Accessible route to restroom"},
 ]
 
 # REPLACED — 16 values
@@ -458,11 +473,48 @@ IDEAL_FOR_LOCAL_SPECIAL = [
     "Takeout Available",
     "Veteran Owned",
     "Virtual Consults Available",
-    "Virtual Events Available",
     "Virtual Services Available",
     "Walk Ins Welcome",
     "We Come to You",
     "Volunteer Opportunities",
+]
+
+# Issue #43 — 32 condition checkboxes. Multi-select. Stored under
+# ideal_for.special_needs (JSONB). Backend label: "Supports These Special Needs".
+# Frontend (public) label: "Special Needs Supported".
+IDEAL_FOR_SPECIAL_NEEDS = [
+    "Acquired Disability",
+    "ADHD",
+    "Anxiety Disorders",
+    "Asperger's Syndrome",
+    "Autism",
+    "Behavioral Issues",
+    "Blind + Low Vision",
+    "Cerebral Palsy",
+    "Chronic Illness",
+    "Deaf or Hard of Hearing",
+    "Dementia + Memory Care",
+    "Developmental Issues",
+    "Down Syndrome",
+    "Epilepsy + Seizure Disorders",
+    "Intellectual Disability",
+    "Learning Issues",
+    "Medical Issues",
+    "Mental Health",
+    "Mobility Impaired",
+    "Multiple Sclerosis",
+    "Muscular Dystrophy",
+    "Nonverbal",
+    "OCD",
+    "ODD",
+    "Processing Disorders",
+    "PTSD",
+    "Schizophrenia",
+    "Selective Mutism",
+    "Sensory Impaired",
+    "Speech + Language Disorders",
+    "Tourette Syndrome",
+    "Traumatic Brain Injury",
 ]
 
 TRAIL_ROUTE_TYPES = [
@@ -486,12 +538,15 @@ TRAIL_LIGHTING_OPTIONS = [
     {"value": "dusk_to_dawn", "label": "Dusk-to-Dawn"},
 ]
 
-# IDEAL_FOR_KEY_OPTIONS: flat union so existing importers keep working.
+# IDEAL_FOR_KEY_OPTIONS: flat union of all 5 Ideal For groups (incl. Special Needs).
+# Kept as a flat list so existing data-pipeline importers keep working, but the
+# admin form no longer surfaces it as a flat-checkbox UI — see IdealForGrouped.
 IDEAL_FOR_KEY_OPTIONS = (
     IDEAL_FOR_ATMOSPHERE
     + IDEAL_FOR_AGE_GROUP
     + IDEAL_FOR_SOCIAL_SETTINGS
     + IDEAL_FOR_LOCAL_SPECIAL
+    + IDEAL_FOR_SPECIAL_NEEDS
 )
 
 # ============================================================================

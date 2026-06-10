@@ -7,13 +7,14 @@ import {
 
 import {
   AccSection, QuickInfoRow, QuickInfoPhotosBox,
-  hasVal, copyToClipboard, getCoordinates, openDirections, getImages,
+  hasVal, copyToClipboard, getCoordinates, getImages,
 } from './shared';
 import InfoRow from './InfoRow';
 import ServiceAnimalAlert from './ServiceAnimalAlert';
 import EventStatusBanner from './EventStatusBanner';
 import { POIDetailLayout } from './shared';
 import { EventJsonLd } from '../seo/index';
+import DirectionsModal from '../common/DirectionsModal';
 
 import { getDisplayableLocation } from '../../utils/getDisplayableLocation';
 import { isPaidTier } from '../../utils/poiTier';
@@ -127,6 +128,7 @@ function EventDetail({ poi }) {
 
   const [copiedCoords, setCopiedCoords] = useState(false);
   const [ticketsOpen, setTicketsOpen] = useState(false);
+  const [directionsOpen, setDirectionsOpen] = useState(false);
 
   const event = poi.event || null;
   const displayLoc = getDisplayableLocation(poi);
@@ -146,7 +148,7 @@ function EventDetail({ poi }) {
   };
 
   const coords = getEventCoords();
-  const handleDirections = () => openDirections(poi, coords);
+  const handleDirections = () => setDirectionsOpen(true);
   const handleCopyCoords = async () => {
     if (!coords) return;
     if (await copyToClipboard(`${coords.lat}, ${coords.lng}`)) {
@@ -367,17 +369,11 @@ function EventDetail({ poi }) {
   };
 
   const renderWheelchair = () => {
-    if (!hasContent(poi.wheelchair_accessible) && !hasContent(poi.wheelchair_details)) return null;
+    // wheelchair_accessible chip removed — column dropped (Issue #45 PR2 Migration B)
+    if (!hasContent(poi.wheelchair_details)) return null;
     return (
       <>
-        {hasContent(poi.wheelchair_accessible) && (
-          <InfoRow label="Wheelchair Accessible">
-            {Array.isArray(poi.wheelchair_accessible) ? poi.wheelchair_accessible.join(', ') : poi.wheelchair_accessible}
-          </InfoRow>
-        )}
-        {hasContent(poi.wheelchair_details) && (
-          <InfoRow label="Details">{poi.wheelchair_details}</InfoRow>
-        )}
+        <InfoRow label="Details">{poi.wheelchair_details}</InfoRow>
       </>
     );
   };
@@ -391,7 +387,11 @@ function EventDetail({ poi }) {
             {poi.pet_options.map((p, i) => <span key={i} className="poi_chip">{p}</span>)}
           </div>
         </InfoRow>
-        {hasContent(poi.pet_policy) && <InfoRow label="Policy">{poi.pet_policy}</InfoRow>}
+        {hasContent(poi.pet_policy) && (
+          <InfoRow label="Policy">
+            <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(poi.pet_policy) }} />
+          </InfoRow>
+        )}
         <ServiceAnimalAlert />
       </>
     );
@@ -406,7 +406,11 @@ function EventDetail({ poi }) {
             {Array.isArray(poi.drone_usage) ? poi.drone_usage.join(', ') : poi.drone_usage}
           </InfoRow>
         )}
-        {hasContent(poi.drone_policy) && <InfoRow label="Policy">{poi.drone_policy}</InfoRow>}
+        {hasContent(poi.drone_policy) && (
+          <InfoRow label="Policy">
+            <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(poi.drone_policy) }} />
+          </InfoRow>
+        )}
       </>
     );
   };
@@ -439,7 +443,11 @@ function EventDetail({ poi }) {
             {Array.isArray(poi.rental_options) ? poi.rental_options.join(', ') : poi.rental_options}
           </InfoRow>
         )}
-        {hasContent(poi.rental_info) && <InfoRow label="Details">{poi.rental_info}</InfoRow>}
+        {hasContent(poi.rental_info) && (
+          <InfoRow label="Details">
+            <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(poi.rental_info) }} />
+          </InfoRow>
+        )}
       </>
     );
   };
@@ -453,10 +461,26 @@ function EventDetail({ poi }) {
     if (!hasAny) return null;
     return (
       <>
-        {hasContent(poi.locally_found) && <InfoRow label="Locally Found">{poi.locally_found}</InfoRow>}
-        {hasContent(poi.history) && <InfoRow label="History">{poi.history}</InfoRow>}
-        {hasContent(poi.history_paragraph) && <InfoRow label="History">{poi.history_paragraph}</InfoRow>}
-        {hasContent(poi.community_impact) && <InfoRow label="Community Impact">{poi.community_impact}</InfoRow>}
+        {hasContent(poi.locally_found) && (
+          <InfoRow label="Locally Found">
+            <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(poi.locally_found) }} />
+          </InfoRow>
+        )}
+        {hasContent(poi.history) && (
+          <InfoRow label="History">
+            <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(poi.history) }} />
+          </InfoRow>
+        )}
+        {hasContent(poi.history_paragraph) && (
+          <InfoRow label="History">
+            <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(poi.history_paragraph) }} />
+          </InfoRow>
+        )}
+        {hasContent(poi.community_impact) && (
+          <InfoRow label="Community Impact">
+            <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(poi.community_impact) }} />
+          </InfoRow>
+        )}
       </>
     );
   };
@@ -601,6 +625,7 @@ function EventDetail({ poi }) {
   })();
 
   return (
+    <>
     <POIDetailLayout
       poi={poi}
       mainCategory={dateTimeLine}
@@ -683,6 +708,14 @@ function EventDetail({ poi }) {
         </>
       )}
     </POIDetailLayout>
+    <DirectionsModal
+      isOpen={directionsOpen}
+      onClose={() => setDirectionsOpen(false)}
+      poiName={poi?.name}
+      coords={coords}
+      poi={poi}
+    />
+    </>
   );
 }
 

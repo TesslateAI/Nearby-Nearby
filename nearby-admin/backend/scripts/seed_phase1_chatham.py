@@ -109,10 +109,13 @@ BASE_SCALAR_FIELDS = {
     "playground_available", "history_paragraph",
 }
 JSONB_FIELDS = {
-    "arrival_methods", "hours", "holiday_hours", "amenities", "contact_info",
+    # Issue #70: holiday_hours deprecated; holidays nested in hours.holidays.
+    "arrival_methods", "hours", "amenities", "contact_info",
     "compliance", "photos", "custom_fields", "ideal_for", "pet_options",
     "public_toilets", "wifi_options", "parking_types", "payment_methods",
-    "key_facilities", "wheelchair_accessible", "accessible_parking_details",
+    # "key_facilities" removed — renamed _deprecated_key_facilities (Migration A #34)
+    # "wheelchair_accessible" removed — column dropped (Issue #45 PR2 Migration B)
+    "accessible_parking_details",
     "accessible_restroom_details", "playground_types", "playground_surface_types",
     "playground_age_groups", "playground_ada_checklist", "business_amenities",
     "discounts", "entertainment_options", "youth_amenities", "facilities_options",
@@ -220,8 +223,9 @@ def seed_businesses(db):
             "friday": [{"open": "07:00", "close": "18:00"}, {"open": "19:00", "close": "21:00"}],
             "saturday": [{"open": "08:00", "close": "14:00"}],
             "sunday": [{"open": "08:00", "close": "13:00"}],
+            # Issue #70: holidays nested under hours.holidays
+            "holidays": {"christmas": "closed", "thanksgiving": {"open": "08:00", "close": "12:00"}},
         },
-        holiday_hours={"christmas": "closed", "thanksgiving": {"open": "08:00", "close": "12:00"}},
         wifi_options=["Free Wifi"],
         pet_options=["Dogs Welcome", "Service Animals Welcome"],
         public_toilets=["Flush Toilets", "All-Gender / Unisex"],
@@ -268,8 +272,9 @@ def seed_businesses(db):
                "thursday": [{"open": "16:00", "close": "22:00"}],
                "friday": [{"open": "15:00", "close": "23:00"}],
                "saturday": [{"open": "12:00", "close": "23:00"}],
-               "sunday": [{"open": "12:00", "close": "20:00"}]},
-        holiday_hours={"new_years_day": "closed"},
+               "sunday": [{"open": "12:00", "close": "20:00"}],
+               # Issue #70: holidays nested under hours.holidays
+               "holidays": {"new_years_day": "closed"}},
         wifi_options=["Free Wifi"],
         pet_options=["Pet Friendly", "Dogs Welcome", "Dog Water Bowls Provided"],
         public_toilets=["Accessible Restroom", "All-Gender / Unisex"],
@@ -502,8 +507,9 @@ def seed_parks(db):
                "thursday": [{"open": "06:00", "close": "22:00"}],
                "friday": [{"open": "06:00", "close": "22:00"}],
                "saturday": [{"open": "06:00", "close": "22:00"}],
-               "sunday": [{"open": "06:00", "close": "22:00"}]},
-        holiday_hours={"christmas": "closed"},
+               "sunday": [{"open": "06:00", "close": "22:00"}],
+               # Issue #70: holidays nested under hours.holidays
+               "holidays": {"christmas": "closed"}},
         cost="0", park_entry_notes="Two entrances: main gate on Chatham Park Dr, secondary off Robeson St. Restrooms at main pavilion.",
         pet_options=["Dog Friendly", "Dogs On Leash Required", "Dog Waste Stations"],
         public_toilets=["Accessible Restroom", "Family Restroom", "Flush Toilets", "Baby Changing Station"],
@@ -526,8 +532,8 @@ def seed_parks(db):
             "Shade over play area",
             "Accessible seating for caregivers",
         ],
-        wheelchair_accessible=["Paved Paths", "Accessible Parking", "Accessible Restroom"],
-        key_facilities=["Playground", "Restrooms", "Paved Trail", "Picnic Shelter"],
+        # wheelchair_accessible removed — column dropped (Issue #45 PR2 Migration B)
+        # key_facilities removed — renamed _deprecated_key_facilities (Migration A #34)
         facilities_options=["Covered Shelter + Pavilion", "Drinking Fountain", "Benches"],
         natural_features=["Creek", "Hardwood Forest"],
         things_to_do=["Playground", "Walk", "Picnic", "Birdwatch"],
@@ -569,7 +575,7 @@ def seed_parks(db):
         public_toilets=["Vault Toilet", "Accessible Restroom", "Seasonal Restroom"],
         accessible_parking_details=["Accessible parking within reasonable distance", "Accessible parking on firm stable surface"],
         accessible_restroom_details={"Accessible route to restroom": True, "Firm stable flooring": True},
-        key_facilities=["Boat Launch", "Swim Area", "Fishing Pier", "Picnic Shelter"],
+        # key_facilities removed — renamed _deprecated_key_facilities (Migration A #34)
         natural_features=["Lake", "Pine Forest"],
         things_to_do=["Swim", "Fish", "Boat", "Picnic"],
         payment_methods=["Cash", "Check", "Fee Station + Self-Pay Envelope"],
@@ -602,7 +608,7 @@ def seed_parks(db):
         pet_options=["Dog Park On Site", "Dogs Off Leash Permitted", "Dog Waste Stations",
                      "Dog Waste Bags Provided", "Dog Water Bowls Provided", "Small Dogs Only"],
         public_toilets=["Portable Toilet"],
-        key_facilities=["Dog Park", "Water Fountain", "Shade Structures"],
+        # key_facilities removed — renamed _deprecated_key_facilities (Migration A #34)
         ideal_for=["Pet Friendly", "Community Gathering Spot", "Solo Friendly"],
     ))
 
@@ -657,7 +663,7 @@ def seed_parks(db):
         public_toilets=["Accessible Restroom", "All-Gender / Unisex", "Flush Toilets"],
         accessible_parking_details=["Dedicated accessible parking spaces on site"],
         accessible_restroom_details={"Accessible stall present": True, "Grab bars installed": True},
-        key_facilities=["Visitor Center", "Picnic Area", "Historic Site"],
+        # key_facilities removed — renamed _deprecated_key_facilities (Migration A #34)
         ideal_for=["Historic + Heritage", "Quiet + Reflective", "Peaceful + Secluded", "Families"],
         history_paragraph="The Bynum Mill operated from 1872 to 1982, producing cotton textiles along the Haw River. Restored as a public park in 2015.",
     ))
@@ -842,7 +848,7 @@ def seed_trails(db, parks):
         cost="0",
         pet_options=["Dog Friendly", "Dogs On Leash Required"],
         public_toilets=["Accessible Restroom"],
-        wheelchair_accessible=["Paved Paths", "Accessible Parking"],
+        # wheelchair_accessible removed — column dropped (Issue #45 PR2 Migration B)
         accessible_parking_details=["Dedicated accessible parking spaces on site", "Accessible route from parking to main entrance"],
         ideal_for=["Night Owls Open Late (past 10pm)", "Families", "Stroller Friendly", "Solo Friendly"],
     ))

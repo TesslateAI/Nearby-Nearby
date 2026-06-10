@@ -10,13 +10,18 @@ import SEO from '../SEO';
 import { truncateText, getPOIUrl } from '../../utils/slugify';
 import { getDisplayableLocation } from '../../utils/getDisplayableLocation';
 import { isPaidTier } from '../../utils/poiTier';
-import { isCurrentlyOpen } from '../../utils/hoursUtils';
+import { getOpenCloseStatusLabel } from '../../utils/hoursUtils';
 import { sanitizeHtml } from '../../utils/sanitize';
 
 export default function GenericDetail({ poi }) {
   const paid = isPaidTier(poi);
   const displayLoc = getDisplayableLocation(poi);
-  const openStatus = poi.hours ? isCurrentlyOpen(poi.hours) : null;
+  const _coords = poi?.location?.coordinates;
+  const _lat = Array.isArray(_coords) ? _coords[1] : null;
+  const _lng = Array.isArray(_coords) ? _coords[0] : null;
+  const { variant: _statusVariant, label: _statusLabel } = poi.hours
+    ? getOpenCloseStatusLabel(poi.hours, new Date(), _lat, _lng)
+    : { variant: null, label: null };
   const images = useMemo(() => getImages(poi), [poi]);
 
   const categoryFromPoiType = (() => {
@@ -56,7 +61,8 @@ export default function GenericDetail({ poi }) {
     hasVal(poi.hours) && (
       <ContentGroup key="hours" title="Hours">
         <div className="acc_content_text">
-          <HoursDisplay hours={poi.hours} holidayHours={poi.holiday_hours}
+          {/* Issue #70: holiday_hours top-level field removed; holidays live in hours.holidays */}
+          <HoursDisplay hours={poi.hours}
             appointmentBookingUrl={poi.appointment_booking_url}
             appointmentRequired={poi.hours_but_appointment_required}
             hoursNotes={poi.hours_notes} />
@@ -110,8 +116,8 @@ export default function GenericDetail({ poi }) {
       <POIDetailLayout
         poi={poi}
         mainCategory={primaryCategory}
-        statusVariant={openStatus ? (openStatus.isOpen ? 'open' : 'closed') : undefined}
-        statusLabel={openStatus ? `${openStatus.isOpen ? 'Open Now' : 'Closed'}${openStatus.status ? ` – ${openStatus.status}` : ''}` : undefined}
+        statusVariant={_statusVariant || undefined}
+        statusLabel={_statusLabel}
       >
         {({ images: imgs, openLightbox }) => (
           <>

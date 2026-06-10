@@ -34,6 +34,13 @@ class Trail(BaseModel):
     length_text: Optional[str] = None
     difficulty: Optional[str] = None
     route_type: Optional[str] = None
+    # Issue #63 / #64 — Trailhead + Access Points consolidation.
+    trailhead_latitude: Optional[float] = None
+    trailhead_longitude: Optional[float] = None
+    trailhead_location: Optional[dict] = None
+    trailhead_access_details: Optional[str] = None
+    access_points: Optional[list] = None
+    trail_entry_notes: Optional[str] = None
     model_config = ConfigDict(from_attributes=True)
 
 class Event(BaseModel):
@@ -69,8 +76,8 @@ class Event(BaseModel):
     contact_organizer_toggle: Optional[bool] = None
     new_event_link: Optional[str] = None
     rescheduled_from_event_id: Optional[str] = None
-    # Task 137: Primary Display Category
-    primary_display_category: Optional[str] = None
+    # Task 137: Primary Display Category — DEPRECATED (Issue #42).
+    # Use `main_category` (UUID-based) from the canonical POI response instead.
     # Task 138: Extended Organizer
     organizer_email: Optional[str] = None
     organizer_phone: Optional[str] = None
@@ -140,7 +147,7 @@ class POINearbyResult(POISearchResult):
     location: Optional[PointGeometry] = None
     poi_type: Optional[str] = None
     hours: Optional[dict] = None
-    wheelchair_accessible: Optional[list] = None
+    # wheelchair_accessible - DROPPED (Issue #45 PR2 Migration B)
     wifi_options: Optional[list] = None
     pet_options: Optional[list] = None
     public_toilets: Optional[list] = None
@@ -191,7 +198,8 @@ class POIDetail(BaseModel):
 
     # Hours and Availability
     hours: Optional[Any] = None
-    holiday_hours: Optional[Any] = None
+    # holiday_hours — DEPRECATED (Issue #70). Holiday hours now live under
+    # `hours.holidays` and are surfaced by `HoursDisplay` via the nested key.
     hours_but_appointment_required: Optional[bool] = None
     appointment_booking_url: Optional[str] = None
 
@@ -210,15 +218,15 @@ class POIDetail(BaseModel):
     parking_photos: Optional[Any] = None
     expect_to_pay_parking: Optional[str] = None
     parking_lot_photo: Optional[str] = None
-    public_transit_info: Optional[str] = None
+    # public_transit_info - DEPRECATED: renamed _deprecated_public_transit_info (Migration A #33)
 
     # Accessibility
-    wheelchair_accessible: Optional[Any] = None
+    # wheelchair_accessible - DROPPED (Issue #45 PR2 Migration B)
     wheelchair_details: Optional[str] = None
 
     # Amenities and Facilities
     amenities: Optional[Any] = None
-    key_facilities: Optional[Any] = None
+    # key_facilities - DEPRECATED: renamed _deprecated_key_facilities (Migration A #34)
     facilities_options: Optional[Any] = None
     wifi_options: Optional[Any] = None
     payment_methods: Optional[Any] = None
@@ -256,7 +264,7 @@ class POIDetail(BaseModel):
     playground_surface_types: Optional[Any] = None
     playground_notes: Optional[str] = None
     playground_photos: Optional[Any] = None
-    playground_location: Optional[Any] = None
+    playground_locations: Optional[Any] = None  # Plural array; renamed by migration g67_001.
 
     # Outdoor Activities
     natural_features: Optional[Any] = None

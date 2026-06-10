@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -82,6 +82,64 @@ function AutoFitBounds({ bounds, radiusMiles }) {
   return null;
 }
 
+/**
+ * Click-to-activate scroll-wheel zoom guard.
+ * Renders a transparent overlay over the map; clicking it enables scroll-wheel zoom
+ * for the current map instance. Moving the mouse out resets to disabled so the next
+ * visit starts fresh. pointerEvents:'none' ensures marker clicks are never blocked.
+ */
+function ScrollWheelToggle() {
+  const map = useMap();
+  const [active, setActive] = useState(false);
+
+  const activate = () => {
+    map.scrollWheelZoom.enable();
+    setActive(true);
+  };
+
+  const deactivate = () => {
+    map.scrollWheelZoom.disable();
+    setActive(false);
+  };
+
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        inset: 0,
+        zIndex: 400,          // above tiles (200) and markers (300), below controls (1000)
+        pointerEvents: active ? 'none' : 'auto',
+        cursor: active ? 'default' : 'pointer',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: active ? 'transparent' : 'rgba(0,0,0,0)',
+      }}
+      onClick={activate}
+      onMouseLeave={deactivate}
+      aria-hidden="true"
+    >
+      {!active && (
+        <div
+          style={{
+            background: 'rgba(0,0,0,0.55)',
+            color: 'white',
+            padding: '6px 14px',
+            borderRadius: '4px',
+            fontSize: '13px',
+            fontWeight: 600,
+            pointerEvents: 'none',
+            opacity: 0,           // invisible by default; shown on hover via CSS
+          }}
+          className="map-scroll-hint"
+        >
+          Click map to enable scroll
+        </div>
+      )}
+    </div>
+  );
+}
+
 function Map({ currentPOI, nearbyPOIs = [], radiusMiles, onMarkerClick, highlightedId }) {
   if (!currentPOI || !currentPOI.location) {
     return (
@@ -124,7 +182,11 @@ function Map({ currentPOI, nearbyPOIs = [], radiusMiles, onMarkerClick, highligh
         center={currentCoords}
         zoom={14}
         className="leaflet-map"
-        scrollWheelZoom={true}
+        scrollWheelZoom={false}
+        zoomDelta={0.5}
+        zoomSnap={0.25}
+        wheelPxPerZoomLevel={120}
+        wheelDebounceTime={40}
         maxZoom={20} // Allow much closer zoom
         minZoom={10}
       >
@@ -136,6 +198,7 @@ function Map({ currentPOI, nearbyPOIs = [], radiusMiles, onMarkerClick, highligh
         />
 
         <AutoFitBounds bounds={allCoords} radiusMiles={radiusMiles} />
+        <ScrollWheelToggle />
 
         {/* Current POI marker - hidden when POI opts out of showing exact location */}
         {!hideCurrentExact && (

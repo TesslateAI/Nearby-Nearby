@@ -61,16 +61,19 @@ export const emptyInitialValues = {
   primary_parking_lng: null,
   primary_parking_name: '',
   // parking_photos removed - use Images table with image_type='parking'
-  public_transit_info: '',
+  // public_transit_info removed — renamed _deprecated_public_transit_info (Migration A #33)
   expect_to_pay_parking: 'no',
   // Additional Info
   downloadable_maps: [],
   payment_methods: [],
-  key_facilities: [],
+  // key_facilities removed — renamed _deprecated_key_facilities (Migration A #34)
   alcohol_available: null,
   alcohol_options: [],
   alcohol_policy_details: '',
-  wheelchair_accessible: [],
+  // Issue #69 — new persisted alcohol sub-fields (migration i69_001).
+  alcohol_availability: [],
+  byob_allowed: false,
+  alcohol_notes: '',
   wheelchair_details: '',
   smoking_options: [],
   smoking_details: '',
@@ -141,13 +144,9 @@ export const emptyInitialValues = {
     trailhead_location: null,
     trailhead_latitude: null,
     trailhead_longitude: null,
-    trailhead_entrance_photo: '',
-    // trailhead_photo removed - use Images table with image_type='trail_head'
-    trailhead_exit_location: null,
-    trail_exit_latitude: null,
-    trail_exit_longitude: null,
-    trailhead_exit_photo: '',
-    // trail_exit_photo removed - use Images table with image_type='trail_exit'
+    // trailhead_entrance_photo / trailhead_exit_photo / trailhead_exit_location /
+    // trail_exit_latitude / trail_exit_longitude dropped by migration w63c_001.
+    // Photos live in the Images table; exit data lives in access_points[].
     trail_markings: '',
     trailhead_access_details: '',
     downloadable_trail_map: '',
@@ -161,7 +160,8 @@ export const emptyInitialValues = {
   playground_surface_types: [],
   playground_notes: '',
   // playground_photos removed - use Images table with image_type='playground'
-  playground_location: null,
+  // #49: per-playground rows — { lat, lng, name?, age_groups[], ada_checklist{} }
+  playground_locations: [],
   // Parks & Trails Additional
   payphone_location: null,
   payphone_locations: [],
@@ -224,8 +224,10 @@ export const emptyInitialValues = {
     online_event_url: '',
     rescheduled_start_datetime: null,
     rescheduled_end_datetime: null,
-    // Task 137: Primary Display Category
-    primary_display_category: '',
+    // Task 137: Primary Display Category — DEPRECATED (Issue #42).
+    // Use main_category_id (canonical, UUID-based) from MainCategorySelector
+    // instead. The legacy column is being deprecated by Alembic migration
+    // g42_001.
     // Task 138: Extended Organizer
     organizer_email: '',
     organizer_phone: '',
@@ -241,10 +243,12 @@ export const emptyInitialValues = {
   // Other fields
   photos: { featured: null, gallery: [] },
   hours: {},
-  holiday_hours: {},
+  // holiday_hours — DEPRECATED (Issue #70). Holiday hours now live under
+  // `hours.holidays`; HoursSelector writes only there.
   amenities: {},
-  // Phase 1 — ideal_for is now grouped (was flat list)
-  ideal_for: { atmosphere: [], age_group: [], social_settings: [], local_special: [] },
+  // Phase 1 — ideal_for is now grouped (was flat list).
+  // Issue #43 added the special_needs group (5th).
+  ideal_for: { atmosphere: [], age_group: [], social_settings: [], local_special: [], special_needs: [] },
   contact_info: {},
   compliance: {},
   mobility_access: {},
@@ -269,8 +273,10 @@ export const emptyInitialValues = {
   accessible_parking_details: [],
   accessible_restroom: false,
   accessible_restroom_details: [],
-  playground_age_groups: [],
-  playground_ada_checklist: [],
+  // playground_age_groups + playground_ada_checklist removed from form bindings
+  // (#49). Data now lives per-row inside playground_locations[].age_groups +
+  // playground_locations[].ada_checklist. POI-level columns remain in the DB
+  // as orphans; deprecation deferred to Wave 5.
   inclusive_playground: false,
   cell_service: null,
   // Trail — new Phase 1 columns
@@ -280,5 +286,6 @@ export const emptyInitialValues = {
   qr_trail_guide: false,
   trail_guide_notes: '',
   trail_lighting: null,
-  access_points: []
+  access_points: [],
+  trail_entry_notes: ''
 };

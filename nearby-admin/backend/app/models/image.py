@@ -109,6 +109,15 @@ IMAGE_TYPE_CONFIG: Dict[ImageType, Dict[str, Any]] = {
             "medium": (400, 400)
         }
     },
+    ImageType.access_point: {
+        "max_count": 10,
+        "max_size_mb": 5,
+        "allowed_mimes": ["image/jpeg", "image/png", "image/webp"],
+        "sizes": {
+            "thumbnail": (150, 150),
+            "medium": (400, 400)
+        }
+    },
     ImageType.map: {
         "max_count": 5,
         "max_size_mb": 20,

@@ -84,9 +84,11 @@ export const NATURAL_FEATURES = [
   'Wooded'
 ];
 
-// Outdoor Types — Phase 1: consumer is now the categories API
-// (GET /api/categories?applicable_to=PARK|TRAIL). Kept as empty export so
-// existing importers don't crash.
+// Outdoor Types — DEPRECATED (Issue #68).
+// The canonical source is now the categories API
+// (`GET /categories/by-poi-type/PARK`). `OutdoorFeaturesSection.jsx` fetches
+// the live list directly. Kept as an empty export so any straggler importer
+// does not crash; new code must not import this constant.
 export const OUTDOOR_TYPES = [];
 
 // Things to Do (Parks Categories)

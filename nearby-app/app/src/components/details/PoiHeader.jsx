@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { ChevronDown } from 'lucide-react';
+import HoursDisplay from '../common/HoursDisplay';
 
 /* ================================================================== *
  * PoiHeader — shared intro header for all POI detail pages.
@@ -162,6 +164,7 @@ export default function PoiHeader({
 }) {
   const [tooltipOpen, setTooltipOpen] = useState(false);
   const [copiedCoords, setCopiedCoords] = useState(false);
+  const [hoursExpanded, setHoursExpanded] = useState(false);
 
   const hideExact = !!displayLoc.hideExact;
   const coords = hideExact ? null : getCoords(poi);
@@ -263,6 +266,34 @@ export default function PoiHeader({
                   <span className="hours_icon" style={{ color: statusColor }}>&#9679;</span>
                   <span className="poi_page_hours_text">{statusLabel}</span>
                 </div>
+                {poi?.hours && (
+                  <>
+                    <button
+                      type="button"
+                      className="btn_reset poi_page_hours_toggle"
+                      onClick={() => setHoursExpanded((v) => !v)}
+                      aria-expanded={hoursExpanded}
+                      aria-controls="poi_hours_panel"
+                    >
+                      {hoursExpanded ? 'Hide hours' : 'Show all hours'}
+                      <ChevronDown
+                        size={14}
+                        style={{ marginLeft: 4, transition: 'transform 0.2s', transform: hoursExpanded ? 'rotate(180deg)' : 'none' }}
+                      />
+                    </button>
+                    {hoursExpanded && (
+                      <div id="poi_hours_panel" className="poi_hours_panel">
+                        <HoursDisplay
+                          hours={poi.hours}
+                          holidayHours={poi.holiday_hours}
+                          appointmentBookingUrl={poi.appointment_booking_url}
+                          appointmentRequired={poi.hours_but_appointment_required}
+                          hoursNotes={poi.hours_notes}
+                        />
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
             )}
           </div>
@@ -335,7 +366,9 @@ export default function PoiHeader({
                 What's This
               </button>
               <div id="poi_verified_tooltip" className={tooltipOpen ? 'is_open' : ''}>
-                This place has been checked and confirmed as accurate by a Nearby Nearby Team member.
+                {poi?.poi_type === 'EVENT'
+                  ? 'This event has been confirmed with the organizer or venue by a Nearby Nearby Team member.'
+                  : 'This place has been checked and confirmed as accurate by a Nearby Nearby Team member.'}
               </div>
             </div>
           )}
