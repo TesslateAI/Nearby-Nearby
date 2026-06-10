@@ -13,6 +13,7 @@ from geoalchemy2.shape import to_shape
 
 from .category import Category
 from .primary_type import PrimaryType
+from ._coercers import EmptyStringToNoneMixin
 
 # Type for titled links - supports both old string format and new dict format
 TitledLink = Union[str, Dict[str, str]]
@@ -74,7 +75,7 @@ class PointGeometry(BaseModel):
 # Business Schemas
 PRICE_RANGES = Literal['$', '$$', '$$$', '$$$$']
 
-class BusinessBase(BaseModel):
+class BusinessBase(EmptyStringToNoneMixin, BaseModel):
     price_range: Optional[PRICE_RANGES] = None
 
 class BusinessCreate(BusinessBase): pass
@@ -99,7 +100,7 @@ SPONSOR_LEVELS = Literal['platform','state','county','town']
 ALCOHOL_AVAILABLE = Literal['full_bar','beer_wine','byob','no_alcohol','seasonal','nearby']
 TRAIL_LIGHTING = Literal['partial','full','seasonal','dusk_to_dawn']
 
-class TrailBase(BaseModel):
+class TrailBase(EmptyStringToNoneMixin, BaseModel):
     length_text: Optional[str] = None
     length_segments: Optional[List[Dict[str, str]]] = None
     difficulty: Optional[str] = None
@@ -312,7 +313,7 @@ OTHER_STATUS_TYPES = Literal[
     'Warning', 'Limited Capacity', 'Coming Soon', 'Under Development', 'Alert'
 ]
 
-class PointOfInterestBase(BaseModel):
+class PointOfInterestBase(EmptyStringToNoneMixin, BaseModel):
     poi_type: POI_TYPES
     name: str
     slug: Optional[str] = None  # SEO-friendly URL slug (auto-generated from name + city)
@@ -584,7 +585,7 @@ class PointOfInterestCreate(PointOfInterestBase):
                 raise ValueError("Event data required for poi_type 'EVENT'")
         return values
 
-class PointOfInterestUpdate(BaseModel):
+class PointOfInterestUpdate(EmptyStringToNoneMixin, BaseModel):
     poi_type: Optional[POI_TYPES] = None
     name: Optional[str] = None
     slug: Optional[str] = None  # SEO-friendly URL slug

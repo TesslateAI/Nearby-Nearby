@@ -12,6 +12,7 @@ from app.core.security import get_current_user
 from app.core.permissions import require_admin_or_editor
 from app.utils.autosave_whitelist import AUTOSAVE_ALLOWED_FIELDS, AUTOSAVE_DENIED_FIELDS
 from app.crud.crud_poi import apply_phase1_computed
+from app.schemas._coercers import coerce_empty_literals
 
 router = APIRouter()
 
@@ -159,6 +160,7 @@ def autosave_poi(
         k: v for k, v in (payload or {}).items()
         if k in AUTOSAVE_ALLOWED_FIELDS and k not in AUTOSAVE_DENIED_FIELDS
     }
+    coerce_empty_literals(filtered, schemas.PointOfInterestUpdate)
 
     # Build a merged snapshot so the computed helper can read current values.
     merged: Dict[str, Any] = {c.name: getattr(poi, c.name) for c in poi.__table__.columns}
@@ -170,6 +172,7 @@ def autosave_poi(
                     continue
                 merged[c.name] = getattr(sub, c.name)
     merged.update(filtered)
+    coerce_empty_literals(merged, schemas.PointOfInterestUpdate)
 
     apply_phase1_computed(merged)
 

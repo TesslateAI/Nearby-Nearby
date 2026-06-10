@@ -1,5 +1,5 @@
 import uuid
-from sqlalchemy import Column, String, Text, ForeignKey, Numeric, TIMESTAMP, Boolean, Enum
+from sqlalchemy import Column, String, Text, ForeignKey, Numeric, TIMESTAMP, Boolean, Enum, CheckConstraint
 from sqlalchemy.dialects.postgresql import UUID, JSONB, ARRAY
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -13,6 +13,33 @@ from shared.models.enums import POIType
 
 class PointOfInterest(Base):
     __tablename__ = "points_of_interest"
+    __table_args__ = (
+        CheckConstraint(
+            "alcohol_available IS NULL OR alcohol_available IN "
+            "('full_bar','beer_wine','byob','no_alcohol','seasonal','nearby')",
+            name="ck_points_of_interest_alcohol_available_valid",
+        ),
+        CheckConstraint(
+            "expect_to_pay_parking IS NULL OR expect_to_pay_parking IN "
+            "('yes','no','sometimes')",
+            name="ck_points_of_interest_expect_to_pay_parking_valid",
+        ),
+        CheckConstraint(
+            "listing_type IS NULL OR listing_type IN "
+            "('free','paid','paid_founding','community_comped')",
+            name="ck_points_of_interest_listing_type_valid",
+        ),
+        CheckConstraint(
+            "publication_status IS NULL OR publication_status IN "
+            "('draft','published','archived')",
+            name="ck_points_of_interest_publication_status_valid",
+        ),
+        CheckConstraint(
+            "sponsor_level IS NULL OR sponsor_level IN "
+            "('platform','state','county','town')",
+            name="ck_points_of_interest_sponsor_level_valid",
+        ),
+    )
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     poi_type = Column(Enum(POIType), nullable=False)
@@ -326,7 +353,13 @@ class POIRelationship(Base):
 
 class Business(Base):
     __tablename__ = "businesses"
-    
+    __table_args__ = (
+        CheckConstraint(
+            "price_range IS NULL OR price_range IN ('$','$$','$$$','$$$$')",
+            name="ck_businesses_price_range_valid",
+        ),
+    )
+
     poi_id = Column(UUID(as_uuid=True), ForeignKey("points_of_interest.id"), primary_key=True)
     price_range = Column(String)  # '$', '$$', '$$$', '$$$$'
     
@@ -344,7 +377,14 @@ class Park(Base):
 
 class Trail(Base):
     __tablename__ = "trails"
-    
+    __table_args__ = (
+        CheckConstraint(
+            "trail_lighting IS NULL OR trail_lighting IN "
+            "('partial','full','seasonal','dusk_to_dawn')",
+            name="ck_trails_trail_lighting_valid",
+        ),
+    )
+
     poi_id = Column(UUID(as_uuid=True), ForeignKey("points_of_interest.id"), primary_key=True)
     length_text = Column(String)  # e.g., "2.5 miles", "1.2 km"
     length_segments = Column(JSONB)  # For multiple loops: [{"name": "Top Loop", "length": "0.25 miles"}]
