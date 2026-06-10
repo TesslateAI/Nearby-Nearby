@@ -68,11 +68,17 @@ export default function BusinessFreeLayout({ form, userRole, poiId }) {
           <Stack>
             <CoreInformationSection form={form} isBusiness isFreeListing id={poiId} />
             <ContactSection form={form} isFreeListing={true} />
+            {/* icon_free_wifi is a COMPUTED boolean (apply_phase1_computed derives
+                it from wifi_options / amenities.wifi), so it can't be set directly.
+                Drive the real, whitelisted wifi_options field instead — 'Free Wifi'
+                makes the computed icon true and persists. */}
             <Checkbox
               label="WiFi Available"
-              description="Indicates this business offers WiFi to visitors"
-              checked={!!form.values.icon_free_wifi}
-              onChange={(e) => form.setFieldValue('icon_free_wifi', e.currentTarget.checked)}
+              description="Marks this business as offering free WiFi"
+              checked={(form.values.wifi_options || []).includes('Free Wifi')}
+              onChange={(e) =>
+                form.setFieldValue('wifi_options', e.currentTarget.checked ? ['Free Wifi'] : [])
+              }
             />
           </Stack>
         </Accordion.Panel>
