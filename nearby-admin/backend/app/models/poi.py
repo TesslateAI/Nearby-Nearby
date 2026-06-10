@@ -136,6 +136,7 @@ class PointOfInterest(Base):
     accessible_parking_details  = Column(JSONB)
     accessible_restroom         = Column(Boolean, nullable=False, server_default='false', default=False)
     accessible_restroom_details = Column(JSONB)
+    mobility_access             = Column(JSONB)  # {step_free_entry, main_area_accessible, ground_level_service}
     smoking_options = Column(JSONB)  # List of smoking options
     smoking_details = Column(Text)
     wifi_options = Column(JSONB)  # For Events only

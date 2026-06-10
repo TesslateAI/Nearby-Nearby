@@ -487,6 +487,7 @@ class PointOfInterestBase(EmptyStringToNoneMixin, BaseModel):
     alcohol_notes: Optional[str] = None
     # wheelchair_accessible - DROPPED (Issue #45 PR2 Migration B)
     wheelchair_details: Optional[str] = None
+    mobility_access: Optional[Dict[str, Any]] = None
     smoking_options: Optional[List[str]] = None
     smoking_details: Optional[str] = None
     wifi_options: Optional[List[str]] = None
@@ -694,6 +695,7 @@ class PointOfInterestUpdate(EmptyStringToNoneMixin, BaseModel):
     alcohol_notes: Optional[str] = None
     # wheelchair_accessible - DROPPED (Issue #45 PR2 Migration B)
     wheelchair_details: Optional[str] = None
+    mobility_access: Optional[Dict[str, Any]] = None
     smoking_options: Optional[List[str]] = None
     smoking_details: Optional[str] = None
     wifi_options: Optional[List[str]] = None

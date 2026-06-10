@@ -29,13 +29,25 @@ def compute_icon_booleans(poi: dict) -> dict:
     toilets = poi.get('public_toilets') or []
     poi['icon_public_restroom'] = bool(toilets) and toilets != ['No Public Restroom'] and toilets != ['No']
     acc_parking = poi.get('accessible_parking_details') or []
-    mobility = (amenities.get('mobility_access') or amenities.get('accessibility') or [])
+    # mobility_access is now a top-level dict ({step_free_entry, main_area_accessible,
+    # ground_level_service} with 'yes'/'no'/'unknown'); fall back to the legacy
+    # amenities.mobility_access / list shapes for older rows.
+    mobility = (
+        poi.get('mobility_access')
+        or amenities.get('mobility_access')
+        or amenities.get('accessibility')
+        or []
+    )
+    mobility_dict_accessible = isinstance(mobility, dict) and any(
+        str(v).lower() == 'yes' for v in mobility.values()
+    )
     poi['icon_wheelchair_accessible'] = (
         bool(poi.get('accessible_restroom'))
         or bool(acc_parking)
         or bool(poi.get('inclusive_playground'))
         or (isinstance(mobility, list) and len(mobility) > 0)
         or (isinstance(mobility, bool) and mobility)
+        or mobility_dict_accessible
     )
     return poi
 
