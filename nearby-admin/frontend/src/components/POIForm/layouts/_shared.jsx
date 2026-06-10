@@ -124,8 +124,8 @@ export const IDEAL_FOR_RULES = {
   'Business Free': { visible: true,  cap: 5 },
   'Business Paid': { visible: true,  cap: null },
   'Event':         { visible: true,  cap: 10 },
-  'Park':          { visible: false, cap: null },
-  'Trail':         { visible: false, cap: null },
+  'Park':          { visible: true,  cap: null },
+  'Trail':         { visible: true,  cap: null },
 };
 
 function rulesFor(listingType) {

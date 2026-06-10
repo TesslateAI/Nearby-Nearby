@@ -6,8 +6,9 @@ import {
 import { IconPlus, IconTrash, IconMapPin, IconInfoCircle } from '@tabler/icons-react';
 import RichTextEditor from '../../RichTextEditor';
 import { DebouncedTextInput } from '../../DebouncedTextInput';
-import { getDebouncedInputProps, getNumericInputProps } from '../constants/helpers';
+import { getDebouncedInputProps } from '../constants/helpers';
 import { PARKING_OPTIONS, VENUE_SETTINGS } from '../../../utils/constants';
+import CoordinateInput from '../components/CoordinateInput';
 import {
   EntryPhotoUpload,
   ParkingPhotosUpload,
@@ -113,27 +114,30 @@ export const LocationSection = React.memo(function LocationSection({
         />
       </SimpleGrid>
 
-      <Divider my="md" label="Coordinates" />
-      <SimpleGrid cols={{ base: 1, sm: 2 }}>
-        <NumberInput
-          label="Front Door Latitude"
-          placeholder="35.7128"
-          precision={6}
-          {...getNumericInputProps(form, 'front_door_latitude')}
-        />
-        <NumberInput
-          label="Front Door Longitude"
-          placeholder="-79.0064"
-          precision={6}
-          {...getNumericInputProps(form, 'front_door_longitude')}
-        />
-      </SimpleGrid>
+      <Divider my="md" label="Front Door / Arrival Coordinates" />
+      <CoordinateInput
+        label="Front Door / Arrival Coordinates"
+        latLabel="Front Door Latitude"
+        lngLabel="Front Door Longitude"
+        value={{
+          lat: form.values.front_door_latitude,
+          lng: form.values.front_door_longitude,
+          w3w: form.values.what3words_address,
+        }}
+        onChange={(v) => {
+          form.setFieldValue('front_door_latitude', v.lat);
+          form.setFieldValue('front_door_longitude', v.lng);
+          form.setFieldValue('what3words_address', v.w3w ?? '');
+        }}
+      />
       <Button
         size="xs"
         variant="light"
         onClick={() => {
           form.setFieldValue('front_door_latitude', form.values.latitude);
           form.setFieldValue('front_door_longitude', form.values.longitude);
+          // Manual coord set from map pin invalidates any prior w3w (task 2 consistency).
+          form.setFieldValue('what3words_address', '');
         }}
       >
         Use Map Pin for Lat/Long

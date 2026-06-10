@@ -132,7 +132,7 @@ export default function CoordinateInput({
           max={90}
           decimalScale={7}
           value={lat ?? ''}
-          onChange={(v) => emit({ lat: v === '' || v === null ? null : Number(v) })}
+          onChange={(v) => emit({ lat: v === '' || v === null ? null : Number(v), w3w: '' })}
           disabled={disabled}
         />
         <NumberInput
@@ -142,7 +142,7 @@ export default function CoordinateInput({
           max={180}
           decimalScale={7}
           value={lng ?? ''}
-          onChange={(v) => emit({ lng: v === '' || v === null ? null : Number(v) })}
+          onChange={(v) => emit({ lng: v === '' || v === null ? null : Number(v), w3w: '' })}
           disabled={disabled}
         />
       </Group>
