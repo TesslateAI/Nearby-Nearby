@@ -1,7 +1,7 @@
 import React, { lazy, Suspense } from 'react';
 import {
   Stack, SimpleGrid, Select, NumberInput, Button, Divider,
-  Checkbox, Radio, Card, Group, ActionIcon, Alert, Text, TextInput
+  Checkbox, Radio, Card, Group, ActionIcon, Alert, Text, TextInput, Switch
 } from '@mantine/core';
 import { IconPlus, IconTrash, IconMapPin, IconInfoCircle } from '@tabler/icons-react';
 import RichTextEditor from '../../RichTextEditor';
@@ -143,6 +143,23 @@ export const LocationSection = React.memo(function LocationSection({
         Use Map Pin for Lat/Long
       </Button>
 
+      {/* Business Free (#74): lat_long_most_accurate + dont_display_location
+          move here from Business Identity. Other POI types keep these toggles
+          in their original locations and never render them in Address. */}
+      {isBusiness && isFreeListing && (
+        <SimpleGrid cols={{ base: 1, sm: 2 }}>
+          <Switch
+            label="Lat/Long Most Accurate"
+            description="Map coordinates are the most reliable location"
+            {...form.getInputProps('lat_long_most_accurate', { type: 'checkbox' })}
+          />
+          <Switch
+            label="Don't Display Location"
+            {...form.getInputProps('dont_display_location', { type: 'checkbox' })}
+          />
+        </SimpleGrid>
+      )}
+
       {/* Park Entry Information */}
       {isPark && (
         <>
@@ -221,72 +238,80 @@ export const LocationSection = React.memo(function LocationSection({
         </>
       )}
 
-      <Divider my="md" label="Parking Information" />
+      {/* Business Free (#74): the in-Address parking block is removed entirely.
+          parking_types moves to the dedicated Parking accordion; parking_notes,
+          expect_to_pay_parking, and the Primary Parking lat/long/name/photos are
+          dropped from Free. Every other POI type renders this block unchanged. */}
+      {!(isBusiness && isFreeListing) && (
+        <>
+          <Divider my="md" label="Parking Information" />
 
-      <Checkbox.Group
-        label="Parking Types Available"
-        value={form.values.parking_types || []}
-        onChange={(value) => form.setFieldValue('parking_types', value)}
-      >
-        <SimpleGrid cols={{ base: 2, sm: 3 }}>
-          {PARKING_OPTIONS.map(type => (
-            <Checkbox key={type} value={type} label={type} />
-          ))}
-        </SimpleGrid>
-      </Checkbox.Group>
+          <Checkbox.Group
+            label="Parking Types Available"
+            value={form.values.parking_types || []}
+            onChange={(value) => form.setFieldValue('parking_types', value)}
+          >
+            <SimpleGrid cols={{ base: 2, sm: 3 }}>
+              {PARKING_OPTIONS.map(type => (
+                <Checkbox key={type} value={type} label={type} />
+              ))}
+            </SimpleGrid>
+          </Checkbox.Group>
 
-      <RichTextEditor
-        label="Parking Notes"
-        placeholder="Additional parking information"
-        value={form.values.parking_notes || ''}
-        onChange={(html) => form.setFieldValue('parking_notes', html)}
-        error={form.errors.parking_notes}
-      />
+          <RichTextEditor
+            label="Parking Notes"
+            placeholder="Additional parking information"
+            value={form.values.parking_notes || ''}
+            onChange={(html) => form.setFieldValue('parking_notes', html)}
+            error={form.errors.parking_notes}
+          />
 
-      {/* public_transit_info removed — renamed _deprecated_public_transit_info (Migration A #33) */}
+          {/* public_transit_info removed — renamed _deprecated_public_transit_info (Migration A #33) */}
 
-      <Radio.Group
-        label="Expect to Pay for Parking?"
-        {...form.getInputProps('expect_to_pay_parking')}
-      >
-        <Stack mt="xs">
-          <Radio value="yes" label="Yes" />
-          <Radio value="no" label="No" />
-          <Radio value="sometimes" label="Sometimes" />
-        </Stack>
-      </Radio.Group>
+          <Radio.Group
+            label="Expect to Pay for Parking?"
+            {...form.getInputProps('expect_to_pay_parking')}
+          >
+            <Stack mt="xs">
+              <Radio value="yes" label="Yes" />
+              <Radio value="no" label="No" />
+              <Radio value="sometimes" label="Sometimes" />
+            </Stack>
+          </Radio.Group>
 
-      {/* Primary Parking Location - lat/long and photos for main parking area */}
-      <Divider my="md" label="Primary Parking Location" />
-      <Text size="sm" c="dimmed" mb="sm">
-        Set the coordinates and photos for the main parking area. Use "Add Another Parking Location" below for additional lots.
-      </Text>
-      <SimpleGrid cols={{ base: 1, sm: 2 }}>
-        <NumberInput
-          label="Primary Parking Latitude"
-          placeholder="35.7128"
-          precision={6}
-          value={form.values.primary_parking_lat || ''}
-          onChange={(value) => form.setFieldValue('primary_parking_lat', value)}
-        />
-        <NumberInput
-          label="Primary Parking Longitude"
-          placeholder="-79.0064"
-          precision={6}
-          value={form.values.primary_parking_lng || ''}
-          onChange={(value) => form.setFieldValue('primary_parking_lng', value)}
-        />
-      </SimpleGrid>
-      <TextInput
-        label="Primary Parking Area Name"
-        placeholder="e.g., Main Lot, Front Parking"
-        value={form.values.primary_parking_name || ''}
-        onChange={(e) => form.setFieldValue('primary_parking_name', e.target.value)}
-      />
-      {shouldUseImageUpload(id) ? (
-        <ParkingPhotosUpload poiId={id} parkingName={form.values.primary_parking_name || 'Primary'} form={form} />
-      ) : (
-        <Text size="sm" c="dimmed">Save POI first to enable parking photo upload</Text>
+          {/* Primary Parking Location - lat/long and photos for main parking area */}
+          <Divider my="md" label="Primary Parking Location" />
+          <Text size="sm" c="dimmed" mb="sm">
+            Set the coordinates and photos for the main parking area. Use "Add Another Parking Location" below for additional lots.
+          </Text>
+          <SimpleGrid cols={{ base: 1, sm: 2 }}>
+            <NumberInput
+              label="Primary Parking Latitude"
+              placeholder="35.7128"
+              precision={6}
+              value={form.values.primary_parking_lat || ''}
+              onChange={(value) => form.setFieldValue('primary_parking_lat', value)}
+            />
+            <NumberInput
+              label="Primary Parking Longitude"
+              placeholder="-79.0064"
+              precision={6}
+              value={form.values.primary_parking_lng || ''}
+              onChange={(value) => form.setFieldValue('primary_parking_lng', value)}
+            />
+          </SimpleGrid>
+          <TextInput
+            label="Primary Parking Area Name"
+            placeholder="e.g., Main Lot, Front Parking"
+            value={form.values.primary_parking_name || ''}
+            onChange={(e) => form.setFieldValue('primary_parking_name', e.target.value)}
+          />
+          {shouldUseImageUpload(id) ? (
+            <ParkingPhotosUpload poiId={id} parkingName={form.values.primary_parking_name || 'Primary'} form={form} />
+          ) : (
+            <Text size="sm" c="dimmed">Save POI first to enable parking photo upload</Text>
+          )}
+        </>
       )}
 
       {/* Parking Locations for Parks, Trails, and Events */}

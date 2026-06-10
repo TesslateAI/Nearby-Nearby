@@ -110,27 +110,32 @@ export const CoreInformationSection = React.memo(function CoreInformationSection
         />
       </SimpleGrid>
 
-      <SimpleGrid cols={{ base: 1, sm: 3 }}>
-        <Switch
-          label="Verified"
-          {...form.getInputProps('is_verified', { type: 'checkbox' })}
-        />
-        <Switch
-          label="Disaster Hub"
-          {...form.getInputProps('is_disaster_hub', { type: 'checkbox' })}
-        />
-        <Switch
-          label="Lat/Long Most Accurate"
-          description="Map coordinates are the most reliable location"
-          {...form.getInputProps('lat_long_most_accurate', { type: 'checkbox' })}
-        />
-        {isBusiness && (
+      {/* Business Free (#74): these toggles move OUT of Identity —
+          is_verified / is_disaster_hub → Admin-Only; lat_long_most_accurate /
+          dont_display_location → Address. Other POI types keep them here. */}
+      {!(isBusiness && isFreeListing) && (
+        <SimpleGrid cols={{ base: 1, sm: 3 }}>
           <Switch
-            label="Don't Display Location"
-            {...form.getInputProps('dont_display_location', { type: 'checkbox' })}
+            label="Verified"
+            {...form.getInputProps('is_verified', { type: 'checkbox' })}
           />
-        )}
-      </SimpleGrid>
+          <Switch
+            label="Disaster Hub"
+            {...form.getInputProps('is_disaster_hub', { type: 'checkbox' })}
+          />
+          <Switch
+            label="Lat/Long Most Accurate"
+            description="Map coordinates are the most reliable location"
+            {...form.getInputProps('lat_long_most_accurate', { type: 'checkbox' })}
+          />
+          {isBusiness && (
+            <Switch
+              label="Don't Display Location"
+              {...form.getInputProps('dont_display_location', { type: 'checkbox' })}
+            />
+          )}
+        </SimpleGrid>
+      )}
 
       {/* key_facilities removed — renamed _deprecated_key_facilities (Migration A #34) */}
 
@@ -192,20 +197,25 @@ export const CoreInformationSection = React.memo(function CoreInformationSection
         </>
       )}
 
-      {shouldUseImageUpload(id) ? (
-        <FeaturedImageUpload
-          key={`featured-image-${id}`}
-          poiId={id}
-          isBusiness={isBusiness}
-          isFreeListing={isFreeListing}
-          form={form}
-        />
-      ) : (
-        <Alert color="blue" variant="light" key={`featured-placeholder-${id || 'new'}`}>
-          <Text size="sm">
-            {isBusiness && isFreeListing ? "Logo" : "Featured Image"} upload will be available shortly...
-          </Text>
-        </Alert>
+      {/* Business Free (#74): the Logo upload moves to the dedicated Images
+          accordion (rendered there via <FeaturedImageUpload>). For every other
+          POI type the Featured Image stays inline in Core Information. */}
+      {!(isBusiness && isFreeListing) && (
+        shouldUseImageUpload(id) ? (
+          <FeaturedImageUpload
+            key={`featured-image-${id}`}
+            poiId={id}
+            isBusiness={isBusiness}
+            isFreeListing={isFreeListing}
+            form={form}
+          />
+        ) : (
+          <Alert color="blue" variant="light" key={`featured-placeholder-${id || 'new'}`}>
+            <Text size="sm">
+              Featured Image upload will be available shortly...
+            </Text>
+          </Alert>
+        )
       )}
     </Stack>
   );

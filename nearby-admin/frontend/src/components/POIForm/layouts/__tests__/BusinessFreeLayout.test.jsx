@@ -32,12 +32,12 @@ vi.mock('../../sections/LocationSection', () => ({
 vi.mock('../../sections/ContactSection', () => ({
   ContactSection: () => <div data-testid="stub-contact" />,
 }));
-vi.mock('../../sections/FacilitiesSection', () => ({
-  FacilitiesSection: () => <div data-testid="stub-facilities" />,
-  PublicAmenitiesSection: () => <div data-testid="stub-public-amenities" />,
+vi.mock('../../components/RestroomLocationGroup', () => ({
+  RestroomLocationGroup: () => <div data-testid="stub-restroom-group" />,
 }));
-vi.mock('../../sections/BusinessDetailsSection', () => ({
-  BusinessGallerySection: () => <div data-testid="stub-gallery" />,
+vi.mock('../../ImageIntegration', () => ({
+  FeaturedImageUpload: () => <div data-testid="stub-logo" />,
+  shouldUseImageUpload: () => true,
 }));
 vi.mock('../../sections/OutdoorFeaturesSection', () => ({
   PetPolicySection: () => <div data-testid="stub-pet-policy" />,
@@ -61,12 +61,6 @@ vi.mock('../_shared', () => ({
       </Accordion.Item>
     ) : null,
   IdealForGrouped: () => <div data-testid="stub-ideal-for" />,
-  ArrivalMethodsGroup: () => <div data-testid="stub-arrival" />,
-  What3WordsInput: () => <div data-testid="stub-w3w" />,
-  AccessibleParkingChecklist: () => <div data-testid="stub-parking" />,
-  AccessibleRestroomChecklist: () => <div data-testid="stub-restroom" />,
-  FullAmenitiesBlock: () => <div data-testid="stub-amenities-block" />,
-  ConnectivityRow: () => <div data-testid="stub-connectivity" />,
 }));
 
 import BusinessFreeLayout from '../BusinessFreeLayout';
@@ -82,12 +76,11 @@ function Harness({ userRole = 'editor' } = {}) {
   );
 }
 
-describe('BusinessFreeLayout — Wave 4 #52 reorder', () => {
-  it('renders 13 Accordion.Item blocks in the spec order for non-admin users', () => {
+describe('BusinessFreeLayout — #74 reorg', () => {
+  it('renders 12 visible Accordion.Item blocks for non-admin users (Admin-Only hidden)', () => {
     const { container } = render(<Harness userRole="editor" />);
     const items = container.querySelectorAll('[data-accordion-control="true"], .mantine-Accordion-control');
-    // 12 visible items (Admin-Only hidden for non-admin)
-    expect(items.length).toBeGreaterThanOrEqual(12);
+    expect(items.length).toBe(12);
   });
 
   it('first accordion item is s1-identity', () => {
@@ -97,39 +90,41 @@ describe('BusinessFreeLayout — Wave 4 #52 reorder', () => {
     expect(firstButton.textContent).toMatch(/Business Identity/);
   });
 
-  it('renders spec-required section titles verbatim ("Amenities", "Compliance", "Gallery", "Pricing")', () => {
+  it('renders spec-required section titles verbatim', () => {
     render(<Harness userRole="editor" />);
-    expect(screen.getByText('Amenities')).toBeInTheDocument();
-    expect(screen.getByText('Compliance')).toBeInTheDocument();
-    expect(screen.getByText('Gallery')).toBeInTheDocument();
-    expect(screen.getByText('Pricing')).toBeInTheDocument();
+    expect(screen.getByText('Parking')).toBeInTheDocument();
+    expect(screen.getByText('Pricing + Passes')).toBeInTheDocument();
+    expect(screen.getByText('Accessibility + Mobility Access')).toBeInTheDocument();
+    expect(screen.getByText('Public Restrooms')).toBeInTheDocument();
+    expect(screen.getByText('Alcohol + Smoking')).toBeInTheDocument();
+    expect(screen.getByText('Images')).toBeInTheDocument();
+    expect(screen.getByText('Contact + Compliance')).toBeInTheDocument();
   });
 
-  it('renders sections in expected order: Identity → Categories → Hours → Address → Parking → Restrooms → Amenities → Pricing → Pet Policy → Gallery → Internal → Compliance', () => {
+  it('renders sections in the #74 spec order', () => {
     const { container } = render(<Harness userRole="editor" />);
     const controls = container.querySelectorAll('.mantine-Accordion-control');
     const texts = Array.from(controls).map((c) => c.textContent.trim());
     const expectedOrder = [
-      'Business IdentityRequired',
+      'Business Identity',
       'Categories + Discovery',
       'Hours',
       'Address',
-      'Parking & Accessibility',
-      'Restrooms',
-      'Amenities',
-      'Pricing',
+      'Parking',
+      'Pricing + Passes',
+      'Accessibility + Mobility Access',
+      'Public Restrooms',
       'Pet Policy',
-      'Gallery',
-      'Internal',
-      'Compliance',
+      'Alcohol + Smoking',
+      'Images',
+      'Contact + Compliance',
     ];
-    // Compare against the first 12 visible (admin-only hidden for editor role)
     expectedOrder.forEach((expected, idx) => {
-      expect(texts[idx]).toContain(expected.replace('Required', ''));
+      expect(texts[idx]).toContain(expected);
     });
   });
 
-  it('places Hours before Address (Wave 4 reorder)', () => {
+  it('places Hours before Address', () => {
     const { container } = render(<Harness userRole="editor" />);
     const controls = container.querySelectorAll('.mantine-Accordion-control');
     const texts = Array.from(controls).map((c) => c.textContent.trim());
@@ -140,15 +135,14 @@ describe('BusinessFreeLayout — Wave 4 #52 reorder', () => {
     expect(hoursIdx).toBeLessThan(addressIdx);
   });
 
-  it('includes Pricing between Amenities and Pet Policy', () => {
+  it('places Pricing + Passes immediately after Parking', () => {
     const { container } = render(<Harness userRole="editor" />);
     const controls = container.querySelectorAll('.mantine-Accordion-control');
     const texts = Array.from(controls).map((c) => c.textContent.trim());
-    const amenitiesIdx = texts.findIndex((t) => t === 'Amenities');
-    const pricingIdx = texts.findIndex((t) => t === 'Pricing');
-    const petIdx = texts.findIndex((t) => t === 'Pet Policy');
-    expect(amenitiesIdx).toBeLessThan(pricingIdx);
-    expect(pricingIdx).toBeLessThan(petIdx);
+    const parkingIdx = texts.findIndex((t) => t === 'Parking');
+    const pricingIdx = texts.findIndex((t) => t === 'Pricing + Passes');
+    expect(parkingIdx).toBeGreaterThan(-1);
+    expect(pricingIdx).toBe(parkingIdx + 1);
   });
 
   it('renders Admin-Only item as the LAST accordion when userRole=admin', () => {
