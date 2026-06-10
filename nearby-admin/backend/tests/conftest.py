@@ -60,6 +60,11 @@ def db_session():
         conn.execute(text("DROP SCHEMA public CASCADE;"))
         conn.execute(text("CREATE SCHEMA public;"))
 
+        # PostGIS provides the `geometry` type used by points_of_interest.location.
+        # DROP SCHEMA public CASCADE removes the extension, so re-create it before
+        # Base.metadata.create_all() runs (otherwise create_all fails on geometry).
+        conn.execute(text("CREATE EXTENSION IF NOT EXISTS postgis;"))
+
         # Create enum types that might be needed
         conn.execute(text("""
             CREATE TYPE imagetype AS ENUM (
@@ -68,6 +73,11 @@ def db_session():
                 'trail_exit', 'map', 'downloadable_map'
             );
         """))
+        # Commit the schema rebuild. Without this, the DDL above is rolled back
+        # on connection close and create_all() (a separate connection) sees the
+        # stale persistent schema — so each test silently ran against an
+        # out-of-date table missing newer columns.
+        conn.commit()
 
     Base.metadata.create_all(bind=engine)
     db = TestingSessionLocal()
