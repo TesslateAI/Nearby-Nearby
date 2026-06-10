@@ -78,6 +78,7 @@ variable "ssm_database_url_arn" { type = string }
 variable "ssm_forms_database_url_arn" { type = string }
 variable "ssm_secret_key_arn" { type = string }
 variable "ssm_sentry_dsn_arn" { type = string }
+variable "ssm_what3words_api_key_arn" { type = string }
 
 # CloudWatch
 variable "app_log_group_name" { type = string }

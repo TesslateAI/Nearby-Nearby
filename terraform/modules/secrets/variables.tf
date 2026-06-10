@@ -21,3 +21,9 @@ variable "sentry_dsn" {
   sensitive = true
   default   = "disabled"
 }
+
+variable "what3words_api_key" {
+  type      = string
+  sensitive = true
+  default   = "placeholder-set-via-aws-cli"
+}

@@ -69,6 +69,7 @@ module "secrets" {
   forms_database_url = var.forms_database_url
   secret_key         = var.secret_key
   sentry_dsn         = var.sentry_dsn
+  what3words_api_key = var.what3words_api_key
 }
 
 # --- Monitoring (CloudWatch) ---
@@ -121,6 +122,7 @@ module "ecs" {
   ssm_forms_database_url_arn = module.secrets.forms_database_url_arn
   ssm_secret_key_arn         = module.secrets.secret_key_arn
   ssm_sentry_dsn_arn         = module.secrets.sentry_dsn_arn
+  ssm_what3words_api_key_arn = module.secrets.what3words_api_key_arn
 
   # CloudWatch
   app_log_group_name   = module.monitoring.app_log_group_name

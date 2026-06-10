@@ -254,6 +254,10 @@ resource "aws_ecs_task_definition" "admin" {
           name      = "SENTRY_DSN"
           valueFrom = var.ssm_sentry_dsn_arn
         },
+        {
+          name      = "WHAT3WORDS_API_KEY"
+          valueFrom = var.ssm_what3words_api_key_arn
+        },
       ]
 
       healthCheck = {

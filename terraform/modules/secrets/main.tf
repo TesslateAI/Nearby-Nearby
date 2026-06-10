@@ -41,3 +41,14 @@ resource "aws_ssm_parameter" "sentry_dsn" {
 
   lifecycle { ignore_changes = [value] }
 }
+
+resource "aws_ssm_parameter" "what3words_api_key" {
+  name        = "/${var.project}/${var.environment}/what3words-api-key"
+  description = "what3words API key for admin coordinate-lookup endpoint"
+  type        = "SecureString"
+  value       = var.what3words_api_key
+
+  tags = { Name = "${var.project}-${var.environment}-what3words-api-key" }
+
+  lifecycle { ignore_changes = [value] }
+}
