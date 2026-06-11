@@ -236,14 +236,14 @@ export const LocationSection = React.memo(function LocationSection({
         </>
       )}
 
-      {/* Business Free (#74) + Business Paid (#75) + Park (#76) + Trail (#77):
-          the in-Address parking block is removed entirely. For Free,
-          parking_types moves to the dedicated Parking accordion (single checkbox
-          group). For Paid, Park, and Trail, the whole block moves to the
-          dedicated Parking accordion as repeatable ParkingLocationGroup
-          groupings (parking_locations JSONB). Every other POI type renders this
-          legacy block unchanged. */}
-      {!((isBusiness && (isFreeListing || isPaidListing)) || isPark || isTrail) && (
+      {/* Business Free (#74) + Business Paid (#75) + Park (#76) + Trail (#77) +
+          Event (#73): the in-Address parking block is removed entirely. For
+          Free, parking_types moves to the dedicated Parking accordion (single
+          checkbox group). For Paid, Park, Trail, and Event, the whole block
+          moves to the dedicated Parking accordion as repeatable
+          ParkingLocationGroup groupings (parking_locations JSONB). Every other
+          POI type renders this legacy block unchanged. */}
+      {!((isBusiness && (isFreeListing || isPaidListing)) || isPark || isTrail || isEvent) && (
         <>
           <Divider my="md" label="Parking Information" />
 
