@@ -17,6 +17,7 @@ import {
   shouldUseImageUpload
 } from '../ImageIntegration';
 import { CheckboxGroupSection } from '../components/CheckboxGroupSection';
+import CoordinateInput from '../components/CoordinateInput';
 import { AccessibleRestroomChecklist, RepeatableLocationGroup } from '../layouts/_shared';
 
 export const FacilitiesSection = React.memo(function FacilitiesSection({
@@ -39,30 +40,17 @@ export const FacilitiesSection = React.memo(function FacilitiesSection({
           {(form.values.payphone_locations || []).map((phone, index) => (
             <Card key={index} withBorder p="md" mb="sm">
               <Stack>
-                <SimpleGrid cols={{ base: 1, sm: 2 }}>
-                  <NumberInput
-                    label="Pay Phone Latitude"
-                    placeholder="35.7128"
-                    precision={6}
-                    value={phone.lat || ''}
-                    onChange={(value) => {
-                      const phones = [...(form.values.payphone_locations || [])];
-                      phones[index] = { ...phones[index], lat: value };
-                      form.setFieldValue('payphone_locations', phones);
-                    }}
-                  />
-                  <NumberInput
-                    label="Pay Phone Longitude"
-                    placeholder="-79.0064"
-                    precision={6}
-                    value={phone.lng || ''}
-                    onChange={(value) => {
-                      const phones = [...(form.values.payphone_locations || [])];
-                      phones[index] = { ...phones[index], lng: value };
-                      form.setFieldValue('payphone_locations', phones);
-                    }}
-                  />
-                </SimpleGrid>
+                <CoordinateInput
+                  label="Pay Phone Coordinates"
+                  latLabel="Pay Phone Latitude"
+                  lngLabel="Pay Phone Longitude"
+                  value={{ lat: phone.lat ?? null, lng: phone.lng ?? null, w3w: phone.w3w ?? '' }}
+                  onChange={(v) => {
+                    const phones = [...(form.values.payphone_locations || [])];
+                    phones[index] = { ...phones[index], lat: v.lat, lng: v.lng, w3w: v.w3w ?? '' };
+                    form.setFieldValue('payphone_locations', phones);
+                  }}
+                />
                 <TextInput
                   label="Description"
                   placeholder="e.g., Near entrance, by visitor center"
@@ -93,7 +81,7 @@ export const FacilitiesSection = React.memo(function FacilitiesSection({
             leftSection={<IconPlus size={16} />}
             onClick={() => {
               const phones = [...(form.values.payphone_locations || [])];
-              phones.push({ lat: null, lng: null, description: '' });
+              phones.push({ lat: null, lng: null, w3w: '', description: '' });
               form.setFieldValue('payphone_locations', phones);
             }}
           >

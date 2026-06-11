@@ -1,6 +1,7 @@
 import React from 'react';
-import { Checkbox, NumberInput, SimpleGrid, Stack, Text, TextInput } from '@mantine/core';
+import { Checkbox, SimpleGrid, Stack, Text, TextInput } from '@mantine/core';
 import { RepeatableLocationGroup } from './RepeatableLocationGroup';
+import CoordinateInput from './CoordinateInput';
 import RichTextEditor from '../../RichTextEditor';
 import { RestroomPhotosUpload, shouldUseImageUpload } from '../ImageIntegration';
 import { PUBLIC_TOILET_OPTIONS, RESTROOM_ADA_CHECKLIST } from '../../../utils/constants';
@@ -45,6 +46,7 @@ export const RestroomLocationGroup = React.memo(function RestroomLocationGroup({
         restroom_name: '',
         lat: null,
         lng: null,
+        w3w: '',
         description: '',
         photos: '',
         toilet_types: [],
@@ -63,20 +65,17 @@ export const RestroomLocationGroup = React.memo(function RestroomLocationGroup({
               placeholder="e.g., Visitor Center Restroom, Trailhead Restroom"
               {...form.getInputProps(`${fieldName}.${index}.restroom_name`)}
             />
-            <SimpleGrid cols={{ base: 1, sm: 2 }}>
-              <NumberInput
-                label="Restroom Latitude"
-                placeholder="35.7128"
-                precision={6}
-                {...form.getInputProps(`${fieldName}.${index}.lat`)}
-              />
-              <NumberInput
-                label="Restroom Longitude"
-                placeholder="-79.0064"
-                precision={6}
-                {...form.getInputProps(`${fieldName}.${index}.lng`)}
-              />
-            </SimpleGrid>
+            <CoordinateInput
+              label="Restroom Coordinates"
+              latLabel="Restroom Latitude"
+              lngLabel="Restroom Longitude"
+              value={{ lat: row?.lat ?? null, lng: row?.lng ?? null, w3w: row?.w3w ?? '' }}
+              onChange={(v) => {
+                form.setFieldValue(`${fieldName}.${index}.lat`, v.lat);
+                form.setFieldValue(`${fieldName}.${index}.lng`, v.lng);
+                form.setFieldValue(`${fieldName}.${index}.w3w`, v.w3w ?? '');
+              }}
+            />
             <RichTextEditor
               label="Description"
               placeholder="e.g., For paying customers only, Location details, accessibility info"

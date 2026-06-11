@@ -683,7 +683,7 @@ export function RepeatableLocationGroup({
   const rows = Array.isArray(form.values?.[fieldName]) ? form.values[fieldName] : [];
 
   const addRow = () => {
-    const next = [...rows, { lat: null, lng: null, name: '' }];
+    const next = [...rows, { lat: null, lng: null, w3w: '', name: '' }];
     form.setFieldValue(fieldName, next);
   };
 
@@ -729,36 +729,20 @@ export function RepeatableLocationGroup({
               />
             )}
 
-            {isPlayground && isPark ? (
-              <CoordinateInput
-                label="Playground Coordinates"
-                latLabel="Playground Latitude"
-                lngLabel="Playground Longitude"
-                value={{ lat: row?.lat ?? null, lng: row?.lng ?? null, w3w: row?.w3w ?? '' }}
-                onChange={(v) => {
-                  form.setFieldValue(`${fieldName}.${idx}.lat`, v.lat);
-                  form.setFieldValue(`${fieldName}.${idx}.lng`, v.lng);
-                  form.setFieldValue(`${fieldName}.${idx}.w3w`, v.w3w ?? '');
-                }}
-              />
-            ) : (
-              <SimpleGrid cols={{ base: 1, sm: 2 }}>
-                <NumberInput
-                  label="Latitude"
-                  placeholder="35.7128"
-                  decimalScale={6}
-                  value={row?.lat ?? ''}
-                  onChange={(v) => form.setFieldValue(`${fieldName}.${idx}.lat`, v)}
-                />
-                <NumberInput
-                  label="Longitude"
-                  placeholder="-79.0064"
-                  decimalScale={6}
-                  value={row?.lng ?? ''}
-                  onChange={(v) => form.setFieldValue(`${fieldName}.${idx}.lng`, v)}
-                />
-              </SimpleGrid>
-            )}
+            {/* Every repeatable location row now offers the what3words +
+                lat/long bundle via CoordinateInput (was previously gated to
+                Park playgrounds only). */}
+            <CoordinateInput
+              label={isPlayground ? 'Playground Coordinates' : 'Coordinates'}
+              latLabel={isPlayground ? 'Playground Latitude' : 'Latitude'}
+              lngLabel={isPlayground ? 'Playground Longitude' : 'Longitude'}
+              value={{ lat: row?.lat ?? null, lng: row?.lng ?? null, w3w: row?.w3w ?? '' }}
+              onChange={(v) => {
+                form.setFieldValue(`${fieldName}.${idx}.lat`, v.lat);
+                form.setFieldValue(`${fieldName}.${idx}.lng`, v.lng);
+                form.setFieldValue(`${fieldName}.${idx}.w3w`, v.w3w ?? '');
+              }}
+            />
 
             {isPlayground && (
               <>
