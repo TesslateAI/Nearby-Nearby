@@ -97,6 +97,40 @@ export default function POIForm() {
   const [renderError, setRenderError] = useState(null);
   const [navigationBlocked, setNavigationBlocked] = useState(false);
 
+  // Controlled accordion so opening a section keeps the user anchored on that
+  // section instead of being dropped to the bottom of the form. In single-open
+  // mode, collapsing a tall section above the click (e.g. Hours) removes a large
+  // chunk of height, shifting the page — so we re-anchor the opened header into
+  // view. Works on desktop and mobile via window.scrollTo.
+  const accordionRef = useRef(null);
+  const [openSection, setOpenSection] = useState('s1-identity');
+
+  const handleAccordionChange = (value) => {
+    setOpenSection(value);
+    if (!value) return; // closing the current section — leave scroll alone
+    // Wait for the DOM to reflect the new open/closed state (animation is
+    // disabled below so layout is final), then bring the opened header to ~90px
+    // from the top of the viewport.
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        const wrapper = accordionRef.current;
+        if (!wrapper) return;
+        // First [data-accordion] in DOM order is the outer accordion root
+        // (nested accordions are descendants, so they come later).
+        const root = wrapper.querySelector('[data-accordion]');
+        if (!root) return;
+        // Top-level controls are direct children of an item; nested accordion
+        // controls live inside a panel, so this scope excludes them.
+        const control = root.querySelector(
+          ':scope > * > [data-accordion-control][data-active]'
+        );
+        if (!control) return;
+        const top = window.scrollY + control.getBoundingClientRect().top - 90;
+        window.scrollTo({ top: Math.max(top, 0), behavior: 'smooth' });
+      });
+    });
+  };
+
   // Custom hooks for form management
   const { form, isBusiness, isPark, isTrail, isEvent, isPaidListing, isFreeListing } = usePOIForm();
   const { user } = useAuth();
@@ -193,13 +227,17 @@ export default function POIForm() {
             {(() => {
               const Layout = selectLayout(form.values.poi_type, form.values.listing_type, form.values.is_sponsor);
               return (
-                <Accordion
-                  defaultValue="s1-identity"
-                  chevronPosition="right"
-                  variant="separated"
-                >
-                  <Layout form={form} userRole={userRole} poiId={poiId} />
-                </Accordion>
+                <div ref={accordionRef}>
+                  <Accordion
+                    value={openSection}
+                    onChange={handleAccordionChange}
+                    chevronPosition="right"
+                    variant="separated"
+                    transitionDuration={0}
+                  >
+                    <Layout form={form} userRole={userRole} poiId={poiId} />
+                  </Accordion>
+                </div>
               );
             })()}
             {false && (<Accordion defaultValue="_disabled" variant="separated">
