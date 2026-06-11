@@ -171,7 +171,7 @@ export default function TrailDetail({ poi }) {
             <div key={ap.id || idx} style={{ marginBottom: 12 }}>
               {ap.name && <h5>{ap.name}</h5>}
               {(ap.latitude != null && ap.longitude != null) && <div><strong>Lat / Long:</strong> {ap.latitude}, {ap.longitude}</div>}
-              {ap.what3words && <div><strong>what3words:</strong> {ap.what3words}</div>}
+              {/* #41: what3words is backend-only per spec — never rendered publicly. */}
               {ap.notes && <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(ap.notes) }} />}
             </div>
           ))}
