@@ -142,7 +142,9 @@ export default function BusinessFreeLayout({ form, userRole, poiId }) {
                 pl="md"
                 style={{ borderLeft: '2px solid var(--mantine-color-gray-3)' }}
               >
-                <Text fw={500} size="sm" c="dimmed">Accessible Parking Details (ADA)</Text>
+                <Text fw={500} size="sm" c="dimmed">
+                  Accessible Parking Details (ADA) <Text span c="red">*</Text>
+                </Text>
                 <SimpleGrid cols={{ base: 1, sm: 2 }}>
                   {PARKING_ADA_CHECKLIST.map((opt) => (
                     <Checkbox
@@ -153,6 +155,9 @@ export default function BusinessFreeLayout({ form, userRole, poiId }) {
                     />
                   ))}
                 </SimpleGrid>
+                {form.errors.accessible_parking_details && (
+                  <Text c="red" size="xs">{form.errors.accessible_parking_details}</Text>
+                )}
               </Stack>
             )}
           </Stack>

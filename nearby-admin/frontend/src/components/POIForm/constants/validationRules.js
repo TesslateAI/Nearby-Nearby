@@ -1,4 +1,36 @@
-import { getLegacyFieldsForListingType } from '../../../utils/constants';
+import { getLegacyFieldsForListingType, PARKING_OPTIONS } from '../../../utils/constants';
+
+// First PARKING_OPTIONS entry is the "Accessible Parking" option whose selection
+// reveals — and now requires — the ADA accessible-parking sub-checklist.
+export const ACCESSIBLE_PARKING_OPTION = PARKING_OPTIONS[0];
+export const ACCESSIBLE_PARKING_MESSAGE = 'Select at least one accessible parking detail';
+
+// When "Accessible Parking" is selected anywhere, at least one ADA sub-option is
+// required before the listing can be published. Covers BOTH shapes used across
+// the 5 POI types:
+//   - flat `parking_types` / `accessible_parking_details` (Business Free + legacy)
+//   - per-row `parking_locations[]` groupings (Business Paid, Park, Trail, Event)
+// Returns a Mantine errors object keyed by field path so the inline error lands
+// on the offending checklist.
+export const validateAccessibleParking = (values) => {
+  const errors = {};
+  const isSelected = (types) =>
+    Array.isArray(types) && types.includes(ACCESSIBLE_PARKING_OPTION);
+  const isEmpty = (details) => !Array.isArray(details) || details.length === 0;
+
+  if (isSelected(values?.parking_types) && isEmpty(values?.accessible_parking_details)) {
+    errors.accessible_parking_details = ACCESSIBLE_PARKING_MESSAGE;
+  }
+
+  const locations = Array.isArray(values?.parking_locations) ? values.parking_locations : [];
+  locations.forEach((row, index) => {
+    if (isSelected(row?.parking_types) && isEmpty(row?.accessible_parking_details)) {
+      errors[`parking_locations.${index}.accessible_parking_details`] = ACCESSIBLE_PARKING_MESSAGE;
+    }
+  });
+
+  return errors;
+};
 
 export const getValidationRules = () => ({
   name: (value) => (!value ? 'Name is required' : null),

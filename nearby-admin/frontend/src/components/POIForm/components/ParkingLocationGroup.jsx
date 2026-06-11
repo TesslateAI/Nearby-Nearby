@@ -85,10 +85,11 @@ export const ParkingLocationGroup = React.memo(function ParkingLocationGroup({
                 style={{ borderLeft: '2px solid var(--mantine-color-gray-3)' }}
               >
                 <Text fw={500} size="sm" c="dimmed">
-                  Accessible Parking Details (ADA)
+                  Accessible Parking Details (ADA) <Text span c="red">*</Text>
                 </Text>
                 <Checkbox.Group
                   value={adaDetails}
+                  error={form.errors[`${fieldName}.${index}.accessible_parking_details`]}
                   onChange={(value) =>
                     form.setFieldValue(
                       `${fieldName}.${index}.accessible_parking_details`,
