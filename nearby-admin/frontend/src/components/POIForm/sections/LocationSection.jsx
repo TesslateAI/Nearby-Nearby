@@ -144,21 +144,23 @@ export const LocationSection = React.memo(function LocationSection({
         Use Map Pin for Lat/Long
       </Button>
 
-      {/* Business Free (#74) + Business Paid (#75): lat_long_most_accurate +
-          dont_display_location move here from Business Identity. Other POI
-          types keep these toggles in their original locations and never render
-          them in Address. */}
-      {isBusiness && (isFreeListing || isPaidListing) && (
+      {/* Business Free (#74) + Business Paid (#75) + Park (#76):
+          lat_long_most_accurate moves here from Identity (Business also moves
+          dont_display_location). Other POI types keep these toggles in their
+          original locations and never render them in Address. */}
+      {((isBusiness && (isFreeListing || isPaidListing)) || isPark) && (
         <SimpleGrid cols={{ base: 1, sm: 2 }}>
           <Switch
             label="Lat/Long Most Accurate"
             description="Map coordinates are the most reliable location"
             {...form.getInputProps('lat_long_most_accurate', { type: 'checkbox' })}
           />
-          <Switch
-            label="Don't Display Location"
-            {...form.getInputProps('dont_display_location', { type: 'checkbox' })}
-          />
+          {isBusiness && (
+            <Switch
+              label="Don't Display Location"
+              {...form.getInputProps('dont_display_location', { type: 'checkbox' })}
+            />
+          )}
         </SimpleGrid>
       )}
 
@@ -243,13 +245,13 @@ export const LocationSection = React.memo(function LocationSection({
         </>
       )}
 
-      {/* Business Free (#74) + Business Paid (#75): the in-Address parking block
-          is removed entirely. For Free, parking_types moves to the dedicated
-          Parking accordion (single checkbox group). For Paid, the whole block
-          moves to the dedicated Parking accordion as repeatable
+      {/* Business Free (#74) + Business Paid (#75) + Park (#76): the in-Address
+          parking block is removed entirely. For Free, parking_types moves to the
+          dedicated Parking accordion (single checkbox group). For Paid and Park,
+          the whole block moves to the dedicated Parking accordion as repeatable
           ParkingLocationGroup groupings (parking_locations JSONB). Every other
           POI type renders this legacy block unchanged. */}
-      {!(isBusiness && (isFreeListing || isPaidListing)) && (
+      {!((isBusiness && (isFreeListing || isPaidListing)) || isPark) && (
         <>
           <Divider my="md" label="Parking Information" />
 
@@ -321,8 +323,10 @@ export const LocationSection = React.memo(function LocationSection({
         </>
       )}
 
-      {/* Parking Locations for Parks, Trails, and Events */}
-      {(isPark || isTrail || isEvent) && (
+      {/* Parking Locations for Trails and Events. Park (#76) moves this repeatable
+          parking grouping OUT of Address into the dedicated Parking accordion
+          (Acc 5) as the richer ParkingLocationGroup, so it is suppressed here. */}
+      {(isTrail || isEvent) && (
         <>
           <Divider my="md" label="Parking Locations" />
           {(form.values.parking_locations || []).map((parking, index) => (

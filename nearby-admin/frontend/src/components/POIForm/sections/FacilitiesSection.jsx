@@ -102,8 +102,11 @@ export const FacilitiesSection = React.memo(function FacilitiesSection({
         </>
       )}
 
-      {/* Entertainment and Facilities Options - Parks and Trails */}
-      {(isPark || isTrail) && (
+      {/* Entertainment and Facilities (legacy sub-group) — Trail only.
+          #76 removes both Entertainment and the legacy "Facilities" sub-group
+          from the Park form (system-level cleanup), so they are suppressed for
+          Park here. Trail keeps them until its own reorg. */}
+      {isTrail && !isPark && (
         <>
           <CheckboxGroupSection
             label="Entertainment"
@@ -140,68 +143,77 @@ export const FacilitiesSection = React.memo(function FacilitiesSection({
           previously caused two UIs to write incompatible values to
           alcohol_available. */}
 
-      <RichTextEditor
-        label="Additional Accessibility Details"
-        placeholder="Describe accessibility features"
-        value={form.values.wheelchair_details || ''}
-        onChange={(html) => form.setFieldValue('wheelchair_details', html)}
-        error={form.errors.wheelchair_details}
-      />
+      {/* #76 Park: Additional Accessibility Details + the mobility_access
+          tristates move OUT to the dedicated "Accessibility + Mobility Access"
+          accordion (Acc 7), and Smoking Options + details move OUT to the
+          "Alcohol + Smoking" accordion (Acc 12). Suppress all of them here for
+          Park only. Business / Trail / Event keep them in Facilities. */}
+      {!isPark && (
+        <>
+          <RichTextEditor
+            label="Additional Accessibility Details"
+            placeholder="Describe accessibility features"
+            value={form.values.wheelchair_details || ''}
+            onChange={(html) => form.setFieldValue('wheelchair_details', html)}
+            error={form.errors.wheelchair_details}
+          />
 
-      <Divider my="md" label="Wheelchair and Mobility Access Details" />
-      <Text size="sm" c="dimmed" mb="md">
-        These fields help users with mobility needs find accessible locations
-      </Text>
-      <SimpleGrid cols={{ base: 1, sm: 2 }}>
-        <Select
-          label="Step-Free Entry"
-          placeholder="Select..."
-          data={[
-            { value: 'yes', label: 'Yes' },
-            { value: 'no', label: 'No' },
-            { value: 'unknown', label: 'Unknown' }
-          ]}
-          value={form.values.mobility_access?.step_free_entry || ''}
-          onChange={(value) => form.setFieldValue('mobility_access.step_free_entry', value)}
-        />
-        <Select
-          label="Main Service Area Reachable Without Stairs"
-          placeholder="Select..."
-          data={[
-            { value: 'yes', label: 'Yes' },
-            { value: 'no', label: 'No' },
-            { value: 'unknown', label: 'Unknown' }
-          ]}
-          value={form.values.mobility_access?.main_area_accessible || ''}
-          onChange={(value) => form.setFieldValue('mobility_access.main_area_accessible', value)}
-        />
-        <Select
-          label="Primary Service on Ground Level"
-          placeholder="Select..."
-          data={[
-            { value: 'yes', label: 'Yes' },
-            { value: 'no', label: 'No' },
-            { value: 'unknown', label: 'Unknown' }
-          ]}
-          value={form.values.mobility_access?.ground_level_service || ''}
-          onChange={(value) => form.setFieldValue('mobility_access.ground_level_service', value)}
-        />
-      </SimpleGrid>
+          <Divider my="md" label="Wheelchair and Mobility Access Details" />
+          <Text size="sm" c="dimmed" mb="md">
+            These fields help users with mobility needs find accessible locations
+          </Text>
+          <SimpleGrid cols={{ base: 1, sm: 2 }}>
+            <Select
+              label="Step-Free Entry"
+              placeholder="Select..."
+              data={[
+                { value: 'yes', label: 'Yes' },
+                { value: 'no', label: 'No' },
+                { value: 'unknown', label: 'Unknown' }
+              ]}
+              value={form.values.mobility_access?.step_free_entry || ''}
+              onChange={(value) => form.setFieldValue('mobility_access.step_free_entry', value)}
+            />
+            <Select
+              label="Main Service Area Reachable Without Stairs"
+              placeholder="Select..."
+              data={[
+                { value: 'yes', label: 'Yes' },
+                { value: 'no', label: 'No' },
+                { value: 'unknown', label: 'Unknown' }
+              ]}
+              value={form.values.mobility_access?.main_area_accessible || ''}
+              onChange={(value) => form.setFieldValue('mobility_access.main_area_accessible', value)}
+            />
+            <Select
+              label="Primary Service on Ground Level"
+              placeholder="Select..."
+              data={[
+                { value: 'yes', label: 'Yes' },
+                { value: 'no', label: 'No' },
+                { value: 'unknown', label: 'Unknown' }
+              ]}
+              value={form.values.mobility_access?.ground_level_service || ''}
+              onChange={(value) => form.setFieldValue('mobility_access.ground_level_service', value)}
+            />
+          </SimpleGrid>
 
-      <CheckboxGroupSection
-        label="Smoking Policy"
-        fieldName="smoking_options"
-        options={SMOKING_OPTIONS}
-        cols={{ base: 2, sm: 3 }}
-        form={form}
-      />
-      <RichTextEditor
-        label="Smoking Policy Details"
-        placeholder="Additional smoking policy information"
-        value={form.values.smoking_details || ''}
-        onChange={(html) => form.setFieldValue('smoking_details', html)}
-        error={form.errors.smoking_details}
-      />
+          <CheckboxGroupSection
+            label="Smoking Policy"
+            fieldName="smoking_options"
+            options={SMOKING_OPTIONS}
+            cols={{ base: 2, sm: 3 }}
+            form={form}
+          />
+          <RichTextEditor
+            label="Smoking Policy Details"
+            placeholder="Additional smoking policy information"
+            value={form.values.smoking_details || ''}
+            onChange={(html) => form.setFieldValue('smoking_details', html)}
+            error={form.errors.smoking_details}
+          />
+        </>
+      )}
 
       {isEvent && (
         <CheckboxGroupSection
@@ -447,7 +459,7 @@ export const PublicAmenitiesSection = React.memo(function PublicAmenitiesSection
 // age_groups MultiSelect have been REMOVED from the layout that mounts this
 // section. That data now lives inside each playground_locations[idx].
 // -----------------------------------------------------------------------------
-export const PlaygroundsSection = React.memo(function PlaygroundsSection({ form }) {
+export const PlaygroundsSection = React.memo(function PlaygroundsSection({ form, isPark, id }) {
   return (
     <Stack>
       <Switch
@@ -458,25 +470,32 @@ export const PlaygroundsSection = React.memo(function PlaygroundsSection({ form 
 
       {form.values.playground_available && (
         <>
-          <MultiSelect
-            label="Playground Types"
-            placeholder="Select one or more"
-            data={PLAYGROUND_TYPES}
-            value={form.values.playground_types || []}
-            onChange={(v) => form.setFieldValue('playground_types', v)}
-            searchable
-            clearable
-          />
+          {/* #76 Park Acc 9: Playground Types + Surfaces are removed from the
+              accordion top and live INSIDE each playground grouping instead (see
+              PlaygroundRowExtras). Trail / Event keep the POI-level multiselects. */}
+          {!isPark && (
+            <>
+              <MultiSelect
+                label="Playground Types"
+                placeholder="Select one or more"
+                data={PLAYGROUND_TYPES}
+                value={form.values.playground_types || []}
+                onChange={(v) => form.setFieldValue('playground_types', v)}
+                searchable
+                clearable
+              />
 
-          <MultiSelect
-            label="Playground Surface(s)"
-            placeholder="Select one or more"
-            data={PARK_PLAYGROUND_SURFACES}
-            value={form.values.playground_surface_types || []}
-            onChange={(v) => form.setFieldValue('playground_surface_types', v)}
-            searchable
-            clearable
-          />
+              <MultiSelect
+                label="Playground Surface(s)"
+                placeholder="Select one or more"
+                data={PARK_PLAYGROUND_SURFACES}
+                value={form.values.playground_surface_types || []}
+                onChange={(v) => form.setFieldValue('playground_surface_types', v)}
+                searchable
+                clearable
+              />
+            </>
+          )}
 
           <Divider my="xs" label="Playground Locations" />
           <Text size="xs" c="dimmed">
@@ -488,6 +507,8 @@ export const PlaygroundsSection = React.memo(function PlaygroundsSection({ form 
             fieldName="playground_locations"
             extraFields="playground"
             addLabel="Add a playground"
+            isPark={isPark}
+            id={id}
           />
         </>
       )}

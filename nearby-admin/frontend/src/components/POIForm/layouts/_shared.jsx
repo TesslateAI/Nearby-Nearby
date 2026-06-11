@@ -17,7 +17,10 @@ import {
   ALCOHOL_AVAILABLE_OPTIONS, WIFI_OPTIONS, CELL_SERVICE_OPTIONS,
   PET_OPTIONS, PAYMENT_METHODS, DISCOUNT_TYPES,
   PLAYGROUND_AGE_GROUPS, PLAYGROUND_ADA_CATEGORIES,
+  PLAYGROUND_TYPES, PARK_PLAYGROUND_SURFACES,
 } from '../../../utils/constants';
+import CoordinateInput from '../components/CoordinateInput';
+import { PlaygroundPhotosUpload } from '../ImageIntegration';
 
 // -----------------------------------------------------------------------------
 // Admin-Only Section — last item in every layout. Renders only for admin role.
@@ -555,9 +558,11 @@ export function AlcoholAvailableSelect({ form }) {
 // MultiSelect plus the 4-category ADA checklist.  Pure controlled component
 // driven through the parent form via `fieldName` + index.
 // -----------------------------------------------------------------------------
-function PlaygroundRowExtras({ form, fieldName, idx }) {
+function PlaygroundRowExtras({ form, fieldName, idx, isPark = false, id = null }) {
   const row = form.values?.[fieldName]?.[idx] || {};
   const ageGroups = Array.isArray(row.age_groups) ? row.age_groups : [];
+  const types = Array.isArray(row.types) ? row.types : [];
+  const surfaces = Array.isArray(row.surfaces) ? row.surfaces : [];
   const adaChecklist = (row.ada_checklist && typeof row.ada_checklist === 'object')
     ? row.ada_checklist
     : {};
@@ -583,6 +588,31 @@ function PlaygroundRowExtras({ form, fieldName, idx }) {
         clearable
       />
 
+      {/* #76 Park Acc 9: Playground Types + Surfaces live INSIDE each grouping
+          (moved off the accordion top), plus per-grouping Images + Notes. */}
+      {isPark && (
+        <>
+          <MultiSelect
+            label="Playground Types"
+            placeholder="Select one or more"
+            data={PLAYGROUND_TYPES}
+            value={types}
+            onChange={(v) => form.setFieldValue(`${fieldName}.${idx}.types`, v)}
+            searchable
+            clearable
+          />
+          <MultiSelect
+            label="Playground Surface Types"
+            placeholder="Select one or more"
+            data={PARK_PLAYGROUND_SURFACES}
+            value={surfaces}
+            onChange={(v) => form.setFieldValue(`${fieldName}.${idx}.surfaces`, v)}
+            searchable
+            clearable
+          />
+        </>
+      )}
+
       <Stack gap="xs">
         <Text fw={500}>ADA Accessibility Checklist</Text>
         {Object.entries(PLAYGROUND_ADA_CATEGORIES).map(([catKey, cat]) => {
@@ -604,6 +634,24 @@ function PlaygroundRowExtras({ form, fieldName, idx }) {
           );
         })}
       </Stack>
+
+      {isPark && (
+        <>
+          <Textarea
+            label="Playground Notes"
+            placeholder="Additional details about this playground"
+            autosize
+            minRows={2}
+            value={row.notes || ''}
+            onChange={(e) => form.setFieldValue(`${fieldName}.${idx}.notes`, e.currentTarget.value)}
+          />
+          {id ? (
+            <PlaygroundPhotosUpload poiId={id} playgroundIndex={idx} form={form} />
+          ) : (
+            <Text size="sm" c="dimmed">Save POI first to enable playground photo upload</Text>
+          )}
+        </>
+      )}
     </Stack>
   );
 }
@@ -625,7 +673,13 @@ export function RepeatableLocationGroup({
   extraFields = null,
   addLabel = 'Add another location',
   showName = true,
+  // #76 Park Acc 9 only: when isPark + extraFields='playground', each grouping
+  // uses the CoordinateInput bundle (w3w + manual lat/long) and renders the
+  // per-grouping Types/Surfaces/Images/Notes. Defaults keep Trail/Event intact.
+  isPark = false,
+  id = null,
 }) {
+  const isPlayground = extraFields === 'playground';
   const rows = Array.isArray(form.values?.[fieldName]) ? form.values[fieldName] : [];
 
   const addRow = () => {
@@ -652,7 +706,7 @@ export function RepeatableLocationGroup({
           <Stack>
             <Group justify="space-between" align="center">
               <Text fw={500}>
-                {extraFields === 'playground' ? 'Playground' : 'Location'} {idx + 1}
+                {isPlayground ? 'Playground' : 'Location'} {idx + 1}
               </Text>
               <ActionIcon
                 variant="light"
@@ -675,27 +729,47 @@ export function RepeatableLocationGroup({
               />
             )}
 
-            <SimpleGrid cols={{ base: 1, sm: 2 }}>
-              <NumberInput
-                label="Latitude"
-                placeholder="35.7128"
-                decimalScale={6}
-                value={row?.lat ?? ''}
-                onChange={(v) => form.setFieldValue(`${fieldName}.${idx}.lat`, v)}
+            {isPlayground && isPark ? (
+              <CoordinateInput
+                label="Playground Coordinates"
+                latLabel="Playground Latitude"
+                lngLabel="Playground Longitude"
+                value={{ lat: row?.lat ?? null, lng: row?.lng ?? null, w3w: row?.w3w ?? '' }}
+                onChange={(v) => {
+                  form.setFieldValue(`${fieldName}.${idx}.lat`, v.lat);
+                  form.setFieldValue(`${fieldName}.${idx}.lng`, v.lng);
+                  form.setFieldValue(`${fieldName}.${idx}.w3w`, v.w3w ?? '');
+                }}
               />
-              <NumberInput
-                label="Longitude"
-                placeholder="-79.0064"
-                decimalScale={6}
-                value={row?.lng ?? ''}
-                onChange={(v) => form.setFieldValue(`${fieldName}.${idx}.lng`, v)}
-              />
-            </SimpleGrid>
+            ) : (
+              <SimpleGrid cols={{ base: 1, sm: 2 }}>
+                <NumberInput
+                  label="Latitude"
+                  placeholder="35.7128"
+                  decimalScale={6}
+                  value={row?.lat ?? ''}
+                  onChange={(v) => form.setFieldValue(`${fieldName}.${idx}.lat`, v)}
+                />
+                <NumberInput
+                  label="Longitude"
+                  placeholder="-79.0064"
+                  decimalScale={6}
+                  value={row?.lng ?? ''}
+                  onChange={(v) => form.setFieldValue(`${fieldName}.${idx}.lng`, v)}
+                />
+              </SimpleGrid>
+            )}
 
-            {extraFields === 'playground' && (
+            {isPlayground && (
               <>
                 <Divider my="xs" />
-                <PlaygroundRowExtras form={form} fieldName={fieldName} idx={idx} />
+                <PlaygroundRowExtras
+                  form={form}
+                  fieldName={fieldName}
+                  idx={idx}
+                  isPark={isPark}
+                  id={id}
+                />
               </>
             )}
           </Stack>

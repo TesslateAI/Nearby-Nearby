@@ -140,13 +140,17 @@ export const ConnectionsSection = React.memo(function ConnectionsSection({ form,
         </>
       )}
 
-      <RichTextEditor
-        label="Camping & Lodging"
-        placeholder="Available camping or lodging options"
-        value={form.values.camping_lodging || ''}
-        onChange={(html) => form.setFieldValue('camping_lodging', html)}
-        error={form.errors.camping_lodging}
-      />
+      {/* #76 Park: Camping + Lodging is removed for MVP (rebuilding later
+          post-launch). Suppress for Park; other consumers keep it. */}
+      {!isPark && (
+        <RichTextEditor
+          label="Camping & Lodging"
+          placeholder="Available camping or lodging options"
+          value={form.values.camping_lodging || ''}
+          onChange={(html) => form.setFieldValue('camping_lodging', html)}
+          error={form.errors.camping_lodging}
+        />
+      )}
     </Stack>
   );
 });
