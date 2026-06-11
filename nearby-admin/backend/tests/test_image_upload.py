@@ -4,6 +4,7 @@ Test suite for image upload functionality
 import pytest
 import io
 import uuid
+from unittest.mock import AsyncMock
 from PIL import Image as PILImage
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
@@ -13,6 +14,25 @@ from app.models.poi import PointOfInterest, POIType
 from app.models.image import Image, ImageType
 from app.models.user import User
 from app.database import get_db
+
+
+@pytest.fixture(autouse=True)
+def mock_s3(monkeypatch):
+    """
+    The admin unit-test environment has no S3/MinIO, so the real s3_client is
+    None and every upload raises 'S3 not configured properly'. Patch it with an
+    async fake that returns a deterministic URL per storage key, letting the
+    upload endpoints exercise their real logic (validation, count limits,
+    variant creation, DB writes) without external storage.
+    """
+    def fake_upload(content, key, mime_type, metadata=None):
+        return f"https://test-bucket.s3.amazonaws.com/{key}"
+
+    fake = AsyncMock()
+    fake.upload_file.side_effect = fake_upload
+    fake.delete_file.return_value = True
+    monkeypatch.setattr("app.services.image_service.s3_client", fake)
+    return fake
 
 
 @pytest.fixture

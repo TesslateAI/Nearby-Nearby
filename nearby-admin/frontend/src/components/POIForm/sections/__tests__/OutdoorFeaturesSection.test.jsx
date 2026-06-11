@@ -10,7 +10,9 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MantineProvider } from '@mantine/core';
 import { useForm } from '@mantine/form';
-import { OutdoorFeaturesSection } from '../OutdoorFeaturesSection';
+// The fishing_types reveal lives in HuntingFishingSection, which was split out
+// of OutdoorFeaturesSection during the POI-form section reorg.
+import { HuntingFishingSection } from '../OutdoorFeaturesSection';
 
 // RichTextEditor uses a TipTap editor that does not initialise cleanly in
 // jsdom — stub it out so component tests can focus on conditional rendering.
@@ -45,7 +47,7 @@ function Wrapper({ fishingAllowed = 'no' }) {
   });
   return (
     <MantineProvider>
-      <OutdoorFeaturesSection form={form} />
+      <HuntingFishingSection form={form} />
     </MantineProvider>
   );
 }
