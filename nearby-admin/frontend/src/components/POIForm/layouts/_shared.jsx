@@ -7,7 +7,7 @@ import {
 } from '@mantine/core';
 import { IconTrash, IconPlus } from '@tabler/icons-react';
 import {
-  SPONSOR_LEVEL_OPTIONS, LISTING_TYPES,
+  SPONSOR_LEVEL_OPTIONS,
   IDEAL_FOR_ATMOSPHERE, IDEAL_FOR_AGE_GROUP, IDEAL_FOR_SOCIAL_SETTINGS,
   IDEAL_FOR_LOCAL_SPECIAL, IDEAL_FOR_SPECIAL_NEEDS,
   PARKING_OPTIONS, PARKING_ADA_CHECKLIST, ARRIVAL_METHOD_OPTIONS,
@@ -23,71 +23,65 @@ import CoordinateInput from '../components/CoordinateInput';
 import { PlaygroundPhotosUpload } from '../ImageIntegration';
 
 // -----------------------------------------------------------------------------
-// Admin-Only Section — last item in every layout. Renders only for admin role.
+// Admin-Only Section — last item in every layout. Always rendered as a normal
+// part of the form (every portal account is an admin); not role-gated.
 // -----------------------------------------------------------------------------
-export function AdminOnlyAccordionItem({ form, userRole }) {
-  if (userRole !== 'admin') return null;
+export function AdminOnlyAccordionItem({ form }) {
   return (
     <Accordion.Item value="admin-only">
       <Accordion.Control>
-        <Group>
-          <Text fw={600}>Admin Only</Text>
-          <Badge size="sm" variant="filled" color="red">Admin</Badge>
-        </Group>
+        <Text fw={600}>Admin Only</Text>
       </Accordion.Control>
       <Accordion.Panel>
         <Stack>
+          {/* Verified + Hub badges — drive frontend display */}
+          <Divider label="Verified + Hub Badges" labelPosition="left" />
           <Switch
             label="Verified"
-            description="POI has been reviewed and verified by an admin"
+            description="When ON, the Verified badge shows on the listing card + page"
             checked={!!form.values.is_verified}
             onChange={(e) => form.setFieldValue('is_verified', e.currentTarget.checked)}
           />
           <Switch
             label="Disaster Hub"
-            description="Designated shelter / supply / information hub during emergencies"
+            description="When ON, the Disaster Hub badge shows on the listing card + page"
             checked={!!form.values.is_disaster_hub}
             onChange={(e) => form.setFieldValue('is_disaster_hub', e.currentTarget.checked)}
           />
+
+          {/* Sponsor — drives the sponsor icon on cards */}
+          <Divider label="Sponsor" labelPosition="left" mt="sm" />
           <Switch
             label="Sponsor"
-            description="Toggle to mark this POI as a paid sponsor"
+            description="When ON, the Sponsor icon shows on the listing card"
             checked={!!form.values.is_sponsor}
             onChange={(e) => {
               const v = e.currentTarget.checked;
               form.setFieldValue('is_sponsor', v);
-              if (v) form.setFieldValue('listing_type', 'paid');
-              else form.setFieldValue('sponsor_level', null);
+              if (!v) form.setFieldValue('sponsor_level', null);
             }}
           />
           {form.values.is_sponsor && (
             <Select
               label="Sponsor Level"
+              description="Platform / State / County / Town — controls which level icon displays"
+              placeholder="Select sponsor level"
               data={SPONSOR_LEVEL_OPTIONS}
               value={form.values.sponsor_level}
               onChange={(v) => form.setFieldValue('sponsor_level', v)}
               clearable
             />
           )}
-          <Select
-            label="Listing Type"
-            data={LISTING_TYPES}
-            value={form.values.listing_type}
-            onChange={(v) => form.setFieldValue('listing_type', v)}
-          />
+
+          {/* Internal notes — never displayed publicly */}
+          <Divider label="Internal Notes" labelPosition="left" mt="sm" />
           <Textarea
             label="Admin Notes"
-            description="Internal notes — not shown publicly"
+            description="Internal notes — never displayed publicly"
             minRows={3}
             autosize
             {...form.getInputProps('admin_notes')}
           />
-          <Group>
-            <Text size="sm" c="dimmed">Has Been Published:</Text>
-            <Badge color={form.values.has_been_published ? 'green' : 'gray'}>
-              {form.values.has_been_published ? 'Yes' : 'No'}
-            </Badge>
-          </Group>
         </Stack>
       </Accordion.Panel>
     </Accordion.Item>

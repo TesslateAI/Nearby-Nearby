@@ -53,13 +53,12 @@ vi.mock('../../components/ServiceAnimalAlert', () => ({
   default: () => <div data-testid="stub-service-animal" />,
 }));
 vi.mock('../_shared', () => ({
-  AdminOnlyAccordionItem: ({ userRole }) =>
-    userRole === 'admin' ? (
-      <Accordion.Item value="admin-only">
-        <Accordion.Control>Admin Only</Accordion.Control>
-        <Accordion.Panel>stub</Accordion.Panel>
-      </Accordion.Item>
-    ) : null,
+  AdminOnlyAccordionItem: () => (
+    <Accordion.Item value="admin-only">
+      <Accordion.Control>Admin Only</Accordion.Control>
+      <Accordion.Panel>stub</Accordion.Panel>
+    </Accordion.Item>
+  ),
   IdealForGrouped: () => <div data-testid="stub-ideal-for" />,
 }));
 
@@ -77,10 +76,10 @@ function Harness({ userRole = 'editor' } = {}) {
 }
 
 describe('BusinessFreeLayout — #74 reorg', () => {
-  it('renders 12 visible Accordion.Item blocks for non-admin users (Admin-Only hidden)', () => {
+  it('renders 13 Accordion.Item blocks including the always-on Admin Only section', () => {
     const { container } = render(<Harness userRole="editor" />);
     const items = container.querySelectorAll('[data-accordion-control="true"], .mantine-Accordion-control');
-    expect(items.length).toBe(12);
+    expect(items.length).toBe(13);
   });
 
   it('first accordion item is s1-identity', () => {

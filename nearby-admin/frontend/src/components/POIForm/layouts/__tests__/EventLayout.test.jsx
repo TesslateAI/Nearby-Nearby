@@ -74,13 +74,12 @@ vi.mock('../../ImageIntegration', () => ({
   shouldUseImageUpload: () => true,
 }));
 vi.mock('../_shared', () => ({
-  AdminOnlyAccordionItem: ({ userRole }) =>
-    userRole === 'admin' ? (
-      <Accordion.Item value="admin-only">
-        <Accordion.Control>Admin Only</Accordion.Control>
-        <Accordion.Panel>stub</Accordion.Panel>
-      </Accordion.Item>
-    ) : null,
+  AdminOnlyAccordionItem: () => (
+    <Accordion.Item value="admin-only">
+      <Accordion.Control>Admin Only</Accordion.Control>
+      <Accordion.Panel>stub</Accordion.Panel>
+    </Accordion.Item>
+  ),
   IdealForGrouped: () => <div data-testid="stub-ideal-for" />,
   FullAmenitiesBlock: () => <div data-testid="stub-amenities-block" />,
   ConnectivityRow: () => <div data-testid="stub-connectivity" />,
@@ -133,11 +132,11 @@ const EXPECTED_ORDER = [
 ];
 
 describe('EventLayout — #73 20-accordion reorg', () => {
-  it('renders all 19 data sections for non-admin users in spec order', () => {
+  it('renders all 19 data sections + the Admin Only section in spec order', () => {
     const { container } = render(<Harness userRole="editor" />);
     const controls = container.querySelectorAll('.mantine-Accordion-control');
     const texts = Array.from(controls).map((c) => c.textContent.trim());
-    expect(texts.length).toBe(19);
+    expect(texts.length).toBe(20);
     EXPECTED_ORDER.forEach((expected, idx) => {
       expect(texts[idx]).toContain(expected);
     });
@@ -149,11 +148,11 @@ describe('EventLayout — #73 20-accordion reorg', () => {
     expect(firstButton.textContent).toMatch(/Event Identity/);
   });
 
-  it('last data item is Contact + Compliance', () => {
+  it('Admin Only is last; Contact + Compliance is the last data section', () => {
     const { container } = render(<Harness userRole="editor" />);
     const controls = container.querySelectorAll('.mantine-Accordion-control');
-    const last = controls[controls.length - 1];
-    expect(last.textContent.trim()).toBe('Contact + Compliance');
+    expect(controls[controls.length - 1].textContent.trim()).toBe('Admin Only');
+    expect(controls[controls.length - 2].textContent.trim()).toBe('Contact + Compliance');
   });
 
   it('Admin-Only is the LAST accordion when userRole=admin', () => {
