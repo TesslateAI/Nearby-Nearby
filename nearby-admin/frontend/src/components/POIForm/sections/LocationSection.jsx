@@ -7,7 +7,7 @@ import { IconPlus, IconTrash, IconMapPin, IconInfoCircle } from '@tabler/icons-r
 import RichTextEditor from '../../RichTextEditor';
 import { DebouncedTextInput } from '../../DebouncedTextInput';
 import { getDebouncedInputProps } from '../constants/helpers';
-import { PARKING_OPTIONS, VENUE_SETTINGS } from '../../../utils/constants';
+import { PARKING_OPTIONS } from '../../../utils/constants';
 import CoordinateInput from '../components/CoordinateInput';
 import {
   EntryPhotoUpload,
@@ -144,11 +144,11 @@ export const LocationSection = React.memo(function LocationSection({
         Use Map Pin for Lat/Long
       </Button>
 
-      {/* Business Free (#74) + Business Paid (#75) + Park (#76) + Trail (#77):
-          lat_long_most_accurate moves here from Identity (Business also moves
-          dont_display_location). Other POI types keep these toggles in their
-          original locations and never render them in Address. */}
-      {((isBusiness && (isFreeListing || isPaidListing)) || isPark || isTrail) && (
+      {/* Business Free (#74) + Business Paid (#75) + Park (#76) + Trail (#77) +
+          Event (#73): lat_long_most_accurate moves here from Identity (Business
+          also moves dont_display_location). Other POI types keep these toggles
+          in their original locations and never render them in Address. */}
+      {((isBusiness && (isFreeListing || isPaidListing)) || isPark || isTrail || isEvent) && (
         <SimpleGrid cols={{ base: 1, sm: 2 }}>
           <Switch
             label="Lat/Long Most Accurate"
@@ -212,22 +212,13 @@ export const LocationSection = React.memo(function LocationSection({
         </>
       )}
 
-      {/* Event Venue Information */}
+      {/* Event Entry Information.
+          #73 Event reorg: the "Venue Settings" (event.venue_settings JSONB) array
+          moved OUT of Address into the Event Details accordion (Acc 3), rendered
+          directly in EventLayout. Address keeps only the Event Entry Notes +
+          Photos for Event. */}
       {isEvent && (
         <>
-          <Divider my="md" label="Venue Settings" />
-          <Checkbox.Group
-            label="Venue Settings"
-            value={form.values.event?.venue_settings || []}
-            onChange={(value) => form.setFieldValue('event.venue_settings', value)}
-          >
-            <SimpleGrid cols={{ base: 2, sm: 4 }}>
-              {VENUE_SETTINGS.map(setting => (
-                <Checkbox key={setting} value={setting} label={setting} />
-              ))}
-            </SimpleGrid>
-          </Checkbox.Group>
-
           <Divider my="md" label="Event Entry Information" />
           <RichTextEditor
             label="Event Entry Notes"
@@ -324,11 +315,11 @@ export const LocationSection = React.memo(function LocationSection({
         </>
       )}
 
-      {/* Parking Locations for Events only. Park (#76) and Trail (#77) move this
-          repeatable parking grouping OUT of Address into the dedicated Parking
-          accordion as the richer ParkingLocationGroup, so it is suppressed for
-          both. Event keeps the legacy in-Address block. */}
-      {isEvent && (
+      {/* Parking Locations. Park (#76), Trail (#77), and Event (#73) all move
+          this repeatable parking grouping OUT of Address into the dedicated
+          Parking accordion as the richer ParkingLocationGroup, so it is now
+          suppressed for every type. Guard kept explicit for safety. */}
+      {false && (
         <>
           <Divider my="md" label="Parking Locations" />
           {(form.values.parking_locations || []).map((parking, index) => (

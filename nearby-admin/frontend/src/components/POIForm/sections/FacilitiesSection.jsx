@@ -7,7 +7,7 @@ import { IconPlus } from '@tabler/icons-react';
 import RichTextEditor from '../../RichTextEditor';
 import {
   KEY_FACILITIES, PAYMENT_METHODS,
-  SMOKING_OPTIONS, WIFI_OPTIONS, PET_OPTIONS,
+  SMOKING_OPTIONS, PET_OPTIONS,
   PUBLIC_TOILET_OPTIONS, ENTERTAINMENT_OPTIONS, PARK_FACILITIES,
   PLAYGROUND_TYPES, PARK_PLAYGROUND_SURFACES
 } from '../../../utils/constants';
@@ -32,8 +32,8 @@ export const FacilitiesSection = React.memo(function FacilitiesSection({
     <Stack>
       {/* Key Facilities moved to Core Information for all POI types */}
 
-      {/* Pay Phone Locations - Parks and Trails */}
-      {(isPark || isTrail) && (
+      {/* Pay Phone Locations - Parks, Trails, and Events (#73 adds Event). */}
+      {(isPark || isTrail || isEvent) && (
         <>
           <Divider my="md" label="Pay Phone Locations" />
           {(form.values.payphone_locations || []).map((phone, index) => (
@@ -127,8 +127,11 @@ export const FacilitiesSection = React.memo(function FacilitiesSection({
         </>
       )}
 
-      {/* Payment Methods - only for Business and Events (Parks/Trails don't need this) */}
-      {(isBusiness || isEvent) && (
+      {/* Payment Methods. #73 Event reorg moves Payment Methods OUT of
+          On Site Facilities into the Event Details accordion (Acc 3), rendered
+          directly in EventLayout, so it is suppressed here for Event. Business
+          keeps it inline. */}
+      {isBusiness && (
         <CheckboxGroupSection
           label="Payment Methods"
           fieldName="payment_methods"
@@ -144,12 +147,12 @@ export const FacilitiesSection = React.memo(function FacilitiesSection({
           previously caused two UIs to write incompatible values to
           alcohol_available. */}
 
-      {/* #76 Park + #77 Trail: Additional Accessibility Details + the
-          mobility_access tristates move OUT to the dedicated "Accessibility +
-          Mobility Access" accordion, and Smoking Options + details move OUT to
-          the "Alcohol + Smoking" accordion. Suppress all of them here for Park
-          and Trail. Business / Event keep them in Facilities. */}
-      {!isPark && !isTrail && (
+      {/* #76 Park + #77 Trail + #73 Event: Additional Accessibility Details +
+          the mobility_access tristates move OUT to the dedicated "Accessibility
+          + Mobility Access" accordion, and Smoking Options + details move OUT to
+          the "Alcohol + Smoking" accordion. Suppress all of them here for Park,
+          Trail, and Event. Business keeps them in Facilities. */}
+      {!isPark && !isTrail && !isEvent && (
         <>
           <RichTextEditor
             label="Additional Accessibility Details"
@@ -216,15 +219,9 @@ export const FacilitiesSection = React.memo(function FacilitiesSection({
         </>
       )}
 
-      {isEvent && (
-        <CheckboxGroupSection
-          label="Event Amenities - WiFi Options"
-          fieldName="wifi_options"
-          options={WIFI_OPTIONS}
-          cols={{ base: 2, sm: 3 }}
-          form={form}
-        />
-      )}
+      {/* #73 Event reorg: "Event Amenities - WiFi Options" REMOVED entirely —
+          it duplicated the new Facilities + Amenities JSONB content (WiFi lives
+          in amenities.wifi via FullAmenitiesBlock / ConnectivityRow). */}
 
       {/* Issue #60 — Drone Policy controls moved out of FacilitiesSection
           into a dedicated Park layout section (s14-drone-policy). Do not
