@@ -119,7 +119,7 @@ export const PricingMembershipsSection = React.memo(function PricingMembershipsS
   );
 });
 
-export const ConnectionsSection = React.memo(function ConnectionsSection({ form, isBusiness, isPark }) {
+export const ConnectionsSection = React.memo(function ConnectionsSection({ form, isBusiness, isPark, isTrail }) {
   return (
     <Stack>
       {isBusiness && (
@@ -140,9 +140,10 @@ export const ConnectionsSection = React.memo(function ConnectionsSection({ form,
         </>
       )}
 
-      {/* #76 Park: Camping + Lodging is removed for MVP (rebuilding later
-          post-launch). Suppress for Park; other consumers keep it. */}
-      {!isPark && (
+      {/* #76 Park + #77 Trail: Camping + Lodging is removed for MVP (rebuilding
+          later post-launch). Suppress for Park and Trail; other consumers keep
+          it. */}
+      {!isPark && !isTrail && (
         <RichTextEditor
           label="Camping & Lodging"
           placeholder="Available camping or lodging options"

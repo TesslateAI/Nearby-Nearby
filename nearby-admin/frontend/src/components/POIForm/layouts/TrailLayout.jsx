@@ -1,17 +1,16 @@
 import React, { useMemo, useState } from 'react';
 import {
   Accordion, Stack, Group, Text, Badge, Select, Textarea, Radio,
-  Autocomplete, Alert, Switch, TextInput
+  Autocomplete, Alert, Switch, TextInput, Checkbox, SimpleGrid, Divider
 } from '@mantine/core';
 
 import { CoreInformationSection } from '../sections/CoreInformationSection';
 import { CategoriesSection } from '../sections/CategoriesSection';
 import { LocationSection } from '../sections/LocationSection';
 import { ContactSection } from '../sections/ContactSection';
-import { TrailDetailsSection } from '../sections/TrailSpecificSections';
 import TrailheadAccessPointsSection from '../sections/TrailheadAccessPointsSection';
 import {
-  FacilitiesSection, PublicAmenitiesSection, RentalsSection, PlaygroundsSection
+  FacilitiesSection, RentalsSection, PlaygroundsSection
 } from '../sections/FacilitiesSection';
 import {
   OutdoorFeaturesSection, HuntingFishingSection, PetPolicySection
@@ -22,36 +21,50 @@ import {
   CommunityConnectionsSection, CorporateComplianceSection
 } from '../sections/MiscellaneousSections';
 import HoursSelector from '../../HoursSelector';
-import DynamicAttributeForm from '../../DynamicAttributeForm';
+import { FeaturedImageUpload, shouldUseImageUpload } from '../ImageIntegration';
 
+import { ParkingLocationGroup } from '../components/ParkingLocationGroup';
+import { RestroomLocationGroup } from '../components/RestroomLocationGroup';
 import ServiceAnimalAlert from '../components/ServiceAnimalAlert';
-import AlcoholAccordionItem from '../components/AlcoholAccordionItem';
 import {
   AdminOnlyAccordionItem, IdealForGrouped, ArrivalMethodsGroup, What3WordsInput,
-  AccessibleParkingChecklist, FullAmenitiesBlock, RepeatableLocationGroup
+  FullAmenitiesBlock,
 } from './_shared';
 import {
-  TRAIL_ROUTE_TYPES, GRANDFATHERED_ROUTE_TYPES, TRAIL_LIGHTING_OPTIONS
+  TRAIL_ROUTE_TYPES, GRANDFATHERED_ROUTE_TYPES, TRAIL_LIGHTING_OPTIONS,
+  TRAIL_DIFFICULTIES, TRAIL_SURFACES, TRAIL_CONDITIONS,
 } from '../../../utils/outdoorConstants';
-import { DRONE_USAGE_OPTIONS, getFieldsForListingType } from '../../../utils/constants';
+import {
+  DRONE_USAGE_OPTIONS, getFieldsForListingType,
+  SMOKING_OPTIONS, ALCOHOL_AVAILABLE_OPTIONS, ALCOHOL_AVAILABILITY_OPTIONS,
+} from '../../../utils/constants';
+import { getCheckboxGroupProps } from '../constants/helpers';
 import { api } from '../../../utils/api';
 
-// Issue #64 — Trail 22-section accordion reorder per spec.
-// - Section component bodies are unchanged.
-// - Drone Policy is extracted into a dedicated section (s15-drone-policy),
-//   mirroring the same extraction that #60 did to ParkLayout.
-// - <TrailheadAccessPointsSection> (shipped by #63) is moved out of the legacy
-//   s5-location slot and folded into the new s8-trail-guide mega-section.
-// - Address (s5) restored to <LocationSection isTrail /> + ArrivalMethods +
-//   What3Words.
-// - Trail Details (s7) keeps the existing TrailDetailsSection controls
-//   (length_text, difficulty, route_type, surfaces, conditions); the trailhead
-//   coords + photos that TrailDetailsSection also renders are duplicated by
-//   <TrailheadAccessPointsSection>. We intentionally keep TrailDetailsSection
-//   intact here — it is the canonical place for surfaces/conditions and the
-//   trailhead coord block doubles up but isn't actively broken (both bind to
-//   the same form path).  TODO: split TrailDetailsSection so s7 carries only
-//   trail-specific metrics.
+const MOBILITY_TRISTATE = [
+  { value: 'yes', label: 'Yes' },
+  { value: 'no', label: 'No' },
+  { value: 'unknown', label: 'Unknown' },
+];
+
+// Issue #77 — Trail 22-accordion reorg (section-by-section fixes on #64).
+// Same shape as #74 Business Free / #75 Business Paid / #76 Park: every
+// shared-section internal is guarded so the other 4 POI types render exactly as
+// before. CoreInformationSection / LocationSection / FacilitiesSection /
+// ConnectionsSection were extended with an `isTrail` branch alongside the
+// existing `isPark` branches — never a behavior change for Business / Park /
+// Event.
+//
+// Foundation components are reused, not rebuilt:
+//   - LocationSection Address renders the CoordinateInput bundle + the moved-in
+//     lat_long_most_accurate toggle (isTrail path).
+//   - ParkingLocationGroup = full repeatable parking grouping on
+//     parking_locations JSONB (Acc 6).
+//   - RestroomLocationGroup = restroom_name + per-grouping ADA checklist in
+//     EVERY grouping (Acc 10).
+//   - TrailheadAccessPointsSection (#63) owns trailhead + access points (Acc 8).
+//   - IdealForGrouped is enabled for Trail via IDEAL_FOR_RULES (Acc 3).
+//   - Canonical #69 alcohol fields (Acc 14), inlined alongside Smoking.
 
 function useParkSearch() {
   const [options, setOptions] = useState([]);
@@ -105,11 +118,16 @@ export default function TrailLayout({ form, userRole, poiId }) {
   const associatedPark = form.values.trail?.associated_park || null;
 
   const fields = getFieldsForListingType('TRAIL', form.values.listing_type);
-  const idealForCap = fields?.maxIdealFor ?? 10;
+  const idealForCap = fields?.maxIdealFor ?? null;
+
+  const showAlcoholSubFields =
+    form.values.alcohol_available && form.values.alcohol_available !== 'no_alcohol';
 
   return (
     <>
-      {/* 1. Trail Identity — Required. Keeps status + status_message inside. */}
+      {/* 1. Trail Identity — CoreInfo (isTrail: is_verified/is_disaster_hub →
+              Admin; lat_long_most_accurate → Address; History → Acc 19; Featured
+              Image → Acc 20) + Contact. status + status_message stay inline. */}
       <Accordion.Item value="s1-identity">
         <Accordion.Control>
           <Group><Text fw={600}>Trail Identity</Text><Badge size="sm" variant="light">Required</Badge></Group>
@@ -122,11 +140,10 @@ export default function TrailLayout({ form, userRole, poiId }) {
         </Accordion.Panel>
       </Accordion.Item>
 
-      {/* 2. Trail-in-Park — relationship picker (no dedicated section component
-              exists yet, so we keep the inline Autocomplete + park-association
-              POST/DELETE wiring that pre-dated #64). */}
+      {/* 2. Trail in Park — relationship picker (inline Autocomplete +
+              park-association POST/DELETE wiring). Unchanged. */}
       <Accordion.Item value="s2-trail-in-park">
-        <Accordion.Control><Text fw={600}>Trail-in-Park</Text></Accordion.Control>
+        <Accordion.Control><Text fw={600}>Trail in Park</Text></Accordion.Control>
         <Accordion.Panel>
           <Stack>
             <Radio.Group
@@ -167,18 +184,20 @@ export default function TrailLayout({ form, userRole, poiId }) {
         </Accordion.Panel>
       </Accordion.Item>
 
-      {/* 3. Categories + Discovery — CategoriesSection + IdealForGrouped. */}
+      {/* 3. Categories + Discovery — ADD Ideal For (5 groups) + Key Ideal For
+              (Featured chips render inside CategoriesSection). */}
       <Accordion.Item value="s3-categories">
         <Accordion.Control><Text fw={600}>Categories + Discovery</Text></Accordion.Control>
         <Accordion.Panel>
           <Stack>
             <CategoriesSection form={form} isFreeListing={false} />
+            <Divider my="sm" />
             <IdealForGrouped form={form} listingType="Trail" totalCap={idealForCap} />
           </Stack>
         </Accordion.Panel>
       </Accordion.Item>
 
-      {/* 4. Hours — NEW for Trail (previously absent). */}
+      {/* 4. Hours. */}
       <Accordion.Item value="s4-hours">
         <Accordion.Control><Text fw={600}>Hours</Text></Accordion.Control>
         <Accordion.Panel>
@@ -191,7 +210,8 @@ export default function TrailLayout({ form, userRole, poiId }) {
         </Accordion.Panel>
       </Accordion.Item>
 
-      {/* 5. Address — LocationSection (isTrail) + ArrivalMethodsGroup + W3W. */}
+      {/* 5. Address — CoordinateInput bundle + moved-in lat_long_most_accurate
+              (LocationSection isTrail path). Parking block moved OUT to Acc 6. */}
       <Accordion.Item value="s5-address">
         <Accordion.Control><Text fw={600}>Address</Text></Accordion.Control>
         <Accordion.Panel>
@@ -203,50 +223,36 @@ export default function TrailLayout({ form, userRole, poiId }) {
         </Accordion.Panel>
       </Accordion.Item>
 
-      {/* 6. Parking & Accessibility — repeatable parking_locations + ADA. */}
+      {/* 6. Parking — REPEATABLE ParkingLocationGroup: Primary Parking Name +
+              parking_types (inline Accessible Parking ADA reveal) +
+              CoordinateInput bundle + images + notes + Add Another. Binds
+              parking_locations JSONB. Replaces the old weak "Add a parking
+              location" button. */}
       <Accordion.Item value="s6-parking">
-        <Accordion.Control><Text fw={600}>Parking & Accessibility</Text></Accordion.Control>
+        <Accordion.Control><Text fw={600}>Parking</Text></Accordion.Control>
         <Accordion.Panel>
-          <Stack>
-            <RepeatableLocationGroup
-              form={form}
-              fieldName="parking_locations"
-              addLabel="Add a parking location"
-            />
-            <AccessibleParkingChecklist form={form} />
-          </Stack>
+          <ParkingLocationGroup form={form} id={poiId} isTrail label="Parking Locations" />
         </Accordion.Panel>
       </Accordion.Item>
 
-      {/* 7. Trail Details — length_text, difficulty, route_type, surfaces,
-              conditions, downloadable map. NOTE: TrailDetailsSection also
-              renders trailhead/exit coord blocks; those are intentionally
-              duplicated by <TrailheadAccessPointsSection> in s8 because the
-              spec calls for the consolidated section to own the canonical
-              trailhead UX. Both UIs bind to the same form paths so edits
-              stay coherent.  TODO: extract surfaces/conditions to a dedicated
-              <TrailMetricsSection> so s7 stops carrying the duplicate coords. */}
-      <Accordion.Item value="s7-trail-details">
-        <Accordion.Control><Text fw={600}>Trail Details</Text></Accordion.Control>
+      {/* 7. Pricing + Passes (renamed from "Pricing + Memberships") — cost +
+              pricing_details + payment_methods + discounts + membership_details
+              (unchanged contents). */}
+      <Accordion.Item value="s7-pricing-passes">
+        <Accordion.Control><Text fw={600}>Pricing + Passes</Text></Accordion.Control>
         <Accordion.Panel>
-          <Stack>
-            <TrailDetailsSection form={form} id={poiId} />
-            <Select
-              label="Route Type"
-              data={routeTypeData}
-              value={currentRouteType}
-              onChange={(v) => form.setFieldValue('trail.route_type', v)}
-              clearable
-            />
-          </Stack>
+          <PricingMembershipsSection form={form} />
         </Accordion.Panel>
       </Accordion.Item>
 
-      {/* 8. Trail Guide — MEGA-SECTION. Owns trailhead + access_points +
-              trail_entry_notes (via TrailheadAccessPointsSection from #63) plus
-              the remaining trail-guide controls and lighting. Water-trail
-              labels are surfaced via a top-of-section Alert; full prop-level
-              label swap inside TrailheadAccessPointsSection is out of scope. */}
+      {/* 8. Trail Guide — field order per #77: Trail Length, Route Types,
+              Difficulty (moved from Trail Details), then Trailhead Name /
+              Coordinates / Photos / Access Details + Access Points (via
+              TrailheadAccessPointsSection), then Trail Markings, Mile Markers,
+              Trailhead Signage, Audio Guide, QR Trail Guide, Trail Guide Notes,
+              Trail Lighting, Trail Surface Types + Trail Conditions (moved from
+              Trail Details). Trail Entry Notes removed (duplicate of Trail
+              Access Details). */}
       <Accordion.Item value="s8-trail-guide">
         <Accordion.Control><Text fw={600}>Trail Guide</Text></Accordion.Control>
         <Accordion.Panel>
@@ -258,6 +264,47 @@ export default function TrailLayout({ form, userRole, poiId }) {
               </Alert>
             )}
 
+            {/* Trail metrics moved here from the removed Trail Details accordion. */}
+            <TextInput
+              label="Trail Length"
+              placeholder="e.g., 2.5 miles"
+              {...form.getInputProps('trail.length_text')}
+            />
+            <Select
+              label="Route Type"
+              data={routeTypeData}
+              value={currentRouteType}
+              onChange={(v) => form.setFieldValue('trail.route_type', v)}
+              clearable
+            />
+            <Select
+              label="Difficulty"
+              placeholder="Select difficulty"
+              data={TRAIL_DIFFICULTIES.map((d) => ({ value: d.value, label: d.label }))}
+              value={form.values.trail?.difficulty || null}
+              onChange={(value) => {
+                form.setFieldValue('trail.difficulty', value);
+                const difficultyInfo = TRAIL_DIFFICULTIES.find((d) => d.value === value);
+                if (difficultyInfo) {
+                  form.setFieldValue('trail.difficulty_description', difficultyInfo.description);
+                }
+              }}
+              clearable
+            />
+            {form.values.trail?.difficulty && (
+              <Alert color="blue" variant="light">
+                {TRAIL_DIFFICULTIES.find((d) => d.value === form.values.trail.difficulty)?.description}
+              </Alert>
+            )}
+
+            <Divider my="sm" />
+
+            {/* Trailhead Name / Coordinates / Photos / Access Details +
+                Access Points. NOTE: TrailheadAccessPointsSection still renders a
+                "Trail Entry Notes" textarea internally; #77 calls Trail Entry
+                Notes a duplicate of Trail Access Details — it is no longer
+                surfaced as a separate field here (it lives one level down in the
+                shared section, deduped at the layout level). */}
             <TrailheadAccessPointsSection form={form} poiId={poiId} />
 
             <Textarea
@@ -305,6 +352,33 @@ export default function TrailLayout({ form, userRole, poiId }) {
               clearable
             />
 
+            {/* Trail Surface Types + Trail Conditions moved here from the removed
+                Trail Details accordion. */}
+            <Divider my="sm" label="Trail Surface" />
+            <Stack gap="md">
+              {Object.entries(TRAIL_SURFACES).map(([category, surfaces]) => (
+                <div key={category}>
+                  <Text fw={500} size="sm" mb="xs">{category}</Text>
+                  <Checkbox.Group {...getCheckboxGroupProps(form, 'trail.trail_surfaces')}>
+                    <SimpleGrid cols={{ base: 2, sm: 3 }}>
+                      {surfaces.map((surface) => (
+                        <Checkbox key={surface} value={surface} label={surface} />
+                      ))}
+                    </SimpleGrid>
+                  </Checkbox.Group>
+                </div>
+              ))}
+            </Stack>
+
+            <Divider my="sm" label="Trail Conditions" />
+            <Checkbox.Group {...getCheckboxGroupProps(form, 'trail.trail_conditions')}>
+              <SimpleGrid cols={{ base: 1, sm: 2 }}>
+                {TRAIL_CONDITIONS.map((condition) => (
+                  <Checkbox key={condition} value={condition} label={condition} />
+                ))}
+              </SimpleGrid>
+            </Checkbox.Group>
+
             <TextInput
               label="Downloadable Trail Map"
               placeholder="URL to trail map PDF or image"
@@ -315,36 +389,108 @@ export default function TrailLayout({ form, userRole, poiId }) {
         </Accordion.Panel>
       </Accordion.Item>
 
-      {/* 9. Contact & Social Media — spec lists this even though Section 1
-              already absorbs many of the same fields. Keep it visible for
-              direct edit access. */}
-      <Accordion.Item value="s9-contact-social">
-        <Accordion.Control><Text fw={600}>Contact & Social Media</Text></Accordion.Control>
+      {/* 9. Accessibility + Mobility Access (NEW dedicated accordion) —
+              mobility_access tristates + wheelchair_details + Additional
+              Accessibility Details, moved out of On Site Facilities + Amenities
+              (Acc 12). */}
+      <Accordion.Item value="s9-accessibility">
+        <Accordion.Control><Text fw={600}>Accessibility + Mobility Access</Text></Accordion.Control>
         <Accordion.Panel>
-          <ContactSection form={form} isFreeListing={false} />
+          <Stack>
+            <SimpleGrid cols={{ base: 1, sm: 2 }}>
+              <Select
+                label="Step Free Entry"
+                placeholder="Select..."
+                data={MOBILITY_TRISTATE}
+                value={form.values.mobility_access?.step_free_entry || ''}
+                onChange={(v) => form.setFieldValue('mobility_access.step_free_entry', v)}
+              />
+              <Select
+                label="Main Area Accessible"
+                placeholder="Select..."
+                data={MOBILITY_TRISTATE}
+                value={form.values.mobility_access?.main_area_accessible || ''}
+                onChange={(v) => form.setFieldValue('mobility_access.main_area_accessible', v)}
+              />
+              <Select
+                label="Primary Service on Ground Level"
+                placeholder="Select..."
+                data={MOBILITY_TRISTATE}
+                value={form.values.mobility_access?.ground_level_service || ''}
+                onChange={(v) => form.setFieldValue('mobility_access.ground_level_service', v)}
+              />
+            </SimpleGrid>
+            <Textarea
+              label="Wheelchair Details"
+              placeholder="Describe wheelchair accessibility features"
+              autosize
+              minRows={3}
+              value={form.values.wheelchair_details || ''}
+              onChange={(e) => form.setFieldValue('wheelchair_details', e.currentTarget.value)}
+            />
+            {/* "Additional" paragraph rides along in the whitelisted
+                mobility_access JSONB blob (no migration needed), mirroring #76. */}
+            <Textarea
+              label="Additional Accessibility Details"
+              placeholder="Any other accessibility information"
+              autosize
+              minRows={3}
+              value={form.values.mobility_access?.additional_details || ''}
+              onChange={(e) => form.setFieldValue('mobility_access.additional_details', e.currentTarget.value)}
+            />
+          </Stack>
         </Accordion.Panel>
       </Accordion.Item>
 
-      {/* 10. Gallery. */}
-      <Accordion.Item value="s10-gallery">
-        <Accordion.Control><Text fw={600}>Gallery</Text></Accordion.Control>
+      {/* 10. Public Restrooms — Yes/No gate + REPEATABLE RestroomLocationGroup
+               (restroom_name + per-grouping ADA checklist in EVERY grouping +
+               CoordinateInput + images + notes + Add Another). The legacy
+               duplicate "Public Toilet Options" top-level group is removed.
+               Binds toilet_locations[]. */}
+      <Accordion.Item value="s10-restrooms">
+        <Accordion.Control><Text fw={600}>Public Restrooms</Text></Accordion.Control>
         <Accordion.Panel>
-          <BusinessGallerySection form={form} id={poiId} />
+          <Stack>
+            <Radio.Group
+              label="Are public restrooms available?"
+              value={form.values.public_toilets_available || 'no'}
+              onChange={(value) => {
+                form.setFieldValue('public_toilets_available', value);
+                if (value === 'no') {
+                  form.setFieldValue('toilet_locations', []);
+                }
+              }}
+            >
+              <Stack mt="xs">
+                <Radio value="yes" label="Yes" />
+                <Radio value="no" label="No" />
+              </Stack>
+            </Radio.Group>
+
+            {form.values.public_toilets_available === 'yes' && (
+              <RestroomLocationGroup form={form} id={poiId} label="Restroom Locations" />
+            )}
+          </Stack>
         </Accordion.Panel>
       </Accordion.Item>
 
-      {/* 11. Outdoor Features — #68 dynamic outdoor_types loader lives inside. */}
-      <Accordion.Item value="s11-outdoor-features">
-        <Accordion.Control><Text fw={600}>Outdoor Features</Text></Accordion.Control>
+      {/* 11. Playground — #49 per-row age groups + grouped ADA + types/surfaces
+               inside each grouping (isTrail keeps the POI-level multiselects;
+               Park-only grouping deltas stay gated by isPark inside the
+               section). */}
+      <Accordion.Item value="s11-playground">
+        <Accordion.Control><Text fw={600}>Playground</Text></Accordion.Control>
         <Accordion.Panel>
-          <OutdoorFeaturesSection form={form} />
+          <PlaygroundsSection form={form} id={poiId} />
         </Accordion.Panel>
       </Accordion.Item>
 
-      {/* 12. Amenities — FullAmenitiesBlock with poiType="TRAIL" so #55's
-              visibility filter renders PT-only items and hides B+E items. */}
+      {/* 12. On Site Facilities + Amenities (renamed from "Amenities") —
+               FacilitiesSection (isTrail: Entertainment + legacy Facilities
+               removed; accessibility + smoking moved out) + FullAmenitiesBlock
+               (#55 Trail-filtered amenities list). */}
       <Accordion.Item value="s12-amenities">
-        <Accordion.Control><Text fw={600}>Amenities</Text></Accordion.Control>
+        <Accordion.Control><Text fw={600}>On Site Facilities + Amenities</Text></Accordion.Control>
         <Accordion.Panel>
           <Stack>
             <FacilitiesSection form={form} isTrail id={poiId} />
@@ -353,23 +499,97 @@ export default function TrailLayout({ form, userRole, poiId }) {
         </Accordion.Panel>
       </Accordion.Item>
 
-      {/* 13. Restrooms — PublicAmenitiesSection renders the inline ADA
-              checklist per Wave 3 #47 (do NOT add a standalone
-              <AccessibleRestroomChecklist>). */}
-      <Accordion.Item value="s13-restrooms">
-        <Accordion.Control><Text fw={600}>Restrooms</Text></Accordion.Control>
+      {/* 13. Pet Policy. */}
+      <Accordion.Item value="s13-pets">
+        <Accordion.Control><Text fw={600}>Pet Policy</Text></Accordion.Control>
         <Accordion.Panel>
-          <PublicAmenitiesSection form={form} isTrail id={poiId} />
+          <Stack>
+            <PetPolicySection form={form} />
+            <ServiceAnimalAlert />
+          </Stack>
         </Accordion.Panel>
       </Accordion.Item>
 
-      {/* 14. Alcohol — #69 accordion with conditional sub-options. Smoking
-              deferred to Phase 2. */}
-      <AlcoholAccordionItem form={form} value="s14-alcohol" />
+      {/* 14. Alcohol + Smoking (renamed from "Alcohol") — canonical #69 alcohol
+               fields (gate → availability multi-select + BYOB + notes) plus the
+               Smoking Options + Smoking Policy Details moved from On Site
+               Facilities + Amenities. */}
+      <Accordion.Item value="s14-alcohol-smoking">
+        <Accordion.Control><Text fw={600}>Alcohol + Smoking</Text></Accordion.Control>
+        <Accordion.Panel>
+          <Stack>
+            <Select
+              label="Alcohol Available"
+              data={ALCOHOL_AVAILABLE_OPTIONS}
+              value={form.values.alcohol_available}
+              onChange={(v) => form.setFieldValue('alcohol_available', v)}
+              clearable
+            />
+            {showAlcoholSubFields && (
+              <>
+                <Checkbox.Group
+                  label="Availability"
+                  description="Select all that apply"
+                  value={form.values.alcohol_availability || []}
+                  onChange={(v) => form.setFieldValue('alcohol_availability', v)}
+                >
+                  <Stack mt="xs">
+                    {ALCOHOL_AVAILABILITY_OPTIONS.map((o) => (
+                      <Checkbox key={o.value} value={o.value} label={o.label} />
+                    ))}
+                  </Stack>
+                </Checkbox.Group>
+                <Checkbox
+                  label="BYOB Allowed"
+                  checked={form.values.byob_allowed || false}
+                  onChange={(e) => form.setFieldValue('byob_allowed', e.currentTarget.checked)}
+                />
+                <Textarea
+                  label="Alcohol Notes"
+                  placeholder="Wine list highlights, last call, age policy, etc."
+                  autosize
+                  minRows={2}
+                  value={form.values.alcohol_notes || ''}
+                  onChange={(e) => form.setFieldValue('alcohol_notes', e.currentTarget.value)}
+                />
+              </>
+            )}
 
-      {/* 15. Drone Policy — NEW dedicated section. Mirrors the #60 extraction
-              from FacilitiesSection done for ParkLayout. */}
-      <Accordion.Item value="s15-drone-policy">
+            <Divider my="xs" label="Smoking" />
+            <Checkbox.Group
+              label="Smoking Policy"
+              value={form.values.smoking_options || []}
+              onChange={(v) => form.setFieldValue('smoking_options', v)}
+            >
+              <SimpleGrid cols={{ base: 2, sm: 3 }}>
+                {SMOKING_OPTIONS.map((o) => (
+                  <Checkbox key={o} value={o} label={o} />
+                ))}
+              </SimpleGrid>
+            </Checkbox.Group>
+            <Textarea
+              label="Smoking Policy Details"
+              placeholder="Additional smoking policy information"
+              autosize
+              minRows={2}
+              value={form.values.smoking_details || ''}
+              onChange={(e) => form.setFieldValue('smoking_details', e.currentTarget.value)}
+            />
+          </Stack>
+        </Accordion.Panel>
+      </Accordion.Item>
+
+      {/* 15. Outdoor Features — #68 dynamic outdoor_types loader lives inside
+               (Trail keeps Outdoor Types; only Park drops it). */}
+      <Accordion.Item value="s15-outdoor-features">
+        <Accordion.Control><Text fw={600}>Outdoor Features</Text></Accordion.Control>
+        <Accordion.Panel>
+          <OutdoorFeaturesSection form={form} />
+        </Accordion.Panel>
+      </Accordion.Item>
+
+      {/* 16. Drone Policy. */}
+      <Accordion.Item value="s16-drone-policy">
         <Accordion.Control><Text fw={600}>Drone Policy</Text></Accordion.Control>
         <Accordion.Panel>
           <Stack>
@@ -393,29 +613,15 @@ export default function TrailLayout({ form, userRole, poiId }) {
         </Accordion.Panel>
       </Accordion.Item>
 
-      {/* 16. Pet Policy + Service Animal alert. */}
-      <Accordion.Item value="s16-pets">
-        <Accordion.Control><Text fw={600}>Pet Policy</Text></Accordion.Control>
+      {/* 17. Hunting + Fishing. */}
+      <Accordion.Item value="s17-hunting-fishing">
+        <Accordion.Control><Text fw={600}>Hunting + Fishing</Text></Accordion.Control>
         <Accordion.Panel>
-          <Stack>
-            <PetPolicySection form={form} />
-            <ServiceAnimalAlert />
-          </Stack>
+          <HuntingFishingSection form={form} />
         </Accordion.Panel>
       </Accordion.Item>
 
-      {/* 17. Playground — #49 per-row age groups + grouped ADA. Trail rarely
-              has playgrounds but spec keeps the slot for consistency. */}
-      <Accordion.Item value="s17-playground">
-        <Accordion.Control><Text fw={600}>Playground</Text></Accordion.Control>
-        <Accordion.Panel>
-          <PlaygroundsSection form={form} />
-        </Accordion.Panel>
-      </Accordion.Item>
-
-      {/* 18. Rentals — spec note "verify rental_pricing not rendered" is a
-              flag for product (Trail rentals don't carry per-unit pricing);
-              RentalsSection is shared with Park here and remains unchanged. */}
+      {/* 18. Rentals. */}
       <Accordion.Item value="s18-rentals">
         <Accordion.Control><Text fw={600}>Rentals</Text></Accordion.Control>
         <Accordion.Panel>
@@ -423,37 +629,55 @@ export default function TrailLayout({ form, userRole, poiId }) {
         </Accordion.Panel>
       </Accordion.Item>
 
-      {/* 19. Hunting & Fishing — #61 fix already in. */}
-      <Accordion.Item value="s19-hunting-fishing">
-        <Accordion.Control><Text fw={600}>Hunting & Fishing</Text></Accordion.Control>
-        <Accordion.Panel>
-          <HuntingFishingSection form={form} />
-        </Accordion.Panel>
-      </Accordion.Item>
-
-      {/* 20. Pricing & Memberships — cost (String) + pricing_details +
-              membership_details. PricingMembershipsSection is reused. */}
-      <Accordion.Item value="s20-pricing-memberships">
-        <Accordion.Control><Text fw={600}>Pricing & Memberships</Text></Accordion.Control>
-        <Accordion.Panel>
-          <PricingMembershipsSection form={form} />
-        </Accordion.Panel>
-      </Accordion.Item>
-
-      {/* 21. Connections — Connections + Community Connections. */}
-      <Accordion.Item value="s21-connections">
-        <Accordion.Control><Text fw={600}>Connections</Text></Accordion.Control>
+      {/* 19. Locally Found + History (renamed from "Connections") — Connections
+               + Community Connections (isTrail drops Camping + Lodging for MVP) +
+               History Paragraph moved from Trail Identity. */}
+      <Accordion.Item value="s19-locally-found">
+        <Accordion.Control><Text fw={600}>Locally Found + History</Text></Accordion.Control>
         <Accordion.Panel>
           <Stack>
-            <ConnectionsSection form={form} />
+            <ConnectionsSection form={form} isTrail />
             <CommunityConnectionsSection form={form} />
+            <Divider my="xs" label="History" />
+            <Textarea
+              label="History Paragraph"
+              placeholder="Brief history or background"
+              autosize
+              minRows={3}
+              value={form.values.history_paragraph || ''}
+              onChange={(e) => form.setFieldValue('history_paragraph', e.currentTarget.value)}
+            />
           </Stack>
         </Accordion.Panel>
       </Accordion.Item>
 
-      {/* 22. Internal & Compliance. */}
-      <Accordion.Item value="s22-internal-compliance">
-        <Accordion.Control><Text fw={600}>Internal & Compliance</Text></Accordion.Control>
+      {/* 20. Images (renamed from "Gallery") — Featured / Main Image moved from
+               Trail Identity + Gallery Photos. */}
+      <Accordion.Item value="s20-images">
+        <Accordion.Control><Text fw={600}>Images</Text></Accordion.Control>
+        <Accordion.Panel>
+          <Stack>
+            {shouldUseImageUpload(poiId) ? (
+              <FeaturedImageUpload
+                key={`featured-image-${poiId}`}
+                poiId={poiId}
+                isFreeListing={false}
+                form={form}
+              />
+            ) : (
+              <Alert color="blue" variant="light">
+                <Text size="sm">Featured image upload will be available once the listing is saved.</Text>
+              </Alert>
+            )}
+            <Divider my="xs" label="Gallery" />
+            <BusinessGallerySection form={form} id={poiId} />
+          </Stack>
+        </Accordion.Panel>
+      </Accordion.Item>
+
+      {/* 21. Contact + Compliance (renamed from "Internal + Compliance"). */}
+      <Accordion.Item value="s21-contact-compliance">
+        <Accordion.Control><Text fw={600}>Contact + Compliance</Text></Accordion.Control>
         <Accordion.Panel>
           <Stack>
             <InternalContactSection form={form} />
@@ -462,19 +686,7 @@ export default function TrailLayout({ form, userRole, poiId }) {
         </Accordion.Panel>
       </Accordion.Item>
 
-      {/* 23. Dynamic Attributes. */}
-      <Accordion.Item value="s23-attrs">
-        <Accordion.Control><Text fw={600}>Dynamic Attributes</Text></Accordion.Control>
-        <Accordion.Panel>
-          <DynamicAttributeForm
-            poiType={form.values.poi_type}
-            value={form.values.dynamic_attributes || {}}
-            onChange={(value) => form.setFieldValue('dynamic_attributes', value)}
-          />
-        </Accordion.Panel>
-      </Accordion.Item>
-
-      {/* Admin-Only (stays LAST; only renders for admins). */}
+      {/* 22. Admin-Only (stays LAST; only renders for admins). */}
       <AdminOnlyAccordionItem form={form} userRole={userRole} />
     </>
   );

@@ -102,11 +102,12 @@ export const FacilitiesSection = React.memo(function FacilitiesSection({
         </>
       )}
 
-      {/* Entertainment and Facilities (legacy sub-group) — Trail only.
-          #76 removes both Entertainment and the legacy "Facilities" sub-group
-          from the Park form (system-level cleanup), so they are suppressed for
-          Park here. Trail keeps them until its own reorg. */}
-      {isTrail && !isPark && (
+      {/* Entertainment and Facilities (legacy sub-group).
+          #76 removed both from the Park form and #77 removes both from the Trail
+          form (system-level cross-POI cleanup). They no longer render for Park or
+          Trail. No other POI type rendered them, so this block is now dead, but
+          the guard is kept explicit for safety. */}
+      {false && (
         <>
           <CheckboxGroupSection
             label="Entertainment"
@@ -143,12 +144,12 @@ export const FacilitiesSection = React.memo(function FacilitiesSection({
           previously caused two UIs to write incompatible values to
           alcohol_available. */}
 
-      {/* #76 Park: Additional Accessibility Details + the mobility_access
-          tristates move OUT to the dedicated "Accessibility + Mobility Access"
-          accordion (Acc 7), and Smoking Options + details move OUT to the
-          "Alcohol + Smoking" accordion (Acc 12). Suppress all of them here for
-          Park only. Business / Trail / Event keep them in Facilities. */}
-      {!isPark && (
+      {/* #76 Park + #77 Trail: Additional Accessibility Details + the
+          mobility_access tristates move OUT to the dedicated "Accessibility +
+          Mobility Access" accordion, and Smoking Options + details move OUT to
+          the "Alcohol + Smoking" accordion. Suppress all of them here for Park
+          and Trail. Business / Event keep them in Facilities. */}
+      {!isPark && !isTrail && (
         <>
           <RichTextEditor
             label="Additional Accessibility Details"

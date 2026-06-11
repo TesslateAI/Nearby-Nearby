@@ -144,11 +144,11 @@ export const LocationSection = React.memo(function LocationSection({
         Use Map Pin for Lat/Long
       </Button>
 
-      {/* Business Free (#74) + Business Paid (#75) + Park (#76):
+      {/* Business Free (#74) + Business Paid (#75) + Park (#76) + Trail (#77):
           lat_long_most_accurate moves here from Identity (Business also moves
           dont_display_location). Other POI types keep these toggles in their
           original locations and never render them in Address. */}
-      {((isBusiness && (isFreeListing || isPaidListing)) || isPark) && (
+      {((isBusiness && (isFreeListing || isPaidListing)) || isPark || isTrail) && (
         <SimpleGrid cols={{ base: 1, sm: 2 }}>
           <Switch
             label="Lat/Long Most Accurate"
@@ -245,13 +245,14 @@ export const LocationSection = React.memo(function LocationSection({
         </>
       )}
 
-      {/* Business Free (#74) + Business Paid (#75) + Park (#76): the in-Address
-          parking block is removed entirely. For Free, parking_types moves to the
-          dedicated Parking accordion (single checkbox group). For Paid and Park,
-          the whole block moves to the dedicated Parking accordion as repeatable
-          ParkingLocationGroup groupings (parking_locations JSONB). Every other
-          POI type renders this legacy block unchanged. */}
-      {!((isBusiness && (isFreeListing || isPaidListing)) || isPark) && (
+      {/* Business Free (#74) + Business Paid (#75) + Park (#76) + Trail (#77):
+          the in-Address parking block is removed entirely. For Free,
+          parking_types moves to the dedicated Parking accordion (single checkbox
+          group). For Paid, Park, and Trail, the whole block moves to the
+          dedicated Parking accordion as repeatable ParkingLocationGroup
+          groupings (parking_locations JSONB). Every other POI type renders this
+          legacy block unchanged. */}
+      {!((isBusiness && (isFreeListing || isPaidListing)) || isPark || isTrail) && (
         <>
           <Divider my="md" label="Parking Information" />
 
@@ -323,10 +324,11 @@ export const LocationSection = React.memo(function LocationSection({
         </>
       )}
 
-      {/* Parking Locations for Trails and Events. Park (#76) moves this repeatable
-          parking grouping OUT of Address into the dedicated Parking accordion
-          (Acc 5) as the richer ParkingLocationGroup, so it is suppressed here. */}
-      {(isTrail || isEvent) && (
+      {/* Parking Locations for Events only. Park (#76) and Trail (#77) move this
+          repeatable parking grouping OUT of Address into the dedicated Parking
+          accordion as the richer ParkingLocationGroup, so it is suppressed for
+          both. Event keeps the legacy in-Address block. */}
+      {isEvent && (
         <>
           <Divider my="md" label="Parking Locations" />
           {(form.values.parking_locations || []).map((parking, index) => (

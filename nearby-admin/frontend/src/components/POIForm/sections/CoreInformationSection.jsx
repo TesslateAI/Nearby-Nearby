@@ -110,10 +110,11 @@ export const CoreInformationSection = React.memo(function CoreInformationSection
         />
       </SimpleGrid>
 
-      {/* Business Free (#74) + Business Paid (#75) + Park (#76): these toggles
-          move OUT of Identity — is_verified / is_disaster_hub → Admin-Only;
-          lat_long_most_accurate → Address. Other POI types keep them here. */}
-      {!((isBusiness && (isFreeListing || isPaidListing)) || isPark) && (
+      {/* Business Free (#74) + Business Paid (#75) + Park (#76) + Trail (#77):
+          these toggles move OUT of Identity — is_verified / is_disaster_hub →
+          Admin-Only; lat_long_most_accurate → Address. Other POI types keep
+          them here. */}
+      {!((isBusiness && (isFreeListing || isPaidListing)) || isPark || isTrail) && (
         <SimpleGrid cols={{ base: 1, sm: 3 }}>
           <Switch
             label="Verified"
@@ -183,10 +184,11 @@ export const CoreInformationSection = React.memo(function CoreInformationSection
 
       {/* Event cost moved to EventCostSection (Task 139) */}
 
-      {/* #75 Business Paid + #76 Park move the History paragraph OUT of Identity
-          into the dedicated "Locally Found + History" accordion, so it must NOT
-          render here for Business Paid or Park. Trail / Event keep it inline. */}
-      {((isPaidListing && !isBusiness && !isPark) || isTrail || isEvent) && (
+      {/* #75 Business Paid + #76 Park + #77 Trail move the History paragraph OUT
+          of Identity into the dedicated "Locally Found + History" accordion, so
+          it must NOT render here for Business Paid, Park, or Trail. Event keeps
+          it inline. */}
+      {((isPaidListing && !isBusiness && !isPark && !isTrail) || isEvent) && (
         <>
           <Divider my="md" label="History" />
           <RichTextEditor
@@ -200,11 +202,11 @@ export const CoreInformationSection = React.memo(function CoreInformationSection
         </>
       )}
 
-      {/* Business Free (#74) + Business Paid (#75) + Park (#76): the Featured /
-          Main Image upload moves to the dedicated Images accordion (rendered
-          there via <FeaturedImageUpload>). For every other POI type the
-          Featured Image stays inline in Core Information. */}
-      {!((isBusiness && (isFreeListing || isPaidListing)) || isPark) && (
+      {/* Business Free (#74) + Business Paid (#75) + Park (#76) + Trail (#77):
+          the Featured / Main Image upload moves to the dedicated Images
+          accordion (rendered there via <FeaturedImageUpload>). For every other
+          POI type the Featured Image stays inline in Core Information. */}
+      {!((isBusiness && (isFreeListing || isPaidListing)) || isPark || isTrail) && (
         shouldUseImageUpload(id) ? (
           <FeaturedImageUpload
             key={`featured-image-${id}`}
