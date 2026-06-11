@@ -155,12 +155,10 @@ export const LocationSection = React.memo(function LocationSection({
             description="Map coordinates are the most reliable location"
             {...form.getInputProps('lat_long_most_accurate', { type: 'checkbox' })}
           />
-          {isBusiness && (
-            <Switch
-              label="Don't Display Location"
-              {...form.getInputProps('dont_display_location', { type: 'checkbox' })}
-            />
-          )}
+          <Switch
+            label="Don't Display Location"
+            {...form.getInputProps('dont_display_location', { type: 'checkbox' })}
+          />
         </SimpleGrid>
       )}
 

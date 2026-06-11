@@ -390,8 +390,9 @@ export default function TrailLayout({ form, userRole, poiId }) {
       </Accordion.Item>
 
       {/* 9. Accessibility + Mobility Access (NEW dedicated accordion) —
-              mobility_access tristates + wheelchair_details + Additional
-              Accessibility Details, moved out of On Site Facilities + Amenities
+              mobility_access tristates + a single consolidated "Accessibility
+              and Mobility" paragraph (wheelchair_details), moved out of On Site
+              Facilities + Amenities
               (Acc 12). */}
       <Accordion.Item value="s9-accessibility">
         <Accordion.Control><Text fw={600}>Accessibility + Mobility Access</Text></Accordion.Control>
@@ -421,28 +422,18 @@ export default function TrailLayout({ form, userRole, poiId }) {
               />
             </SimpleGrid>
             <Textarea
-              label="Wheelchair Details"
-              placeholder="Describe wheelchair accessibility features"
+              label="Accessibility and Mobility"
+              placeholder="Describe accessibility and mobility access (step-free entry, accessible restrooms/parking, etc.)"
               autosize
               minRows={3}
               value={form.values.wheelchair_details || ''}
               onChange={(e) => form.setFieldValue('wheelchair_details', e.currentTarget.value)}
             />
-            {/* "Additional" paragraph rides along in the whitelisted
-                mobility_access JSONB blob (no migration needed), mirroring #76. */}
-            <Textarea
-              label="Additional Accessibility Details"
-              placeholder="Any other accessibility information"
-              autosize
-              minRows={3}
-              value={form.values.mobility_access?.additional_details || ''}
-              onChange={(e) => form.setFieldValue('mobility_access.additional_details', e.currentTarget.value)}
-            />
           </Stack>
         </Accordion.Panel>
       </Accordion.Item>
 
-      {/* 10. Public Restrooms — Yes/No gate + REPEATABLE RestroomLocationGroup
+      {/* 10. Public Restrooms — no gate; always-on REPEATABLE RestroomLocationGroup
                (restroom_name + per-grouping ADA checklist in EVERY grouping +
                CoordinateInput + images + notes + Add Another). The legacy
                duplicate "Public Toilet Options" top-level group is removed.
@@ -450,27 +441,7 @@ export default function TrailLayout({ form, userRole, poiId }) {
       <Accordion.Item value="s10-restrooms">
         <Accordion.Control><Text fw={600}>Public Restrooms</Text></Accordion.Control>
         <Accordion.Panel>
-          <Stack>
-            <Radio.Group
-              label="Are public restrooms available?"
-              value={form.values.public_toilets_available || 'no'}
-              onChange={(value) => {
-                form.setFieldValue('public_toilets_available', value);
-                if (value === 'no') {
-                  form.setFieldValue('toilet_locations', []);
-                }
-              }}
-            >
-              <Stack mt="xs">
-                <Radio value="yes" label="Yes" />
-                <Radio value="no" label="No" />
-              </Stack>
-            </Radio.Group>
-
-            {form.values.public_toilets_available === 'yes' && (
-              <RestroomLocationGroup form={form} id={poiId} label="Restroom Locations" />
-            )}
-          </Stack>
+          <RestroomLocationGroup form={form} id={poiId} label="Restroom Locations" />
         </Accordion.Panel>
       </Accordion.Item>
 

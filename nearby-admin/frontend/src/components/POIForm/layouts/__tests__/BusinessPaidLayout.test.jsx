@@ -35,6 +35,7 @@ vi.mock('../../sections/ContactSection', () => ({
 vi.mock('../../sections/BusinessDetailsSection', () => ({
   MenuBookingSection: () => <div data-testid="stub-menu" />,
   BusinessGallerySection: () => <div data-testid="stub-gallery" />,
+  BusinessEntrySection: () => <div data-testid="stub-business-entry" />,
 }));
 vi.mock('../../sections/FacilitiesSection', () => ({
   RentalsSection: () => <div data-testid="stub-rentals" />,
@@ -79,6 +80,7 @@ vi.mock('../_shared', () => ({
     ) : null,
   IdealForGrouped: () => <div data-testid="stub-ideal-for" />,
   FullAmenitiesBlock: () => <div data-testid="stub-amenities-block" />,
+  ArrivalMethodsGroup: () => <div data-testid="stub-arrival-methods" />,
   PAYMENT_METHODS: [],
   DISCOUNT_TYPES: [],
 }));

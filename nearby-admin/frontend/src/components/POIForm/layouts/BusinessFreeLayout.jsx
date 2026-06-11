@@ -220,8 +220,8 @@ export default function BusinessFreeLayout({ form, userRole, poiId }) {
               />
             </SimpleGrid>
             <Textarea
-              label="Wheelchair Details"
-              placeholder="Describe accessibility features"
+              label="Accessibility and Mobility"
+              placeholder="Describe accessibility and mobility access (step-free entry, accessible restrooms/parking, etc.)"
               autosize
               minRows={3}
               value={form.values.wheelchair_details || ''}

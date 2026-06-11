@@ -9,7 +9,7 @@ import { CategoriesSection } from '../sections/CategoriesSection';
 import { LocationSection } from '../sections/LocationSection';
 import { ContactSection } from '../sections/ContactSection';
 import {
-  MenuBookingSection, BusinessGallerySection
+  MenuBookingSection, BusinessGallerySection, BusinessEntrySection
 } from '../sections/BusinessDetailsSection';
 import { RentalsSection } from '../sections/FacilitiesSection';
 import { PetPolicySection } from '../sections/OutdoorFeaturesSection';
@@ -26,7 +26,7 @@ import { PayphoneLocationGroup } from '../components/PayphoneLocationGroup';
 import ServiceAnimalAlert from '../components/ServiceAnimalAlert';
 import {
   AdminOnlyAccordionItem, IdealForGrouped, FullAmenitiesBlock,
-  PAYMENT_METHODS, DISCOUNT_TYPES,
+  ArrivalMethodsGroup, PAYMENT_METHODS, DISCOUNT_TYPES,
 } from './_shared';
 import {
   PRICE_RANGE_OPTIONS, GIFT_CARD_OPTIONS, SMOKING_OPTIONS,
@@ -110,7 +110,11 @@ export default function BusinessPaidLayout({ form, userRole, poiId }) {
       <Accordion.Item value="s4-address">
         <Accordion.Control><Text fw={600}>Address</Text></Accordion.Control>
         <Accordion.Panel>
-          <LocationSection form={form} isBusiness isPaidListing id={poiId} />
+          <Stack>
+            <LocationSection form={form} isBusiness isPaidListing id={poiId} />
+            <ArrivalMethodsGroup form={form} />
+            <BusinessEntrySection form={form} id={poiId} />
+          </Stack>
         </Accordion.Panel>
       </Accordion.Item>
 
@@ -221,8 +225,8 @@ export default function BusinessPaidLayout({ form, userRole, poiId }) {
               />
             </SimpleGrid>
             <Textarea
-              label="Additional Accessibility Details"
-              placeholder="Describe accessibility features"
+              label="Accessibility and Mobility"
+              placeholder="Describe accessibility and mobility access (step-free entry, accessible restrooms/parking, etc.)"
               autosize
               minRows={3}
               value={form.values.wheelchair_details || ''}

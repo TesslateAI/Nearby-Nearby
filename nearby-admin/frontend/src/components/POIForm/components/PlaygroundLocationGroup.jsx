@@ -23,6 +23,14 @@ export const PlaygroundLocationGroup = React.memo(function PlaygroundLocationGro
   label = 'Playgrounds',
   fieldName = 'playground_locations',
 }) {
+  const playgroundCount = Array.isArray(form.values.playground_locations) ? form.values.playground_locations.length : 0;
+  React.useEffect(() => {
+    const hasPlaygrounds = playgroundCount > 0;
+    if (!!form.values.playground_available !== hasPlaygrounds) {
+      form.setFieldValue('playground_available', hasPlaygrounds);
+    }
+  }, [playgroundCount]);
+
   return (
     <RepeatableLocationGroup
       form={form}

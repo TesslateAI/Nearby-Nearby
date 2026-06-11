@@ -1,7 +1,7 @@
 import React from 'react';
 import {
   Accordion, Stack, Group, Text, Badge, Select, Textarea, Checkbox,
-  SimpleGrid, Divider, Radio, Alert
+  SimpleGrid, Divider, Alert
 } from '@mantine/core';
 
 import { CoreInformationSection } from '../sections/CoreInformationSection';
@@ -139,8 +139,9 @@ export default function ParkLayout({ form, userRole, poiId }) {
       </Accordion.Item>
 
       {/* 7. Accessibility + Mobility Access (NEW dedicated accordion) —
-              mobility_access tristates + wheelchair_details + Additional
-              Accessibility Details, moved out of Facilities + Amenities. */}
+              mobility_access tristates + a single consolidated "Accessibility
+              and Mobility" paragraph (wheelchair_details), moved out of
+              Facilities + Amenities. */}
       <Accordion.Item value="s7-accessibility">
         <Accordion.Control><Text fw={600}>Accessibility + Mobility Access</Text></Accordion.Control>
         <Accordion.Panel>
@@ -169,30 +170,18 @@ export default function ParkLayout({ form, userRole, poiId }) {
               />
             </SimpleGrid>
             <Textarea
-              label="Wheelchair Details"
-              placeholder="Describe wheelchair accessibility features"
+              label="Accessibility and Mobility"
+              placeholder="Describe accessibility and mobility access (step-free entry, accessible restrooms/parking, etc.)"
               autosize
               minRows={3}
               value={form.values.wheelchair_details || ''}
               onChange={(e) => form.setFieldValue('wheelchair_details', e.currentTarget.value)}
             />
-            {/* Persisted inside the whitelisted mobility_access JSONB blob —
-                there is only one dedicated free-text accessibility column
-                (wheelchair_details), so the "Additional" paragraph rides along
-                in mobility_access.additional_details (no migration needed). */}
-            <Textarea
-              label="Additional Accessibility Details"
-              placeholder="Any other accessibility information"
-              autosize
-              minRows={3}
-              value={form.values.mobility_access?.additional_details || ''}
-              onChange={(e) => form.setFieldValue('mobility_access.additional_details', e.currentTarget.value)}
-            />
           </Stack>
         </Accordion.Panel>
       </Accordion.Item>
 
-      {/* 8. Public Restrooms (renamed from "Restrooms") — Yes/No gate +
+      {/* 8. Public Restrooms (renamed from "Restrooms") — no gate; always-on
               REPEATABLE RestroomLocationGroup (restroom_name + per-grouping ADA
               checklist in EVERY grouping + CoordinateInput + images + notes +
               Add Another). The legacy duplicate "Public Toilet Options" top-level
@@ -200,27 +189,7 @@ export default function ParkLayout({ form, userRole, poiId }) {
       <Accordion.Item value="s8-restrooms">
         <Accordion.Control><Text fw={600}>Public Restrooms</Text></Accordion.Control>
         <Accordion.Panel>
-          <Stack>
-            <Radio.Group
-              label="Are public restrooms available?"
-              value={form.values.public_toilets_available || 'no'}
-              onChange={(value) => {
-                form.setFieldValue('public_toilets_available', value);
-                if (value === 'no') {
-                  form.setFieldValue('toilet_locations', []);
-                }
-              }}
-            >
-              <Stack mt="xs">
-                <Radio value="yes" label="Yes" />
-                <Radio value="no" label="No" />
-              </Stack>
-            </Radio.Group>
-
-            {form.values.public_toilets_available === 'yes' && (
-              <RestroomLocationGroup form={form} id={poiId} label="Restroom Locations" />
-            )}
-          </Stack>
+          <RestroomLocationGroup form={form} id={poiId} label="Restroom Locations" />
         </Accordion.Panel>
       </Accordion.Item>
 

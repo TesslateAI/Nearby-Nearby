@@ -1,7 +1,7 @@
 import React from 'react';
 import {
   Accordion, Stack, Group, Text, Badge, Select, Textarea, Checkbox,
-  SimpleGrid, Divider, Radio, Alert
+  SimpleGrid, Divider, Alert
 } from '@mantine/core';
 import { DateTimePicker } from '@mantine/dates';
 
@@ -277,8 +277,8 @@ export default function EventLayout({ form, userRole, poiId }) {
               />
             </SimpleGrid>
             <Textarea
-              label="Wheelchair Details"
-              placeholder="Describe wheelchair accessibility features"
+              label="Accessibility and Mobility"
+              placeholder="Describe accessibility and mobility access (step-free entry, accessible restrooms/parking, etc.)"
               autosize
               minRows={3}
               value={form.values.wheelchair_details || ''}
@@ -288,34 +288,14 @@ export default function EventLayout({ form, userRole, poiId }) {
         </Accordion.Panel>
       </Accordion.Item>
 
-      {/* 11. Public Restrooms — Yes/No gate + REPEATABLE RestroomLocationGroup
+      {/* 11. Public Restrooms — no gate; always-on REPEATABLE RestroomLocationGroup
                (restroom_name + per-grouping ADA checklist in EVERY grouping +
                CoordinateInput + images + notes + Add Another). Binds
                toilet_locations[]. */}
       <Accordion.Item value="s11-restrooms">
         <Accordion.Control><Text fw={600}>Public Restrooms</Text></Accordion.Control>
         <Accordion.Panel>
-          <Stack>
-            <Radio.Group
-              label="Are public restrooms available?"
-              value={form.values.public_toilets_available || 'no'}
-              onChange={(value) => {
-                form.setFieldValue('public_toilets_available', value);
-                if (value === 'no') {
-                  form.setFieldValue('toilet_locations', []);
-                }
-              }}
-            >
-              <Stack mt="xs">
-                <Radio value="yes" label="Yes" />
-                <Radio value="no" label="No" />
-              </Stack>
-            </Radio.Group>
-
-            {form.values.public_toilets_available === 'yes' && (
-              <RestroomLocationGroup form={form} id={poiId} label="Restroom Locations" />
-            )}
-          </Stack>
+          <RestroomLocationGroup form={form} id={poiId} label="Restroom Locations" />
         </Accordion.Panel>
       </Accordion.Item>
 

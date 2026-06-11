@@ -446,20 +446,20 @@ export const PublicAmenitiesSection = React.memo(function PublicAmenitiesSection
 // section. That data now lives inside each playground_locations[idx].
 // -----------------------------------------------------------------------------
 export const PlaygroundsSection = React.memo(function PlaygroundsSection({ form, isPark, id }) {
+  const playgroundCount = Array.isArray(form.values.playground_locations) ? form.values.playground_locations.length : 0;
+  React.useEffect(() => {
+    const hasPlaygrounds = playgroundCount > 0;
+    if (!!form.values.playground_available !== hasPlaygrounds) {
+      form.setFieldValue('playground_available', hasPlaygrounds);
+    }
+  }, [playgroundCount]);
+
   return (
     <Stack>
-      <Switch
-        label="This POI has a playground"
-        checked={!!form.values.playground_available}
-        onChange={(e) => form.setFieldValue('playground_available', e.currentTarget.checked)}
-      />
-
-      {form.values.playground_available && (
-        <>
-          {/* #76 Park Acc 9: Playground Types + Surfaces are removed from the
-              accordion top and live INSIDE each playground grouping instead (see
-              PlaygroundRowExtras). Trail / Event keep the POI-level multiselects. */}
-          {!isPark && (
+      {/* #76 Park Acc 9: Playground Types + Surfaces are removed from the
+          accordion top and live INSIDE each playground grouping instead (see
+          PlaygroundRowExtras). Trail / Event keep the POI-level multiselects. */}
+      {!isPark && (
             <>
               <MultiSelect
                 label="Playground Types"
@@ -496,8 +496,6 @@ export const PlaygroundsSection = React.memo(function PlaygroundsSection({ form,
             isPark={isPark}
             id={id}
           />
-        </>
-      )}
     </Stack>
   );
 });
