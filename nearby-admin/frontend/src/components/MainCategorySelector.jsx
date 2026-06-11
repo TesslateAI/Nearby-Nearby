@@ -8,7 +8,6 @@ export const MainCategorySelector = React.memo(function MainCategorySelector({
   onChange,
   poiType,
   selectedCategories = [],
-  listAllCategories = false,
   error
 }) {
   const [allCategories, setAllCategories] = useState([]);
@@ -57,17 +56,8 @@ export const MainCategorySelector = React.memo(function MainCategorySelector({
     fetchCategories();
   }, [fetchCategories]);
 
-  // Filter categories to only show those the user has selected, with full path.
-  // When listAllCategories is true, list ALL fetched categories for the poiType
-  // (ignoring the selectedCategories filter) so the dropdown can work standalone.
+  // Filter categories to only show those the user has selected, with full path
   const availableCategories = React.useMemo(() => {
-    if (listAllCategories) {
-      return allCategories.map(cat => ({
-        value: cat.id,
-        label: buildCategoryPath(cat.id, allCategories)
-      }));
-    }
-
     if (selectedCategories.length === 0) {
       return [];
     }
@@ -78,7 +68,7 @@ export const MainCategorySelector = React.memo(function MainCategorySelector({
         value: cat.id,
         label: buildCategoryPath(cat.id, allCategories)
       }));
-  }, [allCategories, selectedCategories, listAllCategories]);
+  }, [allCategories, selectedCategories]);
 
   return (
     <div>
@@ -87,15 +77,15 @@ export const MainCategorySelector = React.memo(function MainCategorySelector({
           <Select
             label="Primary Display Category"
             description="Choose which category to display on POI cards (from your selections above). This provides distinction - e.g., 'Cafe' instead of just 'Business'."
-            placeholder={(!listAllCategories && selectedCategories.length === 0) ? "First select categories above" : "Choose primary display category"}
+            placeholder={selectedCategories.length === 0 ? "First select categories above" : "Choose primary display category"}
             data={availableCategories}
             value={value}
             onChange={onChange}
             searchable
             clearable
             error={error}
-            disabled={loading || !poiType || (!listAllCategories && selectedCategories.length === 0)}
-            nothingFoundMessage={listAllCategories ? "No categories found" : "No categories selected"}
+            disabled={loading || !poiType || selectedCategories.length === 0}
+            nothingFoundMessage="No categories selected"
           />
         </div>
         <Button

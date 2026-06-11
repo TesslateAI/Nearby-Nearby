@@ -90,10 +90,14 @@ describe('EventVendorsSection', () => {
     expect(screen.queryByRole('button', { name: /link vendor poi/i })).not.toBeInTheDocument();
   });
 
-  it('shows vendor type checkboxes when has_vendors is true', () => {
+  it('does not render the standalone vendor-type checkbox grid (per-link dropdown is used instead)', () => {
     render(<TestWrapper initialValues={{ has_vendors: true }} />);
-    // At least one vendor type checkbox should be visible (e.g., "Food Trucks")
-    expect(screen.getByText('Food Trucks')).toBeInTheDocument();
+    // The standalone "Vendor Types" checkbox grid was removed — each linked
+    // vendor POI now carries its own vendor-type dropdown instead.
+    expect(screen.queryByText('Vendor Types')).not.toBeInTheDocument();
+    expect(screen.queryByRole('checkbox', { name: /food trucks/i })).not.toBeInTheDocument();
+    // The Linked Vendor POIs section (with its add button) is what remains.
+    expect(screen.getByRole('button', { name: /link vendor poi/i })).toBeInTheDocument();
   });
 
   it('"Link Vendor POI" button is visible when has_vendors is true', () => {
@@ -118,9 +122,7 @@ describe('EventVendorsSection', () => {
       fireEvent.click(screen.getByRole('button', { name: /link vendor poi/i }));
     });
 
-    // After adding a row, at least one "Vendor Type" label should appear (the
-    // per-row Select label). Use queryAllByText since "Vendor Types" (the
-    // checkbox section heading) also matches the regex.
+    // After adding a row, the per-row "Vendor Type" Select label should appear.
     const vendorTypeLabels = screen.getAllByText(/vendor type/i);
     expect(vendorTypeLabels.length).toBeGreaterThanOrEqual(1);
   });

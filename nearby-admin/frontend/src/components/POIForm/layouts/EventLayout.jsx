@@ -31,7 +31,7 @@ import { FeaturedImageUpload, shouldUseImageUpload } from '../ImageIntegration';
 import ServiceAnimalAlert from '../components/ServiceAnimalAlert';
 import {
   AdminOnlyAccordionItem, IdealForGrouped, ArrivalMethodsGroup,
-  FullAmenitiesBlock, ConnectivityRow,
+  FullAmenitiesBlock,
 } from './_shared';
 import {
   PAYMENT_METHODS, VENUE_SETTINGS,
@@ -63,6 +63,20 @@ const MOBILITY_TRISTATE = [
 export default function EventLayout({ form, userRole, poiId }) {
   const showAlcoholSubFields =
     form.values.alcohol_available && form.values.alcohol_available !== 'no_alcohol';
+
+  // Stable Date references for the start/end DateTimePickers. Re-deriving
+  // `new Date(...)` inline on every render gives the controlled value a fresh
+  // object identity each render, which makes Mantine's DateTimePicker dropdown
+  // close on every interaction. Memoizing keys the identity to the stored value
+  // (the same stability the useState-backed RescheduleModal already has).
+  const startDatetimeValue = React.useMemo(() => {
+    const v = form.values.event?.start_datetime;
+    return v instanceof Date ? v : v ? new Date(v) : null;
+  }, [form.values.event?.start_datetime]);
+  const endDatetimeValue = React.useMemo(() => {
+    const v = form.values.event?.end_datetime;
+    return v instanceof Date ? v : v ? new Date(v) : null;
+  }, [form.values.event?.end_datetime]);
 
   return (
     <>
@@ -121,7 +135,7 @@ export default function EventLayout({ form, userRole, poiId }) {
                 placeholder="Select start date and time"
                 valueFormat="MM/DD/YYYY hh:mm A"
                 timePickerProps={{ format: '12h', withDropdown: true }}
-                value={form.values.event?.start_datetime instanceof Date ? form.values.event.start_datetime : (form.values.event?.start_datetime ? new Date(form.values.event.start_datetime) : null)}
+                value={startDatetimeValue}
                 onChange={(val) => form.setFieldValue('event.start_datetime', val)}
                 error={form.errors['event.start_datetime']}
               />
@@ -130,7 +144,7 @@ export default function EventLayout({ form, userRole, poiId }) {
                 placeholder="Select end date and time"
                 valueFormat="MM/DD/YYYY hh:mm A"
                 timePickerProps={{ format: '12h', withDropdown: true }}
-                value={form.values.event?.end_datetime instanceof Date ? form.values.event.end_datetime : (form.values.event?.end_datetime ? new Date(form.values.event.end_datetime) : null)}
+                value={endDatetimeValue}
                 onChange={(val) => form.setFieldValue('event.end_datetime', val)}
                 error={form.errors['event.end_datetime']}
               />
@@ -315,15 +329,14 @@ export default function EventLayout({ form, userRole, poiId }) {
       {/* 13. On Site Facilities + Amenities — FacilitiesSection (isEvent: now
                just the Pay Phone repeatable; Payment Methods → Acc 3,
                accessibility → Acc 10, smoking → Acc 15, dead WiFi options
-               removed) + FullAmenitiesBlock (#55 Event amenities list) +
-               Connectivity (WiFi + Cell Service). */}
+               removed) + FullAmenitiesBlock (#55 Event amenities list, which
+               already includes WiFi + Cell Service). */}
       <Accordion.Item value="s13-onsite-facilities">
         <Accordion.Control><Text fw={600}>On Site Facilities + Amenities</Text></Accordion.Control>
         <Accordion.Panel>
           <Stack>
             <FacilitiesSection form={form} isEvent id={poiId} />
             <FullAmenitiesBlock form={form} poiType="EVENT" />
-            <ConnectivityRow form={form} />
           </Stack>
         </Accordion.Panel>
       </Accordion.Item>
