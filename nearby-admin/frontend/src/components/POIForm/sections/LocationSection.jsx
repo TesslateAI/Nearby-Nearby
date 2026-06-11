@@ -182,10 +182,17 @@ export const LocationSection = React.memo(function LocationSection({
         </>
       )}
 
-      {/* Trail Entry Information removed (#63 / #64): trail_entry_notes is
-          now bound by <TrailheadAccessPointsSection> in s8-trail-guide, and
-          trailhead photos use image_type='trail_head' there. Keeping the
-          duplicate here caused a dual-write conflict (R2 reviewer flag). */}
+      {/* Trail Entry Information */}
+      {isTrail && (
+        <>
+          <Divider my="md" label="Trail Entry Information" />
+          {shouldUseImageUpload(id) ? (
+            <EntryPhotoUpload poiId={id} poiType="Trail" form={form} />
+          ) : (
+            <Text size="sm" c="dimmed">Save POI first to enable trail entry photo upload</Text>
+          )}
+        </>
+      )}
 
       {/* Business Entry Information - PAID Business only.
           #75: Business Paid drops the in-Address Business Entry block (its

@@ -93,20 +93,22 @@ export const CoreInformationSection = React.memo(function CoreInformationSection
         />
       )}
 
-      <SimpleGrid cols={{ base: 1, sm: 2 }}>
-        <Select
-          label="Status"
-          placeholder="Select status"
-          data={getStatusOptions(form.values.poi_type)}
-          {...form.getInputProps('status')}
-        />
-        <DebouncedTextInput
-          label="Status Message"
-          placeholder="Additional status info (max 100 chars)"
-          maxLength={100}
-          {...getDebouncedInputProps(form, 'status_message')}
-        />
-      </SimpleGrid>
+      {!isEvent && (
+        <SimpleGrid cols={{ base: 1, sm: 2 }}>
+          <Select
+            label="Status"
+            placeholder="Select status"
+            data={getStatusOptions(form.values.poi_type)}
+            {...form.getInputProps('status')}
+          />
+          <DebouncedTextInput
+            label="Status Message"
+            placeholder="Additional status info (max 100 chars)"
+            maxLength={100}
+            {...getDebouncedInputProps(form, 'status_message')}
+          />
+        </SimpleGrid>
+      )}
 
       {/* Business Free (#74) + Business Paid (#75) + Park (#76) + Trail (#77) +
           Event (#73): these toggles move OUT of Identity — is_verified /

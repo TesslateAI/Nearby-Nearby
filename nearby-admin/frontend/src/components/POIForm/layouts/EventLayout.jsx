@@ -7,6 +7,7 @@ import { DateTimePicker } from '@mantine/dates';
 
 import { CoreInformationSection } from '../sections/CoreInformationSection';
 import { CategoriesSection } from '../sections/CategoriesSection';
+import { ContactSection } from '../sections/ContactSection';
 import { LocationSection } from '../sections/LocationSection';
 import RecurringEventSection from '../sections/RecurringEventSection';
 import {
@@ -74,7 +75,10 @@ export default function EventLayout({ form, userRole, poiId }) {
           <Group><Text fw={600}>Event Identity</Text><Badge size="sm" variant="light">Required</Badge></Group>
         </Accordion.Control>
         <Accordion.Panel>
-          <CoreInformationSection form={form} isEvent id={poiId} />
+          <Stack>
+            <CoreInformationSection form={form} isEvent id={poiId} />
+            <ContactSection form={form} isFreeListing={false} />
+          </Stack>
         </Accordion.Panel>
       </Accordion.Item>
 
@@ -304,7 +308,7 @@ export default function EventLayout({ form, userRole, poiId }) {
       <Accordion.Item value="s12-playground">
         <Accordion.Control><Text fw={600}>Playground</Text></Accordion.Control>
         <Accordion.Panel>
-          <PlaygroundsSection form={form} id={poiId} />
+          <PlaygroundsSection form={form} isPark id={poiId} />
         </Accordion.Panel>
       </Accordion.Item>
 

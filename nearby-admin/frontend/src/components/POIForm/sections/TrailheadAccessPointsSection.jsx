@@ -35,9 +35,7 @@ import { ImageUploadField } from '../../ImageUpload/ImageUploadField';
  *                                  what3words_address, photo upload
  *                                  (image_type='trail_head'), and the existing
  *                                  trail.trailhead_access_details textarea.
- *   2. Trail Entry Notes         — Textarea bound to the new top-level
- *                                  trail_entry_notes column (Issue #64).
- *   3. Access Points (repeatable) — Each row is { name, description, latitude,
+ *   2. Access Points (repeatable) — Each row is { name, description, latitude,
  *                                  longitude, what3words_address, notes }
  *                                  stored in trail.access_points JSONB. Each
  *                                  row also gets its own photo upload scoped
@@ -143,20 +141,7 @@ export default function TrailheadAccessPointsSection({ form, poiId }) {
 
       <Divider my="sm" />
 
-      {/* ============= 2. Trail Entry Notes ============= */}
-      <Textarea
-        label="Trail Entry Notes"
-        description="Free-form notes about entering the trail (e.g. open hours, permits, conditions)."
-        placeholder="Notes for visitors approaching the trail."
-        autosize
-        minRows={3}
-        value={form.values.trail_entry_notes || ''}
-        onChange={(e) => form.setFieldValue('trail_entry_notes', e.currentTarget.value)}
-      />
-
-      <Divider my="sm" />
-
-      {/* ============= 3. Access Points (repeatable) ============= */}
+      {/* ============= 2. Access Points (repeatable) ============= */}
       <Text fw={600} size="sm">Access Points</Text>
 
       {accessPoints.length === 0 ? (

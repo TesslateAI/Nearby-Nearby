@@ -39,6 +39,7 @@ vi.mock('../../sections/BusinessDetailsSection', () => ({
 }));
 vi.mock('../../sections/FacilitiesSection', () => ({
   RentalsSection: () => <div data-testid="stub-rentals" />,
+  PlaygroundsSection: () => <div data-testid="stub-playground" />,
 }));
 vi.mock('../../sections/OutdoorFeaturesSection', () => ({
   PetPolicySection: () => <div data-testid="stub-pet-policy" />,

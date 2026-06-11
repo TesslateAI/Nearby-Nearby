@@ -26,7 +26,7 @@ import { ParkingLocationGroup } from '../components/ParkingLocationGroup';
 import { RestroomLocationGroup } from '../components/RestroomLocationGroup';
 import ServiceAnimalAlert from '../components/ServiceAnimalAlert';
 import {
-  AdminOnlyAccordionItem, IdealForGrouped, ArrivalMethodsGroup, What3WordsInput,
+  AdminOnlyAccordionItem, IdealForGrouped, ArrivalMethodsGroup,
   FullAmenitiesBlock,
 } from './_shared';
 import {
@@ -113,7 +113,6 @@ export default function ParkLayout({ form, userRole, poiId }) {
           <Stack>
             <LocationSection form={form} isPark id={poiId} />
             <ArrivalMethodsGroup form={form} />
-            <What3WordsInput form={form} />
           </Stack>
         </Accordion.Panel>
       </Accordion.Item>

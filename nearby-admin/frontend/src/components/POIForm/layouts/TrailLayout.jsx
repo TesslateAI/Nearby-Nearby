@@ -27,7 +27,7 @@ import { ParkingLocationGroup } from '../components/ParkingLocationGroup';
 import { RestroomLocationGroup } from '../components/RestroomLocationGroup';
 import ServiceAnimalAlert from '../components/ServiceAnimalAlert';
 import {
-  AdminOnlyAccordionItem, IdealForGrouped, ArrivalMethodsGroup, What3WordsInput,
+  AdminOnlyAccordionItem, IdealForGrouped, ArrivalMethodsGroup,
   FullAmenitiesBlock,
 } from './_shared';
 import {
@@ -218,7 +218,6 @@ export default function TrailLayout({ form, userRole, poiId }) {
           <Stack>
             <LocationSection form={form} isTrail id={poiId} />
             <ArrivalMethodsGroup form={form} />
-            <What3WordsInput form={form} />
           </Stack>
         </Accordion.Panel>
       </Accordion.Item>
@@ -300,11 +299,8 @@ export default function TrailLayout({ form, userRole, poiId }) {
             <Divider my="sm" />
 
             {/* Trailhead Name / Coordinates / Photos / Access Details +
-                Access Points. NOTE: TrailheadAccessPointsSection still renders a
-                "Trail Entry Notes" textarea internally; #77 calls Trail Entry
-                Notes a duplicate of Trail Access Details — it is no longer
-                surfaced as a separate field here (it lives one level down in the
-                shared section, deduped at the layout level). */}
+                Access Points. Trail Entry Notes was removed entirely (duplicate
+                of Trail Access Details). */}
             <TrailheadAccessPointsSection form={form} poiId={poiId} />
 
             <Textarea
@@ -452,7 +448,7 @@ export default function TrailLayout({ form, userRole, poiId }) {
       <Accordion.Item value="s11-playground">
         <Accordion.Control><Text fw={600}>Playground</Text></Accordion.Control>
         <Accordion.Panel>
-          <PlaygroundsSection form={form} id={poiId} />
+          <PlaygroundsSection form={form} isPark id={poiId} />
         </Accordion.Panel>
       </Accordion.Item>
 

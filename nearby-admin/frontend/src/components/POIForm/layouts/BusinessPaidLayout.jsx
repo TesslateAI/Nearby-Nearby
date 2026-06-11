@@ -11,7 +11,7 @@ import { ContactSection } from '../sections/ContactSection';
 import {
   MenuBookingSection, BusinessGallerySection, BusinessEntrySection
 } from '../sections/BusinessDetailsSection';
-import { RentalsSection } from '../sections/FacilitiesSection';
+import { RentalsSection, PlaygroundsSection } from '../sections/FacilitiesSection';
 import { PetPolicySection } from '../sections/OutdoorFeaturesSection';
 import {
   InternalContactSection, CommunityConnectionsSection, CorporateComplianceSection
@@ -21,7 +21,6 @@ import { FeaturedImageUpload, shouldUseImageUpload } from '../ImageIntegration';
 
 import { ParkingLocationGroup } from '../components/ParkingLocationGroup';
 import { RestroomLocationGroup } from '../components/RestroomLocationGroup';
-import { PlaygroundLocationGroup } from '../components/PlaygroundLocationGroup';
 import { PayphoneLocationGroup } from '../components/PayphoneLocationGroup';
 import ServiceAnimalAlert from '../components/ServiceAnimalAlert';
 import {
@@ -252,7 +251,7 @@ export default function BusinessPaidLayout({ form, userRole, poiId }) {
       <Accordion.Item value="s10-playground">
         <Accordion.Control><Text fw={600}>Playground</Text></Accordion.Control>
         <Accordion.Panel>
-          <PlaygroundLocationGroup form={form} id={poiId} label="Playgrounds" />
+          <PlaygroundsSection form={form} isPark id={poiId} />
         </Accordion.Panel>
       </Accordion.Item>
 
