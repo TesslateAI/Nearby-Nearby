@@ -26,6 +26,7 @@ export const LocationSection = React.memo(function LocationSection({
   isTrail,
   isEvent,
   isFreeListing,
+  isPaidListing,
   id
 }) {
   return (
@@ -143,10 +144,11 @@ export const LocationSection = React.memo(function LocationSection({
         Use Map Pin for Lat/Long
       </Button>
 
-      {/* Business Free (#74): lat_long_most_accurate + dont_display_location
-          move here from Business Identity. Other POI types keep these toggles
-          in their original locations and never render them in Address. */}
-      {isBusiness && isFreeListing && (
+      {/* Business Free (#74) + Business Paid (#75): lat_long_most_accurate +
+          dont_display_location move here from Business Identity. Other POI
+          types keep these toggles in their original locations and never render
+          them in Address. */}
+      {isBusiness && (isFreeListing || isPaidListing) && (
         <SimpleGrid cols={{ base: 1, sm: 2 }}>
           <Switch
             label="Lat/Long Most Accurate"
@@ -185,8 +187,11 @@ export const LocationSection = React.memo(function LocationSection({
           trailhead photos use image_type='trail_head' there. Keeping the
           duplicate here caused a dual-write conflict (R2 reviewer flag). */}
 
-      {/* Business Entry Information - PAID Business only */}
-      {isBusiness && !isFreeListing && (
+      {/* Business Entry Information - PAID Business only.
+          #75: Business Paid drops the in-Address Business Entry block (its
+          contents are duplicated by Hours / the dedicated entry flow), so this
+          renders only for non-Free, non-Paid business variants. */}
+      {isBusiness && !isFreeListing && !isPaidListing && (
         <>
           <Divider my="md" label="Business Entry Information" />
           <RichTextEditor
@@ -238,11 +243,13 @@ export const LocationSection = React.memo(function LocationSection({
         </>
       )}
 
-      {/* Business Free (#74): the in-Address parking block is removed entirely.
-          parking_types moves to the dedicated Parking accordion; parking_notes,
-          expect_to_pay_parking, and the Primary Parking lat/long/name/photos are
-          dropped from Free. Every other POI type renders this block unchanged. */}
-      {!(isBusiness && isFreeListing) && (
+      {/* Business Free (#74) + Business Paid (#75): the in-Address parking block
+          is removed entirely. For Free, parking_types moves to the dedicated
+          Parking accordion (single checkbox group). For Paid, the whole block
+          moves to the dedicated Parking accordion as repeatable
+          ParkingLocationGroup groupings (parking_locations JSONB). Every other
+          POI type renders this legacy block unchanged. */}
+      {!(isBusiness && (isFreeListing || isPaidListing)) && (
         <>
           <Divider my="md" label="Parking Information" />
 

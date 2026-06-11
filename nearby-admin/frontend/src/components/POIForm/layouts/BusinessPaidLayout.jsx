@@ -1,7 +1,7 @@
 import React from 'react';
 import {
-  Accordion, Stack, Group, Text, Badge, TextInput, Textarea, Select,
-  MultiSelect, Switch, Divider
+  Accordion, Stack, Group, Text, Badge, Select, Textarea, Checkbox,
+  SimpleGrid, Divider, MultiSelect, Alert
 } from '@mantine/core';
 
 import { CoreInformationSection } from '../sections/CoreInformationSection';
@@ -9,48 +9,61 @@ import { CategoriesSection } from '../sections/CategoriesSection';
 import { LocationSection } from '../sections/LocationSection';
 import { ContactSection } from '../sections/ContactSection';
 import {
-  BusinessDetailsSection, MenuBookingSection, BusinessGallerySection, BusinessEntrySection
+  MenuBookingSection, BusinessGallerySection
 } from '../sections/BusinessDetailsSection';
-import {
-  FacilitiesSection, PublicAmenitiesSection, RentalsSection
-} from '../sections/FacilitiesSection';
-import {
-  PetPolicySection, PlaygroundSection
-} from '../sections/OutdoorFeaturesSection';
+import { RentalsSection } from '../sections/FacilitiesSection';
+import { PetPolicySection } from '../sections/OutdoorFeaturesSection';
 import {
   InternalContactSection, CommunityConnectionsSection, CorporateComplianceSection
 } from '../sections/MiscellaneousSections';
 import HoursSelector from '../../HoursSelector';
-import DynamicAttributeForm from '../../DynamicAttributeForm';
+import { FeaturedImageUpload, shouldUseImageUpload } from '../ImageIntegration';
 
+import { ParkingLocationGroup } from '../components/ParkingLocationGroup';
+import { RestroomLocationGroup } from '../components/RestroomLocationGroup';
+import { PlaygroundLocationGroup } from '../components/PlaygroundLocationGroup';
+import { PayphoneLocationGroup } from '../components/PayphoneLocationGroup';
 import ServiceAnimalAlert from '../components/ServiceAnimalAlert';
-import AlcoholAccordionItem from '../components/AlcoholAccordionItem';
 import {
-  AdminOnlyAccordionItem, IdealForGrouped, ArrivalMethodsGroup, What3WordsInput,
-  AccessibleParkingChecklist, FullAmenitiesBlock, ConnectivityRow,
-  PAYMENT_METHODS, DISCOUNT_TYPES
+  AdminOnlyAccordionItem, IdealForGrouped, FullAmenitiesBlock,
+  PAYMENT_METHODS, DISCOUNT_TYPES,
 } from './_shared';
-import { PRICE_RANGE_OPTIONS } from '../../../utils/constants';
+import {
+  PRICE_RANGE_OPTIONS, GIFT_CARD_OPTIONS, SMOKING_OPTIONS,
+  ALCOHOL_AVAILABLE_OPTIONS, ALCOHOL_AVAILABILITY_OPTIONS,
+} from '../../../utils/constants';
 
-// Wave 4 #53 — Business Paid + Community Comped + Sponsor variants:
-// finalized 18-section accordion order per
-// `Paid + Community Comped Slug Section Order.docx`. Section component
-// internals are unchanged — this is a pure reorder + rename pass plus
-// the NEW Pricing section, re-added Rentals section, and the simple
-// Alcohol + Smoking gate (full #69 rebuild deferred to Phase 2).
-//
-// Verified columns in nearby-admin/backend/app/models/poi.py:
-//   - price_range_per_person (line 146) — drives Select
-//   - pricing_details         (line 85)  — drives Textarea
-//   - teaser_paragraph        (line 23)  — used inside BusinessDetailsSection
-//   - description_long        (line 21)  — used inside BusinessDetailsSection
-//
-// status + status_message stay in Section 1 (NOT Admin-Only) per spec.
+const MOBILITY_TRISTATE = [
+  { value: 'yes', label: 'Yes' },
+  { value: 'no', label: 'No' },
+  { value: 'unknown', label: 'Unknown' },
+];
+
+// #75 — Business Paid + Community Comped 18-accordion reorg (supersedes the #53
+// 20-section order). Mirrors the #74 Business Free pass: every shared-section
+// internal is guarded by `isBusiness && isPaidListing` so the other 4 POI types
+// render exactly as before. The Business-Paid layout is also used for
+// community_comped + sponsor listings (see POIForm.selectLayout), so the
+// paid guard intentionally covers all of those. Foundation components
+// (CoordinateInput bundle in LocationSection, ParkingLocationGroup,
+// RestroomLocationGroup, AlcoholAccordionItem) are reused, not rebuilt.
 export default function BusinessPaidLayout({ form, userRole, poiId }) {
+  // This layout only ever mounts for paid/community_comped/sponsor BUSINESS
+  // listings, so the paid guard is always true here — it is passed to shared
+  // sections so their internal branches that compare against Free vs Paid
+  // resolve to the Paid path.
+  const isBusiness = true;
+  const isPaidListing = true;
+  const showAlcoholSubFields =
+    form.values.alcohol_available && form.values.alcohol_available !== 'no_alcohol';
+
   return (
     <>
-      {/* 1. Business Identity — absorbs ContactSection socials/phone/email/website
-              and keeps status + status_message inline (spec doc, table row 7). */}
+      {/* 1. Business Identity — CoreInfo (Paid path keeps teaser + long
+              description + status + History suppressed → moved to Acc 15) +
+              Contact. is_verified / is_disaster_hub live in Admin-Only;
+              lat_long_most_accurate / dont_display_location move to Address;
+              Featured Image moves to Images (Acc 16). */}
       <Accordion.Item value="s1-identity">
         <Accordion.Control>
           <Group><Text fw={600}>Business Identity</Text><Badge size="sm" variant="light">Required</Badge></Group>
@@ -63,8 +76,8 @@ export default function BusinessPaidLayout({ form, userRole, poiId }) {
         </Accordion.Panel>
       </Accordion.Item>
 
-      {/* 2. Categories + Discovery — IdealForGrouped without totalCap
-              (Business Paid has higher / unlimited caps vs Free's 5). */}
+      {/* 2. Categories + Discovery — IdealForGrouped (Business Paid: all 5
+              groups, no cap). Unchanged. */}
       <Accordion.Item value="s2-categories">
         <Accordion.Control><Text fw={600}>Categories + Discovery</Text></Accordion.Control>
         <Accordion.Panel>
@@ -76,7 +89,7 @@ export default function BusinessPaidLayout({ form, userRole, poiId }) {
         </Accordion.Panel>
       </Accordion.Item>
 
-      {/* 3. Hours — Wave 3 #46/#54 HoursSelector (needs form= prop). */}
+      {/* 3. Hours — unchanged. */}
       <Accordion.Item value="s3-hours">
         <Accordion.Control><Text fw={600}>Hours</Text></Accordion.Control>
         <Accordion.Panel>
@@ -89,54 +102,43 @@ export default function BusinessPaidLayout({ form, userRole, poiId }) {
         </Accordion.Panel>
       </Accordion.Item>
 
-      {/* 4. Address — LocationSection + ArrivalMethodsGroup + W3W. */}
+      {/* 4. Address — CoordinateInput bundle (front_door lat/lng + w3w) +
+              moved-in lat_long_most_accurate / dont_display_location toggles
+              (LocationSection renders these for the Paid path). The entire
+              in-Address parking block is suppressed for Business Paid and
+              moves to Acc 5. */}
       <Accordion.Item value="s4-address">
         <Accordion.Control><Text fw={600}>Address</Text></Accordion.Control>
         <Accordion.Panel>
-          <Stack>
-            <LocationSection form={form} isBusiness id={poiId} />
-            <ArrivalMethodsGroup form={form} />
-            <What3WordsInput form={form} />
-          </Stack>
+          <LocationSection form={form} isBusiness isPaidListing id={poiId} />
         </Accordion.Panel>
       </Accordion.Item>
 
-      {/* 5. Parking & Accessibility — AccessibleParkingChecklist only for now.
-              Repeatable ParkingLocationGroup (Wave 3 #67) is NOT yet available
-              in this worktree's baseline; when #67 merges, add it here. */}
+      {/* 5. Parking — REPEATABLE groupings via ParkingLocationGroup (primary +
+              Add Another): name / parking_types (inline Accessible Parking ADA
+              reveal) / CoordinateInput bundle / photos / notes. Binds the
+              parking_locations JSONB. */}
       <Accordion.Item value="s5-parking">
-        <Accordion.Control><Text fw={600}>Parking & Accessibility</Text></Accordion.Control>
+        <Accordion.Control><Text fw={600}>Parking</Text></Accordion.Control>
         <Accordion.Panel>
-          <Stack>
-            <AccessibleParkingChecklist form={form} />
-            {/* TODO Wave 3 #67: <ParkingLocationGroup form={form} /> once merged */}
-          </Stack>
+          <ParkingLocationGroup form={form} id={poiId} label="Parking Locations" />
         </Accordion.Panel>
       </Accordion.Item>
 
-      {/* 6. Contact & Social Media — spec lists this as its own section even
-              though many fields are mirrored into Section 1. Keep it visible
-              so users can find/edit socials directly. */}
-      <Accordion.Item value="s6-contact">
-        <Accordion.Control><Text fw={600}>Contact & Social Media</Text></Accordion.Control>
+      {/* 6. Menu + Booking — unchanged. */}
+      <Accordion.Item value="s6-menu">
+        <Accordion.Control><Text fw={600}>Menu + Booking</Text></Accordion.Control>
         <Accordion.Panel>
-          <ContactSection form={form} isFreeListing={false} />
+          <MenuBookingSection form={form} id={poiId} />
         </Accordion.Panel>
       </Accordion.Item>
 
-      {/* 7. Business Details — teaser_paragraph + description_long + history + story
-              (all rendered inside BusinessDetailsSection). */}
-      <Accordion.Item value="s7-details">
-        <Accordion.Control><Text fw={600}>Business Details</Text></Accordion.Control>
-        <Accordion.Panel>
-          <BusinessDetailsSection form={form} isFreeListing={false} id={poiId} />
-        </Accordion.Panel>
-      </Accordion.Item>
-
-      {/* 8. Pricing (NEW) — price_range_per_person Select + pricing_details Textarea.
-              Both columns verified present on the POI model. */}
-      <Accordion.Item value="s8-pricing">
-        <Accordion.Control><Text fw={600}>Pricing</Text></Accordion.Control>
+      {/* 7. Pricing + Passes (renamed from "Pricing") — price_range_per_person
+              (single canonical instance), Gift Cards, General Pricing,
+              pricing_details, Payment Methods (moved here from Amenities), and
+              Discounts. */}
+      <Accordion.Item value="s7-pricing">
+        <Accordion.Control><Text fw={600}>Pricing + Passes</Text></Accordion.Control>
         <Accordion.Panel>
           <Stack>
             <Select
@@ -147,6 +149,21 @@ export default function BusinessPaidLayout({ form, userRole, poiId }) {
               value={form.values.price_range_per_person || null}
               onChange={(v) => form.setFieldValue('price_range_per_person', v)}
             />
+            <Select
+              label="Gift Cards Available?"
+              data={GIFT_CARD_OPTIONS}
+              clearable
+              value={form.values.gift_cards || null}
+              onChange={(v) => form.setFieldValue('gift_cards', v)}
+            />
+            <Textarea
+              label="General Pricing"
+              placeholder="e.g., Average meal $15-25"
+              autosize
+              minRows={1}
+              value={form.values.pricing || ''}
+              onChange={(e) => form.setFieldValue('pricing', e.currentTarget.value)}
+            />
             <Textarea
               label="Pricing Details"
               description="Free-form notes such as 'Kids Under 2 are Free'"
@@ -155,39 +172,6 @@ export default function BusinessPaidLayout({ form, userRole, poiId }) {
               value={form.values.pricing_details || ''}
               onChange={(e) => form.setFieldValue('pricing_details', e.currentTarget.value)}
             />
-          </Stack>
-        </Accordion.Panel>
-      </Accordion.Item>
-
-      {/* 9. Menu & Booking — renamed from "Menu, Booking & Online Ordering". */}
-      <Accordion.Item value="s9-menu">
-        <Accordion.Control><Text fw={600}>Menu & Booking</Text></Accordion.Control>
-        <Accordion.Panel>
-          <MenuBookingSection form={form} id={poiId} />
-        </Accordion.Panel>
-      </Accordion.Item>
-
-      {/* 10. Business Entry — entry photo + business_entry_notes. */}
-      <Accordion.Item value="s10-entry">
-        <Accordion.Control><Text fw={600}>Business Entry</Text></Accordion.Control>
-        <Accordion.Panel>
-          <BusinessEntrySection form={form} id={poiId} />
-        </Accordion.Panel>
-      </Accordion.Item>
-
-      {/* 11. Gallery — renamed from "Gallery" (already verbatim). */}
-      <Accordion.Item value="s11-gallery">
-        <Accordion.Control><Text fw={600}>Gallery</Text></Accordion.Control>
-        <Accordion.Panel>
-          <BusinessGallerySection form={form} id={poiId} />
-        </Accordion.Panel>
-      </Accordion.Item>
-
-      {/* 12. Payments & Discounts — unchanged content, moved in order. */}
-      <Accordion.Item value="s12-payments">
-        <Accordion.Control><Text fw={600}>Payments & Discounts</Text></Accordion.Control>
-        <Accordion.Panel>
-          <Stack>
             <MultiSelect
               label="Payment Methods Accepted"
               data={PAYMENT_METHODS}
@@ -202,47 +186,89 @@ export default function BusinessPaidLayout({ form, userRole, poiId }) {
               value={form.values.discounts || []}
               onChange={(v) => form.setFieldValue('discounts', v)}
             />
-            <Select
-              label="Gift Cards"
-              data={[{ value: 'yes', label: 'Yes' }, { value: 'no', label: 'No' }]}
-              value={form.values.gift_cards}
-              onChange={(v) => form.setFieldValue('gift_cards', v)}
-            />
-            <TextInput label="Pricing Notes" {...form.getInputProps('pricing')} />
           </Stack>
         </Accordion.Panel>
       </Accordion.Item>
 
-      {/* 13. Amenities & Facilities — FacilitiesSection + FullAmenitiesBlock + ConnectivityRow.
-              Wave 2 #56 removed the embedded duplicate Alcohol dropdown; canonical
-              alcohol selector lives in Section 15 now. */}
-      <Accordion.Item value="s13-amenities">
-        <Accordion.Control><Text fw={600}>Amenities & Facilities</Text></Accordion.Control>
+      {/* 8. Accessibility + Mobility Access (NEW dedicated accordion) — the
+              mobility_access tristates + wheelchair_details, extracted from the
+              removed Amenities + Facilities accordion. */}
+      <Accordion.Item value="s8-accessibility">
+        <Accordion.Control><Text fw={600}>Accessibility + Mobility Access</Text></Accordion.Control>
         <Accordion.Panel>
           <Stack>
-            <FacilitiesSection form={form} isBusiness isFreeListing={false} id={poiId} />
-            <FullAmenitiesBlock form={form} poiType="BUSINESS" />
-            <ConnectivityRow form={form} />
+            <SimpleGrid cols={{ base: 1, sm: 2 }}>
+              <Select
+                label="Step Free Entry"
+                placeholder="Select..."
+                data={MOBILITY_TRISTATE}
+                value={form.values.mobility_access?.step_free_entry || ''}
+                onChange={(v) => form.setFieldValue('mobility_access.step_free_entry', v)}
+              />
+              <Select
+                label="Main Service Area Reachable"
+                placeholder="Select..."
+                data={MOBILITY_TRISTATE}
+                value={form.values.mobility_access?.main_area_accessible || ''}
+                onChange={(v) => form.setFieldValue('mobility_access.main_area_accessible', v)}
+              />
+              <Select
+                label="Primary Service on Ground Level"
+                placeholder="Select..."
+                data={MOBILITY_TRISTATE}
+                value={form.values.mobility_access?.ground_level_service || ''}
+                onChange={(v) => form.setFieldValue('mobility_access.ground_level_service', v)}
+              />
+            </SimpleGrid>
+            <Textarea
+              label="Additional Accessibility Details"
+              placeholder="Describe accessibility features"
+              autosize
+              minRows={3}
+              value={form.values.wheelchair_details || ''}
+              onChange={(e) => form.setFieldValue('wheelchair_details', e.currentTarget.value)}
+            />
           </Stack>
         </Accordion.Panel>
       </Accordion.Item>
 
-      {/* 14. Restrooms — PublicAmenitiesSection renders the inline ADA checklist
-              per Wave 3 #47 (do NOT add a standalone <AccessibleRestroomChecklist>). */}
-      <Accordion.Item value="s14-restrooms">
+      {/* 9. Restrooms — REPEATABLE groupings via RestroomLocationGroup:
+              restroom_name + per-grouping ADA checklist + CoordinateInput +
+              photos + description + Add Another. Binds toilet_locations[]. */}
+      <Accordion.Item value="s9-restrooms">
         <Accordion.Control><Text fw={600}>Restrooms</Text></Accordion.Control>
         <Accordion.Panel>
-          <PublicAmenitiesSection form={form} isBusiness isFreeListing={false} id={poiId} />
+          <RestroomLocationGroup form={form} id={poiId} label="Restroom Locations" />
         </Accordion.Panel>
       </Accordion.Item>
 
-      {/* 15. Alcohol — Issue #69 accordion with conditional sub-options
-              (granular availability, BYOB, notes) surfaced when
-              alcohol_available !== 'no'. Smoking UI deferred to Phase 2. */}
-      <AlcoholAccordionItem form={form} value="s15-alcohol" />
+      {/* 10. Playground — REPEATABLE PlaygroundLocationGroup. The redundant
+               "playground available" Yes/No slider (old #53 bug) is gone; the
+               group itself owns the primary + Add Another grouping. */}
+      <Accordion.Item value="s10-playground">
+        <Accordion.Control><Text fw={600}>Playground</Text></Accordion.Control>
+        <Accordion.Panel>
+          <PlaygroundLocationGroup form={form} id={poiId} label="Playgrounds" />
+        </Accordion.Panel>
+      </Accordion.Item>
 
-      {/* 16. Pet Policy — PetPolicySection + ServiceAnimalAlert (Wave 3 #48). */}
-      <Accordion.Item value="s16-pets">
+      {/* 11. On Site Facilities + Amenities — repeatable Pay Phone groupings
+               (PayphoneLocationGroup) + the Facilities + Amenities JSONB block
+               (Wifi, Cell Service, General / Family + Youth / Water + Boating /
+               Dining + Seating). */}
+      <Accordion.Item value="s11-facilities">
+        <Accordion.Control><Text fw={600}>On Site Facilities + Amenities</Text></Accordion.Control>
+        <Accordion.Panel>
+          <Stack>
+            <PayphoneLocationGroup form={form} label="Pay Phone Locations" />
+            <Divider my="xs" />
+            <FullAmenitiesBlock form={form} poiType="BUSINESS" />
+          </Stack>
+        </Accordion.Panel>
+      </Accordion.Item>
+
+      {/* 12. Pet Policy — moved down; unchanged contents. */}
+      <Accordion.Item value="s12-pets">
         <Accordion.Control><Text fw={600}>Pet Policy</Text></Accordion.Control>
         <Accordion.Panel>
           <Stack>
@@ -252,56 +278,148 @@ export default function BusinessPaidLayout({ form, userRole, poiId }) {
         </Accordion.Panel>
       </Accordion.Item>
 
-      {/* 17. Playground Information — gated on playground_available toggle. */}
-      <Accordion.Item value="s17-playground">
-        <Accordion.Control><Text fw={600}>Playground Information</Text></Accordion.Control>
+      {/* 13. Alcohol + Smoking — canonical #69 AlcoholAccordionItem (gate →
+               availability multi-select + BYOB + notes) plus the always-visible
+               Smoking policy + details moved from the removed Amenities
+               accordion. */}
+      <Accordion.Item value="s13-alcohol-smoking">
+        <Accordion.Control><Text fw={600}>Alcohol + Smoking</Text></Accordion.Control>
         <Accordion.Panel>
           <Stack>
-            <Switch
-              label="This business has a playground"
-              checked={!!form.values.playground_available}
-              onChange={(e) => form.setFieldValue('playground_available', e.currentTarget.checked)}
+            {/* Canonical #69 alcohol fields (same as AlcoholAccordionItem):
+                alcohol_available gate → alcohol_availability multi-select +
+                byob_allowed + alcohol_notes. Inlined here (no nested
+                Accordion.Item) so the combined "Alcohol + Smoking" accordion
+                owns both. */}
+            <Select
+              label="Alcohol Available"
+              data={ALCOHOL_AVAILABLE_OPTIONS}
+              value={form.values.alcohol_available}
+              onChange={(v) => form.setFieldValue('alcohol_available', v)}
+              clearable
             />
-            {form.values.playground_available && (
-              <PlaygroundSection form={form} id={poiId} />
+            {showAlcoholSubFields && (
+              <>
+                <Checkbox.Group
+                  label="Availability"
+                  description="Select all that apply"
+                  value={form.values.alcohol_availability || []}
+                  onChange={(v) => form.setFieldValue('alcohol_availability', v)}
+                >
+                  <Stack mt="xs">
+                    {ALCOHOL_AVAILABILITY_OPTIONS.map((o) => (
+                      <Checkbox key={o.value} value={o.value} label={o.label} />
+                    ))}
+                  </Stack>
+                </Checkbox.Group>
+                <Checkbox
+                  label="BYOB Allowed"
+                  checked={form.values.byob_allowed || false}
+                  onChange={(e) => form.setFieldValue('byob_allowed', e.currentTarget.checked)}
+                />
+                <Textarea
+                  label="Alcohol Notes"
+                  placeholder="Wine list highlights, last call, age policy, etc."
+                  autosize
+                  minRows={2}
+                  value={form.values.alcohol_notes || ''}
+                  onChange={(e) => form.setFieldValue('alcohol_notes', e.currentTarget.value)}
+                />
+              </>
             )}
+
+            <Divider my="xs" label="Smoking" />
+            <Checkbox.Group
+              label="Smoking Policy"
+              value={form.values.smoking_options || []}
+              onChange={(v) => form.setFieldValue('smoking_options', v)}
+            >
+              <SimpleGrid cols={{ base: 2, sm: 3 }}>
+                {SMOKING_OPTIONS.map((o) => (
+                  <Checkbox key={o} value={o} label={o} />
+                ))}
+              </SimpleGrid>
+            </Checkbox.Group>
+            <Textarea
+              label="Smoking Policy Details"
+              placeholder="Additional smoking policy information"
+              autosize
+              minRows={2}
+              value={form.values.smoking_details || ''}
+              onChange={(e) => form.setFieldValue('smoking_details', e.currentTarget.value)}
+            />
           </Stack>
         </Accordion.Panel>
       </Accordion.Item>
 
-      {/* 18. Rentals (NEW / re-added for Business Paid per PLAN #191). */}
-      <Accordion.Item value="s18-rentals">
+      {/* 14. Rentals — unchanged. */}
+      <Accordion.Item value="s14-rentals">
         <Accordion.Control><Text fw={600}>Rentals</Text></Accordion.Control>
         <Accordion.Panel>
           <RentalsSection form={form} id={poiId} />
         </Accordion.Panel>
       </Accordion.Item>
 
-      {/* 19. Internal & Compliance — InternalContact + CommunityConnections + CorporateCompliance. */}
-      <Accordion.Item value="s19-internal">
-        <Accordion.Control><Text fw={600}>Internal & Compliance</Text></Accordion.Control>
+      {/* 15. Locally Found + History — Article Links + Community Impact (moved
+               from Internal + Compliance) + History Paragraph (moved from
+               Business Identity). */}
+      <Accordion.Item value="s15-locally-found">
+        <Accordion.Control><Text fw={600}>Locally Found + History</Text></Accordion.Control>
+        <Accordion.Panel>
+          <Stack>
+            <CommunityConnectionsSection form={form} />
+            <Divider my="xs" label="History" />
+            <Textarea
+              label="History Paragraph"
+              placeholder="Brief history or background"
+              autosize
+              minRows={3}
+              value={form.values.history_paragraph || ''}
+              onChange={(e) => form.setFieldValue('history_paragraph', e.currentTarget.value)}
+            />
+          </Stack>
+        </Accordion.Panel>
+      </Accordion.Item>
+
+      {/* 16. Images (renamed from "Gallery") — Featured / Main Image (moved
+               from Business Identity) + Gallery Photos. */}
+      <Accordion.Item value="s16-images">
+        <Accordion.Control><Text fw={600}>Images</Text></Accordion.Control>
+        <Accordion.Panel>
+          <Stack>
+            {shouldUseImageUpload(poiId) ? (
+              <FeaturedImageUpload
+                key={`featured-image-${poiId}`}
+                poiId={poiId}
+                isBusiness
+                isFreeListing={false}
+                form={form}
+              />
+            ) : (
+              <Alert color="blue" variant="light">
+                <Text size="sm">Featured image upload will be available once the listing is saved.</Text>
+              </Alert>
+            )}
+            <Divider my="xs" label="Gallery" />
+            <BusinessGallerySection form={form} id={poiId} />
+          </Stack>
+        </Accordion.Panel>
+      </Accordion.Item>
+
+      {/* 17. Contact + Compliance (renamed from "Internal + Compliance") —
+               Article Links + Community Impact moved out to Acc 15; everything
+               else stays. */}
+      <Accordion.Item value="s17-contact-compliance">
+        <Accordion.Control><Text fw={600}>Contact + Compliance</Text></Accordion.Control>
         <Accordion.Panel>
           <Stack>
             <InternalContactSection form={form} />
-            <CommunityConnectionsSection form={form} />
             <CorporateComplianceSection form={form} />
           </Stack>
         </Accordion.Panel>
       </Accordion.Item>
 
-      {/* 20. Dynamic Attributes. */}
-      <Accordion.Item value="s20-attrs">
-        <Accordion.Control><Text fw={600}>Dynamic Attributes</Text></Accordion.Control>
-        <Accordion.Panel>
-          <DynamicAttributeForm
-            poiType={form.values.poi_type}
-            value={form.values.dynamic_attributes || {}}
-            onChange={(value) => form.setFieldValue('dynamic_attributes', value)}
-          />
-        </Accordion.Panel>
-      </Accordion.Item>
-
-      {/* Admin-Only (stays LAST; only renders for admins). */}
+      {/* 18. Admin-Only (stays LAST; only renders for admins). */}
       <AdminOnlyAccordionItem form={form} userRole={userRole} />
     </>
   );
