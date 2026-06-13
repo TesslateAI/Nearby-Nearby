@@ -176,9 +176,7 @@
 .nearby-card__amenity:hover {
   background: var(--nn-purple1, #562556);
   transform: translateY(-1px);
-}
-.nearby-card__amenity:hover svg path {
-  fill: #fff !important;
+  color: #fff;
 }
 
 /* Action Buttons — matches nn-templates .btn_outline_teal.btn_poi_button_1 */

@@ -463,10 +463,10 @@
 .poi_verified_box, .poi_sponsor_box { width: 100%; }
 .poi_last_updated { font-size: 12px; color: var(--nn-gray); }
 
-.box_style_1 {
+/* .box_style_1 {
   background: #fff; border: 1px solid var(--gray-d, #e5e5e5); border-radius: 10px;
   padding: 16px; margin: 16px 0;
-}
+} */
 #poi_quick_info_photos_box { display: grid; grid-template-columns: 1fr; gap: 16px; }
 @media (min-width: 900px) { #poi_quick_info_photos_box { grid-template-columns: 1.2fr 1fr; } }
 .poi_quick_info_title {
