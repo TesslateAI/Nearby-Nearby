@@ -7,7 +7,7 @@ import {
   RotateCcw,
   Calendar as CalendarIcon,
   MapPin,
-  Navigation2,
+  Navigation,
 } from 'lucide-react';
 import Map from '../components/Map';
 import {
@@ -203,7 +203,7 @@ const ResultCard = forwardRef(function ResultCard({ poi, index, isHighlighted },
             <div className="one_search_map_result_type">{categoryLabel}</div>
           )}
           {amenities.length > 0 && (
-            <div className="one_search_map_result_amenities" aria-label="Amenities">
+            <div className="one_search_map_result_amenities" aria-label="Amenities" onClick={stop}>
               {amenities.map(({ key, title, Icon }) => (
                 <span
                   key={key}
@@ -228,7 +228,7 @@ const ResultCard = forwardRef(function ResultCard({ poi, index, isHighlighted },
             rel="noopener noreferrer"
             onClick={stop}
           >
-            <Navigation2 size={14} className="poi_button_icon" aria-hidden="true" />
+            <Navigation size={14} className="poi_button_icon" aria-hidden="true" style={{fill:'none'}} />
             <span className="poi_button_title">Directions</span>
           </a>
         )}
@@ -598,7 +598,7 @@ export default function Explore() {
         <div className="wrapper_default explore__title-inner">
           {(urlQuery || urlType) && (
             <Link to="/explore" className="explore__back" aria-label="Back to all places">
-              <X size={18} aria-hidden="true" />
+              <X size={18} aria-hidden="true" color="white" />
             </Link>
           )}
           <h1 className="explore__title">{pageTitle}</h1>
