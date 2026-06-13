@@ -401,9 +401,9 @@ def create_parks(db: Session):
             },
             "cost": "0",
             "images": {"main": "park1_main", "gallery": ["park1_gallery1", "park1_gallery2"]},
-            "key_facilities": ["Boat Launch", "Campground", "Picnic Shelters", "Nature Center"],
+            # "key_facilities" removed — renamed _deprecated_key_facilities (Migration A #34)
             "pet_options": ["Dog Friendly", "Clean Up Stations"],
-            "wheelchair_accessible": ["Accessible Bathrooms", "Paved Paths"],
+            # "wheelchair_accessible" removed — column dropped (Issue #45 PR2 Migration B)
             "public_toilets": ["Wheelchair Accessible"],
         },
         {
@@ -440,7 +440,7 @@ def create_parks(db: Session):
             "playground_available": True,
             "playground_types": ["Toddler (0-25 months)", "Ages 5-12"],
             "playground_surface_types": ["Rubber Mulch", "Sand"],
-            "key_facilities": ["Basketball Court", "Sports Fields", "Playground"],
+            # "key_facilities" removed — renamed _deprecated_key_facilities (Migration A #34)
             "pet_options": ["Dog Friendly", "Clean Up Stations"],
             "public_toilets": ["Baby Changing Station"],
         },
@@ -476,7 +476,7 @@ def create_parks(db: Session):
             },
             "cost": "0",
             "images": {"main": "park3_main", "gallery": ["park3_gallery1"]},
-            "key_facilities": ["Hiking Trails", "Bird Watching", "Historic Site"],
+            # "key_facilities" removed — renamed _deprecated_key_facilities (Migration A #34)
             "pet_options": ["Dog Friendly", "Clean Up Stations"],
         },
     ]
@@ -509,9 +509,9 @@ def create_parks(db: Session):
             address_full=p["address_full"],
             hours=p.get("hours"),
             cost=p.get("cost"),
-            key_facilities=p.get("key_facilities"),
+            # key_facilities removed — renamed _deprecated_key_facilities (Migration A #34)
+            # wheelchair_accessible removed — column dropped (Issue #45 PR2 Migration B)
             pet_options=p.get("pet_options"),
-            wheelchair_accessible=p.get("wheelchair_accessible"),
             public_toilets=p.get("public_toilets"),
             playground_available=p.get("playground_available", False),
             playground_types=p.get("playground_types"),
@@ -606,7 +606,7 @@ def create_trails(db: Session):
             },
             "images": {"main": "trail2_main", "gallery": ["trail2_gallery1"]},
             "cost": "0",
-            "wheelchair_accessible": ["Paved Paths", "Accessible Parking"],
+            # "wheelchair_accessible" removed — column dropped (Issue #45 PR2 Migration B)
             "pet_options": ["Dog Friendly", "Clean Up Stations"],
         },
         {
@@ -673,7 +673,7 @@ def create_trails(db: Session):
             address_full=t["address_full"],
             cost=t.get("cost"),
             pet_options=t.get("pet_options"),
-            wheelchair_accessible=t.get("wheelchair_accessible"),
+            # wheelchair_accessible removed — column dropped (Issue #45 PR2 Migration B)
         )
         poi.trail = Trail(
             length_text=trail_data["length_text"],
@@ -841,7 +841,6 @@ def create_events(db: Session):
             address_county=e["address_county"],
             address_full=e["address_full"],
             cost=e.get("cost"),
-            ticket_link=e.get("ticket_link"),
             ideal_for=e.get("ideal_for"),
             pet_options=e.get("pet_options"),
         )

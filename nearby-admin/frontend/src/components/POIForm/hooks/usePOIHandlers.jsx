@@ -41,10 +41,15 @@ export const usePOIHandlers = (id, isEditing, form, setPoiId) => {
             event: poi.event || emptyInitialValues.event
           };
 
-          // Ensure all array fields are arrays, not null
+          // Ensure all array fields are arrays, not null.
+          // NOTE: Issue #43 — `ideal_for` is now an object ({atmosphere, age_group,
+          // social_settings, local_special, special_needs}), not an array. Handle below.
           const arrayFields = [
-            'ideal_for', 'ideal_for_key', 'parking_types', 'payment_methods', 'key_facilities',
-            'alcohol_options', 'wheelchair_accessible', 'smoking_options', 'wifi_options',
+            'ideal_for_key', 'parking_types', 'payment_methods',
+            // 'key_facilities' removed — renamed _deprecated_key_facilities (Migration A #34)
+            // 'ideal_for' removed — now an object {atmosphere, age_group, social_settings, local_special, special_needs} (Issue #43)
+            // 'wheelchair_accessible' removed — column dropped (Issue #45 PR2 Migration B)
+            'alcohol_options', 'smoking_options', 'wifi_options',
             'pet_options', 'public_toilets', 'youth_amenities', 'business_amenities',
             'entertainment_options', 'natural_features', 'outdoor_types', 'things_to_do',
             'hunting_types', 'fishing_types', 'licenses_required', 'playground_types',
@@ -62,6 +67,28 @@ export const usePOIHandlers = (id, isEditing, form, setPoiId) => {
               formData[field] = emptyInitialValues[field] || [];
             }
           });
+
+          // Issue #43 — `ideal_for` is an object of 5 string-array groups.
+          // Coerce legacy flat arrays / null / missing values into the canonical shape.
+          {
+            const idealDefault = emptyInitialValues.ideal_for || {
+              atmosphere: [], age_group: [], social_settings: [], local_special: [], special_needs: []
+            };
+            const incoming = formData.ideal_for;
+            if (!incoming || Array.isArray(incoming) || typeof incoming !== 'object') {
+              // Legacy flat array data is no longer surfaced; safe to reset.
+              formData.ideal_for = { ...idealDefault };
+            } else {
+              formData.ideal_for = {
+                ...idealDefault,
+                ...incoming,
+              };
+              // Normalize any non-array group value back to []
+              Object.keys(idealDefault).forEach(k => {
+                if (!Array.isArray(formData.ideal_for[k])) formData.ideal_for[k] = [];
+              });
+            }
+          }
 
           // Ensure all subtype objects exist with proper initialization
           if (!formData.business && formData.poi_type === 'BUSINESS') {
@@ -89,14 +116,16 @@ export const usePOIHandlers = (id, isEditing, form, setPoiId) => {
             'phone_number', 'email', 'instagram_username', 'facebook_username', 'x_username',
             'tiktok_username', 'linkedin_username', 'main_contact_name', 'main_contact_email',
             'main_contact_phone', 'offsite_emergency_contact', 'emergency_protocols',
-            'cost', 'pricing_details', 'ticket_link', 'history_paragraph', 'featured_image',
-            'parking_notes', 'public_transit_info', 'wheelchair_details', 'smoking_details',
+            'cost', 'pricing_details', 'history_paragraph', 'featured_image',
+            'parking_notes', 'wheelchair_details', 'smoking_details',
+            // 'public_transit_info' removed — renamed _deprecated_public_transit_info (Migration A #33)
             'drone_usage', 'drone_policy', 'pet_policy', 'toilet_description', 'rental_info',
             'rental_pricing', 'rental_link', 'price_range_per_person', 'pricing', 'gift_cards',
             'menu_link', 'community_impact', 'night_sky_viewing', 'birding_wildlife',
             'hunting_fishing_info', 'membership_details', 'camping_lodging', 'playground_notes',
             'pets_allowed', 'alcohol_available', 'public_toilets_available', 'toilet_photos',
-            'park_entry_notes', 'business_entry_notes', 'appointment_booking_url'
+            'park_entry_notes', 'business_entry_notes', 'appointment_booking_url',
+            'primary_parking_name'
             // Removed deprecated photo fields: park_entry_photo, parking_lot_photo, business_entry_photo
           ];
 
@@ -106,14 +135,24 @@ export const usePOIHandlers = (id, isEditing, form, setPoiId) => {
             }
           });
 
+          // Ensure compliance object is never null
+          if (!formData.compliance || typeof formData.compliance !== 'object') {
+            formData.compliance = {};
+          }
+
+          // Ensure mobility_access object is never null
+          if (!formData.mobility_access || typeof formData.mobility_access !== 'object') {
+            formData.mobility_access = {};
+          }
+
           // Derive UI control fields from actual data arrays
-          // These fields don't exist in backend - they're derived from the actual data
-          formData.alcohol_available = (formData.alcohol_options && formData.alcohol_options.length > 0) ? 'yes' : 'no';
+          // (alcohol_available is now a real persisted column — Issue #69 — so it
+          // is NOT derived; it loads directly from the backend.)
           formData.public_toilets_available = (formData.public_toilets && formData.public_toilets.length > 0) ? 'yes' : 'no';
           formData.pets_allowed = (formData.pet_options && formData.pet_options.length > 0) ? 'yes' : 'no';
 
           // Handle numeric fields that should be null or numbers
-          const numericFields = ['front_door_latitude', 'front_door_longitude'];
+          const numericFields = ['front_door_latitude', 'front_door_longitude', 'primary_parking_lat', 'primary_parking_lng'];
           numericFields.forEach(field => {
             if (formData[field] === '' || formData[field] === 'null') {
               formData[field] = null;
@@ -124,9 +163,9 @@ export const usePOIHandlers = (id, isEditing, form, setPoiId) => {
           if (formData.trail) {
             const trailStringFields = [
               'length_text', 'difficulty', 'difficulty_description', 'route_type',
-              'trail_markings', 'trailhead_access_details', 'downloadable_trail_map',
-              'trailhead_entrance_photo', 'trailhead_exit_photo'
-              // Removed deprecated photo fields: trailhead_photo, trail_exit_photo
+              'trail_markings', 'trailhead_access_details', 'downloadable_trail_map'
+              // Removed: trailhead_entrance_photo, trailhead_exit_photo (dropped by w63c_001).
+              // Removed earlier: trailhead_photo, trail_exit_photo.
             ];
             trailStringFields.forEach(field => {
               if (formData.trail[field] === null || formData.trail[field] === undefined) {
@@ -135,8 +174,9 @@ export const usePOIHandlers = (id, isEditing, form, setPoiId) => {
             });
 
             // Handle trail numeric fields
+            // trail_exit_latitude/longitude dropped by w63c_001 — exits live in access_points[].
             const trailNumericFields = [
-              'trailhead_latitude', 'trailhead_longitude', 'trail_exit_latitude', 'trail_exit_longitude'
+              'trailhead_latitude', 'trailhead_longitude'
             ];
             trailNumericFields.forEach(field => {
               if (formData.trail[field] === '' || formData.trail[field] === 'null') {
@@ -149,12 +189,35 @@ export const usePOIHandlers = (id, isEditing, form, setPoiId) => {
             const eventStringFields = [
               'organizer_name', 'food_and_drink_info', 'vendor_fee',
               'vendor_application_info', 'vendor_requirements',
-              'event_entry_notes'
-              // Removed deprecated photo field: event_entry_photo
+              'event_entry_notes',
+              // Task 134-136
+              'event_status', 'cancellation_paragraph', 'new_event_link',
+              // Task 137 — DEPRECATED (Issue #42). Use main_category_id /
+              // MainCategorySelector instead of the legacy string field.
+              // Task 138
+              'organizer_email', 'organizer_phone', 'organizer_website',
+              // Task 139
+              'cost_type',
             ];
             eventStringFields.forEach(field => {
               if (formData.event[field] === null || formData.event[field] === undefined) {
                 formData.event[field] = '';
+              }
+            });
+
+            // Convert datetime strings to Date objects for DateTimePicker
+            const eventDateFields = ['start_datetime', 'end_datetime', 'recurrence_end_date', 'vendor_application_deadline'];
+            eventDateFields.forEach(field => {
+              if (formData.event[field] && typeof formData.event[field] === 'string') {
+                formData.event[field] = new Date(formData.event[field]);
+              }
+            });
+
+            // Ensure event array fields are arrays
+            const eventArrayFields = ['venue_settings', 'coat_check_options', 'vendor_types', 'vendor_poi_links', 'excluded_dates', 'manual_dates', 'ticket_links', 'sponsors'];
+            eventArrayFields.forEach(field => {
+              if (!Array.isArray(formData.event[field])) {
+                formData.event[field] = [];
               }
             });
           }
@@ -369,13 +432,13 @@ export const usePOIHandlers = (id, isEditing, form, setPoiId) => {
         difficulty_description: null,
         route_type: null,
         trailhead_latitude: null,
-        trailhead_longitude: null,
-        trail_exit_latitude: null,
-        trail_exit_longitude: null
+        trailhead_longitude: null
+        // trail_exit_latitude / trail_exit_longitude dropped by w63c_001 —
+        // exit coords now live inside access_points[] entries.
       };
     } else if (poiType === 'EVENT') {
       minimalPOI.event = {
-        start_datetime: '',
+        start_datetime: new Date().toISOString(),
         end_datetime: null,
         organizer_name: ''
       };

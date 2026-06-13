@@ -553,6 +553,159 @@ Trail: "Lakeshore Loop"
 
 ---
 
+## Event-Venue Relationship (Direct FK)
+
+In addition to the generic `POIRelationship` table, events have a **direct foreign key** to a venue POI via the `venue_poi_id` column on the `events` table. This provides a tighter, first-class link between an event and the physical location where it takes place.
+
+**Key Files:**
+- `nearby-admin/backend/app/models/poi.py` - `Event.venue_poi_id` FK and `Event.venue_poi` relationship
+- `nearby-admin/backend/app/schemas/poi.py` - `EventCreate` / `EventUpdate` schemas with `venue_poi_id` and `venue_inheritance`
+- `nearby-admin/frontend/src/components/POIForm/components/VenueSelector.jsx` - Venue selection and data copy UI
+- `nearby-admin/backend/app/api/endpoints/images.py` - `POST /api/images/copy/{source}/to/{target}` for image copying
+
+### Data Model
+
+```python
+# nearby-admin/backend/app/models/poi.py
+
+class Event(Base):
+    __tablename__ = "events"
+
+    poi_id = Column(UUID(as_uuid=True), ForeignKey("points_of_interest.id"), primary_key=True)
+    # ...
+
+    # Venue relationship
+    venue_poi_id = Column(UUID(as_uuid=True), ForeignKey("points_of_interest.id"), nullable=True)
+    venue_inheritance = Column(JSONB, nullable=True)  # Per-section inheritance config
+
+    # ORM relationships
+    poi = relationship("PointOfInterest", back_populates="event", foreign_keys=[poi_id])
+    venue_poi = relationship("PointOfInterest", foreign_keys=[venue_poi_id])
+```
+
+### Allowed Venue Types
+
+Only **BUSINESS** and **PARK** POI types can serve as venues. The image copy endpoint and VenueSelector both enforce this restriction.
+
+### Venue Data Inheritance
+
+When a venue is linked to an event, the admin can selectively copy data from the venue into the event. The `venue_inheritance` JSONB column tracks which sections have been inherited:
+
+```json
+{
+  "address": true,
+  "contact": true,
+  "parking": true,
+  "accessibility": true,
+  "restrooms": true,
+  "hours": true,
+  "amenities": true,
+  "images": true
+}
+```
+
+**Inheritable data sections:**
+
+| Section | Fields Copied |
+|---------|---------------|
+| `address` | `address_full`, `address_street`, `address_city`, `address_state`, `address_zip`, `address_county`, location coordinates |
+| `contact` | `website_url`, `phone_number`, `email` |
+| `parking` | `parking_types`, `parking_locations`, `parking_notes`, `expect_to_pay_parking` |
+| `accessibility` | `wheelchair_accessible`, `wheelchair_details`, `mobility_access` |
+| `restrooms` | `public_toilets`, `toilet_locations`, `toilet_description` |
+| `hours` | `hours`, `holiday_hours` |
+| `amenities` | `key_facilities`, `pet_options`, `pet_policy` |
+| `images` | Copies entry, parking, and restroom images from venue to event |
+
+### Image Copying
+
+Images are copied from venue to event via a dedicated API endpoint:
+
+```
+POST /api/images/copy/{source_poi_id}/to/{target_poi_id}?image_types=entry&image_types=parking&image_types=restroom
+```
+
+- **Source POI** must be a BUSINESS or PARK
+- **Target POI** must be an EVENT
+- Creates new image records with S3 references pointing to the same stored files
+- Only copies original images (not size variants)
+
+### Frontend: VenueSelector
+
+The `VenueSelector` component (`nearby-admin/frontend/src/components/POIForm/components/VenueSelector.jsx`) provides:
+- A searchable dropdown of all BUSINESS and PARK POIs
+- Per-section checkboxes to control which data gets copied
+- A "Copy Venue Data" button that populates event form fields from the selected venue
+- Visual feedback on successful copy operations
+
+---
+
+## Recurring Event Relationships
+
+Events support parent-child linking for recurring event series. This enables a single "template" event to spawn multiple occurrence events that share common details.
+
+**Key Files:**
+- `nearby-admin/backend/app/models/poi.py` - `Event.parent_event_id` FK and `Event.series_id`
+- `nearby-admin/backend/app/schemas/poi.py` - `EventCreate` / `EventUpdate` schemas with recurring fields
+
+### Data Model
+
+```python
+# nearby-admin/backend/app/models/poi.py
+
+class Event(Base):
+    __tablename__ = "events"
+
+    poi_id = Column(UUID(as_uuid=True), ForeignKey("points_of_interest.id"), primary_key=True)
+    # ...
+
+    # Recurring event fields
+    series_id = Column(UUID(as_uuid=True), nullable=True, index=True)
+    parent_event_id = Column(UUID(as_uuid=True), ForeignKey("events.poi_id"), nullable=True)
+    excluded_dates = Column(JSONB, nullable=True)       # ["2026-07-04", "2026-12-25"]
+    recurrence_end_date = Column(TIMESTAMP(timezone=True), nullable=True)
+    manual_dates = Column(JSONB, nullable=True)          # ["2026-03-01T18:00:00Z", ...]
+
+    # ORM relationship
+    parent_event = relationship("Event", remote_side=[poi_id], foreign_keys=[parent_event_id])
+```
+
+### How It Works
+
+| Field | Purpose |
+|-------|---------|
+| `series_id` | Shared UUID that groups all events in a recurring series. All occurrences (parent + children) share the same `series_id`. |
+| `parent_event_id` | FK to `events.poi_id` of the parent/template event. The parent event has `parent_event_id = NULL`. |
+| `excluded_dates` | ISO date strings for dates when the recurring event does **not** occur (e.g., holidays). |
+| `recurrence_end_date` | Timestamp after which no more occurrences are generated. |
+| `manual_dates` | Explicit ISO timestamps for irregular schedules that don't follow `repeat_pattern`. |
+
+### Relationship Diagram
+
+```
+Parent Event: "Weekly Farmers Market" (series_id=abc, parent_event_id=NULL)
+  ├── Child: "Farmers Market - Jan 11" (series_id=abc, parent_event_id=parent.poi_id)
+  ├── Child: "Farmers Market - Jan 18" (series_id=abc, parent_event_id=parent.poi_id)
+  ├── Child: "Farmers Market - Jan 25" (series_id=abc, parent_event_id=parent.poi_id)
+  └── ...
+```
+
+### Integration with Repeat Pattern
+
+Recurring events also use the existing `is_repeating` and `repeat_pattern` fields on the Event model:
+
+```json
+{
+  "frequency": "weekly",
+  "interval": 1,
+  "days": ["saturday"]
+}
+```
+
+The `repeat_pattern` defines the schedule rule, while `series_id` and `parent_event_id` link the actual generated occurrences together in the database.
+
+---
+
 ## Best Practices
 
 1. **Validate types** - Always validate source/target POI types match rules
@@ -561,3 +714,6 @@ Trail: "Lakeshore Loop"
 4. **Cascade deletes** - Remove relationships when POIs are deleted
 5. **Show bidirectional** - Display both outgoing and incoming relationships
 6. **Filter search results** - Only show valid target types in search
+7. **Use venue FK for events** - Prefer the direct `venue_poi_id` FK over generic `event_venue` relationships for event-venue links
+8. **Track inheritance** - Store which sections were inherited in `venue_inheritance` so admins can see what was auto-filled vs. manually entered
+9. **Group recurring events** - Always assign the same `series_id` to all events in a recurring series for efficient querying

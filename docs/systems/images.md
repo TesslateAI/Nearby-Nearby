@@ -12,6 +12,7 @@ The Image Management System handles uploading, processing, storing, and serving 
 - `nearby-admin/backend/app/api/endpoints/images.py` - API endpoints
 - `nearby-admin/backend/app/core/s3.py` - S3 client configuration
 - `nearby-admin/frontend/src/components/ImageUpload/` - Upload components
+- `shared/constants/field_options.py` - `IMAGE_FUNCTION_TAGS` list (predefined function tags)
 
 ---
 
@@ -27,8 +28,8 @@ The Image Management System handles uploading, processing, storing, and serving 
 | Rental | `rental` | Rental equipment | 10 | 5MB |
 | Playground | `playground` | Playground photos (per-playground via context) | 10 | 5MB |
 | Menu | `menu` | Menu images | 10 | 10MB |
-| Trail Head | `trail_head` | Trailhead photos | 10 | 5MB |
-| Trail Exit | `trail_exit` | Trail exit photos | 10 | 5MB |
+| Trail Head | `trail_head` | Trailhead photos (was 1, now 10) | 10 | 5MB |
+| Trail Exit | `trail_exit` | Trail exit photos (was 1, now 10) | 10 | 5MB |
 | Map | `map` | Map images | 5 | 20MB |
 | Downloadable Map | `downloadable_map` | PDF maps | 5 | 50MB |
 
@@ -58,13 +59,67 @@ Previously, some photos were stored directly in POI columns (e.g., `parking_phot
 
 ---
 
+## Function Tags
+
+Images can be tagged with one or more **function tags** describing the purpose or content of the photo. This enables fine-grained filtering beyond `image_type` -- for example, distinguishing a "storefront" photo from an "interior" photo even when both are `gallery` type.
+
+### How It Works
+
+- The `function_tags` column is a **JSONB array of strings** on the `images` table.
+- Tags can be set during upload (as a JSON-encoded Form field) or updated afterwards via `PUT /api/images/image/{image_id}`.
+- Images can be filtered by tag using the `function_tag` query parameter on `GET /api/images/poi/{poi_id}`.
+
+### Predefined Tags
+
+20 predefined tags are defined in `shared/constants/field_options.py` (`IMAGE_FUNCTION_TAGS`):
+
+| Tag | Description |
+|-----|-------------|
+| `storefront` | Exterior storefront view |
+| `entrance` | Building or area entrance |
+| `interior` | Indoor space |
+| `exterior` | Outdoor/external view |
+| `signage` | Signs, wayfinding |
+| `parking` | Parking area |
+| `restrooms` | Restroom facilities |
+| `playground` | Playground equipment |
+| `aerial` | Aerial/drone shot |
+| `food_drink` | Food or beverage items |
+| `menu` | Menu boards or sheets |
+| `staff` | Staff or team photos |
+| `product` | Products or merchandise |
+| `trail_marker` | Trail marker or blaze |
+| `scenic` | Scenic vista or landscape |
+| `map` | Map or wayfinding diagram |
+| `floorplan` | Floor plan layout |
+| `event_setup` | Event setup or configuration |
+| `stage` | Stage or performance area |
+| `vendor_area` | Vendor booths or area |
+
+### Schema
+
+```python
+# ImageUpdate schema (Pydantic) -- allows updating tags via PUT
+class ImageUpdate(BaseModel):
+    alt_text: Optional[str] = None
+    caption: Optional[str] = None
+    display_order: Optional[int] = None
+    function_tags: Optional[List[str]] = None  # e.g. ["storefront", "entrance"]
+```
+
+### Migration
+
+Migration `d4e5f6g7h8i9` adds the `function_tags` JSONB column to the `images` table.
+
+---
+
 ## Data Model
 
 ```python
 # nearby-admin/backend/app/models/image.py
 
-from sqlalchemy import Column, String, Integer, ForeignKey
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import Column, String, Integer, ForeignKey, Boolean, Text, TIMESTAMP
+from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import relationship
 import uuid
 
@@ -72,21 +127,42 @@ class Image(Base):
     __tablename__ = "images"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    poi_id = Column(UUID(as_uuid=True), ForeignKey("points_of_interest.id"))
-    image_type = Column(String, nullable=False)  # main, gallery, parking, etc.
-    storage_provider = Column(String, default='s3')  # Always 's3' (database deprecated)
-    storage_url = Column(String(500))  # S3 storage URL
-    alt_text = Column(String(255))  # Accessibility text
-    caption = Column(Text)  # Image caption
-    display_order = Column(Integer, default=0)  # Sort order
-    width = Column(Integer)  # Image width
-    height = Column(Integer)  # Image height
-    parent_image_id = Column(UUID(as_uuid=True), ForeignKey("images.id"))
-    created_at = Column(DateTime, default=datetime.utcnow)
+    poi_id = Column(UUID(as_uuid=True), ForeignKey("points_of_interest.id", ondelete="CASCADE"))
+    image_type = Column(Enum(ImageType), nullable=False)  # main, gallery, parking, etc.
+    image_context = Column(String(50), nullable=True)  # e.g. 'restroom_1', 'parking_2'
+
+    # File information
+    filename = Column(String(255), nullable=False)
+    original_filename = Column(String(255), nullable=True)
+    mime_type = Column(String(50), nullable=True)
+    size_bytes = Column(Integer, nullable=True)
+    width = Column(Integer, nullable=True)
+    height = Column(Integer, nullable=True)
+
+    # Size variant fields
+    image_size_variant = Column(String(20), nullable=True)  # 'original', 'thumbnail', 'medium', 'large'
+    parent_image_id = Column(UUID(as_uuid=True), ForeignKey("images.id"), nullable=True)
+    is_optimized = Column(Boolean, default=False)
+
+    # Cloud storage fields (S3/MinIO)
+    storage_provider = Column(String(50), default='s3')
+    storage_url = Column(String(500), nullable=True)
+    storage_key = Column(String(255), nullable=True)
+
+    # Metadata
+    alt_text = Column(Text, nullable=True)
+    caption = Column(Text, nullable=True)
+    display_order = Column(Integer, nullable=True, default=0)
+    function_tags = Column(JSONB, nullable=True)  # ["storefront", "entrance", "interior"]
+
+    # Tracking
+    uploaded_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
+    updated_at = Column(TIMESTAMP(timezone=True), onupdate=func.now())
 
     # Relationships
     poi = relationship("PointOfInterest", back_populates="images")
-    variants = relationship("Image", backref=backref("parent", remote_side=[id]))
+    parent_image = relationship("Image", remote_side=[id], backref="size_variants")
 ```
 
 **Note:** The `image_data` column (binary storage) and `data_url` property have been deprecated. All images are stored in S3.
@@ -293,13 +369,14 @@ def process_image(
 | Method | Endpoint | Description | Auth |
 |--------|----------|-------------|------|
 | POST | `/api/images/upload/{poi_id}` | Upload single image | Yes |
-| POST | `/api/images/bulk-upload/{poi_id}` | Upload multiple | Yes |
-| GET | `/api/images/{image_id}` | Get image metadata | Public |
-| GET | `/api/images/poi/{poi_id}` | Get all POI images | Public |
-| GET | `/api/images/poi/{poi_id}/{type}` | Get by type | Public |
-| PUT | `/api/images/{image_id}` | Update metadata | Yes |
-| DELETE | `/api/images/{image_id}` | Delete image | Yes |
-| PUT | `/api/images/reorder` | Reorder images | Yes |
+| POST | `/api/images/upload-multiple/{poi_id}` | Upload multiple images | Yes |
+| GET | `/api/images/image/{image_id}` | Get image metadata | Public |
+| GET | `/api/images/poi/{poi_id}` | Get all POI images (supports `image_type` and `function_tag` query filters) | Public |
+| PUT | `/api/images/image/{image_id}` | Update metadata (alt_text, caption, display_order, function_tags) | Yes |
+| DELETE | `/api/images/image/{image_id}` | Delete image | Yes |
+| PUT | `/api/images/poi/{poi_id}/reorder/{image_type}` | Reorder images of a type | Yes |
+| GET | `/api/images/serve/{image_id}` | Redirect to S3 URL | Public |
+| POST | `/api/images/copy/{source_poi_id}/to/{target_poi_id}` | Copy images between POIs (venue inheritance) | Yes |
 
 ### Upload Endpoint
 
@@ -309,52 +386,86 @@ def process_image(
 @router.post("/upload/{poi_id}")
 async def upload_image(
     poi_id: UUID,
+    image_type: ImageTypeEnum = Form(...),
     file: UploadFile = File(...),
-    image_type: str = Form(...),
-    alt_text: str = Form(None),
-    caption: str = Form(None),
-    current_user = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    context: Optional[str] = Form(None),
+    alt_text: Optional[str] = Form(None),
+    caption: Optional[str] = Form(None),
+    display_order: Optional[int] = Form(0),
+    function_tags: Optional[str] = Form(None),  # JSON-encoded array, e.g. '["storefront", "entrance"]'
+    db: Session = Depends(get_db),
+    current_user: str = Depends(get_current_user)
 ):
-    """Upload a single image for a POI."""
-    poi = crud_poi.get_poi(db, poi_id)
-    if not poi:
-        raise HTTPException(404, "POI not found")
+    """Upload a single image for a POI.
+    function_tags is a JSON string that gets parsed into a list."""
+    ...
 
-    image = process_image(db, poi_id, file, image_type, alt_text, caption)
-    return image
-
-@router.post("/bulk-upload/{poi_id}")
-async def bulk_upload(
+@router.post("/upload-multiple/{poi_id}")
+async def upload_multiple_images(
     poi_id: UUID,
-    files: list[UploadFile] = File(...),
-    image_type: str = Form(...),
-    db: Session = Depends(get_db)
+    image_type: ImageTypeEnum = Form(...),
+    files: List[UploadFile] = File(...),
+    db: Session = Depends(get_db),
+    current_user: str = Depends(get_current_user)
 ):
-    """Upload multiple images at once."""
-    images = []
-    for file in files:
-        image = process_image(db, poi_id, file, image_type)
-        images.append(image)
-    return images
+    """Upload multiple images at once (primarily for galleries)."""
+    ...
 ```
+
+The `function_tags` form field accepts either:
+- A JSON-encoded array string: `'["storefront", "entrance"]'`
+- A single tag string: `"storefront"` (automatically wrapped in a list)
 
 ### Reorder Endpoint
 
 ```python
-@router.put("/reorder")
+@router.put("/poi/{poi_id}/reorder/{image_type}")
 async def reorder_images(
-    reorder_data: list[ImageReorder],
-    db: Session = Depends(get_db)
+    poi_id: UUID,
+    image_type: ImageTypeEnum,
+    reorder_request: ImageReorderRequest,  # { "image_ids": [uuid, uuid, ...] }
+    db: Session = Depends(get_db),
+    current_user: str = Depends(get_current_user)
 ):
-    """Update display order for multiple images."""
-    for item in reorder_data:
-        image = db.query(Image).filter(Image.id == item.image_id).first()
-        if image:
-            image.display_order = item.display_order
-    db.commit()
-    return {"status": "success"}
+    """Reorder images of a specific type for a POI."""
+    ...
 ```
+
+### Filtering by Function Tag
+
+The `GET /api/images/poi/{poi_id}` endpoint supports filtering by function tag:
+
+```
+GET /api/images/poi/{poi_id}?function_tag=storefront
+GET /api/images/poi/{poi_id}?image_type=gallery&function_tag=interior
+```
+
+The filter uses PostgreSQL's JSONB `@>` (contains) operator to check if the `function_tags` array includes the given tag.
+
+### Image Copy Endpoint (Venue Inheritance)
+
+```python
+@router.post("/copy/{source_poi_id}/to/{target_poi_id}")
+async def copy_images_from_venue(
+    source_poi_id: UUID,
+    target_poi_id: UUID,
+    image_types: List[ImageTypeEnum] = Query(...),  # e.g. ?image_types=entry&image_types=parking
+    db: Session = Depends(get_db),
+    current_user: str = Depends(get_current_user)
+):
+    """Copy images from a venue (BUSINESS/PARK) to an event (EVENT)."""
+    ...
+```
+
+This endpoint creates **reference copies** of images -- new `Image` database records that share the same S3 objects (no file duplication). It is used by the **venue inheritance** feature so events automatically get entry, parking, and restroom photos from their venue.
+
+**Behavior:**
+- Source POI must be `BUSINESS` or `PARK`; target must be `EVENT`
+- Only original images are copied (not size variants); variants are re-created pointing to the new parent
+- Copied filenames are prefixed with `copy_`
+- Captions are set to `"Copied from venue: {venue_name}"`
+- The `image_types` query parameter filters which types to copy (e.g., `entry`, `parking`, `restroom`)
+- Returns an `ImageBulkUploadResponse` with lists of `uploaded` and `failed` items
 
 ---
 
@@ -537,3 +648,5 @@ services:
 5. **WebP format** - Convert to WebP for smaller file sizes
 6. **Alt text** - Always provide accessibility descriptions
 7. **Delete cleanup** - Remove from S3 when deleting records
+8. **Tag images** - Use `function_tags` to describe purpose (e.g., `storefront`, `interior`) for better filtering and display
+9. **Use image copy for events** - When creating events at a venue, copy venue images via the copy endpoint instead of re-uploading

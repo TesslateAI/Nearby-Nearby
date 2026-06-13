@@ -52,6 +52,10 @@ def run_migrations_offline() -> None:
         dialect_opts={"paramstyle": "named"},
         # Add the include_object function here for offline mode
         include_object=include_object,
+        # Commit per migration so a migration with disable_ddl_transaction=True
+        # (e.g. i63_001's ALTER TYPE ADD VALUE) is durable before the next
+        # migration tries to use the new value (e.g. w63b_001).
+        transaction_per_migration=True,
     )
 
     with context.begin_transaction():
@@ -71,10 +75,14 @@ def run_migrations_online() -> None:
 
     with connectable.connect() as connection:
         context.configure(
-            connection=connection, 
+            connection=connection,
             target_metadata=target_metadata,
             # Add the include_object function here for online mode
             include_object=include_object,
+            # Commit per migration so a migration with disable_ddl_transaction=True
+            # (e.g. i63_001's ALTER TYPE ADD VALUE) is durable before the next
+            # migration tries to use the new value (e.g. w63b_001).
+            transaction_per_migration=True,
         )
 
         with context.begin_transaction():

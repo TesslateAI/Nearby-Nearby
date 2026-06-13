@@ -1,156 +1,151 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { notifications } from '@mantine/notifications';
 import api from '../../../utils/api';
 import { preparePOIPayload } from '../utils/formCleanup';
 
-export const useAutoSave = (form, poiId, isEditing, onSaveSuccess) => {
-  const [isSaving, setIsSaving] = useState(false);
-  const [lastSaved, setLastSaved] = useState(null);
-  const saveTimeoutRef = useRef(null);
-  const lastFormValuesRef = useRef(null);
-  const saveInProgressRef = useRef(false);
-
-  // Auto-save interval in milliseconds (10 seconds)
-  const AUTO_SAVE_INTERVAL = 10000;
-
-  // Check if form values have changed using a more efficient shallow comparison
-  const hasFormChanged = useCallback(() => {
-    if (!lastFormValuesRef.current) return true;
-
-    const currentValues = form.values;
-    const lastValues = lastFormValuesRef.current;
-
-    // Quick shallow comparison for top-level fields
-    const currentKeys = Object.keys(currentValues);
-    const lastKeys = Object.keys(lastValues);
-
-    if (currentKeys.length !== lastKeys.length) return true;
-
-    // Compare all top-level fields (except internal React fields)
-    const fieldsToCompare = currentKeys.filter(key =>
-      !key.startsWith('_') && key !== 'id' && key !== 'created_at' && key !== 'updated_at'
-    );
-
-    for (const key of fieldsToCompare) {
-      if (currentValues[key] !== lastValues[key]) {
-        // For objects/arrays, do a deeper check
-        if (typeof currentValues[key] === 'object' && currentValues[key] !== null) {
-          if (JSON.stringify(currentValues[key]) !== JSON.stringify(lastValues[key])) {
-            return true;
-          }
-        } else {
-          return true;
-        }
+// Flatten nested subtype objects into top-level keys for the autosave endpoint,
+// which expects flat field names (e.g. `length_text`, not `trail.length_text`).
+// Also strip fields that the autosave whitelist denies (e.g. `location`).
+const DENIED = new Set(['id', 'created_at', 'last_updated', 'updated_at', 'location', 'poi_type', 'has_been_published']);
+function buildAutosavePayload(formValues) {
+  const full = preparePOIPayload(formValues);
+  const out = {};
+  for (const [k, v] of Object.entries(full)) {
+    if (DENIED.has(k)) continue;
+    if (['business', 'park', 'trail', 'event'].includes(k) && v && typeof v === 'object' && !Array.isArray(v)) {
+      for (const [sk, sv] of Object.entries(v)) {
+        if (DENIED.has(sk)) continue;
+        out[sk] = sv;
       }
+    } else {
+      out[k] = v;
     }
+  }
+  return out;
+}
 
-    return false;
-  }, [form.values]);
+// Google Docs-style autosave: ~800ms debounce after last keystroke,
+// PATCH /pois/{id}/autosave (whitelist-filtered, no full-validation).
+const DEBOUNCE_MS = 800;
 
-  // Auto-save function
-  const performAutoSave = useCallback(async () => {
-    // Only auto-save when editing an existing POI
-    if (!isEditing || !poiId || saveInProgressRef.current) return;
+// Status: 'idle' | 'saving' | 'saved' | 'error' | 'offline'
+export const useAutoSave = (form, poiId, isEditing) => {
+  const [status, setStatus] = useState('idle');
+  const [lastSaved, setLastSaved] = useState(null);
+  const [errorMsg, setErrorMsg] = useState(null);
 
-    // Don't save if form hasn't changed
-    if (!hasFormChanged()) return;
+  const debounceRef = useRef(null);
+  const inFlightRef = useRef(false);
+  const pendingRef = useRef(false);
+  const lastSerializedRef = useRef(null);
+  const isOnlineRef = useRef(typeof navigator !== 'undefined' ? navigator.onLine : true);
 
-    // NO VALIDATION - Save everything as-is
-    saveInProgressRef.current = true;
-    setIsSaving(true);
+  // ---- network online/offline ---------------------------------------------
+  useEffect(() => {
+    const onOnline = () => {
+      isOnlineRef.current = true;
+      if (status === 'offline') setStatus('idle');
+      // flush any pending change
+      if (pendingRef.current) scheduleSave(0);
+    };
+    const onOffline = () => {
+      isOnlineRef.current = false;
+      setStatus('offline');
+    };
+    window.addEventListener('online', onOnline);
+    window.addEventListener('offline', onOffline);
+    return () => {
+      window.removeEventListener('online', onOnline);
+      window.removeEventListener('offline', onOffline);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status]);
+
+  // ---- core save ----------------------------------------------------------
+  const performSave = useCallback(async () => {
+    if (!isEditing || !poiId) return;
+    if (!isOnlineRef.current) { setStatus('offline'); return; }
+    if (inFlightRef.current) { pendingRef.current = true; return; }
+
+    const payload = buildAutosavePayload(form.values);
+    const serialized = JSON.stringify(payload);
+    if (serialized === lastSerializedRef.current) return; // no change
+
+    inFlightRef.current = true;
+    setStatus('saving');
+    setErrorMsg(null);
 
     try {
-      // Prepare payload using shared utility
-      const payload = preparePOIPayload(form.values);
-      const response = await api.put(`/pois/${poiId}`, payload);
-
-      if (response.ok) {
-        // Update last saved values
-        lastFormValuesRef.current = { ...form.values };
-        setLastSaved(new Date());
-
-        if (onSaveSuccess) {
-          onSaveSuccess();
-        }
-
-        console.log('Auto-save successful');
-      } else {
-        // Get detailed error from response
-        const errorData = await response.json().catch(() => ({}));
-        const errorDetail = errorData.detail || response.statusText;
-        console.error('Auto-save error details:', errorData);
-        throw new Error(`HTTP ${response.status}: ${errorDetail}`);
+      const resp = await api.request(`/pois/${poiId}/autosave`, {
+        method: 'PATCH',
+        body: serialized,
+      });
+      if (!resp || !resp.ok) {
+        const text = await (resp ? resp.text() : Promise.resolve(''));
+        throw new Error(`HTTP ${resp?.status || '??'}: ${text || resp?.statusText || ''}`);
       }
-    } catch (error) {
-      console.error('Auto-save failed:', error);
-      console.error('Form values at time of error:', form.values);
-      console.error('Payload that failed:', preparePOIPayload(form.values));
-
-      // Only show error notification for network/server errors, not validation errors
-      if (error.message && !error.message.includes('validation')) {
-        notifications.show({
-          title: 'Auto-save failed',
-          message: 'Changes will be saved when you manually save the form.',
-          color: 'yellow',
-          autoClose: 3000
-        });
-      }
+      lastSerializedRef.current = serialized;
+      setLastSaved(new Date());
+      setStatus('saved');
+    } catch (err) {
+      console.error('Autosave failed:', err);
+      setErrorMsg(String(err?.message || err));
+      setStatus('error');
     } finally {
-      setIsSaving(false);
-      saveInProgressRef.current = false;
+      inFlightRef.current = false;
+      // if more edits arrived during the request, save again
+      if (pendingRef.current) {
+        pendingRef.current = false;
+        scheduleSave(DEBOUNCE_MS);
+      }
     }
-  }, [form.values, isEditing, poiId, hasFormChanged, onSaveSuccess]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.values, isEditing, poiId]);
 
-  // Set up auto-save timer - only trigger on actual changes
+  // ---- debouncer ----------------------------------------------------------
+  const scheduleSave = useCallback((delay = DEBOUNCE_MS) => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => { performSave(); }, delay);
+  }, [performSave]);
+
+  // ---- watch form.values --------------------------------------------------
   useEffect(() => {
     if (!isEditing || !poiId) return;
-
-    // Clear existing timeout
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
+    // Initialize baseline so first render isn't treated as a change
+    if (lastSerializedRef.current === null) {
+      lastSerializedRef.current = JSON.stringify(buildAutosavePayload(form.values));
+      return;
     }
-
-    // Set new timeout - hasFormChanged will be checked when timeout fires
-    saveTimeoutRef.current = setTimeout(() => {
-      performAutoSave();
-    }, AUTO_SAVE_INTERVAL);
-
-    // Cleanup on unmount or dependency change
+    scheduleSave(DEBOUNCE_MS);
     return () => {
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-      }
+      if (debounceRef.current) clearTimeout(debounceRef.current);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form.values, isEditing, poiId]);
 
-  // Cleanup timeout on unmount
+  // ---- beforeunload guard -------------------------------------------------
   useEffect(() => {
-    return () => {
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
+    const handler = (e) => {
+      if (inFlightRef.current || status === 'saving' || debounceRef.current) {
+        e.preventDefault();
+        e.returnValue = ''; // browser shows "Leave site?" prompt
+        return '';
       }
     };
-  }, []);
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [status]);
 
-  // Initialize last form values when form is loaded
-  useEffect(() => {
-    if (isEditing && poiId && form.values && !lastFormValuesRef.current) {
-      lastFormValuesRef.current = { ...form.values };
-    }
-  }, [isEditing, poiId, form.values]);
-
-  // Manual trigger for immediate save
+  // ---- manual flush -------------------------------------------------------
   const triggerAutoSave = useCallback(() => {
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-    }
-    performAutoSave();
-  }, [performAutoSave]);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    performSave();
+  }, [performSave]);
 
   return {
-    isSaving,
-    lastSaved,
-    triggerAutoSave
+    status,            // 'idle' | 'saving' | 'saved' | 'error' | 'offline'
+    lastSaved,         // Date | null
+    errorMsg,          // string | null
+    isSaving: status === 'saving',
+    triggerAutoSave,
   };
 };

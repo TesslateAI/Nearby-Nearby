@@ -1,0 +1,27 @@
+/* SponsorBadge — matches the "Chatham Sponsor" treatment in the Figma
+   detail-page intro block (top-right of header, gold star + dark text). */
+
+.poi_sponsor_chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: transparent;
+  border: 1px solid var(--nn-gold);
+  color: var(--nn-dark);
+  font-family: var(--font-poppins);
+  font-weight: 600;
+  font-size: 0.9em;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.poi_sponsor_chip_icon {
+  color: var(--nn-gold);
+  flex-shrink: 0;
+}
+
+.poi_sponsor_chip_text {
+  color: var(--nn-dark);
+}

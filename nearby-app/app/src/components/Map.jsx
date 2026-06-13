@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -34,9 +34,11 @@ const createNumberedIcon = (number, isHighlighted = false) => {
   const size = isHighlighted ? 40 : 32;
   const fontSize = isHighlighted ? 16 : 14;
 
+  const textEl = number != null
+    ? `<text x="${size/2}" y="${size/2 + fontSize/3}" text-anchor="middle" font-family="Arial,sans-serif" font-size="${fontSize}" font-weight="bold" fill="white">${number}</text>`
+    : '';
   const svg = `<svg width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg">
-    <circle cx="${size/2}" cy="${size/2}" r="${size/2 - 2}" fill="${bgColor}" stroke="white" stroke-width="3"/>
-    <text x="${size/2}" y="${size/2 + fontSize/3}" text-anchor="middle" font-family="Arial,sans-serif" font-size="${fontSize}" font-weight="bold" fill="white">${number}</text>
+    <circle cx="${size/2}" cy="${size/2}" r="${size/2 - 2}" fill="${bgColor}" stroke="white" stroke-width="3"/>${textEl}
   </svg>`;
   const svgUrl = 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg);
 
@@ -48,31 +50,30 @@ const createNumberedIcon = (number, isHighlighted = false) => {
   });
 };
 
-// Component to auto-fit bounds with radius-based zoom
+// Component to auto-fit bounds so all markers are visible
 function AutoFitBounds({ bounds, radiusMiles }) {
   const map = useMap();
 
   useEffect(() => {
     if (bounds && bounds.length > 0 && map) {
-      // Calculate zoom level based on radius in miles - allow closer zoom
-      let maxZoom = 18; // default for 1 mile - increased from 17
-      if (radiusMiles <= 1) {
-        maxZoom = 18;
-      } else if (radiusMiles <= 3) {
-        maxZoom = 17;
-      } else if (radiusMiles <= 5) {
-        maxZoom = 16;
-      } else if (radiusMiles <= 10) {
-        maxZoom = 15;
-      } else {
-        maxZoom = 14;
+      // Calculate maxZoom based on radius (for NearbySection) or default 15 (for Explore)
+      let maxZoom = 15;
+      if (radiusMiles) {
+        if (radiusMiles <= 1) maxZoom = 18;
+        else if (radiusMiles <= 3) maxZoom = 17;
+        else if (radiusMiles <= 5) maxZoom = 16;
+        else if (radiusMiles <= 10) maxZoom = 15;
+        else maxZoom = 14;
       }
 
-      // Wrap in try-catch to handle edge cases where map container is removed during animation
       try {
-        map.fitBounds(bounds, { padding: [50, 50], maxZoom });
+        if (bounds.length === 1) {
+          // Single marker — center on it at a reasonable zoom
+          map.setView(bounds[0], Math.min(maxZoom, 14));
+        } else {
+          map.fitBounds(bounds, { padding: [70, 70], maxZoom });
+        }
       } catch (e) {
-        // Silently handle - map may have been unmounted during transition
         console.warn('Map fitBounds failed:', e.message);
       }
     }
@@ -81,7 +82,65 @@ function AutoFitBounds({ bounds, radiusMiles }) {
   return null;
 }
 
-function Map({ currentPOI, nearbyPOIs = [], radiusMiles = 3, onMarkerClick, highlightedId }) {
+/**
+ * Click-to-activate scroll-wheel zoom guard.
+ * Renders a transparent overlay over the map; clicking it enables scroll-wheel zoom
+ * for the current map instance. Moving the mouse out resets to disabled so the next
+ * visit starts fresh. pointerEvents:'none' ensures marker clicks are never blocked.
+ */
+function ScrollWheelToggle() {
+  const map = useMap();
+  const [active, setActive] = useState(false);
+
+  const activate = () => {
+    map.scrollWheelZoom.enable();
+    setActive(true);
+  };
+
+  const deactivate = () => {
+    map.scrollWheelZoom.disable();
+    setActive(false);
+  };
+
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        inset: 0,
+        zIndex: 400,          // above tiles (200) and markers (300), below controls (1000)
+        pointerEvents: active ? 'none' : 'auto',
+        cursor: active ? 'default' : 'pointer',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: active ? 'transparent' : 'rgba(0,0,0,0)',
+      }}
+      onClick={activate}
+      onMouseLeave={deactivate}
+      aria-hidden="true"
+    >
+      {!active && (
+        <div
+          style={{
+            background: 'rgba(0,0,0,0.55)',
+            color: 'white',
+            padding: '6px 14px',
+            borderRadius: '4px',
+            fontSize: '13px',
+            fontWeight: 600,
+            pointerEvents: 'none',
+            opacity: 0,           // invisible by default; shown on hover via CSS
+          }}
+          className="map-scroll-hint"
+        >
+          Click map to enable scroll
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Map({ currentPOI, nearbyPOIs = [], radiusMiles, onMarkerClick, highlightedId }) {
   if (!currentPOI || !currentPOI.location) {
     return (
       <div className="map-placeholder">
@@ -95,25 +154,39 @@ function Map({ currentPOI, nearbyPOIs = [], radiusMiles = 3, onMarkerClick, high
     currentPOI.location.coordinates[0]  // longitude
   ];
 
+  // If the current POI has opted out of exact location display, we don't show its pin.
+  const hideCurrentExact = Boolean(currentPOI?.dont_display_location);
+
   // Calculate bounds to fit all markers
-  const allCoords = [currentCoords];
+  const allCoords = [];
+  if (!hideCurrentExact) {
+    allCoords.push(currentCoords);
+  }
   nearbyPOIs.forEach(poi => {
-    if (poi.location) {
+    if (poi.location && !poi.dont_display_location) {
       allCoords.push([
         poi.location.coordinates[1],
         poi.location.coordinates[0]
       ]);
     }
   });
+  // Ensure the map always has at least one bound reference so it doesn't crash.
+  if (allCoords.length === 0) {
+    allCoords.push(currentCoords);
+  }
 
   return (
     <div className="map-container">
       <MapContainer
-        key={currentPOI?.id || 'default-map'}
+        key={`${currentPOI?.id}-${nearbyPOIs.length}-${nearbyPOIs[nearbyPOIs.length - 1]?.id || ''}`}
         center={currentCoords}
         zoom={14}
         className="leaflet-map"
-        scrollWheelZoom={true}
+        scrollWheelZoom={false}
+        zoomDelta={0.5}
+        zoomSnap={0.25}
+        wheelPxPerZoomLevel={120}
+        wheelDebounceTime={40}
         maxZoom={20} // Allow much closer zoom
         minZoom={10}
       >
@@ -125,8 +198,10 @@ function Map({ currentPOI, nearbyPOIs = [], radiusMiles = 3, onMarkerClick, high
         />
 
         <AutoFitBounds bounds={allCoords} radiusMiles={radiusMiles} />
+        <ScrollWheelToggle />
 
-        {/* Current POI marker */}
+        {/* Current POI marker - hidden when POI opts out of showing exact location */}
+        {!hideCurrentExact && (
         <Marker position={currentCoords} icon={createCurrentIcon()}>
           <Popup className="custom-popup">
             <div className="popup-content">
@@ -135,10 +210,13 @@ function Map({ currentPOI, nearbyPOIs = [], radiusMiles = 3, onMarkerClick, high
             </div>
           </Popup>
         </Marker>
+        )}
 
         {/* Nearby POI markers - PURPLE NUMBERED CIRCLES */}
         {nearbyPOIs.map((poi, index) => {
           if (!poi.location) return null;
+          // Hide pin for POIs that opted out of exact-location display
+          if (poi.dont_display_location) return null;
 
           const coords = [
             poi.location.coordinates[1],
@@ -147,12 +225,13 @@ function Map({ currentPOI, nearbyPOIs = [], radiusMiles = 3, onMarkerClick, high
 
           const number = index + 1;
           const isHighlighted = highlightedId === poi.id;
+          const showNumber = nearbyPOIs.length > 1;
 
           return (
             <Marker
               key={poi.id}
               position={coords}
-              icon={createNumberedIcon(number, isHighlighted)}
+              icon={createNumberedIcon(showNumber ? number : null, isHighlighted)}
               eventHandlers={{
                 click: () => {
                   if (onMarkerClick) {

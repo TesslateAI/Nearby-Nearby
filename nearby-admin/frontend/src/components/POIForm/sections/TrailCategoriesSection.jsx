@@ -1,13 +1,16 @@
 import React from 'react';
-import { Stack, Divider, Title, Text, Alert } from '@mantine/core';
+import { Stack, Alert } from '@mantine/core';
 import { MainCategorySelector } from '../../MainCategorySelector';
 import { TreeCategorySelector } from '../../TreeCategorySelector';
-import { IdealForSelector } from '../../IdealForSelector';
 
 /**
  * Trail Categories Section
- * Uses standard category selection from backend
- * Includes Primary Display Category and Target Audience (Ideal For)
+ * Uses standard category selection from backend.
+ * Includes Primary Display Category.
+ *
+ * Issue #43: Ideal For is NOT rendered on Trail layouts (visibility table).
+ * The legacy <IdealForSelector /> stack was removed; the new unified
+ * IdealForGrouped is also NOT rendered for Trails.
  */
 export const TrailCategoriesSection = React.memo(function TrailCategoriesSection({ form }) {
   return (
@@ -34,21 +37,6 @@ export const TrailCategoriesSection = React.memo(function TrailCategoriesSection
           This category will be displayed on POI cards for quick identification
         </Alert>
       )}
-
-      {/* Target Audience - Ideal For */}
-      <Divider my="md" label="Target Audience" />
-      <Stack>
-        <Title order={5}>Ideal For</Title>
-        <Text size="sm" c="dimmed">
-          Select all audiences that would enjoy this trail
-        </Text>
-        <IdealForSelector
-          value={form.values.ideal_for || []}
-          onChange={(value) => form.setFieldValue('ideal_for', value)}
-          keyIdealFor={form.values.ideal_for_key || []}
-          showAll={true}
-        />
-      </Stack>
     </Stack>
   );
 });

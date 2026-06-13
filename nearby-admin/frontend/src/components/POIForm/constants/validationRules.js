@@ -1,4 +1,4 @@
-import { getFieldsForListingType } from '../../../utils/constants';
+import { getLegacyFieldsForListingType } from '../../../utils/constants';
 
 export const getValidationRules = () => ({
   name: (value) => (!value ? 'Name is required' : null),
@@ -13,7 +13,7 @@ export const getValidationRules = () => ({
     if (values?.poi_type === 'BUSINESS') {
       return null;
     }
-    const fieldConfig = getFieldsForListingType(values?.listing_type, values?.poi_type);
+    const fieldConfig = getLegacyFieldsForListingType(values?.listing_type, values?.poi_type);
     const maxCategories = fieldConfig?.maxCategories || 3;
     return value?.length > maxCategories ? `Maximum ${maxCategories} categories allowed` : null;
   },
@@ -22,5 +22,17 @@ export const getValidationRules = () => ({
       return 'Start date/time is required for events';
     }
     return null;
+  },
+  // #49: soft validation — every playground row must declare at least one
+  // age group. Returns an array of per-row errors so Mantine's form surfaces
+  // the warning on the offending row without blocking save.
+  playground_locations: (value) => {
+    if (!Array.isArray(value) || value.length === 0) return null;
+    const missing = value.some(
+      (row) => !row || !Array.isArray(row.age_groups) || row.age_groups.length === 0
+    );
+    return missing
+      ? 'Each playground should have at least one age group selected'
+      : null;
   }
 });

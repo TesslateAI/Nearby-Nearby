@@ -8,13 +8,11 @@
 
 .nearby-filters__scroll {
   display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
   gap: 8px;
-  overflow-x: auto;
-  scroll-behavior: smooth;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE/Edge */
-  padding: 4px 0;
+  padding: 8px;
 }
 
 .nearby-filters__scroll::-webkit-scrollbar {
@@ -26,13 +24,13 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  background: rgba(255, 255, 255, 0.15);
+  background: #481f48;
   color: white;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  padding: 10px 16px;
-  border-radius: 100px; /* Pill shape */
+  border: 1px solid var(--nn-gold);
+  padding: 12px 20px;
+  border-radius: 55px;
   font-weight: 600;
-  font-size: 14px;
+  font-size: 0.9em;
   cursor: pointer;
   transition: all 0.2s ease;
   white-space: nowrap;
@@ -41,8 +39,8 @@
 }
 
 .nearby-filter:hover {
-  background: rgba(255, 255, 255, 0.25);
-  border-color: rgba(255, 255, 255, 0.5);
+  background: #5a2d5a;
+  border-color: var(--nn-gold);
 }
 
 .nearby-filter:focus-visible {
@@ -52,13 +50,14 @@
 
 .nearby-filter--active {
   background: var(--nn-gold);
-  color: var(--nn-dark);
+  color: var(--nn-purple1);
   border-color: var(--nn-gold);
 }
 
 .nearby-filter--active:hover {
   background: #e5b73d;
   border-color: #e5b73d;
+  color: var(--nn-purple1);
 }
 
 /* Light variant (for homepage Hero & Explore page) */
@@ -122,5 +121,18 @@
     padding: 8px 12px;
     font-size: 12px;
     gap: 4px;
+  }
+}
+
+/* Desktop scaling */
+@media (min-width: 1200px) {
+  .nearby-filter {
+    padding: 14px 23px;
+  }
+}
+
+@media (min-width: 1600px) {
+  .nearby-filter {
+    padding: 15px 25px;
   }
 }

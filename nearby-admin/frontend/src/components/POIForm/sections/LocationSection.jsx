@@ -75,10 +75,18 @@ export const LocationSection = React.memo(function LocationSection({
       </SimpleGrid>
 
       <SimpleGrid cols={{ base: 1, sm: 4 }}>
-        <DebouncedTextInput
+        <Select
           label="City"
-          placeholder="City name"
-          {...getDebouncedInputProps(form, 'address_city')}
+          placeholder="Select or type city"
+          data={[
+            'Pittsboro', 'Siler City', 'Chapel Hill', 'Carrboro', 'Goldston',
+            'Bear Creek', 'Bennett', 'Bonlee', 'Bynum', 'Gulf', 'Moncure',
+            'Sanford', 'Apex', 'Holly Springs', 'Fuquay-Varina'
+          ]}
+          searchable
+          allowDeselect
+          nothingFoundMessage="Type to enter a custom city"
+          {...form.getInputProps('address_city')}
         />
         <DebouncedTextInput
           label="County"
@@ -151,25 +159,10 @@ export const LocationSection = React.memo(function LocationSection({
         </>
       )}
 
-      {/* Trail Entry Information */}
-      {isTrail && (
-        <>
-          <Divider my="md" label="Trail Entry Information" />
-          <RichTextEditor
-            label="Trail Entry Notes"
-            placeholder="Describe how to access the trail, trailhead location, special instructions, etc."
-            value={form.values.trail_entry_notes || ''}
-            onChange={(html) => form.setFieldValue('trail_entry_notes', html)}
-            error={form.errors.trail_entry_notes}
-            minRows={3}
-          />
-          {shouldUseImageUpload(id) ? (
-            <EntryPhotoUpload poiId={id} poiType="Trail" form={form} />
-          ) : (
-            <Text size="sm" c="dimmed">Save POI first to enable trail entry photo upload</Text>
-          )}
-        </>
-      )}
+      {/* Trail Entry Information removed (#63 / #64): trail_entry_notes is
+          now bound by <TrailheadAccessPointsSection> in s8-trail-guide, and
+          trailhead photos use image_type='trail_head' there. Keeping the
+          duplicate here caused a dual-write conflict (R2 reviewer flag). */}
 
       {/* Business Entry Information - PAID Business only */}
       {isBusiness && !isFreeListing && (
@@ -246,13 +239,7 @@ export const LocationSection = React.memo(function LocationSection({
         error={form.errors.parking_notes}
       />
 
-      <RichTextEditor
-        label="Public Transit Information"
-        placeholder="Bus routes, train stations, etc."
-        value={form.values.public_transit_info || ''}
-        onChange={(html) => form.setFieldValue('public_transit_info', html)}
-        error={form.errors.public_transit_info}
-      />
+      {/* public_transit_info removed — renamed _deprecated_public_transit_info (Migration A #33) */}
 
       <Radio.Group
         label="Expect to Pay for Parking?"
@@ -264,6 +251,39 @@ export const LocationSection = React.memo(function LocationSection({
           <Radio value="sometimes" label="Sometimes" />
         </Stack>
       </Radio.Group>
+
+      {/* Primary Parking Location - lat/long and photos for main parking area */}
+      <Divider my="md" label="Primary Parking Location" />
+      <Text size="sm" c="dimmed" mb="sm">
+        Set the coordinates and photos for the main parking area. Use "Add Another Parking Location" below for additional lots.
+      </Text>
+      <SimpleGrid cols={{ base: 1, sm: 2 }}>
+        <NumberInput
+          label="Primary Parking Latitude"
+          placeholder="35.7128"
+          precision={6}
+          value={form.values.primary_parking_lat || ''}
+          onChange={(value) => form.setFieldValue('primary_parking_lat', value)}
+        />
+        <NumberInput
+          label="Primary Parking Longitude"
+          placeholder="-79.0064"
+          precision={6}
+          value={form.values.primary_parking_lng || ''}
+          onChange={(value) => form.setFieldValue('primary_parking_lng', value)}
+        />
+      </SimpleGrid>
+      <TextInput
+        label="Primary Parking Area Name"
+        placeholder="e.g., Main Lot, Front Parking"
+        value={form.values.primary_parking_name || ''}
+        onChange={(e) => form.setFieldValue('primary_parking_name', e.target.value)}
+      />
+      {shouldUseImageUpload(id) ? (
+        <ParkingPhotosUpload poiId={id} parkingName={form.values.primary_parking_name || 'Primary'} form={form} />
+      ) : (
+        <Text size="sm" c="dimmed">Save POI first to enable parking photo upload</Text>
+      )}
 
       {/* Parking Locations for Parks, Trails, and Events */}
       {(isPark || isTrail || isEvent) && (

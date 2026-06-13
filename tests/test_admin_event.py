@@ -26,8 +26,8 @@ class TestCreateEventAllFields:
             "address_city": "Pittsboro",
             "cost": "$25",
             "pricing_details": "Kids under 5 free. VIP: $75",
-            "ticket_link": "https://tickets.example.com/summer-fest",
             "event": {
+                "ticket_links": [{"platform": "Eventbrite", "url": "https://tickets.example.com/summer-fest"}],
                 "start_datetime": "2026-07-04T10:00:00Z",
                 "end_datetime": "2026-07-04T22:00:00Z",
                 "is_repeating": False,
@@ -54,7 +54,7 @@ class TestCreateEventAllFields:
         assert event["vendor_types"] == ["Food", "Crafts", "Art"]
         assert event["venue_settings"] == ["Outdoor", "Indoor"]
         assert data["cost"] == "$25"
-        assert data["ticket_link"] == "https://tickets.example.com/summer-fest"
+        assert event["ticket_links"] == [{"platform": "Eventbrite", "url": "https://tickets.example.com/summer-fest"}]
 
 
 class TestCreateEventRepeating:
@@ -102,14 +102,17 @@ class TestCreateEventVendors:
 
 class TestCreateEventCostFields:
     def test_create_event_cost_fields(self, admin_client):
-        """Cost, pricing_details, ticket_link on base POI."""
+        """Cost, pricing_details, ticket_links on base POI."""
         data = create_event(
             admin_client,
             name="Paid Event",
             cost="$50",
             pricing_details="Early bird: $35 before June 1",
-            ticket_link="https://tickets.example.com/paid",
+            event={
+                "start_datetime": "2026-06-15T18:00:00Z",
+                "ticket_links": [{"platform": "Eventbrite", "url": "https://tickets.example.com/paid"}],
+            },
         )
         assert data["cost"] == "$50"
         assert data["pricing_details"] == "Early bird: $35 before June 1"
-        assert data["ticket_link"] == "https://tickets.example.com/paid"
+        assert data["event"]["ticket_links"] == [{"platform": "Eventbrite", "url": "https://tickets.example.com/paid"}]
