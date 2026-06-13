@@ -55,6 +55,7 @@ export default function SearchOverlay({ isOpen, onClose, panelRef }) {
               </span>
               <SearchBar
                 ref={searchBarRef}
+                inputId="one_search"
                 placeholder="What's nearby? Search for locations or interests..."
                 onSearch={handleSearch}
               />
