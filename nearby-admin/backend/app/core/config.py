@@ -29,6 +29,9 @@ class Settings(BaseSettings):
     TEST_DATABASE_URL: Optional[str] = None
     TESTING: bool = False
 
+    # Third-party API keys
+    what3words_api_key: Optional[str] = None
+
     model_config = ConfigDict(env_file=".env")
     
     @field_validator('SECRET_KEY')
@@ -107,6 +110,7 @@ except Exception as e:
             TEST_POSTGRES_DB = None
             TEST_DATABASE_URL = None
             TESTING = True
+            what3words_api_key = None
             
             @property
             def allowed_origins_list(self):

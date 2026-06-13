@@ -1,0 +1,158 @@
+/* ==========================================================================
+   Accordion — ported from nn-templates/inc/stylez.scss + accordion.js
+   ========================================================================== */
+
+.accordionjs {
+  position: relative;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* ── Section ───────────────────────────────────────────────────── */
+.accordionjs .acc_section {
+  border: 2px solid var(--nn-purple1);
+  border-radius: 11px;
+  position: relative;
+  z-index: 10;
+  overflow: hidden;
+  margin-bottom: 15px;
+}
+
+/* ── Head (trigger button) ─────────────────────────────────────── */
+.accordionjs .acc_section .acc_head {
+  position: relative;
+  background: white;
+  color: var(--nn-purple1);
+  margin: 0;
+  padding: 20px 30px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: var(--font-poppins);
+  font-size: 24px;
+  letter-spacing: 1px;
+  cursor: pointer;
+  font-weight: 600;
+  border: none;
+  border-bottom: 1px solid white;
+  width: 100%;
+  text-align: left;
+}
+.accordionjs .acc_section:last-child .acc_head {
+  border-bottom: 0;
+}
+.acc_head:focus {
+  outline: 3px solid var(--nn-gold);
+  outline-offset: 0;
+}
+.acc_head:focus:not(:focus-visible) {
+  outline: none;
+}
+.acc_head:focus-visible {
+  outline: 3px solid var(--nn-gold);
+  outline-offset: 0;
+}
+
+/* Head title */
+.acc_head_title {
+  flex: 1;
+}
+.accordionjs .acc_section .acc_head h3.acc_title,
+.accordionjs .acc_section .acc_head h4.acc_title {
+  line-height: 1;
+  display: block;
+  margin: 0;
+  padding: 0;
+  position: relative;
+  color: var(--nn-purple1);
+  font-size: 19px;
+  font-weight: 600;
+}
+@media (min-width: 980px) {
+  .accordionjs .acc_section .acc_head h3.acc_title,
+  .accordionjs .acc_section .acc_head h4.acc_title {
+    font-size: 20px;
+  }
+}
+@media (min-width: 1400px) {
+  .accordionjs .acc_section .acc_head h3.acc_title,
+  .accordionjs .acc_section .acc_head h4.acc_title {
+    font-size: 21px;
+  }
+}
+
+/* ── Active state (open) ───────────────────────────────────────── */
+.accordionjs .acc_section.acc_active > .acc_head {
+  background: var(--nn-purple1);
+  color: white;
+}
+.accordionjs .acc_section.acc_active .acc_head h3.acc_title,
+.accordionjs .acc_section.acc_active .acc_head h4.acc_title {
+  color: white;
+}
+
+/* ── Toggle icon ───────────────────────────────────────────────── */
+.acc_toggles {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding-left: 5%;
+}
+.acc_toggle_icon {
+  display: block;
+  height: 25px;
+  width: 25px;
+  color: var(--nn-purple1);
+  transition: transform 0.3s ease, color 0.3s ease;
+  transform: rotate(0deg);
+}
+.accordionjs .acc_section.acc_active .acc_toggle_icon {
+  transform: rotate(90deg);
+  color: white;
+}
+
+/* ── Content area ──────────────────────────────────────────────── */
+.accordionjs .acc_section .acc_content {
+  padding: 25px;
+  background-color: white;
+}
+@media (min-width: 700px) {
+  .accordionjs .acc_section .acc_content { padding: 30px; }
+}
+@media (min-width: 980px) {
+  .accordionjs .acc_section .acc_content { padding: 35px; }
+}
+@media (min-width: 1600px) {
+  .accordionjs .acc_section .acc_content { padding: 40px; }
+}
+.accordionjs .acc_section.acc_active > .acc_content {
+  display: block;
+}
+
+/* ── Content layout helpers ────────────────────────────────────── */
+.acc_col_1,
+.acc_col_2 {
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-gap: 40px;
+  justify-content: flex-start;
+  align-items: flex-start;
+}
+.acc_content_group {
+  width: 100%;
+}
+.acc_content_title_style_1 {
+  font-family: var(--font-poppins);
+  font-weight: bold;
+}
+.acc_content.basic_column_parent {
+  align-items: flex-start;
+}
+
+/* ── Reduced motion ────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .acc_toggle_icon {
+    transition: none;
+  }
+}

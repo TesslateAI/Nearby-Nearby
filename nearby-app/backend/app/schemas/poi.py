@@ -1,5 +1,5 @@
 # app/schemas/poi.py
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, field_validator
 from typing import Optional, List, Any
 import uuid
 from datetime import datetime
@@ -34,12 +34,71 @@ class Trail(BaseModel):
     length_text: Optional[str] = None
     difficulty: Optional[str] = None
     route_type: Optional[str] = None
+    # Issue #63 / #64 — Trailhead + Access Points consolidation.
+    trailhead_latitude: Optional[float] = None
+    trailhead_longitude: Optional[float] = None
+    trailhead_location: Optional[dict] = None
+    trailhead_access_details: Optional[str] = None
+    access_points: Optional[list] = None
+    trail_entry_notes: Optional[str] = None
     model_config = ConfigDict(from_attributes=True)
 
 class Event(BaseModel):
     start_datetime: datetime
     end_datetime: Optional[datetime] = None
+    is_repeating: Optional[bool] = None
+    repeat_pattern: Optional[dict] = None
+    organizer_name: Optional[str] = None
+    venue_settings: Optional[list] = None
+    event_entry_notes: Optional[str] = None
+    food_and_drink_info: Optional[str] = None
+    coat_check_options: Optional[list] = None
+    has_vendors: Optional[bool] = None
+    vendor_types: Optional[list] = None
+    vendor_application_deadline: Optional[datetime] = None
+    vendor_application_info: Optional[str] = None
+    vendor_fee: Optional[str] = None
+    vendor_requirements: Optional[str] = None
+    vendor_poi_links: Optional[list] = None
+    # Venue inheritance (Task 45)
+    venue_poi_id: Optional[str] = None
+    venue_inheritance: Optional[dict] = None
+    # Recurring events expansion (Task 50)
+    series_id: Optional[str] = None
+    parent_event_id: Optional[str] = None
+    excluded_dates: Optional[list] = None
+    recurrence_end_date: Optional[datetime] = None
+    manual_dates: Optional[list] = None
+    # Task 134-136: Event Status
+    event_status: Optional[str] = None
+    status_explanation: Optional[str] = None
+    cancellation_paragraph: Optional[str] = None
+    contact_organizer_toggle: Optional[bool] = None
+    new_event_link: Optional[str] = None
+    rescheduled_from_event_id: Optional[str] = None
+    # Task 137: Primary Display Category — DEPRECATED (Issue #42).
+    # Use `main_category` (UUID-based) from the canonical POI response instead.
+    # Task 138: Extended Organizer
+    organizer_email: Optional[str] = None
+    organizer_phone: Optional[str] = None
+    organizer_website: Optional[str] = None
+    organizer_social_media: Optional[dict] = None
+    organizer_poi_id: Optional[str] = None
+    # Task 139: Cost & Ticketing
+    cost_type: Optional[str] = None
+    ticket_links: Optional[list] = None
+    # Task 140: Sponsors
+    sponsors: Optional[list] = None
     model_config = ConfigDict(from_attributes=True)
+
+    @field_validator(
+        'venue_poi_id', 'series_id', 'parent_event_id',
+        'rescheduled_from_event_id', 'organizer_poi_id',
+        mode='before',
+    )
+    @classmethod
+    def _uuid_to_str(cls, v):
+        return str(v) if isinstance(v, uuid.UUID) else v
 
 
 # --- Image Schema for S3 URLs ---
@@ -62,20 +121,39 @@ class POISearchResult(BaseModel):
     poi_type: Optional[str] = None  # For generating SEO URLs
     address_city: Optional[str] = None
     address_state: Optional[str] = None
+    address_county: Optional[str] = None
+    address_street: Optional[str] = None
+    description_short: Optional[str] = None
+    location: Optional[Any] = None
     main_category: Optional[Category] = None  # Primary display category
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, arbitrary_types_allowed=True)
+
+    @field_validator('location', mode='before')
+    @classmethod
+    def convert_wkb_location(cls, v):
+        if v is None:
+            return None
+        if isinstance(v, dict):
+            return v
+        if isinstance(v, PointGeometry):
+            return v
+        try:
+            return PointGeometry.from_wkb(v)
+        except Exception:
+            return None
 
 class POINearbyResult(POISearchResult):
     distance_meters: Optional[float] = None
     location: Optional[PointGeometry] = None
     poi_type: Optional[str] = None
     hours: Optional[dict] = None
-    wheelchair_accessible: Optional[list] = None
+    # wheelchair_accessible - DROPPED (Issue #45 PR2 Migration B)
     wifi_options: Optional[list] = None
     pet_options: Optional[list] = None
+    public_toilets: Optional[list] = None
     categories: Optional[List[dict]] = None
     model_config = ConfigDict(from_attributes=True, arbitrary_types_allowed=True)
-    
+
 class POIDetail(BaseModel):
     id: uuid.UUID
     name: str
@@ -120,7 +198,8 @@ class POIDetail(BaseModel):
 
     # Hours and Availability
     hours: Optional[Any] = None
-    holiday_hours: Optional[Any] = None
+    # holiday_hours — DEPRECATED (Issue #70). Holiday hours now live under
+    # `hours.holidays` and are surfaced by `HoursDisplay` via the nested key.
     hours_but_appointment_required: Optional[bool] = None
     appointment_booking_url: Optional[str] = None
 
@@ -139,15 +218,15 @@ class POIDetail(BaseModel):
     parking_photos: Optional[Any] = None
     expect_to_pay_parking: Optional[str] = None
     parking_lot_photo: Optional[str] = None
-    public_transit_info: Optional[str] = None
+    # public_transit_info - DEPRECATED: renamed _deprecated_public_transit_info (Migration A #33)
 
     # Accessibility
-    wheelchair_accessible: Optional[Any] = None
+    # wheelchair_accessible - DROPPED (Issue #45 PR2 Migration B)
     wheelchair_details: Optional[str] = None
 
     # Amenities and Facilities
     amenities: Optional[Any] = None
-    key_facilities: Optional[Any] = None
+    # key_facilities - DEPRECATED: renamed _deprecated_key_facilities (Migration A #34)
     facilities_options: Optional[Any] = None
     wifi_options: Optional[Any] = None
     payment_methods: Optional[Any] = None
@@ -185,7 +264,7 @@ class POIDetail(BaseModel):
     playground_surface_types: Optional[Any] = None
     playground_notes: Optional[str] = None
     playground_photos: Optional[Any] = None
-    playground_location: Optional[Any] = None
+    playground_locations: Optional[Any] = None  # Plural array; renamed by migration g67_001.
 
     # Outdoor Activities
     natural_features: Optional[Any] = None

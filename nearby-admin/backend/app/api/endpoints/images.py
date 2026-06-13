@@ -1,6 +1,9 @@
 from typing import List, Optional
+from urllib.parse import urlparse
 from uuid import UUID
 from pathlib import Path
+import json
+import logging
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Query
 from fastapi.responses import RedirectResponse
@@ -19,9 +22,45 @@ from app.schemas.image import (
 )
 from app.services.image_service import image_service
 from app.core.security import get_current_user
+from app.core.s3 import s3_config
 from app.models.user import User
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
+
+
+def _is_trusted_image_host(url: str) -> bool:
+    """Allow only URLs that point at our configured S3/MinIO/CloudFront host.
+    Blocks attacker-controlled `storage_url` from turning the serve endpoint
+    into an open redirect, even if the DB row is tampered with.
+    """
+    if not url:
+        return False
+    try:
+        parsed = urlparse(url)
+    except Exception:
+        return False
+    if parsed.scheme not in ("http", "https"):
+        return False
+    host = (parsed.netloc or "").lower()
+    if not host:
+        return False
+    allowed_hosts = set()
+    if s3_config.cloudfront_domain:
+        allowed_hosts.add(s3_config.cloudfront_domain.lower())
+    if s3_config.endpoint_url:
+        try:
+            allowed_hosts.add((urlparse(s3_config.endpoint_url).netloc or "").lower())
+        except Exception:
+            pass
+        # MinIO dev: localhost rewrite happens inside get_s3_url()
+        allowed_hosts.add("localhost")
+        allowed_hosts.add("minio")
+    if s3_config.bucket_name and s3_config.region and not s3_config.endpoint_url:
+        allowed_hosts.add(f"{s3_config.bucket_name}.s3.{s3_config.region}.amazonaws.com".lower())
+    # Strip port for comparison
+    host_no_port = host.split(":")[0]
+    return host == "" or host in allowed_hosts or host_no_port in allowed_hosts
 
 
 @router.post("/upload/{poi_id}")
@@ -33,6 +72,7 @@ async def upload_image(
     alt_text: Optional[str] = Form(None),
     caption: Optional[str] = Form(None),
     display_order: Optional[int] = Form(0),
+    function_tags: Optional[str] = Form(None),
     db: Session = Depends(get_db),
     current_user: str = Depends(get_current_user)
 ) -> ImageUploadResponse:
@@ -72,6 +112,15 @@ async def upload_image(
             display_order=display_order
         )
 
+        # Set function_tags if provided
+        if function_tags:
+            try:
+                db_image.function_tags = json.loads(function_tags)
+            except (json.JSONDecodeError, TypeError):
+                db_image.function_tags = [function_tags]
+            db.commit()
+            db.refresh(db_image)
+
         # Get URLs for the image
         urls = image_service.get_image_urls(db_image)
 
@@ -84,8 +133,9 @@ async def upload_image(
         )
     except HTTPException:
         raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception:
+        logger.exception("Image upload failed for poi_id=%s", poi_id)
+        raise HTTPException(status_code=500, detail="Image upload failed.")
 
 
 @router.post("/upload-multiple/{poi_id}")
@@ -141,10 +191,11 @@ async def upload_multiple_images(
                 url=urls["url"],
                 thumbnail_url=urls.get("thumbnail_url")
             ))
-        except Exception as e:
+        except Exception:
+            logger.exception("Bulk image upload entry failed: filename=%s", file.filename)
             failed.append({
                 "filename": file.filename,
-                "error": str(e)
+                "error": "Upload failed.",
             })
 
     message = f"Successfully uploaded {len(uploaded)} images"
@@ -162,13 +213,15 @@ async def upload_multiple_images(
 async def get_poi_images(
     poi_id: UUID,
     image_type: Optional[ImageTypeEnum] = None,
+    function_tag: Optional[str] = None,
     db: Session = Depends(get_db)
 ) -> List[ImageResponse]:
     """
-    Get all images for a POI, optionally filtered by type.
+    Get all images for a POI, optionally filtered by type or function tag.
 
     - **poi_id**: UUID of the POI
     - **image_type**: Optional filter by image type
+    - **function_tag**: Optional filter by function tag (e.g., "storefront")
     """
     query = db.query(Image).filter(Image.poi_id == poi_id)
 
@@ -178,6 +231,9 @@ async def get_poi_images(
             query = query.filter(Image.image_type == image_type_enum)
         except ValueError:
             raise HTTPException(status_code=400, detail=f"Invalid image type: {image_type}")
+
+    if function_tag:
+        query = query.filter(Image.function_tags.contains([function_tag]))
 
     images = query.order_by(Image.display_order, Image.created_at).all()
 
@@ -202,6 +258,7 @@ async def get_poi_images(
             "uploaded_by": image.uploaded_by,
             "created_at": image.created_at,
             "updated_at": image.updated_at,
+            "function_tags": image.function_tags,
             **urls
         }
         response.append(ImageResponse(**image_dict))
@@ -237,6 +294,7 @@ async def get_image(
         "uploaded_by": image.uploaded_by,
         "created_at": image.created_at,
         "updated_at": image.updated_at,
+        "function_tags": image.function_tags,
         **urls
     }
 
@@ -262,6 +320,8 @@ async def update_image(
         image.caption = update_data.caption
     if update_data.display_order is not None:
         image.display_order = update_data.display_order
+    if update_data.function_tags is not None:
+        image.function_tags = update_data.function_tags
 
     db.commit()
     db.refresh(image)
@@ -284,6 +344,7 @@ async def update_image(
         "uploaded_by": image.uploaded_by,
         "created_at": image.created_at,
         "updated_at": image.updated_at,
+        "function_tags": image.function_tags,
         **urls
     }
 
@@ -303,8 +364,9 @@ async def delete_image(
             return {"message": "Image deleted successfully"}
     except HTTPException:
         raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception:
+        logger.exception("Image delete failed for image_id=%s", image_id)
+        raise HTTPException(status_code=500, detail="Image delete failed.")
 
 
 @router.put("/poi/{poi_id}/reorder/{image_type}")
@@ -352,6 +414,7 @@ async def reorder_images(
             "uploaded_by": image.uploaded_by,
             "created_at": image.created_at,
             "updated_at": image.updated_at,
+            "function_tags": image.function_tags,
             **urls
         }
         response.append(ImageResponse(**image_dict))
@@ -374,9 +437,18 @@ async def serve_image(
     if not image:
         raise HTTPException(status_code=404, detail="Image not found")
 
-    # Redirect to S3 URL
+    # Redirect to S3 URL — but only if it points at our trusted storage host.
+    # Without this check, any code path that can write `storage_url` becomes an
+    # open redirect (phishing landing page hosted on attacker domain).
     if not image.storage_url:
         raise HTTPException(status_code=404, detail="Image storage URL not found")
+
+    if not _is_trusted_image_host(image.storage_url):
+        logger.warning(
+            "Refusing to redirect to untrusted image host: image_id=%s host=%s",
+            image_id, urlparse(image.storage_url).netloc,
+        )
+        raise HTTPException(status_code=502, detail="Image storage URL is not trusted")
 
     return RedirectResponse(
         url=image.storage_url,
@@ -501,11 +573,15 @@ async def copy_images_from_venue(
                     message=f"Copied {image_type_str} image from venue"
                 ))
 
-            except Exception as e:
+            except Exception:
+                logger.exception(
+                    "Image copy failed: source_image_id=%s image_type=%s",
+                    source_img.id, image_type_str,
+                )
                 failed.append({
                     "image_type": str(image_type_str),
                     "source_image_id": str(source_img.id),
-                    "error": str(e)
+                    "error": "Copy failed.",
                 })
 
     db.commit()

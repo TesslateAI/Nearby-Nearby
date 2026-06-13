@@ -1,4 +1,11 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { useEffect } from 'react';
+
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  useEffect(() => { window.scrollTo(0, 0); }, [pathname]);
+  return null;
+}
 import useOverlay from './hooks/useOverlay';
 import MobileNavBar from './components/MobileNavBar';
 import AnnouncementBanner from './components/AnnouncementBanner';
@@ -15,6 +22,10 @@ import CommunityInterest from './pages/CommunityInterest';
 import Contact from './pages/Contact';
 import Feedback from './pages/Feedback';
 import ClaimBusiness from './pages/ClaimBusiness';
+import SuggestEvent from './pages/SuggestEvent';
+import EventsCalendar from './pages/EventsCalendar';
+import DisasterNetwork from './pages/DisasterNetwork';
+import Help from './pages/Help';
 
 function App() {
   const navOverlay = useOverlay('nav_overlay', { skipDesktop: true });
@@ -22,6 +33,7 @@ function App() {
 
   return (
     <>
+      <ScrollToTop />
       <a className="skip-main" href="#main_content">Skip to main content</a>
 
       <MobileNavBar searchOverlay={searchOverlay} navOverlay={navOverlay} />
@@ -50,7 +62,11 @@ function App() {
           <Route path="/contact" element={<Contact />} />
           <Route path="/feedback" element={<Feedback />} />
           <Route path="/claim-business" element={<ClaimBusiness />} />
+          <Route path="/suggest-event" element={<SuggestEvent />} />
           <Route path="/suggest-place" element={<Navigate to="/claim-business" replace />} />
+          <Route path="/events-calendar" element={<EventsCalendar />} />
+          <Route path="/disaster-network" element={<DisasterNetwork />} />
+          <Route path="/help" element={<Help />} />
         </Routes>
       </main>
 

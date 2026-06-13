@@ -6,6 +6,8 @@
  * to help search engines understand and display business information.
  */
 
+import { escapeForJsonLd } from '../../utils/sanitize';
+
 function LocalBusinessJsonLd({ poi }) {
   if (!poi) return null;
 
@@ -249,10 +251,7 @@ function LocalBusinessJsonLd({ poi }) {
     businessSchema.paymentAccepted = paymentAccepted;
   }
 
-  // Add accessibility features
-  if (poi.wheelchair_accessible && Array.isArray(poi.wheelchair_accessible)) {
-    businessSchema.accessibilityFeature = poi.wheelchair_accessible;
-  }
+  // accessibilityFeature removed — wheelchair_accessible column dropped (Issue #45 PR2 Migration B)
 
   // Add amenities as additional property
   if (poi.amenities && Array.isArray(poi.amenities) && poi.amenities.length > 0) {
@@ -276,7 +275,7 @@ function LocalBusinessJsonLd({ poi }) {
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(businessSchema, null, 2) }}
+      dangerouslySetInnerHTML={{ __html: escapeForJsonLd(JSON.stringify(businessSchema, null, 2)) }}
     />
   );
 }

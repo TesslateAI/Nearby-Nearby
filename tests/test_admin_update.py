@@ -61,7 +61,9 @@ class TestUpdateListFields:
         assert resp.status_code == 200
         data = resp.json()
         assert data["parking_types"] == ["Garage", "Valet"]
-        assert data["ideal_for"] == ["Solo Travelers"]
+        # Phase 1: flat lists normalize to a grouped dict; unknown values go in _legacy.
+        assert isinstance(data["ideal_for"], dict)
+        assert "Solo Travelers" in data["ideal_for"].get("_legacy", [])
         assert data["payment_methods"] == ["Crypto", "Cash"]
 
 

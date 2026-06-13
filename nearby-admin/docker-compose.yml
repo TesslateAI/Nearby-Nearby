@@ -73,7 +73,7 @@ services:
       - ./frontend:/app
       - /app/node_modules
     ports:
-      - "5175:5173"
+      - "5176:5173"
     env_file:
       - .env
     environment:

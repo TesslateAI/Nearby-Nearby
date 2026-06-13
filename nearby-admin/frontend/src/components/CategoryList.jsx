@@ -17,7 +17,8 @@ import {
   Center,
   Table,
   Anchor,
-  Box
+  Box,
+  ScrollArea,
 } from '@mantine/core';
 import { useNavigate } from 'react-router-dom';
 import { notifications } from '@mantine/notifications';
@@ -303,7 +304,7 @@ function CategoryList() {
           Loading categories...
         </Text>
       ) : displayCategories.length > 0 ? (
-        <Table striped highlightOnHover withTableBorder>
+        <ScrollArea type="auto"><Table striped highlightOnHover withTableBorder miw={700}>
           <Table.Thead style={{ backgroundColor: 'var(--mantine-color-deep-purple-0)' }}>
             <Table.Tr>
               <Table.Th>
@@ -332,7 +333,7 @@ function CategoryList() {
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>{rows}</Table.Tbody>
-        </Table>
+        </Table></ScrollArea>
       ) : (
         <Text c="dimmed" ta="center" py="xl">
           {categories.length === 0

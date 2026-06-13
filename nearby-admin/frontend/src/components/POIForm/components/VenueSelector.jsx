@@ -11,7 +11,7 @@ import { api } from '../../../utils/api';
  * VenueSelector component for selecting a venue (BUSINESS or PARK)
  * and copying venue data to an event.
  */
-export function VenueSelector({ form, poiId }) {
+export function VenueSelector({ form, poiId, types = ['BUSINESS', 'PARK', 'TRAIL'] }) {
   const [venues, setVenues] = useState([]);
   const [loading, setLoading] = useState(false);
   const [venueLoading, setVenueLoading] = useState(false);
@@ -35,10 +35,13 @@ export function VenueSelector({ form, poiId }) {
     const fetchVenues = async () => {
       setLoading(true);
       try {
-        const response = await api.get('/pois/venues/list');
+        const qs = (types || []).map(t => `types=${encodeURIComponent(t)}`).join('&');
+        const url = qs ? `/pois/venues/list?${qs}` : '/pois/venues/list';
+        const response = await api.get(url);
         if (response.ok) {
           const data = await response.json();
-          setVenues(data);
+          // Defensive client-side filter in case backend ignores types param
+          setVenues((data || []).filter(v => !types || types.includes(v.poi_type)));
         }
       } catch (error) {
         console.error('Failed to fetch venues:', error);
@@ -47,7 +50,7 @@ export function VenueSelector({ form, poiId }) {
       }
     };
     fetchVenues();
-  }, []);
+  }, [JSON.stringify(types)]);
 
   // Fetch venue data when a venue is selected
   const handleVenueSelect = async (venueId) => {
@@ -123,12 +126,12 @@ export function VenueSelector({ form, poiId }) {
         if (venueData.parking_notes) form.setFieldValue('parking_notes', venueData.parking_notes);
         if (venueData.parking_locations) form.setFieldValue('parking_locations', venueData.parking_locations);
         if (venueData.expect_to_pay_parking) form.setFieldValue('expect_to_pay_parking', venueData.expect_to_pay_parking);
-        if (venueData.public_transit_info) form.setFieldValue('public_transit_info', venueData.public_transit_info);
+        // public_transit_info removed — renamed _deprecated_public_transit_info (Migration A #33)
       }
 
       // Copy accessibility fields
       if (copyOptions.accessibility) {
-        if (venueData.wheelchair_accessible) form.setFieldValue('wheelchair_accessible', venueData.wheelchair_accessible);
+        // wheelchair_accessible removed — column dropped (Issue #45 PR2 Migration B)
         if (venueData.wheelchair_details) form.setFieldValue('wheelchair_details', venueData.wheelchair_details);
       }
 
@@ -178,7 +181,7 @@ export function VenueSelector({ form, poiId }) {
       }
 
       // Store venue reference
-      form.setFieldValue('event.venue_id', venueData.venue_id);
+      form.setFieldValue('event.venue_poi_id', venueData.venue_id);
       form.setFieldValue('event.venue_name', venueData.venue_name);
       form.setFieldValue('event.venue_type', venueData.venue_type);
 
@@ -200,12 +203,15 @@ export function VenueSelector({ form, poiId }) {
     }
   };
 
-  // Format venues for Select component
-  const venueOptions = venues.map(venue => ({
-    value: venue.id,
-    label: `${venue.name} (${venue.poi_type})`,
-    group: venue.poi_type
-  }));
+  // Format venues for Select component — use Mantine v8 grouped format
+  const venueOptions = Object.entries(
+    venues.reduce((groups, venue) => {
+      const group = venue.poi_type || 'Other';
+      if (!groups[group]) groups[group] = [];
+      groups[group].push({ value: venue.id, label: venue.name });
+      return groups;
+    }, {})
+  ).map(([group, items]) => ({ group, items }));
 
   return (
     <Stack>
@@ -227,16 +233,19 @@ export function VenueSelector({ form, poiId }) {
         clearable
         leftSection={loading ? <Loader size="xs" /> : null}
         disabled={loading}
-        renderOption={({ option }) => (
-          <Group gap="sm">
-            {option.group === 'BUSINESS' ? (
-              <IconBuilding size={16} style={{ color: '#6366f1' }} />
-            ) : (
-              <IconTree size={16} style={{ color: '#22c55e' }} />
-            )}
-            <span>{option.label}</span>
-          </Group>
-        )}
+        renderOption={({ option }) => {
+          const isBusiness = option.label?.includes('BUSINESS') || venues.find(v => v.id === option.value)?.poi_type === 'BUSINESS';
+          return (
+            <Group gap="sm">
+              {isBusiness ? (
+                <IconBuilding size={16} style={{ color: '#6366f1' }} />
+              ) : (
+                <IconTree size={16} style={{ color: '#22c55e' }} />
+              )}
+              <span>{option.label}</span>
+            </Group>
+          );
+        }}
       />
 
       {venueLoading && (
@@ -344,7 +353,7 @@ export function VenueSelector({ form, poiId }) {
       )}
 
       {/* Show current venue link if set */}
-      {form.values.event?.venue_id && !selectedVenueId && (
+      {form.values.event?.venue_poi_id && !selectedVenueId && (
         <Card withBorder p="md" bg="gray.0">
           <Group gap="sm">
             <Text size="sm" c="dimmed">Current venue:</Text>

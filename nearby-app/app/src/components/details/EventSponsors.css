@@ -1,0 +1,103 @@
+.event-sponsors {
+  margin: 1rem 0;
+}
+
+.event-sponsors__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0.75rem;
+}
+
+.event-sponsors__card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  background: #fff;
+  transition: box-shadow 0.15s ease;
+}
+
+.event-sponsors__card:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.event-sponsors__logo-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 56px;
+}
+
+.event-sponsors__logo {
+  max-height: 56px;
+  max-width: 100%;
+  object-fit: contain;
+}
+
+.event-sponsors__info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.event-sponsors__name {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #212529;
+  text-decoration: none;
+}
+
+.event-sponsors__name:hover {
+  color: #5c4df0;
+  text-decoration: underline;
+}
+
+.event-sponsors__tier-badge {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  border-radius: 4px;
+  padding: 0.15rem 0.45rem;
+  align-self: flex-start;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.event-sponsors__tier--platinum {
+  background: #e8e8ff;
+  color: #3b31b8;
+}
+
+.event-sponsors__tier--gold {
+  background: #fff8e1;
+  color: #b8860b;
+}
+
+.event-sponsors__tier--silver {
+  background: #f1f3f5;
+  color: #495057;
+}
+
+.event-sponsors__tier--bronze {
+  background: #fff0e6;
+  color: #a0522d;
+}
+
+.event-sponsors__tier--community {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.event-sponsors__loading,
+.event-sponsors__error,
+.event-sponsors__empty {
+  font-size: 0.9rem;
+  color: #6c757d;
+  padding: 0.5rem 0;
+}
+
+.event-sponsors__error {
+  color: #c0392b;
+}

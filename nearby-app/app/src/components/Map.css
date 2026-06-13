@@ -143,6 +143,15 @@
   text-decoration: underline;
 }
 
+/* Scroll-wheel activation hint — shown on hover before user clicks */
+.map-scroll-hint {
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+:hover > .map-scroll-hint {
+  opacity: 1;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .map-container {

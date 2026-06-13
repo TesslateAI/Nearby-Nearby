@@ -75,7 +75,7 @@ def seed_rustic_spoon():
             facebook_username="therusticspoon",
             x_username="therusticspoon",
 
-            # Hours
+            # Hours (Issue #70: holidays nested at hours.holidays)
             hours={
                 "monday": {"closed": True},
                 "tuesday": [{"open": "09:00", "close": "12:00"}, {"open": "16:00", "close": "21:00"}],
@@ -83,14 +83,13 @@ def seed_rustic_spoon():
                 "thursday": [{"open": "09:00", "close": "12:00"}, {"open": "16:00", "close": "21:00"}],
                 "friday": [{"open": "09:00", "close": "21:00"}],
                 "saturday": [{"open": "09:00", "close": "21:00"}],
-                "sunday": [{"open": "09:00", "close": "21:00"}]
-            },
-
-            holiday_hours={
-                "labor_day": "Closed",
-                "new_years_day": "5pm-8pm",
-                "mlk_day": "5pm-8pm",
-                "presidents_day": "Closed"
+                "sunday": [{"open": "09:00", "close": "21:00"}],
+                "holidays": {
+                    "labor_day": "Closed",
+                    "new_years_day": "5pm-8pm",
+                    "mlk_day": "5pm-8pm",
+                    "presidents_day": "Closed",
+                },
             },
 
             # Pricing
@@ -127,7 +126,7 @@ def seed_rustic_spoon():
             toilet_description="Blah, Blah blah for the bathrooms! This is for patrons of the store only!",
 
             # Wheelchair accessibility
-            wheelchair_accessible=["Accessible Bathrooms", "First Floor Seating"],
+            # wheelchair_accessible removed — column dropped (Issue #45 PR2 Migration B)
             wheelchair_details="We have accessible Bathrooms, accessible entry is on the right of the building and we have seating on the first floor.",
 
             # Pet policy
@@ -207,7 +206,7 @@ def seed_rustic_spoon():
             website_url="https://therusticspoon.com",
             phone_number="(555) 123-4567",
 
-            # Hours
+            # Hours (Issue #70: holidays nested at hours.holidays)
             hours={
                 "monday": {"closed": True},
                 "tuesday": [{"open": "09:00", "close": "12:00"}, {"open": "16:00", "close": "21:00"}],
@@ -215,14 +214,13 @@ def seed_rustic_spoon():
                 "thursday": [{"open": "09:00", "close": "12:00"}, {"open": "16:00", "close": "21:00"}],
                 "friday": [{"open": "09:00", "close": "21:00"}],
                 "saturday": [{"open": "09:00", "close": "21:00"}],
-                "sunday": [{"open": "09:00", "close": "21:00"}]
-            },
-
-            holiday_hours={
-                "labor_day": "Closed",
-                "new_years_day": "5pm-8pm",
-                "mlk_day": "5pm-8pm",
-                "presidents_day": "Closed"
+                "sunday": [{"open": "09:00", "close": "21:00"}],
+                "holidays": {
+                    "labor_day": "Closed",
+                    "new_years_day": "5pm-8pm",
+                    "mlk_day": "5pm-8pm",
+                    "presidents_day": "Closed",
+                },
             },
 
             # Pricing
@@ -241,7 +239,7 @@ def seed_rustic_spoon():
             toilet_description="Blah, Blah blah for the bathrooms! This is for patrons of the store only!",
 
             # Wheelchair accessibility
-            wheelchair_accessible=["Accessible Bathrooms", "First Floor Seating"],
+            # wheelchair_accessible removed — column dropped (Issue #45 PR2 Migration B)
             wheelchair_details="We have accessible Bathrooms, accessible entry is on the right of the building and we have seating on the first floor.",
 
             # Pet policy
