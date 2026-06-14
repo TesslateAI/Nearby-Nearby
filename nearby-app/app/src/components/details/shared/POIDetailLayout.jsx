@@ -1,5 +1,5 @@
 import { useState, useRef, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 
 import NearbySection from '../../nearby-feature/NearbySection';
 import PhotoLightbox from '../PhotoLightbox';
@@ -78,14 +78,39 @@ export default function POIDetailLayout({
   };
 
   return (
-    <div className="poi_detail_page">
+    <div id="search_back_wrapper" className="poi_detail_page">
       {seoComponent}
       {showHero && <HeroBanner poi={poi} />}
 
-      <div className="wrapper_default" style={{ paddingTop: 35, paddingBottom: 0 }}>
-        <button type="button" onClick={() => navigate(backTo)} className="poi-detail__back-link">
-          {backLabel}
-        </button>
+      <div id="show_back_or_breadcrumbs" className="wrapper_default" style={{ paddingTop: 35, paddingBottom: 0 }}>
+        {(() => {
+          const t = (poi?.poi_type || '').toUpperCase();
+          const businessTypes = ['BUSINESS', 'RESTAURANT', 'CAFE', 'SHOP', 'STORE', 'SERVICE', 'FOOD', 'RETAIL'];
+          const typeKey = businessTypes.includes(t) ? 'BUSINESS'
+            : t === 'EVENT' ? 'EVENT'
+            : t === 'PARK' ? 'PARK'
+            : t === 'TRAIL' ? 'TRAIL'
+            : null;
+          const typeLabel = typeKey === 'BUSINESS' ? 'Business'
+            : typeKey === 'EVENT' ? 'Event'
+            : typeKey === 'PARK' ? 'Park'
+            : typeKey === 'TRAIL' ? 'Trail'
+            : 'Place';
+          return (
+            <nav aria-label="breadcrumb" className="poi_breadcrumbs">
+              <Link to="/">Home</Link>
+              <span className="poi_breadcrumb_sep">\</span>
+              <Link to="/explore">Explore</Link>
+              <span className="poi_breadcrumb_sep">\</span>
+              {typeKey
+                ? <Link to={`/explore?type=${typeKey}`}>{typeLabel}</Link>
+                : <span className="poi_breadcrumb_type">{typeLabel}</span>
+              }
+              <span className="poi_breadcrumb_sep">\</span>
+              <span aria-current="page">{poi?.name}</span>
+            </nav>
+          );
+        })()}
       </div>
 
       {beforeHeader}

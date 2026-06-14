@@ -7,7 +7,7 @@ import {
   RotateCcw,
   Calendar as CalendarIcon,
   MapPin,
-  Navigation2,
+  Navigation,
 } from 'lucide-react';
 import Map from '../components/Map';
 import {
@@ -119,12 +119,30 @@ function dateRangeForFilter(filter, customDate) {
 /*          └─ Details    (btn_outline_teal btn_poi_button_1)          */
 /* ------------------------------------------------------------------ */
 
-// Contextual status line for explore result cards — delegates to the shared helper
-// so it is dawn/dusk-aware and produces consistent output with detail pages and NearbyCard.
+// Contextual status — variant + label from the shared helper.
 function exploreStatusLine(hours, lat, lng) {
-  if (!hours || typeof hours !== 'object') return null;
-  const { label } = getOpenCloseStatusLabel(hours, new Date(), lat ?? null, lng ?? null);
-  return label || null;
+  if (!hours || typeof hours !== 'object') return { variant: null, label: null };
+  const { variant, label } = getOpenCloseStatusLabel(hours, new Date(), lat ?? null, lng ?? null);
+  return { variant: variant || null, label: label || null };
+}
+
+// Renders hours with only the status word colored, matching NearbyCard.
+function renderHoursStatus(variant, label) {
+  if (!label) return null;
+  if (variant === 'open') {
+    if (label === 'Open 24 Hours') return <span className="nearby-card__hours--open">Open 24 Hours</span>;
+    const rest = label.replace(/^Open\s*(until\s*)?/i, '').trim();
+    return <><span className="nearby-card__hours--open">Open Now:</span>{rest ? ` Until ${rest}` : ''}</>;
+  }
+  if (variant === 'opensoon') {
+    const rest = label.replace(/^Opens?\s*/i, '').trim();
+    return <><span className="nearby-card__hours--soon">Opens Soon:</span>{rest ? ` ${rest}` : ''}</>;
+  }
+  if (variant === 'closed') {
+    const rest = label.replace(/^Closed\s*[·\-]?\s*/i, '').trim();
+    return <><span className="nearby-card__hours--closed">Closed:</span>{rest ? ` ${rest}` : ''}</>;
+  }
+  return <>{label}</>;
 }
 
 // Same matcher as NearbyCard — accept any non-empty / non-"no" entry.
@@ -159,7 +177,9 @@ const ResultCard = forwardRef(function ResultCard({ poi, index, isHighlighted },
   const hasDistance = typeof poi.distance === 'number';
   const lat = poi?.location?.coordinates?.[1];
   const lng = poi?.location?.coordinates?.[0];
-  const statusLine = !isEvent ? exploreStatusLine(poi.hours, lat, lng) : null;
+  const { variant: statusVariant, label: statusLabel } = !isEvent
+    ? exploreStatusLine(poi.hours, lat, lng)
+    : { variant: null, label: null };
   const directionsHref = lat && lng
     ? `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`
     : null;
@@ -195,7 +215,11 @@ const ResultCard = forwardRef(function ResultCard({ poi, index, isHighlighted },
 
       {cityLine && <div className="one_search_map_single_city">{cityLine}</div>}
 
-      {statusLine && <div className="one_search_map_result_hours">{statusLine}</div>}
+      {statusLabel && (
+        <div className="one_search_map_result_hours">
+          {renderHoursStatus(statusVariant, statusLabel)}
+        </div>
+      )}
 
       {(categoryLabel || amenities.length > 0) && (
         <div className="one_search_map_result_type_amenities_group">
@@ -228,7 +252,7 @@ const ResultCard = forwardRef(function ResultCard({ poi, index, isHighlighted },
             rel="noopener noreferrer"
             onClick={stop}
           >
-            <Navigation2 size={14} className="poi_button_icon" aria-hidden="true" />
+            <Navigation size={14} className="poi_button_icon" style={{fill:'none'}} aria-hidden="true" />
             <span className="poi_button_title">Directions</span>
           </a>
         )}

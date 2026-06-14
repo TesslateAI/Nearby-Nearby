@@ -101,7 +101,7 @@ describe('EventDetail', () => {
     // When event_status is set, the STATUS: row should show event_status
     renderDetail({ status: 'Fully Open', event: { event_status: 'Postponed' } });
     // The status value span in the header row should contain Postponed (not "Fully Open")
-    const statusValue = document.querySelector('.poi-detail__status-value');
+    const statusValue = document.querySelector('.poi_detail__status-value');
     expect(statusValue).toHaveTextContent('Postponed');
   });
 
@@ -115,7 +115,7 @@ describe('EventDetail', () => {
       },
     });
     // The date badge (sponsor-badge) should not be present for canceled events
-    const dateBadge = document.querySelector('.poi-detail__sponsor-badge');
+    const dateBadge = document.querySelector('.poi_detail__sponsor-badge');
     expect(dateBadge).not.toBeInTheDocument();
   });
 
@@ -139,7 +139,7 @@ describe('EventDetail', () => {
       },
     });
     // Date badge
-    const dateBadge = document.querySelector('.poi-detail__sponsor-badge');
+    const dateBadge = document.querySelector('.poi_detail__sponsor-badge');
     expect(dateBadge).toBeInTheDocument();
     // Quick info shows the date
     expect(screen.getByText(/June 1, 2026/i)).toBeInTheDocument();
@@ -226,7 +226,7 @@ describe('EventDetail', () => {
   it('renders description_long as HTML content (not escaped text)', () => {
     renderDetail({ description_long: '<strong>Bold text</strong> in description.' });
     // The strong element should be rendered, not shown as raw HTML string
-    const strong = document.querySelector('.poi-detail__description-box strong');
+    const strong = document.querySelector('.poi_detail__description-box strong');
     expect(strong).toBeInTheDocument();
     expect(strong).toHaveTextContent('Bold text');
   });
@@ -282,7 +282,7 @@ describe('EventDetail', () => {
     // At least the quick-info item should be present
     expect(addressItems.length).toBeGreaterThan(0);
     // The quick-info item should be visible (not in a hidden panel)
-    const quickInfoItem = document.querySelector('.poi-detail__info-item .poi-detail__info-text');
+    const quickInfoItem = document.querySelector('.poi_detail__info-item .poi_detail__info-text');
     expect(quickInfoItem).toHaveTextContent('123 Main St');
   });
 });

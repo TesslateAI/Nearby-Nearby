@@ -119,7 +119,7 @@ export default function TrailDetail({ poi }) {
       {!displayLoc.hideExact && (
         <div className="pd-addr__actions">
           <button type="button" className="btn_reset button btn_outline_teal btn_poi_button_1" onClick={handleDirections}>
-            <Navigation size={14} /> <span className="poi_button_title">Get Directions</span>
+            <Navigation size={14} className="poi_button_icon" style={{fill:'none'}} aria-hidden="true" /> <span className="poi_button_title">Get Directions</span>
           </button>
           {hasVal(poi.address_street) && (
             <button type="button" className="btn_reset button btn_outline_teal btn_poi_button_1" onClick={handleCopyAddress}>
@@ -254,7 +254,7 @@ export default function TrailDetail({ poi }) {
           <AmenitiesBox poi={poi} title="Amenities" />
 
           <div id="accordion_1_box" className="poi_accordion_box">
-            <div id="accordion_1_parent" className="poi_accordion_parent">
+            <div id="accordion_1_parent" className="poi_accordion_parent accordionjs">
               {sections.map((s) => (
                 <AccSection key={s.id} id={s.id} title={s.title} defaultOpen={!!s.defaultOpen} col1={s.col1} col2={s.col2} />
               ))}
