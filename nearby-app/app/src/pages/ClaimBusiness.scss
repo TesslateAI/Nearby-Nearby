@@ -1,0 +1,101 @@
+/* Page-specific styles for ClaimBusiness.
+ * Generic form + page shell rules now live in ../styles/forms.css.
+ * Only the Chatham County gate + "outside area" panels remain here.
+ */
+
+/* ── Gate (yes/no question) ─────────────────────────────────── */
+.claim-page__gate {
+  background: white;
+  border: 2px solid var(--gray-d);
+  border-radius: 16px;
+  padding: 36px 24px;
+  text-align: center;
+  max-width: 780px;
+  margin: 0 auto;
+}
+
+.claim-page__gate-question {
+  font-family: var(--font-poppins);
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--nn-dark);
+  margin: 0 0 24px;
+}
+
+.claim-page__gate-buttons {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.claim-page__gate-btn {
+  padding: 14px 32px;
+  border: none;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 700;
+  font-family: var(--font-poppins);
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.claim-page__gate-btn--yes {
+  background: var(--nn-teal2);
+  color: white;
+}
+.claim-page__gate-btn--yes:hover {
+  background: var(--nn-teal1);
+}
+
+.claim-page__gate-btn--no {
+  background: var(--gray-d);
+  color: var(--nn-dark);
+}
+.claim-page__gate-btn--no:hover {
+  background: #ccc;
+}
+
+/* ── Outside area message ───────────────────────────────────── */
+.claim-page__outside {
+  background: white;
+  border: 2px solid var(--gray-d);
+  border-radius: 16px;
+  padding: 36px 24px;
+  text-align: center;
+  max-width: 780px;
+  margin: 0 auto;
+}
+
+.claim-page__outside p {
+  color: var(--nn-gray);
+  font-size: 15px;
+  margin: 0 0 20px;
+}
+
+.claim-page__cta-link {
+  display: inline-block;
+  padding: 14px 28px;
+  background: var(--nn-purple1);
+  color: white;
+  border-radius: 10px;
+  text-decoration: none;
+  font-weight: 600;
+  font-family: var(--font-poppins);
+  transition: background 0.2s ease;
+}
+
+.claim-page__cta-link:hover {
+  background: var(--nn-purple2);
+}
+
+.claim-page__back-btn {
+  display: block;
+  margin: 16px auto 0;
+  background: none;
+  border: none;
+  color: var(--nn-gray);
+  cursor: pointer;
+  font-size: 14px;
+  text-decoration: underline;
+}

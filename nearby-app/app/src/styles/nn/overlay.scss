@@ -1,0 +1,718 @@
+﻿@use 'sass:color';
+@use 'options' as *;
+
+// ═══════════════════════════════════════════════════
+// OVERLAY SYSTEM — SCSS
+// ═══════════════════════════════════════════════════
+
+
+// ─── Variables ──────────────────────────────────────
+// Brand / theme
+$color-primary:           #1a1a2e;
+$color-active-bg:         hsla(350, 75%, 40%, 1);   // AAA-safe active state
+$color-active-text:       hsla(0, 0%, 100%, 1);
+
+// AAA contrast
+$color-text-body:         #333;
+$color-text-close-btn:    hsla(0, 0%, 25%, 1);
+$color-placeholder-text:  hsla(210, 25%, 40%, 1);
+$color-scroll-block-text: hsla(210, 20%, 42%, 1);
+
+// Focus ring
+$focus-color:             hsla(220, 90%, 56%, 1);
+$focus-width:             3px;
+$focus-offset:            2px;
+
+// Overlay
+$backdrop-color:          hsla(0, 0%, 0%, 0.55);
+$panel-bg:                hsla(0, 0%, 100%, 1);
+$mobile-nav-height:       75px;
+
+// Chevron indicator
+$chevron-height:          55px;
+$chevron-border-color:    $color-text-close-btn;   // stays in sync with close btn
+
+
+// ─── Reset & Base ───────────────────────────────────
+// *,
+// *::before,
+// *::after {
+//   box-sizing: border-box;
+//   margin: 0;
+//   padding: 0;
+// }
+
+
+// ─── Scrollbar Gutter ───────────────────────────────
+// Reserves the scrollbar column at all times. When .overlay_lock
+// sets overflow: hidden, the space doesn't disappear — no jump.
+// html {
+//   scrollbar-gutter: stable;
+// }
+
+// body {
+//   font-family: 'Segoe UI', system-ui, sans-serif;
+//   background: #f0f2f5;
+//   min-height: 200vh;                     // tall page to demonstrate scroll lock
+//   padding: 60px 40px;
+//   transition: none;
+// }
+
+
+// ─── Scroll Lock State ──────────────────────────────
+// scrollbar-gutter: stable on html keeps the scrollbar column
+// reserved, so all we need here is to kill the scroll itself.
+body.overlay_lock {
+  overflow: hidden;
+}
+
+
+// ═══════════════════════════════════════════════════
+// DEMO PAGE LAYOUT
+// ═══════════════════════════════════════════════════
+
+.demo_header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 900px;
+  margin: 0 auto 80px;
+
+  h1 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: $color-primary;
+    letter-spacing: -0.02em;
+  }
+
+  @media(min-width:600px) {
+    
+  }
+  @media(min-width:700px) {
+    
+  }
+  @media(min-width:980px) {
+    
+  }
+  @media(min-width:1200px) {
+    
+  }
+  @media(min-width:1400px) {
+    
+  }
+  @media(min-width:1600px) {
+    
+  }
+  @media(min-width:1900px) {
+    
+  }
+  @media(min-width:2400px) {
+    
+  }
+}
+
+.trigger_group {
+  display: flex;
+  gap: 12px;
+
+  @media(min-width:600px) {
+    
+  }
+  @media(min-width:700px) {
+    
+  }
+  @media(min-width:980px) {
+    
+  }
+  @media(min-width:1200px) {
+    
+  }
+  @media(min-width:1400px) {
+    
+  }
+  @media(min-width:1600px) {
+    
+  }
+  @media(min-width:1900px) {
+    
+  }
+  @media(min-width:2400px) {
+    
+  }
+}
+
+
+// ─── Trigger Buttons ────────────────────────────────
+.btn_trigger {
+  // position: relative;
+  // padding: 10px 22px;
+  // border: 2px solid $color-primary;
+  // border-radius: 6px;
+  // background: transparent;
+  // color: $color-primary;
+  // font-size: 0.875rem;
+  // font-weight: 600;
+  // letter-spacing: 0.04em;
+  // text-transform: uppercase;
+  cursor: pointer;
+  // transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  user-select: none;
+  border: 0 solid transparent;
+
+  &:hover {
+    // background: $color-primary;
+    // color: #fff;
+  }
+
+  // AAA focus ring — only shows for keyboard nav, not mouse clicks
+  &:focus-visible {
+    outline: $focus-width solid $focus-color;
+    outline-offset: $focus-offset;
+  }
+
+  // Active / toggled state — visually signals overlay is open
+  &.is_active {
+    background: $color-active-bg;
+    border-color: $color-active-bg;
+    color: $color-active-text;
+  }
+
+  @media(min-width:600px) {
+    
+  }
+  @media(min-width:700px) {
+    
+  }
+  @media(min-width:980px) {
+    
+  }
+  @media(min-width:1200px) {
+    
+  }
+  @media(min-width:1400px) {
+    
+  }
+  @media(min-width:1600px) {
+    
+  }
+  @media(min-width:1900px) {
+    
+  }
+  @media(min-width:2400px) {
+    
+  }
+}
+
+
+// ═══════════════════════════════════════════════════
+// OVERLAY SYSTEM
+// ═══════════════════════════════════════════════════
+
+// ─── Backdrop ───────────────────────────────────────
+// Full-screen dark layer behind the panel.
+// pointer-events: none when closed so the page stays clickable.
+.overlay_backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 998;
+  background: $backdrop-color;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+
+  &.is_open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  // Mobile: pull bottom edge up to clear fixed nav
+  @media (max-width: 1200px) {
+    bottom: $mobile-nav-height;
+  }
+
+  @media(min-width:600px) {
+    
+  }
+  @media(min-width:700px) {
+    
+  }
+  @media(min-width:980px) {
+    
+  }
+  @media(min-width:1200px) {
+    
+  }
+  @media(min-width:1400px) {
+    
+  }
+  @media(min-width:1600px) {
+    
+  }
+  @media(min-width:1900px) {
+    
+  }
+  @media(min-width:2400px) {
+    
+  }
+}
+
+
+// ─── Overlay Panel (edge-to-edge) ───────────────────
+// The panel itself fills the viewport.
+// - overflow-y: auto allows INTERNAL scrolling when content
+//   exceeds available height, while body scroll stays locked.
+// - Scrollbar is hidden visually but scroll remains functional.
+// - bottom: 0 on desktop; overridden to $mobile-nav-height on
+//   mobile so your fixed nav stays visible.
+.overlay_panel {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: $mobile-nav-height;
+  z-index: 999;
+  background: $panel-bg;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+
+  // Hide scrollbar visually, keep scroll functional
+  -ms-overflow-style: none;              // IE / Edge
+  scrollbar-width: none;                 // Firefox
+
+  // Fade: starts invisible and pointer-less
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+
+  // Chrome, Safari, Edge — must be its own selector
+  &::-webkit-scrollbar {
+    display: none;
+  }
+
+  &.is_open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  // Mobile: pull bottom edge up to clear fixed nav
+
+  @media(min-width:600px) {
+    
+  }
+  @media(min-width:700px) {
+    
+  }
+  @media(min-width:980px) {
+    
+  }
+  @media(min-width:1200px) {
+    bottom: 0;
+  }
+  @media(min-width:1400px) {
+    
+  }
+  @media(min-width:1600px) {
+    
+  }
+  @media(min-width:1900px) {
+    
+  }
+  @media(min-width:2400px) {
+    
+  }
+}
+
+
+// ─── Close Button (top-right) ───────────────────────
+// sticky + float keeps it pinned to the top-right as
+// content scrolls beneath it.
+.overlay_close {
+  position: absolute;
+  display: flex;
+  gap: 11px;
+  justify-content: center;
+  align-items: center;
+  top: 12px;
+  right: 12px;
+  // float: right;
+  z-index: 1;
+  width: 125px;
+  height: 55px;
+  margin: 0 0 0 0;
+  border: none;
+  border-radius: 3px;
+
+  background: transparent;
+  background: hsla(0, 0%, 0%, 0.05);
+
+  color: $nn_dark;
+  font-family: $font_poppins;
+  text-transform: uppercase;
+  font-weight: 600;
+  font-size: 15px;
+  line-height: 1;
+  text-align: center;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+  user-select: none;
+
+  &:hover {
+    background: $nn_teal1;
+    color: white;
+  }
+
+  &:focus-visible {
+    outline: $focus-width solid $focus-color;
+    outline-offset: $focus-offset;
+  }
+
+  @media(min-width:600px) {
+    
+  }
+  @media(min-width:700px) {
+    
+  }
+  @media(min-width:980px) {
+    font-size: 16px;
+  }
+  @media(min-width:1200px) {
+    
+  }
+  @media(min-width:1400px) {
+    
+  }
+  @media(min-width:1600px) {
+    font-size: 17px;
+  }
+  @media(min-width:1900px) {
+    
+  }
+  @media(min-width:2400px) {
+    
+  }
+}
+
+.btn_close_icon {
+  font-size: 21px;
+
+  @media(min-width:600px) {
+    
+  }
+  @media(min-width:700px) {
+    
+  }
+  @media(min-width:980px) {
+    font-size: 22px;
+  }
+  @media(min-width:1200px) {
+    
+  }
+  @media(min-width:1400px) {
+    
+  }
+  @media(min-width:1600px) {
+    font-size: 23px;
+  }
+  @media(min-width:1900px) {
+    
+  }
+  @media(min-width:2400px) {
+    
+  }
+}
+
+// ─── Overlay Content Area ───────────────────────────
+// clear: both sits the content block below the floated close btn.
+// Padding gives breathing room on all sides.
+.overlay_content {
+  padding: 20px 20px 40px;
+  
+  clear: both;
+
+  @media(min-width:600px) {
+    
+  }
+  @media(min-width:700px) {
+    
+  }
+  @media(min-width:980px) {
+    
+  }
+  @media (min-width: 1200px) {
+    min-width: 750px;
+    padding: 20px 30px;
+  }
+  @media(min-width:1400px) {
+    
+  }
+  @media(min-width:1600px) {
+    
+  }
+  @media(min-width:1900px) {
+    
+  }
+  @media(min-width:2400px) {
+    
+  }
+}
+
+
+// ─── Placeholder Block ──────────────────────────────
+// Visually confirms layout during development
+.overlay_placeholder {
+  margin-top: 20px;
+  padding: 40px 24px;
+  background: hsla(210, 15%, 93%, 1);
+  border: 2px dashed hsla(210, 20%, 75%, 1);
+  border-radius: 8px;
+  text-align: center;
+  color: $color-placeholder-text;
+  font-size: 0.82rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+
+  @media(min-width:600px) {
+    
+  }
+  @media(min-width:700px) {
+    
+  }
+  @media(min-width:980px) {
+    
+  }
+  @media(min-width:1200px) {
+    
+  }
+  @media(min-width:1400px) {
+    
+  }
+  @media(min-width:1600px) {
+    
+  }
+  @media(min-width:1900px) {
+    
+  }
+  @media(min-width:2400px) {
+    
+  }
+}
+
+
+// ─── Scroll Chevron Indicator ───────────────────────
+// AAA accessibility affordance: replaces the visual signal that
+// the hidden scrollbar would normally provide. Tells the user
+// "more content below." Behaviour:
+//   1. Only appears if the panel actually overflows (JS checks this)
+//   2. Fades in after the overlay opens
+//   3. Disappears the moment the user scrolls down
+//   4. Reappears if they scroll all the way back to the top
+// The chevron is position: fixed so it stays pinned to the
+// bottom of the viewport regardless of content scroll position.
+.overlay_chevron {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  width: 100%;
+  padding: 75px 0 25px 0;
+  height: $chevron-height;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;                  // never intercepts clicks
+  opacity: 0;                            // hidden by default
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  background: #FFFFFF;
+  background: linear-gradient(0deg, rgba(255, 255, 255, 0.66) 0%, rgba(255, 255, 255, 0) 90%);
+
+  // The actual chevron shape — pure CSS, no image needed
+  &::after {
+    content: '';
+    display: block;
+    width: 12px;
+    height: 12px;
+    border-right: 2.5px solid $chevron-border-color;
+    border-bottom: 2.5px solid $chevron-border-color;
+    transform: rotate(45deg);            // rotates the corner into a ˅
+    margin-top: -4px;                    // optical center correction
+  }
+
+  // Step 1: visible state — triggered by JS after overflow is confirmed
+  &.is_visible {
+    opacity: 1;
+  }
+
+  // Step 2: disappears when the user has scrolled
+  &.is_scrolled {
+    opacity: 0;
+    transform: translateY(8px);          // drifts down slightly as it fades
+  }
+
+  // Respect user's motion preferences — no animation, just show/hide
+  @media (prefers-reduced-motion: reduce) {
+    &,
+    &.is_visible,
+    &.is_scrolled {
+      transition: opacity 0.15s ease;
+      transform: none;
+    }
+  }
+
+  // Mobile: pull chevron up to clear the fixed nav
+  @media (max-width: 1200px) {
+    bottom: $mobile-nav-height;
+  }
+
+  @media(min-width:600px) {
+    
+  }
+  @media(min-width:700px) {
+    
+  }
+  @media(min-width:980px) {
+    
+  }
+  @media(min-width:1200px) {
+    
+  }
+  @media(min-width:1400px) {
+    
+  }
+  @media(min-width:1600px) {
+    
+  }
+  @media(min-width:1900px) {
+    
+  }
+  @media(min-width:2400px) {
+    
+  }
+}
+
+
+
+
+// Target ONLY the nav overlay at 1200px+
+.overlay_backdrop[data-overlay_backdrop="nav_overlay"],
+.overlay_panel#nav_overlay {
+
+  @media(min-width:600px) {
+    
+  }
+  @media(min-width:700px) {
+    
+  }
+  @media(min-width:980px) {
+    
+  }
+  @media(min-width:1200px) {
+    display: block !important; // Force visible
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+    overflow: visible !important;
+    // Reset any mobile positioning
+    position: static;
+    transform: none;
+  }
+  @media(min-width:1400px) {
+    
+  }
+  @media(min-width:1600px) {
+    
+  }
+  @media(min-width:1900px) {
+    
+  }
+  @media(min-width:2400px) {
+    
+  }
+}
+
+// Make sure the backdrop doesn't block content at desktop
+.overlay_backdrop[data-overlay_backdrop="nav_overlay"] {
+
+  @media(min-width:600px) {
+    
+  }
+  @media(min-width:700px) {
+    
+  }
+  @media(min-width:980px) {
+    
+  }
+  @media(min-width:1200px) {
+    background: transparent;
+    pointer-events: none;
+  }
+  @media(min-width:1400px) {
+    
+  }
+  @media(min-width:1600px) {
+    
+  }
+  @media(min-width:1900px) {
+    
+  }
+  @media(min-width:2400px) {
+    
+  }
+}
+
+.overlay_panel#nav_overlay .overlay_close {
+
+  @media(min-width:600px) {
+    
+  }
+  @media(min-width:700px) {
+    
+  }
+  @media(min-width:980px) {
+    
+  }
+  @media(min-width:1200px) {
+    display: none !important;
+  }
+  @media(min-width:1400px) {
+    
+  }
+  @media(min-width:1600px) {
+    
+  }
+  @media(min-width:1900px) {
+    
+  }
+  @media(min-width:2400px) {
+    
+  }
+}
+
+.overlay_panel#nav_overlay .overlay_panel,
+.overlay_panel#nav_overlay .overlay_content {
+
+  @media(min-width:600px) {
+    
+  }
+  @media(min-width:700px) {
+    
+  }
+  @media(min-width:980px) {
+    
+  }
+  @media(min-width:1200px) {
+    padding: 0 !important;
+  }
+  @media(min-width:1400px) {
+    
+  }
+  @media(min-width:1600px) {
+    
+  }
+  @media(min-width:1900px) {
+    
+  }
+  @media(min-width:2400px) {
+    
+  }
+}

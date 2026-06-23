@@ -1,0 +1,360 @@
+@use 'sass:color';
+@use '../styles/nn/options' as *;
+
+/* ── Styles sourced from stylez.scss ────────────────────────────────────── */
+
+.search_overlay_box {
+  width: 100%;
+  margin: 0 auto;
+
+  @media(min-width:600px) {
+    
+  }
+  @media(min-width:700px) {
+    
+  }
+  @media(min-width:980px) {
+  
+  }
+  @media(min-width:1200px) {
+    
+  }
+  @media(min-width:1400px) {
+    
+  }
+  @media(min-width:1600px) {
+    
+  }
+  @media(min-width:1900px) {
+    
+  }
+  @media(min-width:2400px) {
+    
+  }
+}
+
+.search_main_title {
+  padding-top: 0;
+  text-align: center;
+
+  @media(min-width:600px) {
+    
+  }
+  @media(min-width:700px) {
+    
+  }
+  @media(min-width:980px) {
+    
+  }
+  @media(min-width:1200px) {
+    
+  }
+  @media(min-width:1400px) {
+    
+  }
+  @media(min-width:1600px) {
+    
+  }
+  @media(min-width:1900px) {
+    
+  }
+  @media(min-width:2400px) {
+    
+  }
+}
+
+#search_box_header {
+  padding: 20px;
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-gap: 0;
+  justify-content: flex-start;
+  align-items: flex-start;
+
+  @media(min-width:600px) {
+    
+  }
+  @media(min-width:700px) {
+    
+  }
+  @media(min-width:980px) {
+  
+  }
+  @media(min-width:1200px) {
+    
+  }
+  @media(min-width:1400px) {
+    
+  }
+  @media(min-width:1600px) {
+    
+  }
+  @media(min-width:1900px) {
+    
+  }
+  @media(min-width:2400px) {
+    
+  }
+}
+
+#search_form_header {
+  width: 100%;
+
+  @media(min-width:600px) {
+    
+  }
+  @media(min-width:700px) {
+    
+  }
+  @media(min-width:980px) {
+    
+  }
+  @media(min-width:1200px) {
+    
+  }
+  @media(min-width:1400px) {
+    
+  }
+  @media(min-width:1600px) {
+    
+  }
+  @media(min-width:1900px) {
+    
+  }
+  @media(min-width:2400px) {
+    
+  }
+}
+
+.search_container {
+  padding: 0;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 15px;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  max-width: 800px;
+  font-family: $font_sansserif;
+
+  @media(min-width:600px) {
+    
+  }
+  @media(min-width:700px) {
+    
+  }
+  @media(min-width:980px) {
+    display: flex;
+  }
+  @media(min-width:1200px) {
+    
+  }
+  @media(min-width:1400px) {
+    
+  }
+  @media(min-width:1600px) {
+    
+  }
+  @media(min-width:1900px) {
+    
+  }
+  @media(min-width:2400px) {
+    
+  }
+}
+
+.search_input_wrapper {
+  position: relative;
+  flex: 1;
+
+  @media(min-width:600px) {
+    
+  }
+  @media(min-width:700px) {
+    
+  }
+  @media(min-width:980px) {
+    
+  }
+  @media(min-width:1200px) {
+    
+  }
+  @media(min-width:1400px) {
+    
+  }
+  @media(min-width:1600px) {
+    
+  }
+  @media(min-width:1900px) {
+    
+  }
+  @media(min-width:2400px) {
+    
+  }
+}
+
+.search_icon {
+  position: absolute;
+  left: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: gray;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+
+  @media(min-width:600px) {
+    
+  }
+  @media(min-width:700px) {
+    
+  }
+  @media(min-width:980px) {
+    
+  }
+  @media(min-width:1200px) {
+    
+  }
+  @media(min-width:1400px) {
+    
+  }
+  @media(min-width:1600px) {
+    
+  }
+  @media(min-width:1900px) {
+    
+  }
+  @media(min-width:2400px) {
+    
+  }
+}
+
+
+.search_terms_text {
+  font-size: 13px;
+  text-align: center;
+  padding: 20px 5%;
+
+  @media(min-width:600px) {
+    
+  }
+  @media(min-width:700px) {
+
+  }
+  @media(min-width:980px) {
+  
+  }
+  @media(min-width:1200px) {
+    
+  }
+  @media(min-width:1400px) {
+    
+  }
+  @media(min-width:1600px) {
+    
+  }
+  @media(min-width:1900px) {
+    
+  }
+  @media(min-width:2400px) {
+    
+  }
+}
+
+.search_subtitle {
+  text-align: center;
+  font-family: $font_poppins;
+  font-weight: 500;
+  color: $nn_purple1;
+
+  @media(min-width:600px) {
+    
+  }
+  @media(min-width:700px) {
+    
+  }
+  @media(min-width:980px) {
+    
+  }
+  @media(min-width:1200px) {
+    
+  }
+  @media(min-width:1400px) {
+    
+  }
+  @media(min-width:1600px) {
+    
+  }
+  @media(min-width:1900px) {
+    
+  }
+  @media(min-width:2400px) {
+    
+  }
+}
+
+/* ── Component-specific styles ──────────────────────────────────────────── */
+
+/* ==========================================================================
+   Search overlay — ported from nn-templates/inc/stylez.scss
+   Full-screen overlay with centered content
+   ========================================================================== */
+
+/* The search overlay panel itself becomes a flex centering container */
+#search_overlay.overlay_panel {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Override the SearchBar wrapper styles when inside the overlay */
+.search_input_wrapper .search-bar-wrapper {
+  flex: 1;
+  width: 100%;
+}
+.search_input_wrapper .search-bar-input {
+  border: none;
+  background: none;
+  padding: 0;
+}
+.search_input_wrapper .search-bar-input__icon {
+  display: none;
+}
+.search_input_wrapper .search-bar-input input {
+  width: 100%;
+  padding: 17px 20px 17px 52px;
+  border: 1px solid var(--nn-teal1);
+  font-size: 17px;
+  line-height: 1;
+  color: var(--nn-dark);
+  background: white;
+  border-radius: 3px;
+  -webkit-appearance: none;
+  appearance: none;
+  outline: none;
+  font-family: var(--font-sans);
+  box-shadow: none;
+  box-sizing: border-box;
+  @media (min-width: 600px) {
+    font-size: 18px;
+  }
+  @media (min-width: 700px) {
+    font-size: 19px;
+  }
+}
+
+.search_input_wrapper .search-bar-input input::placeholder {
+  color: gray;
+  opacity: 1;
+}
+.search_input_wrapper .search-bar-input input:focus {
+  outline: 2px solid gold;
+  outline-offset: 2px;
+  border-color: teal;
+  box-shadow: none;
+}
+
+.search_terms_text a {
+  color: var(--link-color);
+}

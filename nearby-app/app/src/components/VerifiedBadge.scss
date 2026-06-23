@@ -1,0 +1,170 @@
+@use 'sass:color';
+@use '../styles/nn/options' as *;
+
+/* ── Styles sourced from stylez.scss ────────────────────────────────────── */
+
+.poi_verified_box {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  align-items: center;
+
+  @media(min-width:600px) {
+    
+  }
+  @media(min-width:700px) {
+    
+  }
+  @media(min-width:980px) {
+  
+  }
+  @media(min-width:1200px) {
+    
+  }
+  @media(min-width:1400px) {
+    
+  }
+  @media(min-width:1600px) {
+    
+  }
+  @media(min-width:1900px) {
+    
+  }
+  @media(min-width:2400px) {
+    
+  }
+}
+
+.poi_verified_badge  {
+  background-color: transparent !important;
+  color: $nn_dark !important;
+  padding: 15px 20px 15px 0 !important;
+  // border: 1px solid $green2 !important;
+
+  @media(min-width:600px) {
+    
+  }
+  @media(min-width:700px) {
+    
+  }
+  @media(min-width:980px) {
+  
+  }
+  @media(min-width:1200px) {
+    
+  }
+  @media(min-width:1400px) {
+    
+  }
+  @media(min-width:1600px) {
+    
+  }
+  @media(min-width:1900px) {
+    
+  }
+  @media(min-width:2400px) {
+    
+  }
+}
+
+.poi_verified_badge_title {
+  font-weight: 600;
+  text-transform: none !important;
+  letter-spacing: 0;
+  font-size: 1.2em;
+
+  @media(min-width:600px) {
+    
+  }
+  @media(min-width:700px) {
+    
+  }
+  @media(min-width:980px) {
+    
+  }
+  @media(min-width:1200px) {
+    
+  }
+  @media(min-width:1400px) {
+    
+  }
+  @media(min-width:1600px) {
+    
+  }
+  @media(min-width:1900px) {
+    
+  }
+  @media(min-width:2400px) {
+    
+  }
+}
+
+#poi_verified_tooltip {
+  font-size: .9em;
+  line-height: 1.2;
+  color: $nn_dark;
+  background-color: #ffffdd;
+  border: 1px solid gold;
+  padding: 25px;
+  display: none;
+  overflow: hidden;
+  max-height: 0;
+  transition: max-height 1s ease-in-out, padding 1 ease-in-out;
+  
+  &.is_open {
+    display: block;
+    max-height: 500px; // Set this higher than your content will ever be
+    padding: 25px;
+  }
+
+  @media(min-width:600px) {
+    
+  }
+  @media(min-width:700px) {
+    
+  }
+  @media(min-width:980px) {
+  
+  }
+  @media(min-width:1200px) {
+    
+  }
+  @media(min-width:1400px) {
+    
+  }
+  @media(min-width:1600px) {
+    
+  }
+  @media(min-width:1900px) {
+    
+  }
+  @media(min-width:2400px) {
+    
+  }
+}
+
+/* ── Component-specific styles ──────────────────────────────────────────── */
+
+.poi_verified_badge .poi_button_icon {
+  width: 22px;
+  height: 22px;
+  fill: var(--nn-green);
+}
+
+.poi_verified_badge_about,
+.poi_verified_badge_about:hover {
+  border: 0;
+  background-color: transparent;
+  color: var(--nn-teal1) !important;
+  padding: 15px 20px !important;
+  text-decoration: underline;
+  text-transform: none;
+  letter-spacing: 0;
+  cursor: pointer;
+}
+
+#poi_verified_tooltip.is_open {
+  display: block;
+  max-height: 500px;
+  padding: 25px;
+}

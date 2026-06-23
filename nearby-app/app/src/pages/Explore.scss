@@ -1,0 +1,614 @@
+@use 'sass:color';
+@use '../styles/nn/options' as *;
+
+/* ── Styles sourced from stylez.scss ────────────────────────────────────── */
+
+.one_search_map_result_single {
+  padding: 35px 25px 25px 25px;
+  display: grid;
+  grid-template-columns: 1fr;
+
+  grid-gap: 0;
+  position: relative;
+  cursor: pointer;
+
+  @media(min-width:600px) {
+    
+  }
+  @media(min-width:700px) {
+    
+  }
+  @media(min-width:980px) {
+  
+  }
+  @media(min-width:1200px) {
+    
+  }
+  @media(min-width:1400px) {
+    
+  }
+  @media(min-width:1600px) {
+    
+  }
+  @media(min-width:1900px) {
+    
+  }
+  @media(min-width:2400px) {
+    
+  }
+}
+
+.one_search_map_result_number {
+  background-color: $nn_purple1;
+  color: white;
+  font-family: $font_poppins;
+  font-weight: bold;
+  font-size: 25px;
+  width: 55px;
+  height: 55px;
+  border-radius: 55px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  border: 2px solid white;
+  left: 50%;
+  top: -27px;
+  position: absolute;
+  transform: translateX(-50%);
+
+  @media(min-width:600px) {
+    
+  }
+  @media(min-width:700px) {
+    
+  }
+  @media(min-width:980px) {
+  
+  }
+  @media(min-width:1200px) {
+    
+  }
+  @media(min-width:1400px) {
+    
+  }
+  @media(min-width:1600px) {
+    
+  }
+  @media(min-width:1900px) {
+    
+  }
+  @media(min-width:2400px) {
+    
+  }
+}
+
+.one_search_map_result_type {
+  font-size: 90%;
+
+  @media(min-width:600px) {
+    
+  }
+  @media(min-width:700px) {
+    
+  }
+  @media(min-width:980px) {
+  
+  }
+  @media(min-width:1200px) {
+    
+  }
+  @media(min-width:1400px) {
+    
+  }
+  @media(min-width:1600px) {
+    
+  }
+  @media(min-width:1900px) {
+    
+  }
+  @media(min-width:2400px) {
+    
+  }
+}
+
+
+.one_search_map_result_title {
+  font-family: $font_poppins;
+  font-weight: bold;
+  font-size: 21px;
+  line-height: 1;
+  padding: 5px 0 7px 0;
+
+  @media(min-width:600px) {
+    
+  }
+  @media(min-width:700px) {
+    
+  }
+  @media(min-width:980px) {
+  
+  }
+  @media(min-width:1200px) {
+    
+  }
+  @media(min-width:1400px) {
+    
+  }
+  @media(min-width:1600px) {
+    
+  }
+  @media(min-width:1900px) {
+    
+  }
+  @media(min-width:2400px) {
+    
+  }
+}
+
+.one_search_map_single_city {
+  font-size: 90%;
+  // color: $nn_teal1;
+  padding-bottom: 5px;
+
+  @media(min-width:600px) {
+    
+  }
+  @media(min-width:700px) {
+    
+  }
+  @media(min-width:980px) {
+  
+  }
+  @media(min-width:1200px) {
+    
+  }
+  @media(min-width:1400px) {
+    
+  }
+  @media(min-width:1600px) {
+    
+  }
+  @media(min-width:1900px) {
+    
+  }
+  @media(min-width:2400px) {
+    
+  }
+}
+
+.one_search_map_result_hours {
+  font-size: 90%;
+  padding-bottom: 5px;
+
+  @media(min-width:600px) {
+    
+  }
+  @media(min-width:700px) {
+    
+  }
+  @media(min-width:980px) {
+  
+  }
+  @media(min-width:1200px) {
+    
+  }
+  @media(min-width:1400px) {
+    
+  }
+  @media(min-width:1600px) {
+    
+  }
+  @media(min-width:1900px) {
+    
+  }
+  @media(min-width:2400px) {
+    
+  }
+}
+
+.one_search_map_result_amenities {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 5px;
+
+  @media(min-width:600px) {
+    
+  }
+  @media(min-width:700px) {
+    
+  }
+  @media(min-width:980px) {
+  
+  }
+  @media(min-width:1200px) {
+    
+  }
+  @media(min-width:1400px) {
+    
+  }
+  @media(min-width:1600px) {
+    
+  }
+  @media(min-width:1900px) {
+    
+  }
+  @media(min-width:2400px) {
+    
+  }
+}
+
+.map_results_layout_1_right_col {
+  // background-color: $green;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: white;
+  padding: 0;
+  order: 1;
+
+  @media(min-width:600px) {
+    
+  }
+  @media(min-width:700px) {
+    
+  }
+  @media(min-width:980px) {
+  
+  }
+  @media(min-width:1200px) {
+    order: 2;
+  }
+  @media(min-width:1400px) {
+    
+  }
+  @media(min-width:1600px) {
+    
+  }
+  @media(min-width:1900px) {
+    
+  }
+  @media(min-width:2400px) {
+    
+  }
+}
+
+.map_results_layout_1_left_col {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 35px;
+  justify-content: flex-start;
+  align-items: stretch;
+  position: relative;
+  z-index: 0;
+  padding: 35px 5%;
+  
+  order: 2;
+
+  @media(min-width:600px) {
+    
+  }
+  @media(min-width:700px) {
+    grid-template-columns: 1fr 1fr;
+  }
+  @media(min-width:980px) {
+
+  }
+  @media(min-width:1200px) {
+    grid-template-columns: 1fr;
+    overflow-y: scroll;
+    padding: 55px 10px;
+    order: 1;
+  }
+  @media(min-width:1400px) {
+
+  }
+  @media(min-width:1600px) {
+    
+  }
+  @media(min-width:1900px) {
+
+  }
+  @media(min-width:2400px) {
+    
+  }
+}
+
+/* ── Component-specific styles ──────────────────────────────────────────── */
+
+/* ==========================================================================
+   Explore page — minimal page chrome only.
+
+   Everything structural (#one_search_magic, .one_search_1/_2/_wrapper,
+   .one_search_button, .one_search_controls, .search_container,
+   .search_input_wrapper, .search_icon, .search_input, .btn_search,
+   .btn_search_gold, .add_location_link, .btn_clear, .btn_show_radius_options,
+   .btn_show_event_options, .dropdown_show_*, .radius_dropdown_*,
+   .date_dropdown_*, .one_search_amenity_chip, #map_results_layout_1,
+   .map_results_layout_1_left_col, .map_results_layout_1_right_col,
+   .map_result_single_*, .box_style_1, .wrapper_default, .visually_hidden)
+   is owned by src/styles/nn/stylez.css (the template). No overrides here.
+
+   This file only styles Explore-specific page chrome: the results title
+   band, loading/empty/error states, and amenity chip theming.
+   ========================================================================== */
+
+.explore-page {
+  display: flex;
+  flex-direction: column;
+  min-height: 60vh;
+  background: #eee;
+  @media (max-width: 1199px) {
+    padding-bottom: var(--mobile-nav-height, 75px);
+  }
+}
+
+
+/* ── Results title band ──────────────────────────────────────────────── */
+.explore__title-band {
+  background: #fff;
+  border-bottom: 3px solid var(--nn-gold, #fec764);
+}
+
+.explore__title-inner {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 15px 0;
+  flex-wrap: wrap;
+  @media (max-width: 640px) {
+    padding: 16px 0; gap: 12px;
+  }
+}
+
+
+.explore__back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 999px;
+  border: 1px solid $red;
+  // background: var(--nn-teal1);
+  background: white;
+  color: $red;
+  text-decoration: none;
+  flex-shrink: 0;
+  // transition: background 0.15s ease, transform 0.15s ease;
+}
+.explore__back:hover {
+  background: $red2;
+  transform: scale(1.05);
+    
+  svg {
+    stroke: white;
+  }
+}
+.explore__back:focus-visible {
+  outline: 3px solid var(--nn-gold, #fec764);
+  outline-offset: 2px;
+}
+
+.explore__back svg {
+  stroke: $red;
+}
+
+
+.explore__title {
+  font-family: var(--font-poppins, "Poppins", sans-serif);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--nn-dark);
+  margin: 0;
+  padding: 0;
+  line-height: 1.2;
+  flex: 1 1 auto;
+  min-width: 0;
+
+  @media(min-width:600px) {
+    
+  }
+  @media(min-width:700px) {
+    font-size: 25px;
+  }
+  @media(min-width:980px) {
+  
+  }
+  @media(min-width:1200px) {
+    font-size: 28px;
+  }
+  @media(min-width:1400px) {
+    
+  }
+  @media(min-width:1600px) {
+    
+  }
+  @media(min-width:1900px) {
+    
+  }
+  @media(min-width:2400px) {
+    
+  }
+}
+
+.explore__title-q {
+  color: var(--nn-purple1, #562556);
+  font-style: italic;
+}
+
+.explore__count {
+  font-family: var(--font-poppins, "Poppins", sans-serif);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--nn-purple1, #562556);
+  background: #f3ecf3;
+  padding: 8px 14px;
+  border-radius: 999px;
+  flex-shrink: 0;
+  @media (max-width: 640px) {
+    font-size: 11px; padding: 6px 12px;
+  }
+}
+
+
+
+/* ── Amenity chips (template class has no visual rules) ──────────────── */
+.one_search_amenity_chip {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #f3ecf3;
+  color: var(--nn-purple1, #562556);
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: capitalize;
+  line-height: 1.4;
+}
+.one_search_map_result_single:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(86, 37, 86, 0.12);
+  border-color: #f0b84a;
+}
+.one_search_map_result_single--highlighted {
+  border-color: var(--nn-gold) !important;
+  box-shadow: 0 10px 24px rgba(254, 199, 100, 0.35) !important;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.one_search_map_result_single_buttons .btn_poi_button_1 {
+  text-decoration: none !important;
+}
+
+/* Whole-card click target — inner buttons stop propagation. */
+.one_search_map_result_single--clickable { cursor: pointer; }
+.one_search_map_result_single--clickable:focus-visible {
+  outline: 3px solid var(--nn-gold, #fec764);
+  outline-offset: 2px;
+}
+.one_search_amenity_icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  // background: var(--nn-purple-soft, #f3e8f3);
+  background: transparent;
+  transition: background-color .2s, transform .2s;
+}
+.one_search_amenity_icon svg {
+  width: 22px !important;
+  height: 22px !important;
+}
+// .one_search_amenity_icon:hover {
+//   // background: var(--nn-purple1, #562556);
+//   background: var(--nn-gold1, #FEC764);
+//   // background: transparent;
+//   transform: translateY(-1px);
+//   color: #fff;
+// }
+
+/* ── Loading / error / empty states ──────────────────────────────────── */
+.explore__state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 80px 20px 120px;
+  font-family: var(--font-poppins, "Poppins", sans-serif);
+  font-size: 16px;
+  color: #555;
+  text-align: center;
+  background: #eee;
+  @media (max-width: 640px) {
+    padding: 60px 16px 100px;
+  }
+}
+
+
+.explore__state--error { color: #b00020; }
+.explore__state--empty .explore__state-msg {
+  font-size: 18px;
+  color: var(--nn-dark, #1a2128);
+  font-weight: 500;
+  margin: 0;
+}
+
+.explore__suggest {
+  display: inline-block;
+  margin-top: 4px;
+  padding: 12px 22px;
+  border-radius: 999px;
+  background: var(--nn-teal1, #328170);
+  color: #fff !important;
+  font-family: var(--font-poppins, "Poppins", sans-serif);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none !important;
+  letter-spacing: 0.03em;
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+.explore__suggest:hover {
+  background: #245b4e;
+  transform: translateY(-1px);
+}
+
+/* ── Map fallback when no mapped locations ───────────────────────────── */
+.explore__map-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  height: 100%;
+  min-height: 300px;
+  color: #fff;
+  font-family: var(--font-poppins, "Poppins", sans-serif);
+  font-size: 15px;
+  padding: 40px 20px;
+}
+
+.map_results_layout_1_right_col .map-container,
+.map_results_layout_1_right_col .leaflet-container {
+  width: 100%;
+  height: 100%;
+  min-height: inherit;
+}
+
+
+/* Template's .btn_clear uses the template's .button rule (teal #245b4e)
+   for its background. Our app-wide restored .button is purple, so scope
+   the purple band's CLEAR back to teal to match the template exactly. */
+#one_search_magic .btn_clear {
+  background-color: #245b4e !important;
+  color: #fff !important;
+  border: 1px solid #fff !important;
+  border-radius: 3px !important;
+}
+#one_search_magic .btn_clear:hover {
+  background-color: #1a4238 !important;
+}
+
+/* Directions / Details pill buttons on each card — template uses
+   .btn_outline_teal + .btn_poi_button_1. Reset the purple-filled
+   app-wide .button so the teal outline shows. */
+.one_search_map_result_single_buttons .btn_poi_button_1 {
+  background-color: #fff !important;
+  color: #245b4e !important;
+  border: 2px solid #245b4e !important;
+  text-decoration: none !important;
+}
+.one_search_map_result_single_buttons .btn_poi_button_1:hover {
+  background-color: #245b4e !important;
+  color: #fff !important;
+}
+.one_search_map_result_single_buttons .btn_poi_button_1 .poi_button_icon,
+.one_search_map_result_single_buttons .btn_poi_button_1 svg {
+  color: inherit;
+  stroke: currentColor;
+}

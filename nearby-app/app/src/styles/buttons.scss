@@ -1,0 +1,383 @@
+@use 'sass:color';
+@use './nn/options' as *;
+
+/* ── Styles sourced from stylez.scss ────────────────────────────────────── */
+
+.btn_reset {
+  background: transparent;
+  background-color: transparent;
+  border: 0;
+  border-radius: 0;
+  outline-style: none;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 3px solid var(--color-focus);
+    outline-offset: 2px;
+  }
+}
+
+.btn_outline_purple {
+  background: white;
+  color: $nn_purple1;
+  border: 1px solid $nn_purple1;
+
+  @media(min-width:600px) {
+    
+  }
+  @media(min-width:700px) {
+    
+  }
+  @media(min-width:980px) {
+    
+  }
+  @media(min-width:1200px) {
+    
+  }
+  @media(min-width:1400px) {
+    
+  }
+  @media(min-width:1600px) {
+    
+  }
+  @media(min-width:1900px) {
+    
+  }
+  @media(min-width:2400px) {
+    
+  }
+}
+
+.btn_outline_teal {
+  background: white !important;
+  color: $nn_teal1 !important;
+  border: 2px solid $nn_teal1 !important;
+  font-weight: 600;
+
+  @media(min-width:600px) {
+    
+  }
+  @media(min-width:700px) {
+    
+  }
+  @media(min-width:980px) {
+    
+  }
+  @media(min-width:1200px) {
+    
+  }
+  @media(min-width:1400px) {
+    
+  }
+  @media(min-width:1600px) {
+    
+  }
+  @media(min-width:1900px) {
+    
+  }
+  @media(min-width:2400px) {
+    
+  }
+}
+
+.btn_small {
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1;
+  opacity: 1;
+  padding: 14px 20px;
+
+  @media(min-width:600px) {
+    
+  }
+  @media(min-width:700px) {
+    
+  }
+  @media(min-width:980px) {
+    
+  }
+  @media(min-width:1200px) {
+    padding: 17px 23px;
+  }
+  @media(min-width:1400px) {
+    
+  }
+  @media(min-width:1600px) {
+    font-size: 13px;
+  }
+  @media(min-width:1900px) {
+    
+  }
+  @media(min-width:2400px) {
+    
+  }
+}
+
+
+.btn_search {
+  background: var(--nn-purple1);
+  color: #fff;
+  font-family: var(--font-poppins);
+  font-weight: 600;
+  padding: 15px 20px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-size: .95em;
+
+  &:hover {
+    background-color: var(--nn-purple2);
+    color: white;
+  }
+
+  // Focus state - AAA compliant
+  &:focus {
+    outline: 2px solid yellow;
+    outline-offset: 2px;
+  }
+
+  @media(min-width:600px) {
+
+  }
+  @media(min-width:700px) {
+    padding: 23px 30px !important;
+  }
+  @media(min-width:980px) {
+
+  }
+  @media(min-width:1200px) {
+
+  }
+  @media(min-width:1400px) {
+
+  }
+  @media(min-width:1600px) {
+
+  }
+  @media(min-width:1900px) {
+
+  }
+  @media(min-width:2400px) {
+
+  }
+}
+
+.btn_search_gold {
+  background-color: $nn_gold !important;
+  color: $nn_dark !important;
+
+  @media(min-width:600px) {
+    
+  }
+  @media(min-width:700px) {
+    
+  }
+  @media(min-width:980px) {
+    
+  }
+  @media(min-width:1200px) {
+    
+  }
+  @media(min-width:1400px) {
+    
+  }
+  @media(min-width:1600px) {
+    
+  }
+  @media(min-width:1900px) {
+    
+  }
+  @media(min-width:2400px) {
+    
+  }
+}
+
+/* ── Component-specific styles ──────────────────────────────────────────── */
+
+// ==========================================================================
+// Button system — app-level button styles.
+//
+// Nav-icon buttons (.btn_nav_icon_style_1/_2, .text_nav_style_1/_2) are
+// owned by src/styles/nn/stylez.css (the template) and intentionally NOT
+// redefined here, so the header/mobile-nav icon swap keeps working.
+// ==========================================================================
+
+// ── Default button ──────────────────────────────────────────────────────
+.button,
+.btn_default {
+  background: var(--nn-teal1);
+  border-radius: 3px;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  display: inline-flex;
+  flex-wrap: no-wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 11px;
+  font-family: var(--font-poppins);
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  line-height: 1;
+  opacity: 1;
+  padding: 17px 25px;
+  position: relative;
+  text-decoration: none;
+  text-transform: uppercase;
+  transition: .3s all ease-out;
+  visibility: visible;
+  -webkit-transition: .3s all ease-out;
+
+    // text-align: center;
+  // transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+
+  @media(min-width:600px) {
+    
+  }
+  @media(min-width:700px) {
+    
+  }
+  @media(min-width:980px) {
+    
+  }
+  @media(min-width:1200px) {
+    padding: 23px 30px;
+  }
+  @media(min-width:1400px) {
+    
+  }
+  @media(min-width:1600px) {
+    font-size: 15px;
+  }
+  @media(min-width:1900px) {
+    
+  }
+  @media(min-width:2400px) {
+    
+  }
+
+  &:hover {
+    background: var(--nn-teal3);
+    color: #fff;
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--color-focus);
+    outline-offset: 2px;
+  }
+}
+
+// ── Subscribe button (footer email layer) ───────────────────────────────
+// .btn_subscribe {
+//   background: var(--nn-gold);
+//   color: var(--nn-dark);
+//   font-family: var(--font-poppins);
+//   font-weight: 600;
+//   padding: 12px 30px;
+//   border-radius: 6px;
+//   border: none;
+//   cursor: pointer;
+//   font-size: 0.95em;
+
+//   &:hover {
+//     background: var(--nn-gold-hover, #fdb93e);
+//   }
+// }
+
+.btn_subscribe {
+  padding: 15px 20px;
+  background: var(--nn-gold);
+  color: var(--nn-dark) !important;
+  border: 1px solid var(--nn-gold) !important;
+
+  &:hover {
+    color: var(--nn-dark) !important;
+    background: var(--nn-gold-hover, #fdb93e) !important;
+  }
+
+  &:focus {
+    outline: 2px solid var(--nn-gold);
+    outline-offset: 2px;
+  }
+
+  @media(min-width:600px) {
+    
+  }
+  @media(min-width:700px) {
+    padding: 23px 30px !important;
+  }
+  @media(min-width:980px) {
+  
+  }
+  @media(min-width:1200px) {
+    
+  }
+  @media(min-width:1400px) {
+    
+  }
+  @media(min-width:1600px) {
+    
+  }
+  @media(min-width:1900px) {
+    
+  }
+  @media(min-width:2400px) {
+    
+  }
+}
+
+
+
+
+
+
+.one_search_button {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 12px 20px;
+  font-family: $font_poppins;
+  font-weight: 600;
+  font-size: .9em;
+  background_color: white;
+  color: $nn_dark;
+  border: 2px solid transparent;
+  border-radius: 55px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  @media (min-width: 1200px) {
+    padding: 14px 23px;
+  }
+  @media (min-width: 1600px) {
+    padding: 15px 25px;
+  }
+}
+
+.one_search_button:focus {
+  outline: 3px solid $nn_gold;
+  outline_offset: 3px;
+  border_color: white;
+
+}
+
+.one_search_button_style_1 {
+  background-color: color.adjust($nn_purple1, $lightness: -4%);
+    color: white;
+    border: 1px solid $nn_gold;
+
+}
+
+.one_search_button_style_1.selected {
+  background-color: $nn_gold;
+  color: $nn_purple1;
+  border: 1px solid $nn_gold;
+
+}
+
+.one_search_button:active {
+  background-color: $nn_gold;
+  color: $nn_purple1;
+  border: 1px solid $nn_gold;
+
+}
