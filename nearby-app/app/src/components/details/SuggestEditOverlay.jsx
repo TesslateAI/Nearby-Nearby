@@ -2,7 +2,6 @@ import { useState } from 'react';
 import Overlay from '../Overlay';
 import useOverlay from '../../hooks/useOverlay';
 import { getApiUrl } from '../../config';
-import './SuggestEditOverlay.css';
 
 const SUBJECT_OPTIONS = [
   'Inappropriate content',

@@ -18,7 +18,6 @@ import DirectionsModal from '../common/DirectionsModal';
 
 import { getDisplayableLocation } from '../../utils/getDisplayableLocation';
 
-import './EventDetail.css';
 
 /* ------------------------------------------------------------------ */
 /* Helpers                                                             */

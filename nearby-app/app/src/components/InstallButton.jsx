@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import usePWAInstall from '../hooks/usePWAInstall';
-import './InstallButton.css';
 
 function InstallButton() {
   const { isInstallable, isInstalled, isIOS, promptInstall } = usePWAInstall();

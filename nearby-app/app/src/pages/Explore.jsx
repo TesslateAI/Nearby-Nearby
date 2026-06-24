@@ -18,7 +18,6 @@ import {
 } from '../components/nearby-feature/NearbyCard';
 import { getApiUrl } from '../config';
 import { getOpenCloseStatusLabel } from '../utils/hoursUtils';
-import './Explore.css';
 
 /* ------------------------------------------------------------------ */
 /* Constants                                                          */

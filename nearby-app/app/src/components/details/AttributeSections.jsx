@@ -11,7 +11,6 @@
 
 import { AccSection } from './shared';
 import { groupsFor } from '../../utils/poiRegistry';
-import './AttributeSections.css';
 import { widgetFor } from './widgets/dispatcher';
 import { isEmptyValue } from './widgets/widgetUtils';
 

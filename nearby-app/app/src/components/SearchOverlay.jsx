@@ -2,7 +2,6 @@ import { useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Overlay from './Overlay';
 import SearchBar from './SearchBar';
-import './SearchOverlay.css';
 
 /**
  * Full-screen search overlay — ported from nn-templates/default-page-01.html lines 350-398.

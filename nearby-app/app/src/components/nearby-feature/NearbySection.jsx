@@ -7,7 +7,6 @@ import NearbyFilters from './NearbyFilters';
 import DirectionsModal from '../common/DirectionsModal';
 import { getApiUrl } from '../../config';
 import { getPOIUrl } from '../../utils/slugify';
-import './NearbySection.css';
 
 // Helper to get date presets
 const getDatePresets = () => {

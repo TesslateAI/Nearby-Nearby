@@ -2,12 +2,10 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import * as Sentry from '@sentry/react'
-// nn-templates stylesheets — imported FIRST so local styles can intentionally override
-import './styles/nn/fonts.css'
-import './styles/nn/stylez.css'
-import './styles/nn/accessible-menu.css'
-import './styles/nn/overlay.css'
-import './index.css'
+// Single central stylesheet (Barry's design system, flattened to one ordered
+// sheet + compiled by Vite/sass). Edit src/styles/app.scss — do NOT reintroduce
+// per-component .css imports.
+import './styles/app.scss'
 import App from './App.jsx'
 
 const SENTRY_DSN = import.meta.env.VITE_SENTRY_DSN;

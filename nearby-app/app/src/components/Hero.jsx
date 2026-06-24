@@ -1,7 +1,6 @@
 import { useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import SearchBar from './SearchBar';
-import './Hero.css';
 
 export default function Hero({ children }) {
   const searchBarRef = useRef(null);

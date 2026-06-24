@@ -1,4 +1,3 @@
-import './MobileNavBar.css';
 
 /**
  * Fixed bottom bar on mobile — Search + Menu buttons.

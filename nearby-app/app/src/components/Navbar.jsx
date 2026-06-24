@@ -2,7 +2,6 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import Overlay from './Overlay';
 import NNLogo from './NNLogo';
-import './Navbar.css';
 
 /**
  * Redesigned header/navbar — ported from nn-templates/default-page-01.html

@@ -1,5 +1,4 @@
 import { useEffect, useRef } from 'react';
-import './Overlay.css';
 
 /**
  * Reusable overlay component — ported from nn-templates/inc/overlay.scss + overlay.js

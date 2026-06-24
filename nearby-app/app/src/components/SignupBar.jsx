@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { getApiUrl } from '../config';
-import './SignupBar.css';
 
 function SignupBar() {
   const [status, setStatus] = useState(''); // 'success', 'error', or ''

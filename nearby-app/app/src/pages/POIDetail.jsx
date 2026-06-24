@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { getApiUrl } from '../config';
 import { isUUID, getPOIUrl } from '../utils/slugify';
-import './POIDetail.css';
 
 // Import type-specific detail components
 import BusinessDetail from '../components/details/BusinessDetail';

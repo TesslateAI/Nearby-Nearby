@@ -1,5 +1,4 @@
 import { Mail } from 'lucide-react';
-import './EventStatusBanner.css';
 
 const STATUS_CONFIG = {
   'Canceled': {

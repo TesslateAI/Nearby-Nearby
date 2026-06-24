@@ -1,4 +1,3 @@
-import './ServiceAnimalAlert.css';
 
 /**
  * ADA Service Animal disclaimer rendered beneath the Pet Policy field

@@ -2,7 +2,6 @@ import { useState, useEffect, useRef, useImperativeHandle, forwardRef } from 're
 import { useNavigate } from 'react-router-dom';
 import { getApiUrl } from '../config';
 import { getPOIUrl } from '../utils/slugify';
-import './SearchBar.css';
 import SearchDropdown from './SearchDropdown';
 
 const SearchBar = forwardRef(function SearchBar({

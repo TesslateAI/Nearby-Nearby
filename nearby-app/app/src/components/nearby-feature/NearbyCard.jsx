@@ -3,7 +3,6 @@ import { getDisplayableLocation } from '../../utils/getDisplayableLocation';
 import { isPaidTier } from '../../utils/poiTier';
 import { getOpenCloseStatusLabel, getEffectiveHoursForDate, formatDayHours } from '../../utils/hoursUtils';
 import AmenityPillStrip from '../details/AmenityPillStrip';
-import './NearbyCard.css';
 
 // Helper to convert meters to miles
 function formatDistance(meters) {

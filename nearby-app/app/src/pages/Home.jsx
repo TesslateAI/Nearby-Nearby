@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import Hero from '../components/Hero';
 import { getApiUrl } from '../config';
 import highlightHtml from './home-highlight.html?raw';
-import './Home.css';
 
 // Template arrow icon (cat_single_listing_icon) - identical across all 6 cards.
 const ArrowIcon = () => (

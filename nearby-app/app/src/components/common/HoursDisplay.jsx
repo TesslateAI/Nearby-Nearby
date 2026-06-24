@@ -7,7 +7,6 @@ import {
   formatHolidayStatus
 } from '../../utils/hoursUtils';
 import { sanitizeHtml } from '../../utils/sanitize';
-import './HoursDisplay.css';
 
 /**
  * HoursDisplay - Reusable component for displaying POI hours
