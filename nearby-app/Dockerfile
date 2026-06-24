@@ -37,8 +37,8 @@ COPY nearby-app/backend/requirements.txt ./
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Pre-download ML model during build (avoids slow cold-start)
-RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('michaelfeil/embeddinggemma-300m')"
+# No in-process ML model is bundled anymore: embeddings are served by a
+# separate TEI container and consumed via the shared fail-soft HTTP client.
 
 # Copy shared package first (for imports)
 COPY shared/ ./shared/
@@ -57,7 +57,7 @@ EXPOSE 8000
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONPATH=/app
 
-HEALTHCHECK --interval=30s --timeout=10s --start-period=120s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
     CMD curl -f http://localhost:8000/api/health || exit 1
 
 # Run the application

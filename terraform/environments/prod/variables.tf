@@ -81,6 +81,19 @@ variable "admin_frontend_image" {
   description = "nearby-admin frontend ECR image URI"
 }
 
+# Embedding (Hugging Face TEI) service
+variable "embedding_image_tag" {
+  type        = string
+  default     = "cpu-1.8.1"
+  description = "Tag of the nearbynearby/embedding ECR image (mirror of ghcr.io/huggingface/text-embeddings-inference:cpu-1.8.1)"
+}
+
+variable "service_connect_namespace" {
+  type        = string
+  default     = "nearbynearby.internal"
+  description = "Cloud Map HTTP namespace for ECS Service Connect (internal service-to-service DNS)"
+}
+
 # VPC Peering (ECS VPC → default VPC where existing RDS lives)
 variable "default_vpc_id" {
   type        = string

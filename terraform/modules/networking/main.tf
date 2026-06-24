@@ -164,6 +164,19 @@ resource "aws_security_group" "ecs" {
   lifecycle { create_before_destroy = true }
 }
 
+# Self-referencing rule so ECS tasks (app/admin) can reach the internal
+# embedding service on the TEI port (80) over Service Connect / private DNS.
+# Declared separately to avoid a self-reference cycle inside the SG block.
+resource "aws_security_group_rule" "ecs_internal_embedding" {
+  type                     = "ingress"
+  description              = "TEI embedding service (port 80) from ECS tasks"
+  from_port                = 80
+  to_port                  = 80
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.ecs.id
+  source_security_group_id = aws_security_group.ecs.id
+}
+
 resource "aws_security_group" "rds" {
   name_prefix = "${var.project}-${var.environment}-rds-"
   vpc_id      = aws_vpc.main.id

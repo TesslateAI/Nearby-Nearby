@@ -32,22 +32,30 @@ jobs:
   test:
     if: ${{ github.event_name == 'push' || !inputs.skip_tests }}
     runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgis/postgis:15-3.4
-        env:
-          POSTGRES_USER: test
-          POSTGRES_PASSWORD: test
-          POSTGRES_DB: test_nearbynearby
-        ports:
-          - 5434:5432
-        options: >-
-          --health-cmd "pg_isready -U test -d test_nearbynearby"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
     steps:
       - uses: actions/checkout@v4
+
+      # The stock postgis/postgis image has no pgvector, but the embedding
+      # pipeline tests require "CREATE EXTENSION vector". We build the project's
+      # own pgvector-enabled test DB image (tests/Dockerfile.testdb = PostGIS 15
+      # + postgresql-15-pgvector) via docker compose instead of a services: block.
+      - name: Start test database (PostGIS + pgvector)
+        run: docker compose -f tests/docker-compose.test.yml up -d --build test-db
+
+      - name: Wait for test database to be healthy
+        run: |
+          for i in $(seq 1 30); do
+            status=$(docker inspect --format '{{.State.Health.Status}}' tests-test-db-1 2>/dev/null || echo "starting")
+            echo "test-db health: $status (attempt $i/30)"
+            if [ "$status" = "healthy" ]; then
+              echo "test-db is healthy"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "test-db did not become healthy in time"
+          docker compose -f tests/docker-compose.test.yml logs test-db
+          exit 1
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -62,7 +70,7 @@ jobs:
 
       - name: Run tests
         env:
-          DATABASE_URL: postgresql://test:test@localhost:5434/test_nearbynearby
+          DATABASE_URL: postgresql://test:test@localhost:5434/test_nearby
           PYTHONPATH: .
         run: pytest tests/ -v --tb=short -x
 

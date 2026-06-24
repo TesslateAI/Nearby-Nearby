@@ -5,11 +5,18 @@
 The POI (Point of Interest) Management System is the core of the platform, handling creation, reading, updating, and deletion of location data. It supports 8 different POI types with shared base fields and type-specific extensions.
 
 **Key Files:**
-- `nearby-admin/backend/app/models/poi.py` - SQLAlchemy models
+- `nearby-admin/backend/app/models/poi.py` - SQLAlchemy models (the **column superset** the registry reflects)
 - `nearby-admin/backend/app/crud/crud_poi.py` - CRUD operations
 - `nearby-admin/backend/app/api/endpoints/pois.py` - API endpoints
 - `nearby-admin/backend/app/schemas/poi.py` - Pydantic schemas
 - `nearby-admin/frontend/src/components/POIForm/` - Form components
+- `shared/poi_fields.json` - **POI field registry (single source of truth for every POI field)**
+- `scripts/gen_poi_registry.py` - registry generator (reflects the admin ORM)
+- `nearby-app/backend/app/serialization/poi_serializer.py` - registry-driven public serializer
+
+> **Before changing any POI field, read "POI Field Registry" below.** A new
+> column that is captured in admin but not propagated through the registry is
+> **silently invisible** to the user-facing app.
 
 ---
 
@@ -26,6 +33,72 @@ The POI (Point of Interest) Management System is the core of the platform, handl
 | Jobs | `JOBS` | Job listings |
 | Volunteer | `VOLUNTEER_OPPORTUNITIES` | Volunteer positions |
 | Disaster Hubs | `DISASTER_HUBS` | Emergency resources |
+
+---
+
+## POI Field Registry (Single Source of Truth)
+
+POI fields are described **once** in `shared/poi_fields.json`. The admin POI model
+(`PointOfInterest` + the `Business`/`Park`/`Trail`/`Event` subtype tables) is the
+column **superset**; the registry is **generated** from it by
+`scripts/gen_poi_registry.py` and every downstream consumer derives from it:
+
+- the **public API serializer** (`nearby-app/.../serialization/poi_serializer.py`),
+- the **user-facing app** renderer (`AttributeSections.jsx`, see `attributes.md`),
+- the **SEO / JSON-LD** output, and
+- the **contract tests** (`tests/test_poi_field_contract.py`, `tests/test_registry_valid.py`).
+
+The registry is **generated — never hand-edit `shared/poi_fields.json`.** Encode
+any per-field decision in the generator's override maps so re-running stays
+deterministic (re-running produces byte-identical output).
+
+### Per-field taxonomy
+
+Each entry (213 today) carries:
+
+| Field | Values | Meaning |
+|-------|--------|---------|
+| `key` / `label` | string | Field name + display label |
+| `type` | `text`, `richtext`, `boolean`, `multi`, `dict`, `relation`, `datetime`, `number`, `url`, `phone`, `email`, `enum`, `image`, `image[]`, `geo` | Drives the frontend widget |
+| `audience` | **`public`** \| **`admin`** \| **`partner`** | Who may see it. The serializer emits **only `public`** fields |
+| `tier` | `free` \| `paid` \| `any` | `paid` fields are server-side gated and dropped for free listings |
+| `render` | `auto` \| `bespoke` \| `hidden` | `auto` → generic AttributeSections widget; `bespoke` → a hand-built hero/section; `hidden` → not rendered by the auto-renderer |
+| `applies_to` | list of POIType | Which POI types the field applies to |
+| `group` / `order` | string / int | Accordion grouping + ordering on the detail page |
+| `source` | ORM path | `poi.<col>`, `<subtype>.<col>`, `computed.<fn>`, or `images:<type>` |
+| `value_source` | constant name | Names an option list in `shared/constants/field_options.py` |
+| `card`, `computed`, `deprecated`, `replaced_by`, `icon`, `schema_org` | — | Card eligibility, computed flag, deprecation chain, SEO mapping |
+
+> **PII rule:** anything containing PII / contact people / emergency / internal-ops
+> data **MUST be `audience: "admin"`**. The 8 admin keys that must never leak are
+> `main_contact_name`, `main_contact_email`, `main_contact_phone`,
+> `offsite_emergency_contact`, `emergency_protocols`, `contact_info`,
+> `compliance`, `admin_notes`. `tests/test_registry_valid.py` guards this.
+
+### Add a POI field (runbook)
+
+The cost of a new field is now ~2 steps to propagate, not 4 — but **skipping the
+registry step means the field is captured in admin and invisible to users.**
+
+1. **Migration first** — add/alter the column via an Alembic migration in
+   `nearby-admin/backend/alembic`, and add the `Column` to the ORM model(s)
+   (`nearby-admin/.../models/poi.py`, and `nearby-app/.../models/poi.py` if the
+   app must read it).
+2. **Regenerate the registry** — run `python3 scripts/gen_poi_registry.py`. This
+   reflects the new column and writes **BOTH** the source of truth
+   `shared/poi_fields.json` **AND** the byte-identical Vite mirror
+   `nearby-app/app/src/data/poi_fields.json` (the frontend build context can't
+   reach repo-root `shared/`).
+3. **Review the generated entry** — set `audience` correctly (PII/contact/
+   emergency/internal → `admin`), `tier`, `applies_to`, `group`/`order`, `render`,
+   and `value_source` (must name a real constant in
+   `shared/constants/field_options.py`). Encode overrides in the generator's
+   override maps so re-running stays deterministic.
+4. **If you added an option list**, add the matching constant to
+   `shared/constants/field_options.py` and point the field's `value_source` at it.
+5. **Run the guards** — `pytest tests/test_registry_valid.py` (validity + PII
+   regression + mirror-drift) and `pytest tests/test_poi_field_contract.py`
+   (public response keys == public registry fields; no drop, no leak, no orphans).
 
 ---
 

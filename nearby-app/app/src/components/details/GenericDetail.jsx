@@ -9,12 +9,10 @@ import HoursDisplay from '../common/HoursDisplay';
 import SEO from '../SEO';
 import { truncateText, getPOIUrl } from '../../utils/slugify';
 import { getDisplayableLocation } from '../../utils/getDisplayableLocation';
-import { isPaidTier } from '../../utils/poiTier';
 import { getOpenCloseStatusLabel } from '../../utils/hoursUtils';
 import { sanitizeHtml } from '../../utils/sanitize';
 
 export default function GenericDetail({ poi }) {
-  const paid = isPaidTier(poi);
   const displayLoc = getDisplayableLocation(poi);
   const _coords = poi?.location?.coordinates;
   const _lat = Array.isArray(_coords) ? _coords[1] : null;
@@ -42,8 +40,7 @@ export default function GenericDetail({ poi }) {
   const seoUrl = `${window.location.origin}${getPOIUrl(poi)}`;
 
   const contactAny =
-    hasVal(poi.phone_number) || hasVal(poi.email) || hasVal(poi.website_url) ||
-    hasVal(poi.main_contact_name);
+    hasVal(poi.phone_number) || hasVal(poi.email) || hasVal(poi.website_url);
 
   const addressAny =
     hasVal(poi.address_street) || hasVal(poi.address_city) ||
@@ -101,7 +98,6 @@ export default function GenericDetail({ poi }) {
   ].filter(Boolean);
   const contactCol2 = [
     hasVal(poi.email) && <ContentGroup key="em" title="Email"><div className="acc_list_group_1"><a href={`mailto:${poi.email}`}>{poi.email}</a></div></ContentGroup>,
-    hasVal(poi.main_contact_name) && <ContentGroup key="mc" title="Main Contact"><div className="acc_content_text">{poi.main_contact_name}</div></ContentGroup>,
   ].filter(Boolean);
 
   const sections = [
@@ -135,7 +131,7 @@ export default function GenericDetail({ poi }) {
               onOpenLightbox={openLightbox}
             />
 
-            {paid && <AmenitiesBox poi={poi} title="Amenities" />}
+            <AmenitiesBox poi={poi} title="Amenities" />
 
             {sections.length > 0 && (
               <div id="accordion_1_box" className="poi_accordion_box">

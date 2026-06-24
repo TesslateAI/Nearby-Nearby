@@ -17,6 +17,16 @@ services:
       - AWS_S3_ENDPOINT_URL=http://minio:9000
       - AWS_ACCESS_KEY_ID=minioadmin
       - AWS_SECRET_ACCESS_KEY=minioadmin
+      # LOCAL semantic search via Docker Model Runner (DMR). DMR runs
+      # embeddinggemma on the host with Metal GPU and is reachable from any
+      # container at model-runner.docker.internal — this avoids the amd64 TEI
+      # image (which crashes via Intel MKL under emulation on Apple Silicon).
+      # Prod uses the TEI backend (EMBEDDING_BACKEND=tei) in an amd64 container.
+      # Fail-soft: if DMR isn't running, semantic search degrades to keyword.
+      - EMBEDDING_BACKEND=${EMBEDDING_BACKEND:-openai}
+      - EMBEDDING_SERVICE_URL=${EMBEDDING_SERVICE_URL:-http://model-runner.docker.internal/engines/v1}
+      - EMBEDDING_MODEL=${EMBEDDING_MODEL:-ai/embeddinggemma}
+      - EMBEDDING_TIMEOUT=${EMBEDDING_TIMEOUT:-60}
     env_file:
       - ./backend/.env
     networks:

@@ -438,6 +438,14 @@ def create_poi(db: Session, poi: schemas.PointOfInterestCreate):
         db.rollback()
         raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {e}")
 
+    # Best-effort embed-on-write (A7): AFTER the commit above, never before.
+    # Fully contained — a writer bug must never break a successful POI create.
+    try:
+        from app.crud.embedding_writer import write_embedding_best_effort
+        write_embedding_best_effort(db, db_poi.id)
+    except Exception:
+        pass
+
     return db_poi
 
 
@@ -646,6 +654,14 @@ def update_poi(db: Session, *, db_obj: models.PointOfInterest, obj_in: schemas.P
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"An error occurred during update: {e}")
+
+    # Best-effort embed-on-write (A7): AFTER the commit above, never before.
+    # Fully contained — a writer bug must never break a successful POI update.
+    try:
+        from app.crud.embedding_writer import write_embedding_best_effort
+        write_embedding_best_effort(db, db_obj.id)
+    except Exception:
+        pass
 
     return db_obj
 

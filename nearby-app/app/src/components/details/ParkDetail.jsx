@@ -11,7 +11,6 @@ import HoursDisplay from '../common/HoursDisplay';
 import ServiceAnimalAlert from './ServiceAnimalAlert';
 import DirectionsModal from '../common/DirectionsModal';
 import { getDisplayableLocation } from '../../utils/getDisplayableLocation';
-import { isPaidTier } from '../../utils/poiTier';
 import { getOpenCloseStatusLabel } from '../../utils/hoursUtils';
 import { sanitizeHtml } from '../../utils/sanitize';
 
@@ -344,7 +343,6 @@ export default function ParkDetail({ poi }) {
   const [directionsOpen, setDirectionsOpen] = useState(false);
 
   const displayLoc = getDisplayableLocation(poi);
-  const paid = isPaidTier(poi);
   const coords = getCoordinates(poi, displayLoc.hideExact);
   const images = useMemo(() => getImages(poi), [poi]);
   const _coords = poi?.location?.coordinates;

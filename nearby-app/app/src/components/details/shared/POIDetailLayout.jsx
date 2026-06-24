@@ -7,6 +7,8 @@ import HeroBanner from '../HeroBanner';
 import SuggestEditOverlay from '../SuggestEditOverlay';
 import PoiHeader from '../PoiHeader';
 import DirectionsModal from '../../common/DirectionsModal';
+import AttributeSections from '../AttributeSections';
+import { bespokeAutoKeysFor } from '../widgets/bespokeCoverage';
 
 import { getDisplayableLocation } from '../../../utils/getDisplayableLocation';
 import { isPaidTier } from '../../../utils/poiTier';
@@ -112,6 +114,13 @@ export default function POIDetailLayout({
           {typeof children === 'function'
             ? children({ images, openLightbox, paid, displayLoc, coords, copiedCoords })
             : children}
+
+          {/* Registry-driven auto fields: renders every public render==="auto"
+              field for this POI type below the bespoke sections. render!=="auto"
+              fields are excluded by groupsFor; auto fields a detail page already
+              renders in a curated section are excluded via bespokeAutoKeysFor so
+              nothing is double-rendered. */}
+          <AttributeSections poi={poi} excludeKeys={bespokeAutoKeysFor(poi?.poi_type)} />
         </div>
       </main>
 

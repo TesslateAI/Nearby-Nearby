@@ -488,6 +488,7 @@ class PointOfInterestBase(EmptyStringToNoneMixin, BaseModel):
     # wheelchair_accessible - DROPPED (Issue #45 PR2 Migration B)
     wheelchair_details: Optional[str] = None
     mobility_access: Optional[Dict[str, Any]] = None
+    cell_service: Optional[str] = None  # single value: Good/Limited/Unknown/None
     smoking_options: Optional[List[str]] = None
     smoking_details: Optional[str] = None
     wifi_options: Optional[List[str]] = None
@@ -517,7 +518,10 @@ class PointOfInterestBase(EmptyStringToNoneMixin, BaseModel):
     playground_locations: Optional[Any] = None  # List of dicts (multiple playgrounds). Accepts a single dict for backward-compat; migration g67_001 wraps legacy singular rows.
 
     # Parks & Trails Additional Info
-    payphone_location: Optional[Dict[str, Any]] = None
+    # payphone_location (singular) removed — deprecated to _deprecated_payphone_location
+    # in migration m_payphone_001; data consolidated into the plural array below.
+    # (Leaving it here would crash create_poi's PointOfInterest(**poi_data) since the
+    # column no longer exists on the model.)
     payphone_locations: Optional[List[Dict[str, Any]]] = None
     park_entry_notes: Optional[str] = None
     # park_entry_photo - DEPRECATED: moved to Images table (image_type='entry')
@@ -696,6 +700,7 @@ class PointOfInterestUpdate(EmptyStringToNoneMixin, BaseModel):
     # wheelchair_accessible - DROPPED (Issue #45 PR2 Migration B)
     wheelchair_details: Optional[str] = None
     mobility_access: Optional[Dict[str, Any]] = None
+    cell_service: Optional[str] = None  # single value: Good/Limited/Unknown/None
     smoking_options: Optional[List[str]] = None
     smoking_details: Optional[str] = None
     wifi_options: Optional[List[str]] = None
@@ -717,7 +722,10 @@ class PointOfInterestUpdate(EmptyStringToNoneMixin, BaseModel):
     playground_notes: Optional[str] = None
     # playground_photos - DEPRECATED: moved to Images table (image_type='playground')
     playground_locations: Optional[Any] = None  # List of dicts (multiple playgrounds). Accepts a single dict for backward-compat; migration g67_001 wraps legacy singular rows.
-    payphone_location: Optional[Dict[str, Any]] = None
+    # payphone_location (singular) removed — deprecated to _deprecated_payphone_location
+    # in migration m_payphone_001; data consolidated into the plural array below.
+    # (Leaving it here would crash create_poi's PointOfInterest(**poi_data) since the
+    # column no longer exists on the model.)
     payphone_locations: Optional[List[Dict[str, Any]]] = None
     park_entry_notes: Optional[str] = None
     # park_entry_photo - DEPRECATED: moved to Images table (image_type='entry')

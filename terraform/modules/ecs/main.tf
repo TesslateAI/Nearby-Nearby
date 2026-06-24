@@ -7,7 +7,21 @@ resource "aws_ecs_cluster" "main" {
     value = "disabled"
   }
 
+  service_connect_defaults {
+    namespace = aws_service_discovery_http_namespace.internal.arn
+  }
+
   tags = { Name = "${var.project}-${var.environment}-cluster" }
+}
+
+# --- Service Connect (Cloud Map HTTP namespace) ---
+# Private namespace used by ECS Service Connect so services resolve each other
+# by a stable DNS name (e.g. http://embedding.<namespace>:80) without an ALB.
+resource "aws_service_discovery_http_namespace" "internal" {
+  name        = var.service_connect_namespace
+  description = "${var.project}-${var.environment} internal Service Connect namespace"
+
+  tags = { Name = "${var.project}-${var.environment}-internal-ns" }
 }
 
 # --- Task Execution Role (pull images, read secrets, write logs) ---
@@ -97,6 +111,7 @@ resource "aws_ecs_task_definition" "app" {
         { name = "AWS_CLOUDFRONT_DOMAIN", value = var.cloudfront_domain },
         { name = "AWS_REGION", value = var.aws_region },
         { name = "ALLOWED_ORIGINS", value = var.app_allowed_origins },
+        { name = "EMBEDDING_SERVICE_URL", value = var.embedding_service_url },
       ]
 
       secrets = [
@@ -155,6 +170,12 @@ resource "aws_ecs_service" "app" {
     target_group_arn = var.app_target_group_arn
     container_name   = "nearby-app"
     container_port   = 8000
+  }
+
+  # Service Connect client only — resolves the embedding service by private DNS.
+  service_connect_configuration {
+    enabled   = true
+    namespace = aws_service_discovery_http_namespace.internal.arn
   }
 
   deployment_minimum_healthy_percent = 100
@@ -239,6 +260,7 @@ resource "aws_ecs_task_definition" "admin" {
         { name = "AWS_REGION", value = var.aws_region },
         { name = "ALLOWED_ORIGINS", value = var.admin_allowed_origins },
         { name = "PRODUCTION_DOMAIN", value = var.admin_domain },
+        { name = "EMBEDDING_SERVICE_URL", value = var.embedding_service_url },
       ]
 
       secrets = [
@@ -327,6 +349,12 @@ resource "aws_ecs_service" "admin" {
     container_port   = 5173
   }
 
+  # Service Connect client only — resolves the embedding service by private DNS.
+  service_connect_configuration {
+    enabled   = true
+    namespace = aws_service_discovery_http_namespace.internal.arn
+  }
+
   deployment_minimum_healthy_percent = 100
   deployment_maximum_percent         = 200
   health_check_grace_period_seconds  = 120
@@ -358,6 +386,90 @@ resource "aws_appautoscaling_policy" "admin_cpu" {
     scale_in_cooldown  = 300
     scale_out_cooldown = 60
   }
+}
+
+# =============================================================================
+# embedding Service (Hugging Face TEI — internal, Service Connect only)
+# =============================================================================
+
+resource "aws_ecs_task_definition" "embedding" {
+  family                   = "${var.project}-${var.environment}-embedding"
+  network_mode             = "awsvpc"
+  requires_compatibilities = ["FARGATE"]
+  cpu                      = var.embedding_cpu
+  memory                   = var.embedding_memory
+  execution_role_arn       = aws_iam_role.ecs_execution.arn
+  task_role_arn            = aws_iam_role.ecs_task.arn
+
+  container_definitions = jsonencode([
+    {
+      name      = "embedding"
+      image     = var.embedding_image
+      essential = true
+
+      # TEI serves on port 80; "embedding" is the Service Connect port name.
+      command = ["--model-id", var.embedding_model_id, "--port", "80"]
+
+      portMappings = [{
+        name          = "embedding"
+        containerPort = 80
+        protocol      = "tcp"
+      }]
+
+      # No container-level healthCheck: the minimal HF text-embeddings-inference
+      # image ships neither curl nor wget, so a CMD-SHELL probe would always fail
+      # and crash-loop the task. ECS treats the essential container as healthy
+      # while it is running, and Service Connect routes to it; the app/admin
+      # embedding client is fail-soft (degrades to keyword search) while the
+      # model loads or if the service is briefly unreachable. TEI exposes /health
+      # on port 80 if a future probe is added via an image that bundles a client.
+
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          "awslogs-group"         = var.embedding_log_group_name
+          "awslogs-region"        = var.aws_region
+          "awslogs-stream-prefix" = "embedding"
+        }
+      }
+    }
+  ])
+}
+
+resource "aws_ecs_service" "embedding" {
+  name            = "${var.project}-${var.environment}-embedding"
+  cluster         = aws_ecs_cluster.main.id
+  task_definition = aws_ecs_task_definition.embedding.arn
+  desired_count   = var.embedding_desired_count
+  launch_type     = "FARGATE"
+
+  network_configuration {
+    subnets          = var.private_subnet_ids
+    security_groups  = [var.ecs_security_group_id]
+    assign_public_ip = false
+  }
+
+  # No ALB target group — internal only. Advertise the TEI port via Service
+  # Connect so app/admin resolve it at http://embedding.<namespace>:80.
+  service_connect_configuration {
+    enabled   = true
+    namespace = aws_service_discovery_http_namespace.internal.arn
+
+    service {
+      port_name = "embedding"
+
+      client_alias {
+        port     = 80
+        dns_name = "embedding"
+      }
+    }
+  }
+
+  deployment_minimum_healthy_percent = 100
+  deployment_maximum_percent         = 200
+  health_check_grace_period_seconds  = 240
+
+  lifecycle { ignore_changes = [desired_count] }
 }
 
 # --- GitHub Actions OIDC Role ---
@@ -423,11 +535,12 @@ resource "aws_iam_policy" "github_actions" {
         Resource = "*"
       },
       {
-        Effect   = "Allow"
-        Action   = ["ecs:UpdateService", "ecs:DescribeServices"]
+        Effect = "Allow"
+        Action = ["ecs:UpdateService", "ecs:DescribeServices"]
         Resource = [
           aws_ecs_service.app.id,
           aws_ecs_service.admin.id,
+          aws_ecs_service.embedding.id,
         ]
       },
     ]

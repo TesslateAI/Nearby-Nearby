@@ -180,8 +180,8 @@ AUTOSAVE_ALLOWED_FIELDS: set[str] = {
     'inclusive_playground',
 
     # Parks & trails additional
-    'payphone_location',
     'payphone_locations',
+    'cell_service',
     'park_entry_notes',
     'facilities_options',
     'night_sky_viewing',

@@ -38,7 +38,7 @@ def multi_signal_search(
     query: str,
     limit: int = 10,
     poi_type: Optional[str] = None,
-    model=None,
+    client=None,
 ) -> list:
     """
     Run multi-signal search and return ranked POI objects.
@@ -48,7 +48,9 @@ def multi_signal_search(
         query: User search query
         limit: Max results to return
         poi_type: Optional POI type filter (e.g. "BUSINESS")
-        model: Pre-loaded SentenceTransformer model
+        client: Shared embedding client (shared.embeddings.EmbeddingClient).
+            When None or disabled, the semantic signal is skipped and search
+            degrades to the keyword/full-text signals.
 
     Returns:
         List of PointOfInterest ORM objects, enriched with category info,
@@ -79,7 +81,7 @@ def multi_signal_search(
     _merge_scores(candidates, "fulltext", fulltext_scores)
 
     # --- Signal 4: Semantic (pgvector) ---
-    semantic_scores = _signal_semantic(db, parsed.semantic_query, effective_type, model)
+    semantic_scores = _signal_semantic(db, parsed.semantic_query, effective_type, client)
     _merge_scores(candidates, "semantic", semantic_scores)
 
     # --- Signal 5: Structured filter match ---
@@ -238,10 +240,10 @@ def _signal_fulltext(db: Session, query: str, poi_type: Optional[str]) -> dict:
 
 
 def _signal_semantic(
-    db: Session, query: str, poi_type: Optional[str], model
+    db: Session, query: str, poi_type: Optional[str], client
 ) -> dict:
     """Semantic search using pgvector embeddings."""
-    if model is None:
+    if client is None:
         return {}
 
     # Check embedding column exists
@@ -256,10 +258,10 @@ def _signal_semantic(
         db.rollback()
         return {}
 
-    try:
-        query_embedding = model.encode(query, show_progress_bar=False)
-    except Exception as e:
-        print(f"[SEARCH] Embedding encode error: {e}")
+    # The shared client is fail-soft: it returns None (never raises) on a
+    # disabled client, transport error, or bad vector. Bail to keyword search.
+    query_embedding = client.embed(query, kind="query")
+    if query_embedding is None:
         return {}
 
     type_filter = "AND poi_type = :poi_type" if poi_type else ""

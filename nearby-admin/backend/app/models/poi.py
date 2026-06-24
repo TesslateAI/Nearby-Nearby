@@ -137,6 +137,7 @@ class PointOfInterest(Base):
     accessible_restroom         = Column(Boolean, nullable=False, server_default='false', default=False)
     accessible_restroom_details = Column(JSONB)
     mobility_access             = Column(JSONB)  # {step_free_entry, main_area_accessible, ground_level_service}
+    cell_service                = Column(JSONB)  # single CELL_SERVICE_OPTIONS value (Good/Limited/Unknown/None)
     smoking_options = Column(JSONB)  # List of smoking options
     smoking_details = Column(Text)
     wifi_options = Column(JSONB)  # For Events only
@@ -228,7 +229,8 @@ class PointOfInterest(Base):
     inclusive_playground     = Column(Boolean, nullable=False, server_default='false', default=False)
     
     # Parks & Trails Additional Info
-    payphone_location = Column(JSONB)  # {"lat": 0, "lng": 0}
+    # payphone_location renamed to _deprecated_payphone_location (Migration A, m_payphone_001).
+    # Data consolidated into the plural payphone_locations array below.
     payphone_locations = Column(JSONB)  # [{"lat": 0, "lng": 0, "description": "Near entrance"}] - multiple payphones
     park_entry_notes = Column(Text)  # Park entry description/notes
     # park_entry_photo moved to Images table (image_type='entry')

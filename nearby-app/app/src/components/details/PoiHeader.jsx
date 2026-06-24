@@ -285,7 +285,6 @@ export default function PoiHeader({
                       <div id="poi_hours_panel" className="poi_hours_panel">
                         <HoursDisplay
                           hours={poi.hours}
-                          holidayHours={poi.holiday_hours}
                           appointmentBookingUrl={poi.appointment_booking_url}
                           appointmentRequired={poi.hours_but_appointment_required}
                           hoursNotes={poi.hours_notes}
@@ -311,13 +310,15 @@ export default function PoiHeader({
                 <span className="poi_button_title">{copiedCoords ? 'Copied!' : 'Lat + Long'}</span>
               </TealButton>
             )}
-            {paid && phoneHref && (
+            {/* Server tier-gates phone_number/website_url in the payload, so the
+                CTA self-hides for free tier without a client paid gate. */}
+            {phoneHref && (
               <TealButton href={phoneHref} target="_self" rel="">
                 <SvgCall />
                 <span className="poi_button_title">Call</span>
               </TealButton>
             )}
-            {paid && webHref && (
+            {webHref && (
               <TealButton href={webHref}>
                 <SvgWebsite />
                 <span className="poi_button_title">Website</span>

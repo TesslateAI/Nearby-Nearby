@@ -52,7 +52,7 @@ cd /home/ubuntu/nearby-app
 - **Multi-stage build**: Frontend built first, then copied to backend container
 - **Stage 1**: Node.js builds React app -> outputs to `../backend/static`
 - **Stage 2**: Python container serves both API and static frontend
-- **ML Model**: `michaelfeil/embeddinggemma-300m` loaded on startup (~1GB RAM)
+- **Embeddings**: `michaelfeil/embeddinggemma-300m` runs in a **separate TEI service** (out of process), reached over HTTP via `EMBEDDING_SERVICE_URL`. The app image no longer bundles the model/torch; search **fails soft to keyword** when the service is unset/down. See `docs/systems/search.md`.
 - **Database Extensions**: `pg_trgm` (fuzzy search), `pgvector` (semantic search)
 - **Single container** serves both frontend and backend on port 8000
 

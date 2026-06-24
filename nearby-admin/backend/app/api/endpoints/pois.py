@@ -210,6 +210,18 @@ def autosave_poi(
                 break
 
     db.commit()
+
+    # Best-effort embed-on-write (A7): AFTER the commit above, never before.
+    # Only re-embed when a field that feeds the searchable text actually changed
+    # (so a keystroke-batch that only touched irrelevant fields skips the TEI
+    # round-trip). Fully contained — a writer bug must never break an autosave.
+    try:
+        from app.crud.embedding_writer import should_reembed, write_embedding_best_effort
+        if should_reembed(set(filtered.keys())):
+            write_embedding_best_effort(db, poi_id)
+    except Exception:
+        pass
+
     return {
         "status": "ok",
         "id": str(poi.id),

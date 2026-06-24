@@ -1,5 +1,9 @@
 # app/api/endpoints/pois.py
+import logging
+import os
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi.encoders import jsonable_encoder
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from typing import List, Optional
@@ -12,9 +16,23 @@ from ...database import get_db
 from ...schemas.poi import PointGeometry
 from ...models.image import Image
 from ...search import multi_signal_search
+from ...serialization.poi_serializer import (
+    serialize_poi_detail,
+    serialize_poi_card,
+    structural_registry_keys_for,
+)
+from ...serialization.parity import diff_serializers
 from shared.utils.hours_resolution import get_effective_hours_for_date
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter()
+
+# Serializer cutover flag (phase B3). Read ONCE at import.
+#   legacy   -> the original POIDetail.model_validate(all-columns) path.
+#   registry -> registry-driven serialize_poi_detail (public-only; the new default).
+#   shadow   -> build BOTH, log the parity diff, RETURN legacy (prod observation).
+POI_SERIALIZER = os.getenv("POI_SERIALIZER", "registry").strip().lower()
 
 # Per-IP throttle on the search surface. The semantic + hybrid endpoints run a
 # 1GB embedding model on each request, so unbounded query rates / very long
@@ -154,8 +172,8 @@ def api_search_pois(
     db: Session = Depends(get_db),
 ):
     """Keyword + multi-signal search for POIs."""
-    embedding_model = getattr(request.app.state, 'embedding_model', None)
-    results = multi_signal_search(db, query=q, limit=10, poi_type=poi_type, model=embedding_model)
+    embedding_client = getattr(request.app.state, 'embedding_client', None)
+    results = multi_signal_search(db, query=q, limit=10, poi_type=poi_type, client=embedding_client)
     return _apply_event_search_filters(results, date_from, date_to, event_status)
 
 @router.get("/pois/semantic-search", response_model=List[schemas.poi.POISearchResult])
@@ -171,8 +189,8 @@ def api_semantic_search_pois(
     db: Session = Depends(get_db),
 ):
     """Semantic search — now routed through the multi-signal engine."""
-    embedding_model = getattr(request.app.state, 'embedding_model', None)
-    results = multi_signal_search(db, query=q, limit=limit, poi_type=poi_type, model=embedding_model)
+    embedding_client = getattr(request.app.state, 'embedding_client', None)
+    results = multi_signal_search(db, query=q, limit=limit, poi_type=poi_type, client=embedding_client)
     return _apply_event_search_filters(results, date_from, date_to, event_status)
 
 @router.get("/pois/hybrid-search", response_model=List[schemas.poi.POISearchResult])
@@ -191,8 +209,8 @@ def api_hybrid_search_pois(
     Multi-signal hybrid search combining exact match, trigram, full-text,
     semantic, and structured filter signals.
     """
-    embedding_model = getattr(request.app.state, 'embedding_model', None)
-    results = multi_signal_search(db, query=q, limit=limit, poi_type=poi_type, model=embedding_model)
+    embedding_client = getattr(request.app.state, 'embedding_client', None)
+    results = multi_signal_search(db, query=q, limit=limit, poi_type=poi_type, client=embedding_client)
     return _apply_event_search_filters(results, date_from, date_to, event_status)
 
 def _apply_venue_inheritance(db: Session, poi_dict: dict, event) -> dict:
@@ -242,6 +260,151 @@ def _apply_venue_inheritance(db: Session, poi_dict: dict, event) -> dict:
     return poi_dict
 
 
+def _attach_structural_objects(db_poi, poi_dict: dict, images: list) -> dict:
+    """Attach the structural objects the detail response always nests.
+
+    Shared by BOTH the legacy and registry assembly paths so the wire shape is
+    identical: subtype objects (business/park/trail/event), the flat categories
+    list, and the S3 images list. ``main_category`` / ``secondary_categories``
+    are read from the instance attributes ``crud_poi.get_poi`` enriched onto the
+    POI (see ``_enrich_poi_with_category_info``); when absent they fall to the
+    POIDetail schema defaults (None / []), matching legacy behavior.
+    """
+    poi_dict['business'] = db_poi.business
+    poi_dict['park'] = db_poi.park
+    poi_dict['trail'] = db_poi.trail
+    poi_dict['event'] = db_poi.event
+    poi_dict['categories'] = db_poi.categories
+    main_cat = db_poi.__dict__.get('main_category')
+    if main_cat is not None:
+        poi_dict['main_category'] = main_cat
+    secondary = db_poi.__dict__.get('secondary_categories')
+    if secondary is not None:
+        poi_dict['secondary_categories'] = secondary
+    poi_dict['images'] = images
+    return poi_dict
+
+
+# Declared top-level fields on POIDetail. Used to prune the legacy all-columns
+# dict so the legacy/shadow path NEVER leaks admin/PII columns now that POIDetail
+# carries extra="allow" (pre-B3 this pruning was implicit via extra="ignore").
+_POI_DETAIL_FIELDS = frozenset(schemas.poi.POIDetail.model_fields.keys())
+
+
+def _build_legacy_detail_dict(db: Session, db_poi, images: list) -> dict:
+    """Legacy assembly: all model columns -> dict, pruned to POIDetail fields.
+
+    Pre-B3 the unknown (admin/PII) columns were dropped by POIDetail's implicit
+    ``extra="ignore"``. POIDetail now uses ``extra="allow"`` (so the registry
+    path can restore public fields), so we prune EXPLICITLY here to preserve the
+    legacy contract — no PII column survives into the legacy/shadow response.
+    """
+    poi_dict = {
+        column.name: getattr(db_poi, column.name)
+        for column in db_poi.__table__.columns
+        if column.name in _POI_DETAIL_FIELDS
+    }
+    poi_dict['location'] = PointGeometry.from_wkb(db_poi.location)
+    if hasattr(db_poi.poi_type, 'value'):
+        poi_dict['poi_type'] = db_poi.poi_type.value
+    _attach_structural_objects(db_poi, poi_dict, images)
+    poi_dict = _apply_venue_inheritance(db, poi_dict, db_poi.event)
+    # Venue inheritance may add the non-schema marker ``_venue_source``; pre-B3
+    # it was dropped by extra="ignore". Drop it explicitly so legacy is unchanged.
+    poi_dict.pop("_venue_source", None)
+    return poi_dict
+
+
+def _build_registry_detail_dict(db: Session, db_poi, images: list) -> dict:
+    """Registry assembly: public-only flat fields + the SAME structural objects.
+
+    ``serialize_poi_detail`` returns a dict built STRICTLY from the public
+    registry (never from model columns), so no PII column can appear. It emits
+    EVERY public field flat (including subtype- and image-sourced keys, which the
+    parity test relies on). For the HTTP response those subtype/image values are
+    surfaced via the nested structural objects instead, so we strip their flat
+    keys before attaching the structural objects — keeping the wire shape
+    identical to legacy + the restored public flat fields.
+    """
+    poi_type = db_poi.poi_type.value if hasattr(db_poi.poi_type, 'value') else db_poi.poi_type
+    poi_dict = serialize_poi_detail(db, db_poi, images=images, audience='public')
+    # Drop subtype-sourced and image-sourced flat keys; they are surfaced under
+    # the structural subtype objects / images collection attached below.
+    for key in structural_registry_keys_for(poi_type):
+        poi_dict.pop(key, None)
+    _attach_structural_objects(db_poi, poi_dict, images)
+    poi_dict = _apply_venue_inheritance(db, poi_dict, db_poi.event)
+    return poi_dict
+
+
+def _serialize_detail_response(db: Session, db_poi, images: list):
+    """Return the POI detail payload honoring the POI_SERIALIZER flag.
+
+    * legacy   -> validate the (PII-pruned) all-columns dict through POIDetail and
+      let ``response_model`` serialize it (unchanged pre-B3 wire shape).
+    * registry -> validate the public-only registry dict through POIDetail
+      (``extra="allow"`` keeps the restored public flat fields that POIDetail does
+      not declare), then return a ``JSONResponse`` of the JSON dump filtered to the
+      TOP-LEVEL keys that were actually provided.
+      Returning a Response bypasses ``response_model`` filtering so the extra
+      public keys reach the wire. The filtering is the key: POIDetail DECLARES
+      ~every POI field, so a plain ``model_dump`` / ``jsonable_encoder`` would emit
+      EVERY declared field (as ``None``) regardless of ``poi_type`` — polluting
+      the per-type response. We instead keep only ``model.model_fields_set``,
+      which in Pydantic v2 (with ``extra="allow"``) is exactly (a) declared fields
+      that were provided in the registry dict + (b) all extra (registry) keys, and
+      EXCLUDES declared-but-not-provided fields. So the response == the per-type
+      public registry keys + structural keys.
+
+      We dump with ``mode="json"`` (so datetimes -> ISO, UUID -> str,
+      PointGeometry -> ``{type, coordinates}``, nested subtype / category / image
+      sub-schemas serialize exactly as Pydantic would) and then filter at the TOP
+      LEVEL only — NOT ``exclude_unset=True``, which would also strip nested model
+      DEFAULTS (e.g. ``location.type == "Point"``, which ``PointGeometry.from_wkb``
+      leaves at its default), corrupting the structural shape.
+    * shadow   -> build BOTH, log the diff at WARNING, RETURN legacy unchanged.
+    """
+    if POI_SERIALIZER == "legacy":
+        legacy_dict = _build_legacy_detail_dict(db, db_poi, images)
+        return schemas.poi.POIDetail.model_validate(legacy_dict)
+
+    if POI_SERIALIZER == "shadow":
+        legacy_dict = _build_legacy_detail_dict(db, db_poi, images)
+        try:
+            registry_dict = _build_registry_detail_dict(db, db_poi, images)
+            diff = diff_serializers(
+                jsonable_encoder(legacy_dict), jsonable_encoder(registry_dict)
+            )
+            if diff["keys_added"] or diff["keys_removed"] or diff["value_mismatches"]:
+                logger.warning(
+                    "POI serializer shadow diff poi_id=%s keys_added=%s "
+                    "keys_removed=%s value_mismatches=%s",
+                    db_poi.id,
+                    diff["keys_added"],
+                    diff["keys_removed"],
+                    [m["key"] for m in diff["value_mismatches"]],
+                )
+        except Exception:  # observation must never break the response
+            logger.exception("POI serializer shadow diff failed poi_id=%s", db_poi.id)
+        # Zero behavior change: return the legacy payload.
+        return schemas.poi.POIDetail.model_validate(legacy_dict)
+
+    # Default: registry. Validate through POIDetail (extra="allow" keeps the
+    # restored public fields) then JSON-encode so datetimes/UUIDs/geometry are
+    # serialized identically to the legacy path.
+    registry_dict = _build_registry_detail_dict(db, db_poi, images)
+    model = schemas.poi.POIDetail.model_validate(registry_dict)
+    # Keep only the TOP-LEVEL keys that were actually provided (declared-provided +
+    # extra registry keys) so the wire shape is the clean per-type public registry
+    # set + structural keys, NOT every POIDetail-declared field as None. Filtering by
+    # model_fields_set (rather than exclude_unset=True) preserves nested model
+    # defaults like location.type=="Point". See the docstring above for rationale.
+    full = model.model_dump(mode="json")
+    provided = model.model_fields_set
+    content = {key: value for key, value in full.items() if key in provided}
+    return JSONResponse(content=content)
+
+
 @router.get("/pois/counts")
 def api_get_poi_counts(db: Session = Depends(get_db)):
     """Return published POI counts by type and by amenity (pet-friendly / icon_wheelchair_accessible)."""
@@ -266,33 +429,11 @@ def api_get_poi(poi_id: uuid.UUID, db: Session = Depends(get_db)):
     if db_poi is None:
         raise HTTPException(status_code=404, detail="Point of Interest not found")
 
-    # Convert the POI model to a dict and handle special fields
-    poi_dict = {
-        column.name: getattr(db_poi, column.name)
-        for column in db_poi.__table__.columns
-    }
-
-    # Convert geometry field
-    poi_dict['location'] = PointGeometry.from_wkb(db_poi.location)
-
-    # Convert poi_type enum if needed
-    if hasattr(db_poi.poi_type, 'value'):
-        poi_dict['poi_type'] = db_poi.poi_type.value
-
-    # Add relationships
-    poi_dict['business'] = db_poi.business
-    poi_dict['park'] = db_poi.park
-    poi_dict['trail'] = db_poi.trail
-    poi_dict['event'] = db_poi.event
-    poi_dict['categories'] = db_poi.categories
-
-    # Apply venue inheritance for events
-    poi_dict = _apply_venue_inheritance(db, poi_dict, db_poi.event)
-
-    # Add images from images table (S3 URLs)
-    poi_dict['images'] = get_poi_images(db, poi_id)
-
-    return schemas.poi.POIDetail.model_validate(poi_dict)
+    images = get_poi_images(db, poi_id)
+    # Honors the POI_SERIALIZER flag (legacy | registry | shadow). Registry is
+    # the default and returns a public-only payload (no PII) via the registry
+    # serializer; legacy/shadow preserve the pre-B3 behavior.
+    return _serialize_detail_response(db, db_poi, images)
 
 @router.get("/pois/by-slug/{slug}", response_model=schemas.poi.POIDetail)
 def api_get_poi_by_slug(slug: str, db: Session = Depends(get_db)):
@@ -308,33 +449,9 @@ def api_get_poi_by_slug(slug: str, db: Session = Depends(get_db)):
     if db_poi is None:
         raise HTTPException(status_code=404, detail="Point of Interest not found")
 
-    # Convert the POI model to a dict and handle special fields
-    poi_dict = {
-        column.name: getattr(db_poi, column.name)
-        for column in db_poi.__table__.columns
-    }
-
-    # Convert geometry field
-    poi_dict['location'] = PointGeometry.from_wkb(db_poi.location)
-
-    # Convert poi_type enum if needed
-    if hasattr(db_poi.poi_type, 'value'):
-        poi_dict['poi_type'] = db_poi.poi_type.value
-
-    # Add relationships
-    poi_dict['business'] = db_poi.business
-    poi_dict['park'] = db_poi.park
-    poi_dict['trail'] = db_poi.trail
-    poi_dict['event'] = db_poi.event
-    poi_dict['categories'] = db_poi.categories
-
-    # Apply venue inheritance for events
-    poi_dict = _apply_venue_inheritance(db, poi_dict, db_poi.event)
-
-    # Add images from images table (S3 URLs)
-    poi_dict['images'] = get_poi_images(db, db_poi.id)
-
-    return schemas.poi.POIDetail.model_validate(poi_dict)
+    images = get_poi_images(db, db_poi.id)
+    # Same POI_SERIALIZER flag handling as GET /pois/{id} (registry default).
+    return _serialize_detail_response(db, db_poi, images)
 
 @router.get("/nearby", response_model=List[schemas.poi.POINearbyResult])
 def api_get_nearby_pois(
@@ -369,21 +486,12 @@ def api_get_nearby_pois(
             filtered_pairs.append((poi, distance))
     filtered_pairs = filtered_pairs[:8]
 
-    # Format results with distance
+    # Format results with distance. Card body is built by the registry-driven
+    # serialize_poi_card (public-only); the per-query distance is attached on top.
     results = []
     for poi, distance in filtered_pairs:
-        poi_dict = {
-            'id': poi.id,
-            'name': poi.name,
-            'address_city': poi.address_city,
-            'distance_meters': distance,
-            'location': PointGeometry.from_wkb(poi.location) if poi.location else None,
-            'poi_type': poi.poi_type.value if hasattr(poi.poi_type, 'value') else poi.poi_type,
-            'hours': poi.hours,
-            # wheelchair_accessible removed (Issue #45 PR2 Migration B — column dropped)
-            'wifi_options': poi.wifi_options,
-            'pet_options': poi.pet_options,
-        }
+        poi_dict = serialize_poi_card(poi)
+        poi_dict['distance_meters'] = distance
         results.append(schemas.poi.POINearbyResult.model_validate(poi_dict))
 
     return results
@@ -422,10 +530,12 @@ def api_get_nearby_pois_by_id(
     nearby_pois = crud.crud_poi.get_nearby_pois(db, poi_id=str(poi_id), radius_miles=radius_miles)
     nearby_pois = _exclude_past_and_cancelled_events(nearby_pois, include_past=include_past_events)
 
-    # Convert location data for each POI
+    # Convert location data for each POI. Card body is built by the registry-driven
+    # serialize_poi_card (public-only); the per-query distance and the {id,name,slug}
+    # categories list this endpoint surfaces are attached on top.
     results = []
     for poi in nearby_pois:
-        # Get categories for this POI
+        # Get categories for this POI (id/name/slug shape used by the cards)
         categories_data = []
         if hasattr(poi, 'categories') and poi.categories:
             for cat in poi.categories:
@@ -435,25 +545,9 @@ def api_get_nearby_pois_by_id(
                     'slug': cat.slug
                 })
 
-        # Convert WKB location to PointGeometry
-        location_geo = PointGeometry.from_wkb(poi.location) if poi.location is not None else None
-
-        poi_dict = {
-            'id': poi.id,
-            'name': poi.name,
-            'address_city': poi.address_city,
-            'address_state': poi.address_state,
-            'address_county': poi.address_county,
-            'distance_meters': poi.distance_meters,
-            'location': location_geo,
-            'poi_type': poi.poi_type.value if hasattr(poi.poi_type, 'value') else poi.poi_type,
-            'hours': poi.hours,
-            # wheelchair_accessible removed (Issue #45 PR2 Migration B — column dropped)
-            'wifi_options': poi.wifi_options,
-            'pet_options': poi.pet_options,
-            'public_toilets': poi.public_toilets,
-            'categories': categories_data
-        }
+        poi_dict = serialize_poi_card(poi)
+        poi_dict['distance_meters'] = poi.distance_meters
+        poi_dict['categories'] = categories_data
         results.append(schemas.poi.POINearbyResult.model_validate(poi_dict))
 
     return results

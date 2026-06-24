@@ -163,7 +163,6 @@ export const emptyInitialValues = {
   // #49: per-playground rows — { lat, lng, name?, age_groups[], ada_checklist{} }
   playground_locations: [],
   // Parks & Trails Additional
-  payphone_location: null,
   payphone_locations: [],
   park_entry_notes: '',
   // park_entry_photo removed - use Images table with image_type='entry'
