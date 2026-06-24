@@ -6758,7 +6758,7 @@ body.overlay_lock {
   font-family: $font_poppins;
   font-weight: 600;
   font-size: .9em;
-  background_color: white;
+  background-color: white;
   color: $nn_dark;
   border: 2px solid transparent;
   border-radius: 55px;
@@ -6775,8 +6775,8 @@ body.overlay_lock {
 
 .one_search_button:focus {
   outline: 3px solid $nn_gold;
-  outline_offset: 3px;
-  border_color: white;
+  outline-offset: 3px;
+  border-color: white;
 
 }
 

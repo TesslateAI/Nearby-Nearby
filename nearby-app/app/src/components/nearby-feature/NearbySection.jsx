@@ -1,5 +1,6 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Search, ChevronDown, RotateCcw, Calendar as CalendarIcon, MapPin } from 'lucide-react';
 import SearchBar from '../SearchBar';
 import Map from '../Map';
 import NearbyCard from './NearbyCard';
@@ -7,6 +8,8 @@ import NearbyFilters from './NearbyFilters';
 import DirectionsModal from '../common/DirectionsModal';
 import { getApiUrl } from '../../config';
 import { getPOIUrl } from '../../utils/slugify';
+
+const RADIUS_OPTIONS = [1, 3, 5, 10, 15];
 
 // Helper to get date presets
 const getDatePresets = () => {
@@ -44,15 +47,17 @@ function NearbySection({ currentPOI }) {
   const [itemsPerPage, setItemsPerPage] = useState(8);
   const [showDirectionsModal, setShowDirectionsModal] = useState(false);
   const [selectedPOI, setSelectedPOI] = useState(null);
-  const [selectedDate, setSelectedDate] = useState(''); // New date state
-  const [highlightedCardId, setHighlightedCardId] = useState(null); // For map-card connection
-  const [searchFilteredIds, setSearchFilteredIds] = useState(null); // IDs from hybrid search filter
-  const cardRefs = useRef({}); // Refs for card scrolling
-  const resultsTopRef = useRef(null); // Top of cards section — used to scroll on pagination
+  const [selectedDate, setSelectedDate] = useState('');
+  const [highlightedCardId, setHighlightedCardId] = useState(null);
+  const [searchFilteredIds, setSearchFilteredIds] = useState(null);
+  const [radiusOpen, setRadiusOpen] = useState(false);
+  const [dateOpen, setDateOpen] = useState(false);
 
-  // Wrap setCurrentPage so a click also scrolls the freshly-rendered cards into view.
-  // Without this the user is sitting at the pagination row and the new page renders above —
-  // visually it looks like the click did nothing.
+  const cardRefs = useRef({});
+  const resultsTopRef = useRef(null);
+  const radiusRef = useRef(null);
+  const dateRef = useRef(null);
+
   const goToPage = (num) => {
     setCurrentPage(num);
     requestAnimationFrame(() => {
@@ -65,6 +70,23 @@ function NearbySection({ currentPOI }) {
       fetchNearbyPOIs();
     }
   }, [currentPOI, radiusMiles]);
+
+  // Close dropdowns on outside click or Escape
+  useEffect(() => {
+    const onDocClick = (e) => {
+      if (radiusRef.current && !radiusRef.current.contains(e.target)) setRadiusOpen(false);
+      if (dateRef.current && !dateRef.current.contains(e.target)) setDateOpen(false);
+    };
+    const onKey = (e) => {
+      if (e.key === 'Escape') { setRadiusOpen(false); setDateOpen(false); }
+    };
+    document.addEventListener('mousedown', onDocClick);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDocClick);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, []);
 
   const fetchNearbyPOIs = async () => {
     setNearbyLoading(true);
@@ -94,23 +116,19 @@ function NearbySection({ currentPOI }) {
     setCurrentPage(1);
   };
 
-  // Handle search filter callback from SearchBar
-  const handleSearchFilter = (filteredIds) => {
+  const handleSearchFilter = useCallback((filteredIds) => {
     setSearchFilteredIds(filteredIds);
-    setCurrentPage(1); // Reset to first page when search changes
-  };
-
+    setCurrentPage(1);
+  }, []);
 
   // Filter POIs by type, search, and exclude past events
   const filteredNearbyPOIs = nearbyPOIs.filter(nearbyPoi => {
-    // Apply hybrid search filter first (if active)
     if (searchFilteredIds !== null) {
       if (!searchFilteredIds.includes(nearbyPoi.id)) {
         return false;
       }
     }
 
-    // Filter by POI type
     if (selectedFilter !== 'All') {
       const filterMap = {
         'Businesses': 'business',
@@ -118,29 +136,24 @@ function NearbySection({ currentPOI }) {
         'Parks': 'park',
         'Trails': 'trail',
       };
-
       const expectedType = filterMap[selectedFilter];
       if (expectedType && nearbyPoi.poi_type?.toLowerCase() !== expectedType) {
         return false;
       }
     }
 
-    // Filter out past events
     if (nearbyPoi.poi_type?.toLowerCase() === 'event' && nearbyPoi.event?.end_datetime) {
       const eventEnd = new Date(nearbyPoi.event.end_datetime);
       const now = new Date();
       if (eventEnd < now) {
-        return false; // Exclude past events
+        return false;
       }
     }
 
-    // If date is selected, filter based on whether POI is open on that date
     if (selectedDate && nearbyPoi.poi_type?.toLowerCase() !== 'event') {
-      // For non-events, check if they're open on the selected date
       const selectedDateObj = new Date(selectedDate + 'T12:00:00');
       const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
       const dayName = days[selectedDateObj.getDay()];
-
       if (nearbyPoi.hours?.regular?.[dayName]) {
         const dayHours = nearbyPoi.hours.regular[dayName];
         if (dayHours.status === 'closed') {
@@ -149,11 +162,9 @@ function NearbySection({ currentPOI }) {
       }
     }
 
-    // For events with date filter, check if event is on that date
     if (selectedDate && nearbyPoi.poi_type?.toLowerCase() === 'event' && nearbyPoi.event?.start_datetime) {
       const eventDate = new Date(nearbyPoi.event.start_datetime).toISOString().split('T')[0];
-      const filterDate = selectedDate;
-      if (eventDate !== filterDate) {
+      if (eventDate !== selectedDate) {
         return false;
       }
     }
@@ -161,36 +172,29 @@ function NearbySection({ currentPOI }) {
     return true;
   });
 
-  // Pagination logic
+  // Pagination
   const totalPages = Math.ceil(filteredNearbyPOIs.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const paginatedPOIs = filteredNearbyPOIs.slice(startIndex, endIndex);
 
-  // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [selectedFilter, nearbyPOIs, selectedDate, searchFilteredIds]);
+  }, [selectedFilter, selectedDate, searchFilteredIds]);
 
   const handleDirectionsClick = (poi) => {
     setSelectedPOI(poi);
     setShowDirectionsModal(true);
-    setCopiedText(null);
   };
 
-  // Handle map marker click - scroll to card
   const handleMarkerClick = (poiId, index) => {
     setHighlightedCardId(poiId);
-
-    // Find which page this POI is on
     const poiIndex = filteredNearbyPOIs.findIndex(p => p.id === poiId);
     if (poiIndex !== -1) {
       const targetPage = Math.floor(poiIndex / itemsPerPage) + 1;
       if (targetPage !== currentPage) {
         setCurrentPage(targetPage);
       }
-
-      // Scroll to card after a short delay to allow page change
       setTimeout(() => {
         const cardElement = cardRefs.current[poiId];
         if (cardElement) {
@@ -198,12 +202,9 @@ function NearbySection({ currentPOI }) {
         }
       }, 100);
     }
-
-    // Remove highlight after 3 seconds
     setTimeout(() => setHighlightedCardId(null), 3000);
   };
 
-  // Handle View Details click - scroll to top
   const handleDetailsClick = (poi) => {
     window.scrollTo({ top: 0, behavior: 'instant' });
     navigate(getPOIUrl(poi));
@@ -214,34 +215,31 @@ function NearbySection({ currentPOI }) {
 
     const pageNumbers = [];
     const maxVisible = 6;
-
     let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
     let endPage = Math.min(totalPages, startPage + maxVisible - 1);
-
     if (endPage - startPage < maxVisible - 1) {
       startPage = Math.max(1, endPage - maxVisible + 1);
     }
-
     for (let i = startPage; i <= endPage; i++) {
       pageNumbers.push(i);
     }
 
     return (
-      <div className="nearby-pagination">
+      <div className="nearby_pagination">
         <button
           type="button"
           onClick={() => goToPage(Math.max(1, currentPage - 1))}
           disabled={currentPage === 1}
-          className="nearby-pagination__btn"
+          className="nearby_pagination__btn"
         >
-          &lt;
+          ⏴
         </button>
         {pageNumbers.map(num => (
           <button
             type="button"
             key={num}
             onClick={() => goToPage(num)}
-            className={`nearby-pagination__num ${currentPage === num ? 'active' : ''}`}
+            className={`nearby_pagination__num ${currentPage === num ? 'active' : ''}`}
           >
             {num}
           </button>
@@ -250,17 +248,19 @@ function NearbySection({ currentPOI }) {
           type="button"
           onClick={() => goToPage(Math.min(totalPages, currentPage + 1))}
           disabled={currentPage === totalPages}
-          className="nearby-pagination__btn"
+          className="nearby_pagination__btn"
         >
-          &gt;
+          ⏵
         </button>
       </div>
     );
   };
 
+  const nearbyPoiIds = useMemo(() => nearbyPOIs.map(poi => poi.id), [nearbyPOIs]);
+
   return (
     <div className="nearby-section">
-      {/* Title area — wrapper_default */}
+      {/* Title + count */}
       <div className="wrapper_default">
         <h2 className="nearby-section__title">Nearby</h2>
         <div className="nearby-section__count">
@@ -268,75 +268,128 @@ function NearbySection({ currentPOI }) {
         </div>
       </div>
 
-      {/* Controls wrapper — wrapper_default */}
-      <div className="wrapper_default nearby-section__controls-wrapper">
-        {/* Filter pills */}
-        <NearbyFilters
-          selectedFilter={selectedFilter}
-          onFilterChange={handleFilterChange}
-        />
+      {/* Controls band — mirrors Explore's #one_search_magic structure */}
+      <div id="one_search_magic">
+        <div className="wrapper_default one_search_wrapper">
 
-        {/* Search + controls */}
-        <div className="nearby-section__search-controls">
-          {/* Search container — input + gold button */}
-          <div className="nearby-search-container">
-            <SearchBar
-              placeholder="What's nearby? Search for locations or interests..."
-              openInNewTab={true}
-              nearbyPoiIds={nearbyPOIs.map(poi => poi.id)}
-              onFilterNearby={handleSearchFilter}
+          {/* Filter pills — one_search_1 */}
+          <div className="one_search_1" role="tablist" aria-label="Filter by category">
+            <NearbyFilters
+              selectedFilter={selectedFilter}
+              onFilterChange={handleFilterChange}
             />
-            <button type="button" className="nearby-search-btn" onClick={() => {}}>
-              Search
-            </button>
           </div>
 
-          {/* Controls row — radius, date, clear, add location */}
-          <div className="nearby-controls__row">
-            <div className="nearby-controls__group">
-              <label className="visually_hidden" htmlFor="radius_select">Search Radius:</label>
-              <select
-                id="radius_select"
-                value={radiusMiles}
-                onChange={(e) => setRadiusMiles(Number(e.target.value))}
-                className="nearby-dropdown__select"
-                aria-label="Select radius"
-              >
-                <option value={1}>1 mile</option>
-                <option value={3}>3 miles</option>
-                <option value={5}>5 miles</option>
-                <option value={10}>10 miles</option>
-                <option value={15}>15 miles</option>
-              </select>
-            </div>
+          {/* Search + controls — one_search_2 */}
+          <div className="one_search_2">
 
-            <div className="nearby-controls__group">
-              <label className="visually_hidden" htmlFor="date_filter">Filter by Date:</label>
-              <input
-                type="date"
-                id="date_filter"
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                min={getDatePresets().today}
-                className="nearby-dropdown__select"
-                aria-label="Filter by date"
+            {/* Search bar */}
+            <div className="search_container">
+              <SearchBar
+                placeholder="What's nearby? Search for locations or interests..."
+                openInNewTab={true}
+                nearbyPoiIds={nearbyPoiIds}
+                onFilterNearby={handleSearchFilter}
               />
+              <button type="button" className="button btn_search btn_search_gold" onClick={() => {}}>
+                Search
+              </button>
             </div>
 
-            <button
-              type="button"
-              onClick={handleClear}
-              className="nearby-clear-btn"
-              aria-label="Clear all filters"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
-                <path d="M3 3v5h5"></path>
-              </svg>
-              <span>Clear</span>
-            </button>
+            {/* Controls row */}
+            <div className="one_search_controls">
 
-            <a href="/claim-business" className="nearby-add-location-link" aria-label="Add a new location to the directory">Add Location</a>
+              {/* Radius dropdown */}
+              <div className="one_search_group">
+                <div className="radius_dropdown_wrapper" ref={radiusRef}>
+                  <button
+                    type="button"
+                    className="btn_show_radius_options"
+                    aria-haspopup="true"
+                    aria-expanded={radiusOpen}
+                    onClick={() => setRadiusOpen(p => !p)}
+                  >
+                    <MapPin size={16} aria-hidden="true" />
+                    <span>{radiusMiles} {radiusMiles === 1 ? 'mile' : 'miles'}</span>
+                    <ChevronDown size={14} className="lucide_chevron_down" aria-hidden="true" />
+                  </button>
+                  {radiusOpen && (
+                    <div className="dropdown_show_radius_options" role="menu">
+                      {RADIUS_OPTIONS.map(r => (
+                        <button
+                          key={r}
+                          type="button"
+                          className={`radius_dropdown_option${r === radiusMiles ? ' radius_dropdown_option_active' : ''}`}
+                          role="menuitem"
+                          onClick={() => { setRadiusMiles(r); setRadiusOpen(false); setCurrentPage(1); }}
+                        >
+                          {r} {r === 1 ? 'mile' : 'miles'}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Date dropdown */}
+              <div className="one_search_group">
+                <div className="date_dropdown_wrapper" ref={dateRef}>
+                  <button
+                    type="button"
+                    className="btn_show_event_options"
+                    aria-haspopup="true"
+                    aria-expanded={dateOpen}
+                    onClick={() => setDateOpen(p => !p)}
+                  >
+                    <CalendarIcon size={16} aria-hidden="true" />
+                    <span>{selectedDate || 'Any Date'}</span>
+                    <ChevronDown size={14} className="lucide_chevron_down" aria-hidden="true" />
+                  </button>
+                  {dateOpen && (
+                    <div className="dropdown_show_event_options" role="menu">
+                      <button
+                        type="button"
+                        className={`date_dropdown_option${!selectedDate ? ' date_dropdown_option_active' : ''}`}
+                        role="menuitem"
+                        onClick={() => { setSelectedDate(''); setDateOpen(false); }}
+                      >
+                        Any Date
+                      </button>
+                      <div className="date_dropdown_divider" role="separator" />
+                      <div className="date_dropdown_custom">
+                        <label className="date_dropdown_date_label">
+                          <span>Pick a date</span>
+                          <input
+                            type="date"
+                            className="date_dropdown_date_input"
+                            value={selectedDate}
+                            min={getDatePresets().today}
+                            onChange={(e) => { setSelectedDate(e.target.value); setDateOpen(false); }}
+                          />
+                        </label>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Clear */}
+              <button
+                type="button"
+                className="btn_reset button btn_clear"
+                aria-label="Clear all filters"
+                onClick={handleClear}
+              >
+                <RotateCcw size={16} aria-hidden="true" />
+                <span>Clear</span>
+              </button>
+
+              {/* Add Location */}
+              <a href="/claim-business" className="add_location_link" aria-label="Add a new location to the directory">
+                Add Location
+              </a>
+
+            </div>
           </div>
         </div>
       </div>
@@ -350,29 +403,44 @@ function NearbySection({ currentPOI }) {
         highlightedId={highlightedCardId}
       />
 
-      {/* Nearby Results — nn-templates .one_search_map_results_group */}
-      <div className="nearby-results wrapper_wide" ref={resultsTopRef}>
-        {nearbyLoading ? (
-          <div className="nearby-results__loading">Loading nearby locations...</div>
-        ) : paginatedPOIs.length > 0 ? (
-          <>
-            {paginatedPOIs.map((nearbyPoi, index) => (
-              <NearbyCard
-                key={nearbyPoi.id}
-                ref={(el) => cardRefs.current[nearbyPoi.id] = el}
-                poi={nearbyPoi}
-                index={startIndex + index}
-                totalCount={filteredNearbyPOIs.length}
-                onDetailsClick={() => handleDetailsClick(nearbyPoi)}
-                onDirectionsClick={handleDirectionsClick}
-                isHighlighted={highlightedCardId === nearbyPoi.id}
-                selectedDate={selectedDate}
-              />
-            ))}
-          </>
-        ) : (
-          <div className="nearby-results__empty">No nearby locations found</div>
-        )}
+      {/* Results — matches nn-templates #one_search_map_results structure */}
+      <div id="one_search_map_results">
+        <div className="map_marker_detail_title">
+          <svg className="map_marker_detail_icon" width="19" height="27" viewBox="0 0 12 17" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink" xmlSpace="preserve" style={{fillRule:'evenodd',clipRule:'evenodd',strokeLinejoin:'round',strokeMiterlimit:2}}>
+            <g transform="matrix(0.612601,0,0,0.612601,-1088.82,-737.077)">
+              <g transform="matrix(0.453813,0,0,0.447621,1402.9,1137.62)">
+                <path d="M846.755,147.985C852.185,148.014 857.634,149.936 861.523,153.864C865.404,157.786 867.619,163.725 866.615,171.248C866.485,173.399 865.377,175.594 863.884,178.099C862.37,180.638 860.412,183.448 858.352,186.432C854.26,192.359 849.841,198.992 848.144,205.065C847.422,206.907 845.723,206.916 845.227,205.065C843.543,198.989 839.301,192.656 835.297,186.849C831.277,181.017 827.418,175.843 826.895,171.062C826.893,171.048 826.874,171.054 826.872,171.039C825.869,163.512 828.078,157.609 831.964,153.725C835.858,149.835 841.325,147.956 846.755,147.985Z" style={{fill:'rgb(254,199,100)'}} />
+              </g>
+              <g transform="matrix(0.453813,0,0,0.447621,1402.9,1137.62)">
+                <path d="M868.08,171.369L868.076,171.409C867.915,173.745 866.761,176.151 865.141,178.869C863.613,181.434 861.636,184.272 859.555,187.286C855.558,193.075 851.215,199.539 849.557,205.471C849.543,205.52 849.527,205.568 849.509,205.616C848.86,207.269 847.639,207.937 846.604,207.939C845.499,207.941 844.291,207.234 843.813,205.468C842.169,199.537 838.001,193.371 834.093,187.702C829.947,181.688 826.03,176.298 825.434,171.387L825.416,171.24C824.34,163.157 826.761,156.834 830.933,152.665C835.102,148.499 840.949,146.464 846.763,146.496C852.574,146.527 858.398,148.605 862.56,152.809C866.711,157.003 869.131,163.334 868.08,171.369ZM828.305,170.682L828.331,170.884C828.833,175.471 832.645,180.401 836.501,185.996C840.601,191.942 844.917,198.441 846.642,204.662L846.645,204.675L846.664,204.735C846.696,204.684 846.728,204.63 846.754,204.576C848.508,198.384 852.98,191.615 857.148,185.578C859.188,182.624 861.128,179.843 862.626,177.329C863.976,175.064 865.117,173.104 865.234,171.159L865.245,171.05C866.175,164.076 864.084,158.554 860.486,154.919C856.871,151.267 851.795,149.502 846.747,149.474C841.702,149.447 836.613,151.171 832.995,154.786C829.423,158.355 827.43,163.781 828.305,170.682ZM846.754,161.149C850.468,161.149 853.493,164.193 853.493,167.909C853.493,171.625 850.468,174.67 846.754,174.67C843.04,174.67 839.993,171.625 839.993,167.909C839.993,164.193 843.04,161.149 846.754,161.149Z" style={{fill:'rgb(86,37,86)'}} />
+              </g>
+            </g>
+          </svg>
+          <span>Shows the current point of interest and results below.</span>
+        </div>
+        <div className="wrapper_wide one_search_map_results_group" ref={resultsTopRef}>
+          {nearbyLoading ? (
+            <div className="nearby-results__loading">Loading nearby locations...</div>
+          ) : paginatedPOIs.length > 0 ? (
+            <>
+              {paginatedPOIs.map((nearbyPoi, index) => (
+                <NearbyCard
+                  key={nearbyPoi.id}
+                  ref={(el) => cardRefs.current[nearbyPoi.id] = el}
+                  poi={nearbyPoi}
+                  index={startIndex + index}
+                  totalCount={filteredNearbyPOIs.length}
+                  onDetailsClick={() => handleDetailsClick(nearbyPoi)}
+                  onDirectionsClick={handleDirectionsClick}
+                  isHighlighted={highlightedCardId === nearbyPoi.id}
+                  selectedDate={selectedDate}
+                />
+              ))}
+            </>
+          ) : (
+            <div className="nearby-results__empty">No nearby locations found</div>
+          )}
+        </div>
       </div>
 
       {/* Pagination */}
