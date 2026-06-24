@@ -76,7 +76,7 @@ export default function AttributeSections({ poi, excludeKeys = [] }) {
 
   return (
     <div id="attribute_sections_box" className="poi_accordion_box">
-      <div className="poi_accordion_parent">
+      <div className="poi_accordion_parent accordionjs">
         {renderedSections.map(({ group, nodes }, idx) => (
           <AccSection
             key={group}

@@ -122,8 +122,20 @@ function dateRangeForFilter(filter, customDate) {
 // so it is dawn/dusk-aware and produces consistent output with detail pages and NearbyCard.
 function exploreStatusLine(hours, lat, lng) {
   if (!hours || typeof hours !== 'object') return null;
-  const { label } = getOpenCloseStatusLabel(hours, new Date(), lat ?? null, lng ?? null);
-  return label || null;
+  const { variant, label } = getOpenCloseStatusLabel(hours, new Date(), lat ?? null, lng ?? null);
+  return label ? { variant, label } : null;
+}
+
+// Barry's design: color only the leading status word (mirrors NearbyCard).
+function renderHoursStatus(status) {
+  if (!status?.label) return null;
+  const cls = status.variant === 'open' ? 'nearby-card__hours--open'
+    : status.variant === 'opensoon' ? 'nearby-card__hours--soon'
+    : status.variant === 'closed' ? 'nearby-card__hours--closed' : '';
+  const sp = status.label.indexOf(' ');
+  const lead = sp === -1 ? status.label : status.label.slice(0, sp);
+  const rest = sp === -1 ? '' : status.label.slice(sp);
+  return (<><span className={cls}>{lead}</span>{rest}</>);
 }
 
 // Same matcher as NearbyCard — accept any non-empty / non-"no" entry.
@@ -194,7 +206,7 @@ const ResultCard = forwardRef(function ResultCard({ poi, index, isHighlighted },
 
       {cityLine && <div className="one_search_map_single_city">{cityLine}</div>}
 
-      {statusLine && <div className="one_search_map_result_hours">{statusLine}</div>}
+      {statusLine && <div className="one_search_map_result_hours">{renderHoursStatus(statusLine)}</div>}
 
       {(categoryLabel || amenities.length > 0) && (
         <div className="one_search_map_result_type_amenities_group">

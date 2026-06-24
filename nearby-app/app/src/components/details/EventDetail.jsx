@@ -628,7 +628,7 @@ function EventDetail({ poi }) {
           />
 
           <div id="accordion_1_box" className="poi_accordion_box">
-            <div id="accordion_1_parent" className="poi_accordion_parent">
+            <div id="accordion_1_parent" className="poi_accordion_parent accordionjs">
               {sections.map((s) => (
                 <AccSection key={s.id} id={s.id} title={s.title} defaultOpen={allOpen || s.defaultOpen}>
                   {s.body}

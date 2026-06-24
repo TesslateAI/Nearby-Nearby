@@ -222,23 +222,29 @@ export default function PoiHeader({
     }
   });
 
-  // Status row
+  // Status row. Barry's design colors only the leading status WORD and drops the
+  // bullet dot. Our statusLabel is richer than his (e.g. "Open until 8:00 PM",
+  // "Closed · Opens Tomorrow 9:00 AM"), so color the first word and leave the
+  // remainder plain rather than his literal slice (which assumed label==word).
   let statusCls = null;
-  let statusColor = null;
+  let statusWordColor = null;
   let statusTopText = null;
   if (statusVariant === 'open') {
     statusCls = 'poi_page_hours_opennow';
-    statusColor = '#4CAF50';
+    statusWordColor = '#226226';
     statusTopText = 'Fully Open';
   } else if (statusVariant === 'closed') {
     statusCls = 'poi_page_hours_closed';
-    statusColor = '#FF5722';
+    statusWordColor = '#AF1818';
     statusTopText = 'Closed';
   } else if (statusVariant === 'opensoon') {
     statusCls = 'poi_page_hours_opensoon';
-    statusColor = '#FFC107';
-    statusTopText = 'Opening Soon';
+    statusWordColor = '#7A4E00';
+    statusTopText = 'Opens Soon';
   }
+  const _statusSpace = statusLabel ? statusLabel.indexOf(' ') : -1;
+  const statusLead = statusLabel ? (_statusSpace === -1 ? statusLabel : statusLabel.slice(0, _statusSpace)) : '';
+  const statusRest = statusLabel && _statusSpace !== -1 ? statusLabel.slice(_statusSpace) : '';
 
   const countyName = poi?.address_county || poi?.county || 'Your Community';
   const updatedIso = poi?.last_updated || poi?.updated_at;
@@ -263,14 +269,16 @@ export default function PoiHeader({
             {statusCls && statusLabel && (
               <div className="poi_page_hours">
                 <div className={statusCls}>
-                  <span className="hours_icon" style={{ color: statusColor }}>&#9679;</span>
-                  <span className="poi_page_hours_text">{statusLabel}</span>
+                  <span className="poi_page_hours_text">
+                    <span className="poi_hours_status_word" style={{ color: statusWordColor }}>{statusLead}</span>{statusRest}
+                  </span>
                 </div>
                 {poi?.hours && (
-                  <>
+                  <div className="poi_page_hours_quick_show">
                     <button
                       type="button"
-                      className="btn_reset poi_page_hours_toggle"
+                      id="poi_page_hours_toggle"
+                      className="btn_reset button"
                       onClick={() => setHoursExpanded((v) => !v)}
                       aria-expanded={hoursExpanded}
                       aria-controls="poi_hours_panel"
@@ -282,7 +290,7 @@ export default function PoiHeader({
                       />
                     </button>
                     {hoursExpanded && (
-                      <div id="poi_hours_panel" className="poi_hours_panel">
+                      <div id="poi_hours_panel" className="poi_hours_panel box_style_1">
                         <HoursDisplay
                           hours={poi.hours}
                           appointmentBookingUrl={poi.appointment_booking_url}
@@ -291,7 +299,7 @@ export default function PoiHeader({
                         />
                       </div>
                     )}
-                  </>
+                  </div>
                 )}
               </div>
             )}
@@ -366,10 +374,12 @@ export default function PoiHeader({
               >
                 What's This
               </button>
-              <div id="poi_verified_tooltip" className={tooltipOpen ? 'is_open' : ''}>
-                {poi?.poi_type === 'EVENT'
-                  ? 'This event has been confirmed with the organizer or venue by a Nearby Nearby Team member.'
-                  : 'This place has been checked and confirmed as accurate by a Nearby Nearby Team member.'}
+              <div id="poi_verified_tooltip" className={`poi_verified_tooltip${tooltipOpen ? ' is_open' : ''}`}>
+                <div className="poi_verified_tooltip_inner">
+                  {poi?.poi_type === 'EVENT'
+                    ? 'This event has been confirmed with the organizer or venue by a Nearby Nearby Team member.'
+                    : 'This place has been checked and confirmed as accurate by a Nearby Nearby Team member.'}
+                </div>
               </div>
             </div>
           )}

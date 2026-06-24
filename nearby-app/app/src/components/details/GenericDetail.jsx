@@ -135,7 +135,7 @@ export default function GenericDetail({ poi }) {
 
             {sections.length > 0 && (
               <div id="accordion_1_box" className="poi_accordion_box">
-                <div id="accordion_1_parent" className="poi_accordion_parent">
+                <div id="accordion_1_parent" className="poi_accordion_parent accordionjs">
                   {sections.map((s) => (
                     <AccSection key={s.key} title={s.title} defaultOpen={s.open}
                       col1={s.col1.length > 0 ? s.col1 : null}

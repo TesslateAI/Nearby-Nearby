@@ -72,16 +72,16 @@ function POIDetail() {
   // Render loading state
   if (loading) {
     return (
-      <div className="poi-detail__loading">Loading...</div>
+      <div className="poi_detail__loading">Loading...</div>
     );
   }
 
   // Render error state
   if (error || !poi) {
     return (
-      <div className="poi-detail__error">
+      <div className="poi_detail__error">
         <h2>{error || 'POI not found'}</h2>
-        <button type="button" onClick={() => navigate('/')} className="poi-detail__back-btn">
+        <button type="button" onClick={() => navigate('/')} className="btn_reset button">
           Back to Home
         </button>
       </div>
@@ -118,11 +118,7 @@ function POIDetail() {
     return <GenericDetail poi={poi} />;
   };
 
-  return (
-    <div className="poi-detail-page">
-      {renderDetailComponent()}
-    </div>
-  );
+  return renderDetailComponent();
 }
 
 export default POIDetail;
