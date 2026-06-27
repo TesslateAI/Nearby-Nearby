@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { CheckCircle } from 'lucide-react';
 import { getApiUrl } from '../config';
-import '../styles/forms.css';
 
 function Contact() {
   const [name, setName] = useState('');

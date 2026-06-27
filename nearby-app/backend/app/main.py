@@ -52,7 +52,17 @@ async def startup_event():
                 print("[INFO] Fuzzy search will still work with basic matching")
                 connection.rollback()
 
-            # Enable pgvector extension for semantic search
+            # Enable pgvector extension for semantic search.
+            #
+            # NOTE: The canonical source for the pgvector extension, the
+            # `embedding vector(768)` column, and its HNSW index is the admin
+            # Alembic migration `k_embedding_001` (admin owns the shared
+            # schema). This startup `CREATE EXTENSION IF NOT EXISTS` is kept
+            # ONLY as belt-and-suspenders for app-only local databases that
+            # never run admin migrations — it is idempotent and intentionally
+            # does NOT create the column/index (the app must not own schema).
+            # Failure here is non-fatal: semantic search degrades to keyword
+            # search.
             try:
                 connection.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
                 connection.commit()
@@ -114,20 +124,24 @@ async def startup_event():
         print(f"[ERROR] Database connection failed: {e}")
         raise
 
-    # Load embedding model for semantic search
-    print("\n[EMBEDDING] Loading michaelfeil/embeddinggemma-300m model...")
+    # Wire up the shared embedding client for semantic search. The model is now
+    # served out-of-process by a TEI container, so this is a cheap, fail-soft
+    # HTTP client — no ~1GB model is loaded into this process. If the service
+    # URL is unset or the service is down, the client is disabled and semantic
+    # search transparently degrades to keyword search.
+    print("\n[EMBEDDING] Configuring shared embedding client...")
     try:
-        from sentence_transformers import SentenceTransformer
-        import time
-        start_time = time.time()
-        app.state.embedding_model = SentenceTransformer("michaelfeil/embeddinggemma-300m")
-        load_time = time.time() - start_time
-        print(f"[SUCCESS] Embedding model loaded in {load_time:.1f}s and ready for fast searches!")
-        print(f"[INFO] Model will stay in memory (~1GB RAM) for instant search responses")
+        from shared.embeddings import get_embedding_client
+        app.state.embedding_client = get_embedding_client()
+        if app.state.embedding_client.enabled:
+            print(f"[SUCCESS] Embedding client configured (service: {app.state.embedding_client.base_url})")
+        else:
+            print("[INFO] Embedding service not configured (EMBEDDING_SERVICE_URL unset)")
+            print("[INFO] Semantic search will fall back to keyword search")
     except Exception as e:
-        print(f"[WARNING] Could not load embedding model: {e}")
+        print(f"[WARNING] Could not configure embedding client: {e}")
         print("[INFO] Semantic search will fall back to keyword search")
-        app.state.embedding_model = None
+        app.state.embedding_client = None
 
 # CORS Middleware — restrict methods/headers explicitly. With
 # allow_credentials=True, wildcard methods/headers expand the cross-origin
@@ -311,7 +325,16 @@ async def health_check():
         _health_logger.exception("Health check database probe failed")
         health["status"] = "degraded"
         health["database"] = "disconnected"
-    health["ml_model"] = "loaded" if getattr(app.state, 'embedding_model', None) else "not loaded"
+    # Report the embedding service status. This is informational only and must
+    # NOT affect overall health: if the embedding service is unconfigured or
+    # down, semantic search simply degrades to keyword search — the app stays
+    # healthy. We never make a network call here (the health probe must be fast
+    # and cannot depend on a third-party container being up).
+    client = getattr(app.state, 'embedding_client', None)
+    if client is not None and getattr(client, 'enabled', False):
+        health["embedding_service"] = "configured"
+    else:
+        health["embedding_service"] = "disabled"
     status_code = 200 if health["status"] == "healthy" else 503
     return JSONResponse(content=health, status_code=status_code)
 

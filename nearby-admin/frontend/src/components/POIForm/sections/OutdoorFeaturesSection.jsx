@@ -49,7 +49,7 @@ function useOutdoorTypeOptions() {
   return options;
 }
 
-export const OutdoorFeaturesSection = React.memo(function OutdoorFeaturesSection({ form }) {
+export const OutdoorFeaturesSection = React.memo(function OutdoorFeaturesSection({ form, isPark }) {
   const outdoorTypeOptions = useOutdoorTypeOptions();
   return (
     <Stack>
@@ -62,20 +62,26 @@ export const OutdoorFeaturesSection = React.memo(function OutdoorFeaturesSection
         </SimpleGrid>
       </Checkbox.Group>
 
-      <Divider my="md" label="Outdoor Types" />
-      <Checkbox.Group {...getCheckboxGroupProps(form, 'outdoor_types')}>
-        <SimpleGrid cols={{ base: 2, sm: 3 }}>
-          {outdoorTypeOptions.length === 0 ? (
-            <Text size="sm" c="dimmed">
-              Loading outdoor types…
-            </Text>
-          ) : (
-            outdoorTypeOptions.map(({ value, label }) => (
-              <Checkbox key={value} value={value} label={label} />
-            ))
-          )}
-        </SimpleGrid>
-      </Checkbox.Group>
+      {/* #76 Park: the legacy "Outdoor Types" Checkbox.Group is removed from the
+          Park form. Trail (and other consumers) keep it until their own reorg. */}
+      {!isPark && (
+        <>
+          <Divider my="md" label="Outdoor Types" />
+          <Checkbox.Group {...getCheckboxGroupProps(form, 'outdoor_types')}>
+            <SimpleGrid cols={{ base: 2, sm: 3 }}>
+              {outdoorTypeOptions.length === 0 ? (
+                <Text size="sm" c="dimmed">
+                  Loading outdoor types…
+                </Text>
+              ) : (
+                outdoorTypeOptions.map(({ value, label }) => (
+                  <Checkbox key={value} value={value} label={label} />
+                ))
+              )}
+            </SimpleGrid>
+          </Checkbox.Group>
+        </>
+      )}
 
       <RichTextEditor
         label="Night Sky Viewing"

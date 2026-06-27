@@ -1,13 +1,14 @@
 import React, { lazy, Suspense } from 'react';
 import {
   Stack, SimpleGrid, Select, NumberInput, Button, Divider,
-  Checkbox, Radio, Card, Group, ActionIcon, Alert, Text, TextInput
+  Checkbox, Radio, Card, Group, ActionIcon, Alert, Text, TextInput, Switch
 } from '@mantine/core';
 import { IconPlus, IconTrash, IconMapPin, IconInfoCircle } from '@tabler/icons-react';
 import RichTextEditor from '../../RichTextEditor';
 import { DebouncedTextInput } from '../../DebouncedTextInput';
-import { getDebouncedInputProps, getNumericInputProps } from '../constants/helpers';
-import { PARKING_OPTIONS, VENUE_SETTINGS } from '../../../utils/constants';
+import { getDebouncedInputProps } from '../constants/helpers';
+import { PARKING_OPTIONS } from '../../../utils/constants';
+import CoordinateInput from '../components/CoordinateInput';
 import {
   EntryPhotoUpload,
   ParkingPhotosUpload,
@@ -25,6 +26,7 @@ export const LocationSection = React.memo(function LocationSection({
   isTrail,
   isEvent,
   isFreeListing,
+  isPaidListing,
   id
 }) {
   return (
@@ -113,31 +115,52 @@ export const LocationSection = React.memo(function LocationSection({
         />
       </SimpleGrid>
 
-      <Divider my="md" label="Coordinates" />
-      <SimpleGrid cols={{ base: 1, sm: 2 }}>
-        <NumberInput
-          label="Front Door Latitude"
-          placeholder="35.7128"
-          precision={6}
-          {...getNumericInputProps(form, 'front_door_latitude')}
-        />
-        <NumberInput
-          label="Front Door Longitude"
-          placeholder="-79.0064"
-          precision={6}
-          {...getNumericInputProps(form, 'front_door_longitude')}
-        />
-      </SimpleGrid>
+      <Divider my="md" label="Front Door / Arrival Coordinates" />
+      <CoordinateInput
+        label="Front Door / Arrival Coordinates"
+        latLabel="Front Door Latitude"
+        lngLabel="Front Door Longitude"
+        value={{
+          lat: form.values.front_door_latitude,
+          lng: form.values.front_door_longitude,
+          w3w: form.values.what3words_address,
+        }}
+        onChange={(v) => {
+          form.setFieldValue('front_door_latitude', v.lat);
+          form.setFieldValue('front_door_longitude', v.lng);
+          form.setFieldValue('what3words_address', v.w3w ?? '');
+        }}
+      />
       <Button
         size="xs"
         variant="light"
         onClick={() => {
           form.setFieldValue('front_door_latitude', form.values.latitude);
           form.setFieldValue('front_door_longitude', form.values.longitude);
+          // Manual coord set from map pin invalidates any prior w3w (task 2 consistency).
+          form.setFieldValue('what3words_address', '');
         }}
       >
         Use Map Pin for Lat/Long
       </Button>
+
+      {/* Business Free (#74) + Business Paid (#75) + Park (#76) + Trail (#77) +
+          Event (#73): lat_long_most_accurate moves here from Identity (Business
+          also moves dont_display_location). Other POI types keep these toggles
+          in their original locations and never render them in Address. */}
+      {((isBusiness && (isFreeListing || isPaidListing)) || isPark || isTrail || isEvent) && (
+        <SimpleGrid cols={{ base: 1, sm: 2 }}>
+          <Switch
+            label="Lat/Long Most Accurate"
+            description="Map coordinates are the most reliable location"
+            {...form.getInputProps('lat_long_most_accurate', { type: 'checkbox' })}
+          />
+          <Switch
+            label="Don't Display Location"
+            {...form.getInputProps('dont_display_location', { type: 'checkbox' })}
+          />
+        </SimpleGrid>
+      )}
 
       {/* Park Entry Information */}
       {isPark && (
@@ -159,13 +182,23 @@ export const LocationSection = React.memo(function LocationSection({
         </>
       )}
 
-      {/* Trail Entry Information removed (#63 / #64): trail_entry_notes is
-          now bound by <TrailheadAccessPointsSection> in s8-trail-guide, and
-          trailhead photos use image_type='trail_head' there. Keeping the
-          duplicate here caused a dual-write conflict (R2 reviewer flag). */}
+      {/* Trail Entry Information */}
+      {isTrail && (
+        <>
+          <Divider my="md" label="Trail Entry Information" />
+          {shouldUseImageUpload(id) ? (
+            <EntryPhotoUpload poiId={id} poiType="Trail" form={form} />
+          ) : (
+            <Text size="sm" c="dimmed">Save POI first to enable trail entry photo upload</Text>
+          )}
+        </>
+      )}
 
-      {/* Business Entry Information - PAID Business only */}
-      {isBusiness && !isFreeListing && (
+      {/* Business Entry Information - PAID Business only.
+          #75: Business Paid drops the in-Address Business Entry block (its
+          contents are duplicated by Hours / the dedicated entry flow), so this
+          renders only for non-Free, non-Paid business variants. */}
+      {isBusiness && !isFreeListing && !isPaidListing && (
         <>
           <Divider my="md" label="Business Entry Information" />
           <RichTextEditor
@@ -184,22 +217,13 @@ export const LocationSection = React.memo(function LocationSection({
         </>
       )}
 
-      {/* Event Venue Information */}
+      {/* Event Entry Information.
+          #73 Event reorg: the "Venue Settings" (event.venue_settings JSONB) array
+          moved OUT of Address into the Event Details accordion (Acc 3), rendered
+          directly in EventLayout. Address keeps only the Event Entry Notes +
+          Photos for Event. */}
       {isEvent && (
         <>
-          <Divider my="md" label="Venue Settings" />
-          <Checkbox.Group
-            label="Venue Settings"
-            value={form.values.event?.venue_settings || []}
-            onChange={(value) => form.setFieldValue('event.venue_settings', value)}
-          >
-            <SimpleGrid cols={{ base: 2, sm: 4 }}>
-              {VENUE_SETTINGS.map(setting => (
-                <Checkbox key={setting} value={setting} label={setting} />
-              ))}
-            </SimpleGrid>
-          </Checkbox.Group>
-
           <Divider my="md" label="Event Entry Information" />
           <RichTextEditor
             label="Event Entry Notes"
@@ -217,76 +241,90 @@ export const LocationSection = React.memo(function LocationSection({
         </>
       )}
 
-      <Divider my="md" label="Parking Information" />
+      {/* Business Free (#74) + Business Paid (#75) + Park (#76) + Trail (#77) +
+          Event (#73): the in-Address parking block is removed entirely. For
+          Free, parking_types moves to the dedicated Parking accordion (single
+          checkbox group). For Paid, Park, Trail, and Event, the whole block
+          moves to the dedicated Parking accordion as repeatable
+          ParkingLocationGroup groupings (parking_locations JSONB). Every other
+          POI type renders this legacy block unchanged. */}
+      {!((isBusiness && (isFreeListing || isPaidListing)) || isPark || isTrail || isEvent) && (
+        <>
+          <Divider my="md" label="Parking Information" />
 
-      <Checkbox.Group
-        label="Parking Types Available"
-        value={form.values.parking_types || []}
-        onChange={(value) => form.setFieldValue('parking_types', value)}
-      >
-        <SimpleGrid cols={{ base: 2, sm: 3 }}>
-          {PARKING_OPTIONS.map(type => (
-            <Checkbox key={type} value={type} label={type} />
-          ))}
-        </SimpleGrid>
-      </Checkbox.Group>
+          <Checkbox.Group
+            label="Parking Types Available"
+            value={form.values.parking_types || []}
+            onChange={(value) => form.setFieldValue('parking_types', value)}
+          >
+            <SimpleGrid cols={{ base: 2, sm: 3 }}>
+              {PARKING_OPTIONS.map(type => (
+                <Checkbox key={type} value={type} label={type} />
+              ))}
+            </SimpleGrid>
+          </Checkbox.Group>
 
-      <RichTextEditor
-        label="Parking Notes"
-        placeholder="Additional parking information"
-        value={form.values.parking_notes || ''}
-        onChange={(html) => form.setFieldValue('parking_notes', html)}
-        error={form.errors.parking_notes}
-      />
+          <RichTextEditor
+            label="Parking Notes"
+            placeholder="Additional parking information"
+            value={form.values.parking_notes || ''}
+            onChange={(html) => form.setFieldValue('parking_notes', html)}
+            error={form.errors.parking_notes}
+          />
 
-      {/* public_transit_info removed — renamed _deprecated_public_transit_info (Migration A #33) */}
+          {/* public_transit_info removed — renamed _deprecated_public_transit_info (Migration A #33) */}
 
-      <Radio.Group
-        label="Expect to Pay for Parking?"
-        {...form.getInputProps('expect_to_pay_parking')}
-      >
-        <Stack mt="xs">
-          <Radio value="yes" label="Yes" />
-          <Radio value="no" label="No" />
-          <Radio value="sometimes" label="Sometimes" />
-        </Stack>
-      </Radio.Group>
+          <Radio.Group
+            label="Expect to Pay for Parking?"
+            {...form.getInputProps('expect_to_pay_parking')}
+          >
+            <Stack mt="xs">
+              <Radio value="yes" label="Yes" />
+              <Radio value="no" label="No" />
+              <Radio value="sometimes" label="Sometimes" />
+            </Stack>
+          </Radio.Group>
 
-      {/* Primary Parking Location - lat/long and photos for main parking area */}
-      <Divider my="md" label="Primary Parking Location" />
-      <Text size="sm" c="dimmed" mb="sm">
-        Set the coordinates and photos for the main parking area. Use "Add Another Parking Location" below for additional lots.
-      </Text>
-      <SimpleGrid cols={{ base: 1, sm: 2 }}>
-        <NumberInput
-          label="Primary Parking Latitude"
-          placeholder="35.7128"
-          precision={6}
-          value={form.values.primary_parking_lat || ''}
-          onChange={(value) => form.setFieldValue('primary_parking_lat', value)}
-        />
-        <NumberInput
-          label="Primary Parking Longitude"
-          placeholder="-79.0064"
-          precision={6}
-          value={form.values.primary_parking_lng || ''}
-          onChange={(value) => form.setFieldValue('primary_parking_lng', value)}
-        />
-      </SimpleGrid>
-      <TextInput
-        label="Primary Parking Area Name"
-        placeholder="e.g., Main Lot, Front Parking"
-        value={form.values.primary_parking_name || ''}
-        onChange={(e) => form.setFieldValue('primary_parking_name', e.target.value)}
-      />
-      {shouldUseImageUpload(id) ? (
-        <ParkingPhotosUpload poiId={id} parkingName={form.values.primary_parking_name || 'Primary'} form={form} />
-      ) : (
-        <Text size="sm" c="dimmed">Save POI first to enable parking photo upload</Text>
+          {/* Primary Parking Location - lat/long and photos for main parking area */}
+          <Divider my="md" label="Primary Parking Location" />
+          <Text size="sm" c="dimmed" mb="sm">
+            Set the coordinates and photos for the main parking area. Use "Add Another Parking Location" below for additional lots.
+          </Text>
+          <SimpleGrid cols={{ base: 1, sm: 2 }}>
+            <NumberInput
+              label="Primary Parking Latitude"
+              placeholder="35.7128"
+              precision={6}
+              value={form.values.primary_parking_lat || ''}
+              onChange={(value) => form.setFieldValue('primary_parking_lat', value)}
+            />
+            <NumberInput
+              label="Primary Parking Longitude"
+              placeholder="-79.0064"
+              precision={6}
+              value={form.values.primary_parking_lng || ''}
+              onChange={(value) => form.setFieldValue('primary_parking_lng', value)}
+            />
+          </SimpleGrid>
+          <TextInput
+            label="Primary Parking Area Name"
+            placeholder="e.g., Main Lot, Front Parking"
+            value={form.values.primary_parking_name || ''}
+            onChange={(e) => form.setFieldValue('primary_parking_name', e.target.value)}
+          />
+          {shouldUseImageUpload(id) ? (
+            <ParkingPhotosUpload poiId={id} parkingName={form.values.primary_parking_name || 'Primary'} form={form} />
+          ) : (
+            <Text size="sm" c="dimmed">Save POI first to enable parking photo upload</Text>
+          )}
+        </>
       )}
 
-      {/* Parking Locations for Parks, Trails, and Events */}
-      {(isPark || isTrail || isEvent) && (
+      {/* Parking Locations. Park (#76), Trail (#77), and Event (#73) all move
+          this repeatable parking grouping OUT of Address into the dedicated
+          Parking accordion as the richer ParkingLocationGroup, so it is now
+          suppressed for every type. Guard kept explicit for safety. */}
+      {false && (
         <>
           <Divider my="md" label="Parking Locations" />
           {(form.values.parking_locations || []).map((parking, index) => (

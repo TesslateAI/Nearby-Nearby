@@ -1,5 +1,4 @@
 import { getHeroImageUrl } from '../../utils/poiTier';
-import './HeroBanner.css';
 
 /**
  * HeroBanner — full-width hero image for POI detail pages.

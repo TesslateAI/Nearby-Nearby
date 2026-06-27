@@ -1,4 +1,3 @@
-import './InfoRow.css';
 
 /**
  * InfoRow — thin presentational wrapper for template's .poi_info_row

@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import './VerifiedBadge.css';
 
 /**
  * VerifiedBadge — ported from nn-templates/single-poi-page-01.html:324–344.

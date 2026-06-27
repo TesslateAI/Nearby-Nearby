@@ -44,8 +44,9 @@ describe('NearbyCard — event status badges', () => {
     const poi = buildPoi({ event: { start_datetime: '2026-06-01T10:00:00', event_status: 'Canceled' } });
     render(<NearbyCard poi={poi} {...defaultProps} />);
 
-    const heading = screen.getByRole('heading', { name: 'Test Event' });
-    expect(heading.className).toMatch(/nearby-card__name--canceled/);
+    // Barry's redesign: the card title is a div.one_search_map_result_title (not an h3)
+    const nameEl = screen.getByText('Test Event');
+    expect(nameEl.className).toMatch(/nearby-card__name--canceled/);
   });
 
   it('shows a "Past" badge when start_datetime is in the past and status is Scheduled', () => {
@@ -84,7 +85,7 @@ describe('NearbyCard — event status badges', () => {
     };
     render(<NearbyCard poi={poi} {...defaultProps} />);
 
-    expect(screen.getByRole('heading', { name: 'My Coffee Shop' })).toBeInTheDocument();
+    expect(screen.getByText('My Coffee Shop')).toBeInTheDocument();
     // 3218 m ≈ 2.0 miles
     expect(screen.getByText('2.0 mi')).toBeInTheDocument();
   });

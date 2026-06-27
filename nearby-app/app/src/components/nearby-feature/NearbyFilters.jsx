@@ -1,4 +1,3 @@
-import './NearbyFilters.css';
 
 const DEFAULT_FILTERS = ['All', 'Businesses', 'Events', 'Parks', 'Trails'];
 

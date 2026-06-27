@@ -12,7 +12,6 @@ import ServiceAnimalAlert from './ServiceAnimalAlert';
 import DirectionsModal from '../common/DirectionsModal';
 import { getOpenCloseStatusLabel } from '../../utils/hoursUtils';
 import { getDisplayableLocation } from '../../utils/getDisplayableLocation';
-import { isPaidTier } from '../../utils/poiTier';
 import { sanitizeHtml } from '../../utils/sanitize';
 
 function labelsFor(routeType) {
@@ -38,7 +37,6 @@ export default function TrailDetail({ poi }) {
   const trail = poi?.trail || {};
   const routeType = trail.route_type || null;
   const labels = labelsFor(routeType);
-  const paid = isPaidTier(poi);
   const images = useMemo(() => getImages(poi), [poi]);
 
   const getCoords = () => {
@@ -119,7 +117,7 @@ export default function TrailDetail({ poi }) {
       {!displayLoc.hideExact && (
         <div className="pd-addr__actions">
           <button type="button" className="btn_reset button btn_outline_teal btn_poi_button_1" onClick={handleDirections}>
-            <Navigation size={14} /> <span className="poi_button_title">Get Directions</span>
+            <Navigation size={14} className="poi_button_icon" aria-hidden="true" style={{fill:'none'}} /> <span className="poi_button_title">Get Directions</span>
           </button>
           {hasVal(poi.address_street) && (
             <button type="button" className="btn_reset button btn_outline_teal btn_poi_button_1" onClick={handleCopyAddress}>
@@ -171,7 +169,7 @@ export default function TrailDetail({ poi }) {
             <div key={ap.id || idx} style={{ marginBottom: 12 }}>
               {ap.name && <h5>{ap.name}</h5>}
               {(ap.latitude != null && ap.longitude != null) && <div><strong>Lat / Long:</strong> {ap.latitude}, {ap.longitude}</div>}
-              {ap.what3words && <div><strong>what3words:</strong> {ap.what3words}</div>}
+              {/* #41: what3words is backend-only per spec — never rendered publicly. */}
               {ap.notes && <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(ap.notes) }} />}
             </div>
           ))}
@@ -187,7 +185,7 @@ export default function TrailDetail({ poi }) {
     (hasVal(trail.cost) || hasVal(trail.pass_info) || hasVal(poi.discounts)) && {
       id: 'pricing', title: 'Pricing + Passes',
       col1: [hasVal(trail.cost) && <ContentGroup key="cost" title="Cost"><div className="acc_content_text">{trail.cost}</div></ContentGroup>, hasVal(trail.pass_info) && <ContentGroup key="pass" title="Passes"><div className="acc_content_text">{trail.pass_info}</div></ContentGroup>].filter(Boolean),
-      col2: [hasVal(poi.discounts) && <ContentGroup key="disc" title="Discounts"><div className="acc_content_text">{typeof poi.discounts === 'string' ? <span dangerouslySetInnerHTML={{ __html: sanitizeHtml(poi.discounts) }} /> : <ChipList items={poi.discounts_offered || poi.discounts} />}</div></ContentGroup>].filter(Boolean),
+      col2: [hasVal(poi.discounts) && <ContentGroup key="disc" title="Discounts"><div className="acc_content_text">{typeof poi.discounts === 'string' ? <span dangerouslySetInnerHTML={{ __html: sanitizeHtml(poi.discounts) }} /> : <ChipList items={poi.discounts} />}</div></ContentGroup>].filter(Boolean),
     },
     (hasVal(poi.public_toilets) || hasVal(poi.toilet_description)) && {
       id: 'restrooms', title: 'Public Restrooms',
@@ -198,7 +196,7 @@ export default function TrailDetail({ poi }) {
     hasVal(poi.wheelchair_details) && {
       id: 'mobility', title: 'Wheelchair and Mobility Access',
       col1: [hasVal(poi.wheelchair_details) && <ContentGroup key="wd" title="Details"><div className="acc_content_text" dangerouslySetInnerHTML={{ __html: sanitizeHtml(poi.wheelchair_details) }} /></ContentGroup>].filter(Boolean),
-      col2: [hasVal(poi.amenities?.mobility_access) && <ContentGroup key="ma" title="Mobility Access"><ChipList items={poi.amenities.mobility_access} /></ContentGroup>].filter(Boolean),
+      col2: [hasVal(poi.mobility_access) && <ContentGroup key="ma" title="Mobility Access"><ChipList items={Array.isArray(poi.mobility_access) ? poi.mobility_access : Object.keys(poi.mobility_access).filter((k) => poi.mobility_access[k] === true)} /></ContentGroup>].filter(Boolean),
     },
     (hasVal(poi.pet_options) || hasVal(poi.pet_policy)) && {
       id: 'pets', title: 'Pet Policy',
@@ -209,11 +207,12 @@ export default function TrailDetail({ poi }) {
       id: 'drone', title: 'Drone Policy',
       col1: [<ContentGroup key="dp" title="Drone Policy"><div className="acc_content_text" dangerouslySetInnerHTML={{ __html: sanitizeHtml(poi.drone_policy) }} /></ContentGroup>], col2: [],
     },
-    (hasVal(poi.locally_found) || hasVal(poi.history) || hasVal(poi.history_paragraph) || hasVal(poi.community_impact)) && {
+    (hasVal(poi.history_paragraph) || hasVal(poi.community_impact)) && {
       id: 'locally_history', title: 'Locally Found + History',
-      col1: [hasVal(poi.locally_found) && <ContentGroup key="lf" title="Locally Found"><div className="acc_content_text" dangerouslySetInnerHTML={{ __html: sanitizeHtml(poi.locally_found) }} /></ContentGroup>].filter(Boolean),
+      col1: [
+        hasVal(poi.history_paragraph) && <ContentGroup key="hist" title="History"><div className="acc_content_text" dangerouslySetInnerHTML={{ __html: sanitizeHtml(poi.history_paragraph) }} /></ContentGroup>,
+      ].filter(Boolean),
       col2: [
-        (hasVal(poi.history) || hasVal(poi.history_paragraph)) && <ContentGroup key="hist" title="History"><div className="acc_content_text" dangerouslySetInnerHTML={{ __html: sanitizeHtml(poi.history || poi.history_paragraph) }} /></ContentGroup>,
         hasVal(poi.community_impact) && <ContentGroup key="ci" title="Community Impact"><div className="acc_content_text" dangerouslySetInnerHTML={{ __html: sanitizeHtml(poi.community_impact) }} /></ContentGroup>,
       ].filter(Boolean),
     },
@@ -254,7 +253,7 @@ export default function TrailDetail({ poi }) {
           <AmenitiesBox poi={poi} title="Amenities" />
 
           <div id="accordion_1_box" className="poi_accordion_box">
-            <div id="accordion_1_parent" className="poi_accordion_parent">
+            <div id="accordion_1_parent" className="poi_accordion_parent accordionjs">
               {sections.map((s) => (
                 <AccSection key={s.id} id={s.id} title={s.title} defaultOpen={!!s.defaultOpen} col1={s.col1} col2={s.col2} />
               ))}

@@ -33,19 +33,16 @@ vi.mock('../../sections/ContactSection', () => ({
   ContactSection: () => <div data-testid="stub-contact" />,
 }));
 vi.mock('../../sections/BusinessDetailsSection', () => ({
-  BusinessDetailsSection: () => <div data-testid="stub-business-details" />,
   MenuBookingSection: () => <div data-testid="stub-menu" />,
   BusinessGallerySection: () => <div data-testid="stub-gallery" />,
-  BusinessEntrySection: () => <div data-testid="stub-entry" />,
+  BusinessEntrySection: () => <div data-testid="stub-business-entry" />,
 }));
 vi.mock('../../sections/FacilitiesSection', () => ({
-  FacilitiesSection: () => <div data-testid="stub-facilities" />,
-  PublicAmenitiesSection: () => <div data-testid="stub-public-amenities" />,
   RentalsSection: () => <div data-testid="stub-rentals" />,
+  PlaygroundsSection: () => <div data-testid="stub-playground" />,
 }));
 vi.mock('../../sections/OutdoorFeaturesSection', () => ({
   PetPolicySection: () => <div data-testid="stub-pet-policy" />,
-  PlaygroundSection: () => <div data-testid="stub-playground" />,
 }));
 vi.mock('../../sections/MiscellaneousSections', () => ({
   InternalContactSection: () => <div data-testid="stub-internal" />,
@@ -55,27 +52,35 @@ vi.mock('../../sections/MiscellaneousSections', () => ({
 vi.mock('../../../HoursSelector', () => ({
   default: () => <div data-testid="stub-hours" />,
 }));
-vi.mock('../../../DynamicAttributeForm', () => ({
-  default: () => <div data-testid="stub-attrs" />,
+vi.mock('../../ImageIntegration', () => ({
+  FeaturedImageUpload: () => <div data-testid="stub-featured" />,
+  shouldUseImageUpload: () => true,
+}));
+vi.mock('../../components/ParkingLocationGroup', () => ({
+  ParkingLocationGroup: () => <div data-testid="stub-parking-group" />,
+}));
+vi.mock('../../components/RestroomLocationGroup', () => ({
+  RestroomLocationGroup: () => <div data-testid="stub-restroom-group" />,
+}));
+vi.mock('../../components/PlaygroundLocationGroup', () => ({
+  PlaygroundLocationGroup: () => <div data-testid="stub-playground-group" />,
+}));
+vi.mock('../../components/PayphoneLocationGroup', () => ({
+  PayphoneLocationGroup: () => <div data-testid="stub-payphone-group" />,
 }));
 vi.mock('../../components/ServiceAnimalAlert', () => ({
   default: () => <div data-testid="stub-service-animal" />,
 }));
 vi.mock('../_shared', () => ({
-  AdminOnlyAccordionItem: ({ userRole }) =>
-    userRole === 'admin' ? (
-      <Accordion.Item value="admin-only">
-        <Accordion.Control>Admin Only</Accordion.Control>
-        <Accordion.Panel>stub</Accordion.Panel>
-      </Accordion.Item>
-    ) : null,
+  AdminOnlyAccordionItem: () => (
+    <Accordion.Item value="admin-only">
+      <Accordion.Control>Admin Only</Accordion.Control>
+      <Accordion.Panel>stub</Accordion.Panel>
+    </Accordion.Item>
+  ),
   IdealForGrouped: () => <div data-testid="stub-ideal-for" />,
-  ArrivalMethodsGroup: () => <div data-testid="stub-arrival" />,
-  What3WordsInput: () => <div data-testid="stub-w3w" />,
-  AccessibleParkingChecklist: () => <div data-testid="stub-parking" />,
   FullAmenitiesBlock: () => <div data-testid="stub-amenities-block" />,
-  ConnectivityRow: () => <div data-testid="stub-connectivity" />,
-  AlcoholAvailableSelect: () => <div data-testid="stub-alcohol" />,
+  ArrivalMethodsGroup: () => <div data-testid="stub-arrival-methods" />,
   PAYMENT_METHODS: [],
   DISCOUNT_TYPES: [],
 }));
@@ -87,8 +92,7 @@ function Harness({ userRole = 'editor' } = {}) {
     initialValues: {
       hours: {},
       poi_type: 'BUSINESS',
-      playground_available: false,
-      smoking_allowed: false,
+      listing_type: 'paid',
     },
   });
   return (
@@ -100,36 +104,34 @@ function Harness({ userRole = 'editor' } = {}) {
   );
 }
 
-// Spec-verbatim expected order — 20 data sections + Admin-Only last.
+// Spec-verbatim expected order — #75 18-accordion target:
+// 17 data sections + Admin-Only last.
 const EXPECTED_ORDER = [
-  'Business Identity',          // s1
-  'Categories + Discovery',     // s2
-  'Hours',                      // s3
-  'Address',                    // s4
-  'Parking & Accessibility',    // s5
-  'Contact & Social Media',     // s6
-  'Business Details',           // s7
-  'Pricing',                    // s8
-  'Menu & Booking',             // s9
-  'Business Entry',             // s10
-  'Gallery',                    // s11
-  'Payments & Discounts',       // s12
-  'Amenities & Facilities',     // s13
-  'Restrooms',                  // s14
-  'Alcohol + Smoking',          // s15
-  'Pet Policy',                 // s16
-  'Playground Information',     // s17
-  'Rentals',                    // s18
-  'Internal & Compliance',      // s19
-  'Dynamic Attributes',         // s20
+  'Business Identity',                   // s1
+  'Categories + Discovery',              // s2
+  'Hours',                               // s3
+  'Address',                             // s4
+  'Parking',                             // s5
+  'Menu + Booking',                      // s6
+  'Pricing + Passes',                    // s7
+  'Accessibility + Mobility Access',     // s8
+  'Restrooms',                           // s9
+  'Playground',                          // s10
+  'On Site Facilities + Amenities',      // s11
+  'Pet Policy',                          // s12
+  'Alcohol + Smoking',                   // s13
+  'Rentals',                             // s14
+  'Locally Found + History',             // s15
+  'Images',                              // s16
+  'Contact + Compliance',                // s17
 ];
 
-describe('BusinessPaidLayout — Wave 4 #53 18-section reorder', () => {
-  it('renders all 20 data sections for non-admin users in spec order', () => {
+describe('BusinessPaidLayout — #75 18-accordion reorg', () => {
+  it('renders all 17 data sections + the Admin Only section in spec order', () => {
     const { container } = render(<Harness userRole="editor" />);
     const controls = container.querySelectorAll('.mantine-Accordion-control');
     const texts = Array.from(controls).map((c) => c.textContent.trim());
-    expect(texts.length).toBe(20);
+    expect(texts.length).toBe(18);
     EXPECTED_ORDER.forEach((expected, idx) => {
       expect(texts[idx]).toContain(expected);
     });
@@ -142,33 +144,35 @@ describe('BusinessPaidLayout — Wave 4 #53 18-section reorder', () => {
     expect(firstButton.textContent).toMatch(/Business Identity/);
   });
 
-  it('last data item is s20-attrs (Dynamic Attributes)', () => {
+  it('Admin Only is last; Contact + Compliance is the last data section', () => {
     const { container } = render(<Harness userRole="editor" />);
     const controls = container.querySelectorAll('.mantine-Accordion-control');
-    const last = controls[controls.length - 1];
-    expect(last.textContent.trim()).toBe('Dynamic Attributes');
+    expect(controls[controls.length - 1].textContent.trim()).toBe('Admin Only');
+    expect(controls[controls.length - 2].textContent.trim()).toBe('Contact + Compliance');
   });
 
   it('Admin-Only is the LAST accordion when userRole=admin', () => {
     const { container } = render(<Harness userRole="admin" />);
     const controls = container.querySelectorAll('.mantine-Accordion-control');
     const texts = Array.from(controls).map((c) => c.textContent.trim());
-    expect(texts.length).toBe(21);
-    expect(texts[20]).toContain('Admin Only');
+    expect(texts.length).toBe(18);
+    expect(texts[17]).toContain('Admin Only');
   });
 
-  it('renders spec-verbatim section titles ("Amenities & Facilities", "Pricing", "Gallery", "Menu & Booking", "Restrooms")', () => {
+  it('renders spec-verbatim renamed section titles', () => {
     render(<Harness userRole="editor" />);
-    expect(screen.getByText('Amenities & Facilities')).toBeInTheDocument();
-    expect(screen.getByText('Pricing')).toBeInTheDocument();
-    expect(screen.getByText('Gallery')).toBeInTheDocument();
-    expect(screen.getByText('Menu & Booking')).toBeInTheDocument();
-    expect(screen.getByText('Restrooms')).toBeInTheDocument();
-    expect(screen.getByText('Rentals')).toBeInTheDocument();
+    expect(screen.getByText('Parking')).toBeInTheDocument();
+    expect(screen.getByText('Pricing + Passes')).toBeInTheDocument();
+    expect(screen.getByText('Menu + Booking')).toBeInTheDocument();
+    expect(screen.getByText('Accessibility + Mobility Access')).toBeInTheDocument();
+    expect(screen.getByText('On Site Facilities + Amenities')).toBeInTheDocument();
     expect(screen.getByText('Alcohol + Smoking')).toBeInTheDocument();
+    expect(screen.getByText('Locally Found + History')).toBeInTheDocument();
+    expect(screen.getByText('Images')).toBeInTheDocument();
+    expect(screen.getByText('Contact + Compliance')).toBeInTheDocument();
   });
 
-  it('places Hours (s3) before Address (s4) per Wave 4 reorder', () => {
+  it('places Hours (s3) before Address (s4)', () => {
     const { container } = render(<Harness userRole="editor" />);
     const controls = container.querySelectorAll('.mantine-Accordion-control');
     const texts = Array.from(controls).map((c) => c.textContent.trim());
@@ -179,36 +183,32 @@ describe('BusinessPaidLayout — Wave 4 #53 18-section reorder', () => {
     expect(hoursIdx).toBeLessThan(addressIdx);
   });
 
-  it('places Pricing (s8) between Business Details (s7) and Menu & Booking (s9)', () => {
+  it('places Parking (s5) immediately after Address (s4)', () => {
     const { container } = render(<Harness userRole="editor" />);
     const controls = container.querySelectorAll('.mantine-Accordion-control');
     const texts = Array.from(controls).map((c) => c.textContent.trim());
-    const detailsIdx = texts.findIndex((t) => t === 'Business Details');
-    const pricingIdx = texts.findIndex((t) => t === 'Pricing');
-    const menuIdx = texts.findIndex((t) => t === 'Menu & Booking');
-    expect(detailsIdx).toBeLessThan(pricingIdx);
-    expect(pricingIdx).toBeLessThan(menuIdx);
+    const addressIdx = texts.findIndex((t) => t === 'Address');
+    const parkingIdx = texts.findIndex((t) => t === 'Parking');
+    expect(parkingIdx).toBe(addressIdx + 1);
   });
 
-  it('places Rentals (s18) after Playground (s17) and before Internal & Compliance (s19)', () => {
+  it('places Alcohol + Smoking (s13) between Pet Policy (s12) and Rentals (s14)', () => {
     const { container } = render(<Harness userRole="editor" />);
     const controls = container.querySelectorAll('.mantine-Accordion-control');
     const texts = Array.from(controls).map((c) => c.textContent.trim());
-    const playgroundIdx = texts.findIndex((t) => t === 'Playground Information');
-    const rentalsIdx = texts.findIndex((t) => t === 'Rentals');
-    const internalIdx = texts.findIndex((t) => t === 'Internal & Compliance');
-    expect(playgroundIdx).toBeLessThan(rentalsIdx);
-    expect(rentalsIdx).toBeLessThan(internalIdx);
-  });
-
-  it('places Alcohol + Smoking (s15) between Restrooms (s14) and Pet Policy (s16)', () => {
-    const { container } = render(<Harness userRole="editor" />);
-    const controls = container.querySelectorAll('.mantine-Accordion-control');
-    const texts = Array.from(controls).map((c) => c.textContent.trim());
-    const restroomsIdx = texts.findIndex((t) => t === 'Restrooms');
-    const alcoholIdx = texts.findIndex((t) => t === 'Alcohol + Smoking');
     const petsIdx = texts.findIndex((t) => t === 'Pet Policy');
-    expect(restroomsIdx).toBeLessThan(alcoholIdx);
-    expect(alcoholIdx).toBeLessThan(petsIdx);
+    const alcoholIdx = texts.findIndex((t) => t === 'Alcohol + Smoking');
+    const rentalsIdx = texts.findIndex((t) => t === 'Rentals');
+    expect(petsIdx).toBeLessThan(alcoholIdx);
+    expect(alcoholIdx).toBeLessThan(rentalsIdx);
+  });
+
+  it('places Images (s16) after Locally Found + History (s15)', () => {
+    const { container } = render(<Harness userRole="editor" />);
+    const controls = container.querySelectorAll('.mantine-Accordion-control');
+    const texts = Array.from(controls).map((c) => c.textContent.trim());
+    const locallyIdx = texts.findIndex((t) => t === 'Locally Found + History');
+    const imagesIdx = texts.findIndex((t) => t === 'Images');
+    expect(locallyIdx).toBeLessThan(imagesIdx);
   });
 });

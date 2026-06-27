@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef, useCallback, Children, cloneElement } from 'react';
-import './Accordion.css';
 
 /**
  * React accordion — ported from nn-templates/inc/accordion.js

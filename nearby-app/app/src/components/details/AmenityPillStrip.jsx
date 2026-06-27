@@ -5,7 +5,6 @@ import {
   WifiIcon,
   PetIcon,
 } from '../nearby-feature/NearbyCard';
-import './AmenityPillStrip.css';
 
 /**
  * AmenityPillStrip — horizontal pill row shown in Park/Trail/Event/

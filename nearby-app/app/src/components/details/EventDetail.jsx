@@ -17,9 +17,7 @@ import { EventJsonLd } from '../seo/index';
 import DirectionsModal from '../common/DirectionsModal';
 
 import { getDisplayableLocation } from '../../utils/getDisplayableLocation';
-import { isPaidTier } from '../../utils/poiTier';
 
-import './EventDetail.css';
 
 /* ------------------------------------------------------------------ */
 /* Helpers                                                             */
@@ -136,7 +134,6 @@ function EventDetail({ poi }) {
   const hideExact = displayLoc.hideExact || dontDisplayLocation;
   const status = deriveEventStatus(event);
   const isCanceled = event?.event_status === 'cancelled' || event?.event_status === 'Canceled';
-  const paid = isPaidTier(poi);
 
   const getEventCoords = () => {
     if (hideExact) return null;
@@ -163,9 +160,9 @@ function EventDetail({ poi }) {
   const petOptionsStr = Array.isArray(poi.pet_options) && poi.pet_options.length > 0
     ? poi.pet_options.join(', ')
     : null;
-  const parkingTypes = Array.isArray(event?.venue_parking_types)
-    ? event.venue_parking_types
-    : (Array.isArray(poi.parking_types) ? poi.parking_types : []);
+  // venue_parking_* snapshot fields are not exposed in the public payload;
+  // read the POI's own parking fields instead.
+  const parkingTypes = Array.isArray(poi.parking_types) ? poi.parking_types : [];
 
   const venueAddrStr = [
     event?.venue_address_street,
@@ -178,7 +175,7 @@ function EventDetail({ poi }) {
     hasContent(event?.venue_address_street) ||
     hasContent(event?.venue_address_city) ||
     parkingTypes.length > 0 ||
-    hasContent(event?.venue_parking_notes);
+    hasContent(poi.parking_notes);
 
   // ticket links: [{ platform, url }] on poi.event
   const ticketLinksRaw = Array.isArray(event?.ticket_links) ? event.ticket_links
@@ -272,8 +269,8 @@ function EventDetail({ poi }) {
             </div>
           </InfoRow>
         )}
-        {hasContent(event?.venue_parking_notes) && (
-          <InfoRow label="Parking Notes">{event.venue_parking_notes}</InfoRow>
+        {hasContent(poi.parking_notes) && (
+          <InfoRow label="Parking Notes">{poi.parking_notes}</InfoRow>
         )}
       </>
     );
@@ -337,7 +334,7 @@ function EventDetail({ poi }) {
   const renderPlayground = () => {
     const hasAny =
       hasContent(poi.playground_types) ||
-      hasContent(poi.playground_surface) ||
+      hasContent(poi.playground_surface_types) ||
       hasContent(poi.playground_age_groups) ||
       poi.inclusive_playground === true;
     if (!hasAny) return null;
@@ -348,9 +345,9 @@ function EventDetail({ poi }) {
             {Array.isArray(poi.playground_types) ? poi.playground_types.join(', ') : poi.playground_types}
           </InfoRow>
         )}
-        {hasContent(poi.playground_surface) && (
+        {hasContent(poi.playground_surface_types) && (
           <InfoRow label="Surface">
-            {Array.isArray(poi.playground_surface) ? poi.playground_surface.join(', ') : poi.playground_surface}
+            {Array.isArray(poi.playground_surface_types) ? poi.playground_surface_types.join(', ') : poi.playground_surface_types}
           </InfoRow>
         )}
         {hasContent(poi.playground_age_groups) && (
@@ -416,7 +413,7 @@ function EventDetail({ poi }) {
   };
 
   const renderAlcoholSmoking = () => {
-    if (!hasContent(poi.alcohol_available) && !hasContent(poi.smoking_policy)) return null;
+    if (!hasContent(poi.alcohol_available) && !hasContent(poi.smoking_options) && !hasContent(poi.smoking_details)) return null;
     return (
       <>
         {hasContent(poi.alcohol_available) && (
@@ -424,9 +421,14 @@ function EventDetail({ poi }) {
             {Array.isArray(poi.alcohol_available) ? poi.alcohol_available.join(', ') : poi.alcohol_available}
           </InfoRow>
         )}
-        {hasContent(poi.smoking_policy) && (
+        {hasContent(poi.smoking_options) && (
           <InfoRow label="Smoking">
-            {Array.isArray(poi.smoking_policy) ? poi.smoking_policy.join(', ') : poi.smoking_policy}
+            {Array.isArray(poi.smoking_options) ? poi.smoking_options.join(', ') : poi.smoking_options}
+          </InfoRow>
+        )}
+        {hasContent(poi.smoking_details) && (
+          <InfoRow label="Smoking Details">
+            {poi.smoking_details}
           </InfoRow>
         )}
       </>
@@ -438,11 +440,6 @@ function EventDetail({ poi }) {
     return (
       <>
         <InfoRow label="Available for Rent">Yes</InfoRow>
-        {hasContent(poi.rental_options) && (
-          <InfoRow label="Options">
-            {Array.isArray(poi.rental_options) ? poi.rental_options.join(', ') : poi.rental_options}
-          </InfoRow>
-        )}
         {hasContent(poi.rental_info) && (
           <InfoRow label="Details">
             <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(poi.rental_info) }} />
@@ -454,23 +451,11 @@ function EventDetail({ poi }) {
 
   const renderLocallyFound = () => {
     const hasAny =
-      hasContent(poi.locally_found) ||
-      hasContent(poi.history) ||
       hasContent(poi.history_paragraph) ||
       hasContent(poi.community_impact);
     if (!hasAny) return null;
     return (
       <>
-        {hasContent(poi.locally_found) && (
-          <InfoRow label="Locally Found">
-            <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(poi.locally_found) }} />
-          </InfoRow>
-        )}
-        {hasContent(poi.history) && (
-          <InfoRow label="History">
-            <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(poi.history) }} />
-          </InfoRow>
-        )}
         {hasContent(poi.history_paragraph) && (
           <InfoRow label="History">
             <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(poi.history_paragraph) }} />
@@ -486,37 +471,16 @@ function EventDetail({ poi }) {
   };
 
   const renderContact = () => {
+    // Organizer name/email/phone/website are shown in the "About + Details"
+    // (Event Details) section via renderAboutDetails; the Contact section only
+    // adds organizer socials + the Contact Organizer button to avoid
+    // double-rendering the same organizer fields.
     const hasAny =
-      hasContent(event?.organizer_name) ||
-      hasContent(event?.organizer_email) ||
-      hasContent(event?.organizer_phone) ||
-      hasContent(event?.organizer_website) ||
-      (Array.isArray(event?.organizer_socials) && event.organizer_socials.length > 0);
+      (Array.isArray(event?.organizer_socials) && event.organizer_socials.length > 0) ||
+      (event?.contact_organizer_toggle === true && hasContent(event?.organizer_email));
     if (!hasAny) return null;
     return (
       <>
-        {hasContent(event?.organizer_name) && <InfoRow label="Organizer">{event.organizer_name}</InfoRow>}
-        {hasContent(event?.organizer_email) && (
-          <InfoRow label="Email">
-            <a href={`mailto:${event.organizer_email}`}>{event.organizer_email}</a>
-          </InfoRow>
-        )}
-        {hasContent(event?.organizer_phone) && (
-          <InfoRow label="Phone">
-            <a href={`tel:${event.organizer_phone}`}>{event.organizer_phone}</a>
-          </InfoRow>
-        )}
-        {hasContent(event?.organizer_website) && (
-          <InfoRow label="Website">
-            <a
-              href={event.organizer_website.startsWith('http') ? event.organizer_website : `https://${event.organizer_website}`}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              {event.organizer_website}
-            </a>
-          </InfoRow>
-        )}
         {Array.isArray(event?.organizer_socials) && event.organizer_socials.length > 0 && (
           <InfoRow label="Socials">
             <div className="poi_chip_row">
@@ -575,8 +539,11 @@ function EventDetail({ poi }) {
     );
   };
 
-  /* ---- section manifest (PAID vs FREE) ---- */
-  const PAID_SECTIONS = [
+  /* ---- section manifest ----
+     Single list. The server tier-gates the underlying fields, so paid-only
+     sections (vendors/playground/drone/alcohol/rentals/sponsors) self-hide
+     for free tier when their render() returns null. */
+  const ALL_SECTIONS = [
     { id: 'about_details', title: 'About + Details', defaultOpen: true, render: renderAboutDetails },
     { id: 'venue_parking', title: 'Venue Address + Parking', defaultOpen: true, render: renderVenue },
     { id: 'restrooms', title: 'Public Restrooms', defaultOpen: false, render: renderRestrooms },
@@ -592,16 +559,7 @@ function EventDetail({ poi }) {
     { id: 'sponsors', title: 'Sponsors', defaultOpen: false, render: renderSponsors },
   ];
 
-  const FREE_SECTIONS = [
-    { id: 'about_details', title: 'About + Details', defaultOpen: false, render: renderAboutDetails },
-    { id: 'venue_parking', title: 'Venue Address', defaultOpen: false, render: renderVenue },
-    { id: 'restrooms', title: 'Public Restrooms', defaultOpen: false, render: renderRestrooms },
-    { id: 'mobility', title: 'Wheelchair and Mobility Access', defaultOpen: false, render: renderWheelchair },
-    { id: 'pets', title: 'Pet Policy', defaultOpen: false, render: renderPetPolicy },
-    { id: 'contact', title: 'Contact', defaultOpen: false, render: renderContact },
-  ];
-
-  const sections = (paid ? PAID_SECTIONS : FREE_SECTIONS)
+  const sections = ALL_SECTIONS
     .map((s) => ({ ...s, body: s.render() }))
     .filter((s) => s.body != null);
 
@@ -670,7 +628,7 @@ function EventDetail({ poi }) {
           />
 
           <div id="accordion_1_box" className="poi_accordion_box">
-            <div id="accordion_1_parent" className="poi_accordion_parent">
+            <div id="accordion_1_parent" className="poi_accordion_parent accordionjs">
               {sections.map((s) => (
                 <AccSection key={s.id} id={s.id} title={s.title} defaultOpen={allOpen || s.defaultOpen}>
                   {s.body}

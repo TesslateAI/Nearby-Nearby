@@ -59,8 +59,11 @@ class ImageResponse(ImageBase):
     updated_at: Optional[datetime]
     function_tags: Optional[List[str]] = None
 
-    # Computed URLs
-    url: str
+    # Computed URLs. `url` is None for image records that have no stored file
+    # yet (e.g. created before S3 upload completed) — see
+    # ImageService.get_image_urls, which returns None as a documented fallback.
+    # Keep this optional so listing/serializing such records never 500s.
+    url: Optional[str] = None
     thumbnail_url: Optional[str] = None
     medium_url: Optional[str] = None
     large_url: Optional[str] = None

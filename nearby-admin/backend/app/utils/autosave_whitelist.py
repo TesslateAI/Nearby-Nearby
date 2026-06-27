@@ -97,6 +97,7 @@ AUTOSAVE_ALLOWED_FIELDS: set[str] = {
     'accessible_parking_details',
     'accessible_restroom',
     'accessible_restroom_details',
+    'mobility_access',
     'smoking_options',
     'smoking_details',
     'wifi_options',
@@ -179,8 +180,8 @@ AUTOSAVE_ALLOWED_FIELDS: set[str] = {
     'inclusive_playground',
 
     # Parks & trails additional
-    'payphone_location',
     'payphone_locations',
+    'cell_service',
     'park_entry_notes',
     'facilities_options',
     'night_sky_viewing',

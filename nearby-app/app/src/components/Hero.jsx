@@ -1,7 +1,6 @@
 import { useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import SearchBar from './SearchBar';
-import './Hero.css';
 
 export default function Hero({ children }) {
   const searchBarRef = useRef(null);
@@ -29,7 +28,7 @@ export default function Hero({ children }) {
       </header>
 
       <div className="search_box_page_container">
-        <div id="search_box_page">
+        <div id="search_box_page" className='wrapper_default'>
           <form id="search_form_page" role="search" aria-label="one search" onSubmit={handleSearchButton}>
             <div className="search_container">
               <div className="search_input_wrapper">

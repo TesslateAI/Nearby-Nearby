@@ -29,13 +29,25 @@ def compute_icon_booleans(poi: dict) -> dict:
     toilets = poi.get('public_toilets') or []
     poi['icon_public_restroom'] = bool(toilets) and toilets != ['No Public Restroom'] and toilets != ['No']
     acc_parking = poi.get('accessible_parking_details') or []
-    mobility = (amenities.get('mobility_access') or amenities.get('accessibility') or [])
+    # mobility_access is now a top-level dict ({step_free_entry, main_area_accessible,
+    # ground_level_service} with 'yes'/'no'/'unknown'); fall back to the legacy
+    # amenities.mobility_access / list shapes for older rows.
+    mobility = (
+        poi.get('mobility_access')
+        or amenities.get('mobility_access')
+        or amenities.get('accessibility')
+        or []
+    )
+    mobility_dict_accessible = isinstance(mobility, dict) and any(
+        str(v).lower() == 'yes' for v in mobility.values()
+    )
     poi['icon_wheelchair_accessible'] = (
         bool(poi.get('accessible_restroom'))
         or bool(acc_parking)
         or bool(poi.get('inclusive_playground'))
         or (isinstance(mobility, list) and len(mobility) > 0)
         or (isinstance(mobility, bool) and mobility)
+        or mobility_dict_accessible
     )
     return poi
 
@@ -426,6 +438,14 @@ def create_poi(db: Session, poi: schemas.PointOfInterestCreate):
         db.rollback()
         raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {e}")
 
+    # Best-effort embed-on-write (A7): AFTER the commit above, never before.
+    # Fully contained — a writer bug must never break a successful POI create.
+    try:
+        from app.crud.embedding_writer import write_embedding_best_effort
+        write_embedding_best_effort(db, db_poi.id)
+    except Exception:
+        pass
+
     return db_poi
 
 
@@ -634,6 +654,14 @@ def update_poi(db: Session, *, db_obj: models.PointOfInterest, obj_in: schemas.P
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"An error occurred during update: {e}")
+
+    # Best-effort embed-on-write (A7): AFTER the commit above, never before.
+    # Fully contained — a writer bug must never break a successful POI update.
+    try:
+        from app.crud.embedding_writer import write_embedding_best_effort
+        write_embedding_best_effort(db, db_obj.id)
+    except Exception:
+        pass
 
     return db_obj
 

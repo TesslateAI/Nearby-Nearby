@@ -1,4 +1,3 @@
-import './QuickFacts.css';
 
 /**
  * QuickFacts — yellow-outlined box that sits in every Figma detail header.

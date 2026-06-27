@@ -14,6 +14,10 @@ output "admin_service_name" {
   value = aws_ecs_service.admin.name
 }
 
+output "embedding_service_name" {
+  value = aws_ecs_service.embedding.name
+}
+
 output "github_actions_role_arn" {
   value = aws_iam_role.github_actions.arn
 }

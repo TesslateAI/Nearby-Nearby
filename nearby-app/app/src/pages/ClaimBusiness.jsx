@@ -2,8 +2,6 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Building2, CheckCircle } from 'lucide-react';
 import { getApiUrl } from '../config';
-import '../styles/forms.css';
-import './ClaimBusiness.css';
 
 function ClaimBusiness() {
   const [inChatham, setInChatham] = useState(null); // null, true, false

@@ -9,6 +9,7 @@ for both apps.
 
 import os
 import sys
+import math
 import uuid
 import pytest
 from datetime import datetime, timezone
@@ -131,6 +132,8 @@ def db_session():
         conn.execute(text("CREATE EXTENSION IF NOT EXISTS postgis;"))
         # pg_trgm for fuzzy search
         conn.execute(text("CREATE EXTENSION IF NOT EXISTS pg_trgm;"))
+        # pgvector for semantic embeddings (vector(768) column + HNSW index below)
+        conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector;"))
         # Create the imagetype enum (must exist before table creation)
         conn.execute(text("""
             CREATE TYPE imagetype AS ENUM (
@@ -142,6 +145,25 @@ def db_session():
         conn.commit()
 
     AdminBase.metadata.create_all(bind=engine)
+
+    # The `embedding` column is intentionally NOT ORM-mapped (so plain SELECTs
+    # never break where pgvector is absent), so create_all() does not add it.
+    # Add it here with raw DDL — idempotent — so every test DB mirrors prod:
+    # the unmapped vector(768) column + its HNSW cosine index. We deliberately
+    # do NOT run `alembic upgrade head` (multiple alembic heads exist); this
+    # self-contained DDL matches migration k_embedding_001.
+    with engine.connect() as conn:
+        conn.execute(text(
+            "ALTER TABLE points_of_interest "
+            "ADD COLUMN IF NOT EXISTS embedding vector(768);"
+        ))
+        conn.execute(text(
+            "CREATE INDEX IF NOT EXISTS poi_embedding_hnsw_idx "
+            "ON points_of_interest USING hnsw (embedding vector_cosine_ops) "
+            "WITH (m=16, ef_construction=64);"
+        ))
+        conn.commit()
+
     db = TestingSessionLocal()
     try:
         yield db
@@ -231,6 +253,116 @@ def app_client(db_session):
                 del sys.modules[mod_name]
         sys.modules.update(admin_modules)
         sys.path = _prev_path
+
+
+# ---------------------------------------------------------------------------
+# 7b. Deterministic mock embedding client (opt-in)
+# ---------------------------------------------------------------------------
+#
+# A hermetic stand-in for shared.embeddings.EmbeddingClient — no torch, no TEI,
+# no network. It produces a NORMALIZED 768-dim vector from text using a
+# token-hash bag-of-words scheme: each whitespace token contributes a unit
+# vector deterministically hashed across the 768 dims, the contributions are
+# summed and L2-normalized. Two texts that share tokens therefore produce
+# vectors with HIGH cosine similarity, which lets the embedding-pipeline test
+# assert a *relevant* nearest-neighbour result (not merely non-null).
+#
+# The asymmetric query/document prefixes are intentionally ignored for the
+# token bag so a query ("pet friendly") still aligns with a document that
+# contains those tokens — the real EmbeddingGemma prefixes change magnitude but
+# not which tokens dominate; for a deterministic test we want pure token
+# overlap to drive similarity.
+
+_EMBED_DIM = 768
+
+
+def _mock_embed_vector(text_value: str):
+    """Deterministic L2-normalized 768-dim bag-of-words vector for ``text_value``."""
+    vec = [0.0] * _EMBED_DIM
+    tokens = [t for t in "".join(
+        c.lower() if (c.isalnum() or c.isspace()) else " " for c in (text_value or "")
+    ).split() if t]
+    if not tokens:
+        # Non-zero constant vector so it's never a zero-magnitude (invalid) vector.
+        vec[0] = 1.0
+        return vec
+    for tok in tokens:
+        # Per-token deterministic unit contribution spread across a few dims so
+        # distinct tokens rarely collide and shared tokens reinforce.
+        h = abs(hash(("mock-embed", tok)))
+        for k in range(8):
+            idx = (h >> (k * 5)) % _EMBED_DIM
+            sign = 1.0 if ((h >> (k + 24)) & 1) else -1.0
+            vec[idx] += sign
+    norm = math.sqrt(sum(x * x for x in vec))
+    if norm == 0.0:
+        vec[0] = 1.0
+        return vec
+    return [x / norm for x in vec]
+
+
+class MockEmbeddingClient:
+    """Enabled, deterministic, hermetic EmbeddingClient stand-in."""
+
+    base_url = "mock://embeddings"
+    enabled = True
+
+    def embed(self, text_value, kind="document"):
+        return _mock_embed_vector(text_value)
+
+    def embed_batch(self, texts, kind="document"):
+        return [_mock_embed_vector(t) for t in (texts or [])]
+
+
+@pytest.fixture
+def mock_embedding_client(monkeypatch):
+    """Opt-in fixture: patch BOTH the write path and the read path to use a
+    deterministic, enabled mock embedding client.
+
+    Not autouse — existing fail-soft tests (test_embed_on_write.py) must keep
+    seeing a DISABLED client, so they don't request this fixture.
+
+    Write path: nearby-admin's ``embedding_writer`` does a runtime
+    ``from shared.embeddings import get_embedding_client`` on every call, so we
+    patch the package-level symbol and reset the cached singleton.
+
+    Read path: nearby-app reads ``request.app.state.embedding_client`` (set at
+    startup from ``get_embedding_client()``). Patching the symbol means any app
+    built AFTER this fixture is applied picks up the mock at startup; tests that
+    want the mock on the read path should request ``mock_embedding_client``
+    BEFORE (i.e. to the left of) ``app_client`` so the patch is live when the
+    TestClient triggers startup. As a belt-and-suspenders the test may also set
+    ``app_client.app.state.embedding_client`` directly.
+    """
+    import shared.embeddings as shared_embeddings
+    import shared.embeddings.client as shared_client
+
+    mock = MockEmbeddingClient()
+
+    # Reset the cached singleton so a previous disabled client can't linger.
+    monkeypatch.setattr(shared_client, "_singleton", None, raising=False)
+
+    def _factory():
+        return mock
+
+    # Patch the package re-export (used by app startup via
+    # `from shared.embeddings import get_embedding_client`) and the source.
+    monkeypatch.setattr(shared_embeddings, "get_embedding_client", _factory)
+    monkeypatch.setattr(shared_client, "get_embedding_client", _factory)
+
+    # The admin WRITE path binds the symbol at import time
+    # (``from shared.embeddings import get_embedding_client`` at module load in
+    # app.crud.embedding_writer), so patching the package alone does NOT reach
+    # it. Patch the already-bound name on that module too, if it's imported.
+    try:
+        import app.crud.embedding_writer as _writer_mod
+        if hasattr(_writer_mod, "get_embedding_client"):
+            monkeypatch.setattr(_writer_mod, "get_embedding_client", _factory)
+    except Exception:
+        # Admin backend not on sys.path (e.g. app-only test context) — fine.
+        pass
+
+    yield mock
 
 
 # ---------------------------------------------------------------------------

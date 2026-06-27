@@ -75,24 +75,21 @@ describe('IdealForGrouped (Issue #43 unified checkbox grid)', () => {
     expect(screen.queryByTestId('ideal-for-cap-counter')).not.toBeInTheDocument();
   });
 
-  it('hides all groups when listingType="Park" (Park does not show Ideal For)', () => {
+  // #76/#77 — Ideal For + Key Ideal For are now enabled for Park & Trail
+  // (IDEAL_FOR_RULES.Park/Trail visible:true). Previously these asserted the
+  // groups were hidden; the foundation pass intentionally reversed that.
+  it('renders all 5 groups when listingType="Park" (#76 enables Ideal For)', () => {
     render(<TestWrapper listingType="Park" />);
-    expect(screen.queryByTestId('ideal-for-group-atmosphere')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('ideal-for-group-age_group')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('ideal-for-group-social_settings')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('ideal-for-group-local_special')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('ideal-for-group-special_needs')).not.toBeInTheDocument();
-    expect(screen.queryByText('Ideal For')).not.toBeInTheDocument();
+    expectAllGroupsPresent();
+    // Park has no cap (unlimited).
+    expect(screen.queryByTestId('ideal-for-cap-counter')).not.toBeInTheDocument();
   });
 
-  it('hides all groups when listingType="Trail" (Trail does not show Ideal For)', () => {
+  it('renders all 5 groups when listingType="Trail" (#77 enables Ideal For)', () => {
     render(<TestWrapper listingType="Trail" />);
-    expect(screen.queryByTestId('ideal-for-group-atmosphere')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('ideal-for-group-age_group')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('ideal-for-group-social_settings')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('ideal-for-group-local_special')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('ideal-for-group-special_needs')).not.toBeInTheDocument();
-    expect(screen.queryByText('Ideal For')).not.toBeInTheDocument();
+    expectAllGroupsPresent();
+    // Trail has no cap (unlimited).
+    expect(screen.queryByTestId('ideal-for-cap-counter')).not.toBeInTheDocument();
   });
 
   it('enforces 5-item total cap when listingType="Business Free"', () => {

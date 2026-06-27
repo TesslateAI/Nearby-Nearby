@@ -37,7 +37,12 @@ Required PostgreSQL extensions:
 |-----------|---------|------------|
 | PostGIS | Geospatial data types | postgis/postgis image |
 | pg_trgm | Fuzzy text search | App startup |
-| pgvector | Vector similarity (production) | Manual/migration |
+| pgvector | Vector similarity for semantic search | Alembic migration `k_embedding_001` (`CREATE EXTENSION IF NOT EXISTS vector`); also `CREATE EXTENSION IF NOT EXISTS vector` on nearby-app startup as a belt-and-suspenders for app-only local DBs |
+
+> **Local/CI image:** the stock `postgis/postgis` image does **not** bundle
+> pgvector. Local dev uses `nearby-admin/db/Dockerfile` (PostGIS + `postgresql-15-pgvector`)
+> and CI/tests use `tests/Dockerfile.testdb` (`postgis/postgis:15-3.3` +
+> `postgresql-15-pgvector`). See `docs/infrastructure/docker.md`.
 
 ### Enabling Extensions
 
@@ -313,29 +318,48 @@ CREATE INDEX idx_poi_type ON points_of_interest (poi_type);
 
 ---
 
-## pgvector Setup (Production)
+## pgvector / Semantic Search Column
 
-### Enable Extension
+The semantic search column, extension, and index are owned by Alembic, **not**
+created by hand. The migration `k_embedding_001` (revises `j_mobility_001`) runs
+on admin startup (`alembic upgrade heads`) and is idempotent — every statement
+uses `IF [NOT] EXISTS`, so it is safe on a DB where an earlier manual script
+already created the schema.
 
-```sql
-CREATE EXTENSION IF NOT EXISTS vector;
+```python
+# nearby-admin/backend/alembic/versions/k_embedding_001_add_embedding_vector.py
+def upgrade():
+    op.execute("CREATE EXTENSION IF NOT EXISTS vector")
+    op.execute("ALTER TABLE points_of_interest ADD COLUMN IF NOT EXISTS embedding vector(768)")
+    op.execute(
+        "CREATE INDEX IF NOT EXISTS poi_embedding_hnsw_idx "
+        "ON points_of_interest USING hnsw (embedding vector_cosine_ops) "
+        "WITH (m = 16, ef_construction = 64)"
+    )
 ```
 
-### Add Embedding Column
+- **768 dims** match the `michaelfeil/embeddinggemma-300m` model.
+- **HNSW** (not IVFFlat) index with cosine ops, `m = 16`, `ef_construction = 64`.
+- This replaced the retired manual scripts
+  `nearby-app/backend/add_embeddings_column.py` and `generate_embeddings.py`.
 
-```sql
-ALTER TABLE points_of_interest
-ADD COLUMN embedding vector(768);
-```
+### The `embedding` column is NOT ORM-mapped
 
-### Create Index
+`embedding` is intentionally **not** a SQLAlchemy column on either
+`PointOfInterest` model. SQLAlchemy includes every mapped column in `SELECT`, so
+mapping `embedding` would break ordinary reads on any database where pgvector is
+absent. Because it is unmapped:
 
-```sql
--- IVFFlat index for approximate nearest neighbor search
-CREATE INDEX idx_poi_embedding ON points_of_interest
-USING ivfflat (embedding vector_cosine_ops)
-WITH (lists = 100);
-```
+- Reads use **raw SQL** in the semantic search signal
+  (`... embedding <=> cast(:q as vector) ...`), gated on the column actually
+  existing (`information_schema.columns`).
+- Writes use **raw SQL** in `embedding_writer` / the backfill script
+  (`UPDATE points_of_interest SET embedding = CAST(:e AS vector) WHERE id = :id`).
+- The test harness `create_all` does **not** create it (the column is not
+  ORM-mapped); `tests/conftest.py` enables the `vector` extension and then
+  creates the `embedding vector(768)` column + HNSW index directly for every
+  test DB (mirroring migration `k_embedding_001`). See `docs/systems/search.md`
+  for the full write/read paths.
 
 ---
 

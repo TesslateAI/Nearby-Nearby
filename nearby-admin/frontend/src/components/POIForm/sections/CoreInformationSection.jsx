@@ -1,9 +1,7 @@
 import React from 'react';
 import {
-  Stack, SimpleGrid, Select, Switch, Alert, Text, Button, Divider
+  Stack, SimpleGrid, Select, Switch, Alert, Text, Divider
 } from '@mantine/core';
-import { DateTimePicker } from '@mantine/dates';
-import { IconPlus } from '@tabler/icons-react';
 import RichTextEditor from '../../RichTextEditor';
 import { DebouncedTextInput } from '../../DebouncedTextInput';
 import { getDebouncedInputProps } from '../constants/helpers';
@@ -95,90 +93,65 @@ export const CoreInformationSection = React.memo(function CoreInformationSection
         />
       )}
 
-      <SimpleGrid cols={{ base: 1, sm: 2 }}>
-        <Select
-          label="Status"
-          placeholder="Select status"
-          data={getStatusOptions(form.values.poi_type)}
-          {...form.getInputProps('status')}
-        />
-        <DebouncedTextInput
-          label="Status Message"
-          placeholder="Additional status info (max 100 chars)"
-          maxLength={100}
-          {...getDebouncedInputProps(form, 'status_message')}
-        />
-      </SimpleGrid>
-
-      <SimpleGrid cols={{ base: 1, sm: 3 }}>
-        <Switch
-          label="Verified"
-          {...form.getInputProps('is_verified', { type: 'checkbox' })}
-        />
-        <Switch
-          label="Disaster Hub"
-          {...form.getInputProps('is_disaster_hub', { type: 'checkbox' })}
-        />
-        <Switch
-          label="Lat/Long Most Accurate"
-          description="Map coordinates are the most reliable location"
-          {...form.getInputProps('lat_long_most_accurate', { type: 'checkbox' })}
-        />
-        {isBusiness && (
-          <Switch
-            label="Don't Display Location"
-            {...form.getInputProps('dont_display_location', { type: 'checkbox' })}
+      {!isEvent && (
+        <SimpleGrid cols={{ base: 1, sm: 2 }}>
+          <Select
+            label="Status"
+            placeholder="Select status"
+            data={getStatusOptions(form.values.poi_type)}
+            {...form.getInputProps('status')}
           />
-        )}
-      </SimpleGrid>
+          <DebouncedTextInput
+            label="Status Message"
+            placeholder="Additional status info (max 100 chars)"
+            maxLength={100}
+            {...getDebouncedInputProps(form, 'status_message')}
+          />
+        </SimpleGrid>
+      )}
+
+      {/* Business Free (#74) + Business Paid (#75) + Park (#76) + Trail (#77) +
+          Event (#73): these toggles move OUT of Identity — is_verified /
+          is_disaster_hub → Admin-Only; lat_long_most_accurate → Address. Other
+          POI types keep them here. */}
+      {!((isBusiness && (isFreeListing || isPaidListing)) || isPark || isTrail || isEvent) && (
+        <SimpleGrid cols={{ base: 1, sm: 3 }}>
+          <Switch
+            label="Verified"
+            {...form.getInputProps('is_verified', { type: 'checkbox' })}
+          />
+          <Switch
+            label="Disaster Hub"
+            {...form.getInputProps('is_disaster_hub', { type: 'checkbox' })}
+          />
+          <Switch
+            label="Lat/Long Most Accurate"
+            description="Map coordinates are the most reliable location"
+            {...form.getInputProps('lat_long_most_accurate', { type: 'checkbox' })}
+          />
+          {isBusiness && (
+            <Switch
+              label="Don't Display Location"
+              {...form.getInputProps('dont_display_location', { type: 'checkbox' })}
+            />
+          )}
+        </SimpleGrid>
+      )}
 
       {/* key_facilities removed — renamed _deprecated_key_facilities (Migration A #34) */}
 
-      {isEvent && (
-        <>
-          <Divider my="md" label="Event Details" />
-          <Alert color="blue" variant="light" mb="md">
-            <Text size="sm">
-              <strong>Date Instructions:</strong>
-              <br />• If your event takes place on multiple separate days, please create a Repeat Event and enter each day individually.
-              <br />• If your event runs past midnight (for example, December 31st at 10:00 AM until January 1st at 3:00 AM), enter it as one single event since it's continuous.
-            </Text>
-          </Alert>
-          <SimpleGrid cols={{ base: 1, sm: 2 }}>
-            <DateTimePicker
-              label="Start Date & Time"
-              placeholder="Select start date and time"
-              valueFormat="MM/DD/YYYY hh:mm A"
-              timePickerProps={{ format: '12h', withDropdown: true }}
-              value={form.values.event?.start_datetime instanceof Date ? form.values.event.start_datetime : (form.values.event?.start_datetime ? new Date(form.values.event.start_datetime) : null)}
-              onChange={(val) => form.setFieldValue('event.start_datetime', val)}
-              error={form.errors['event.start_datetime']}
-            />
-            <DateTimePicker
-              label="End Date & Time"
-              placeholder="Select end date and time"
-              valueFormat="MM/DD/YYYY hh:mm A"
-              timePickerProps={{ format: '12h', withDropdown: true }}
-              value={form.values.event?.end_datetime instanceof Date ? form.values.event.end_datetime : (form.values.event?.end_datetime ? new Date(form.values.event.end_datetime) : null)}
-              onChange={(val) => form.setFieldValue('event.end_datetime', val)}
-              error={form.errors['event.end_datetime']}
-            />
-          </SimpleGrid>
-          <Button
-            variant="outline"
-            leftSection={<IconPlus size={16} />}
-            onClick={() => {
-              alert('Recurring events functionality will be implemented in a future update');
-            }}
-          >
-            Create Repeating Event
-          </Button>
-        </>
-      )}
+      {/* #73 Event reorg: the Event Details block (Date Instructions banner +
+          Start/End Date & Time) moved OUT of Event Identity into the Event
+          Details accordion (Acc 3), rendered directly in EventLayout. The dead
+          "Create Repeating Event" button was removed entirely — the working
+          mechanism is RecurringEventSection in Acc 3. */}
 
       {/* Event cost moved to EventCostSection (Task 139) */}
 
-      {(isPaidListing || isPark || isTrail || isEvent) && (
+      {/* #75 Business Paid + #76 Park + #77 Trail + #73 Event move the History
+          paragraph OUT of Identity into the dedicated "Locally Found + History"
+          accordion, so it must NOT render here for those types. */}
+      {(isPaidListing && !isBusiness && !isPark && !isTrail && !isEvent) && (
         <>
           <Divider my="md" label="History" />
           <RichTextEditor
@@ -192,20 +165,26 @@ export const CoreInformationSection = React.memo(function CoreInformationSection
         </>
       )}
 
-      {shouldUseImageUpload(id) ? (
-        <FeaturedImageUpload
-          key={`featured-image-${id}`}
-          poiId={id}
-          isBusiness={isBusiness}
-          isFreeListing={isFreeListing}
-          form={form}
-        />
-      ) : (
-        <Alert color="blue" variant="light" key={`featured-placeholder-${id || 'new'}`}>
-          <Text size="sm">
-            {isBusiness && isFreeListing ? "Logo" : "Featured Image"} upload will be available shortly...
-          </Text>
-        </Alert>
+      {/* Business Free (#74) + Business Paid (#75) + Park (#76) + Trail (#77) +
+          Event (#73): the Featured / Main Image upload moves to the dedicated
+          Images accordion (rendered there via <FeaturedImageUpload>). For every
+          other POI type the Featured Image stays inline in Core Information. */}
+      {!((isBusiness && (isFreeListing || isPaidListing)) || isPark || isTrail || isEvent) && (
+        shouldUseImageUpload(id) ? (
+          <FeaturedImageUpload
+            key={`featured-image-${id}`}
+            poiId={id}
+            isBusiness={isBusiness}
+            isFreeListing={isFreeListing}
+            form={form}
+          />
+        ) : (
+          <Alert color="blue" variant="light" key={`featured-placeholder-${id || 'new'}`}>
+            <Text size="sm">
+              Featured Image upload will be available shortly...
+            </Text>
+          </Alert>
+        )
       )}
     </Stack>
   );

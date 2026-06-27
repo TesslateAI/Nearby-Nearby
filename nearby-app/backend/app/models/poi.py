@@ -109,6 +109,8 @@ class PointOfInterest(Base):
     accessible_parking_details  = Column(JSONB)
     accessible_restroom         = Column(Boolean, nullable=False, server_default='false', default=False)
     accessible_restroom_details = Column(JSONB)
+    mobility_access             = Column(JSONB)  # {step_free_entry, main_area_accessible, ground_level_service}
+    cell_service                = Column(JSONB)  # List of CELL_SERVICE_OPTIONS (Good/Limited/Unknown/None)
     smoking_options = Column(JSONB)
     smoking_details = Column(Text)
     wifi_options = Column(JSONB)
@@ -167,7 +169,7 @@ class PointOfInterest(Base):
     online_ordering_links = Column(JSONB)
     gallery_photos = Column(JSONB)
     downloadable_maps = Column(JSONB)
-    payphone_location = Column(JSONB)
+    # payphone_location renamed to _deprecated_payphone_location (Migration A, m_payphone_001 in nearby-admin).
     payphone_locations = Column(JSONB)
     facilities_options = Column(JSONB)
     main_contact_name = Column(String)

@@ -152,7 +152,14 @@ class POINearbyResult(POISearchResult):
     pet_options: Optional[list] = None
     public_toilets: Optional[list] = None
     categories: Optional[List[dict]] = None
-    model_config = ConfigDict(from_attributes=True, arbitrary_types_allowed=True)
+    # extra="allow" — registry-driven card serializer (serialize_poi_card) may
+    # attach additional public registry keys. PII can never reach here because
+    # the card payload is built ONLY from public registry fields, never from all
+    # model columns. The legacy model_validate path drops unknown keys; the
+    # registry path explicitly whitelists the card schema key set.
+    model_config = ConfigDict(
+        from_attributes=True, arbitrary_types_allowed=True, extra="allow"
+    )
 
 class POIDetail(BaseModel):
     id: uuid.UUID
@@ -184,9 +191,8 @@ class POIDetail(BaseModel):
     phone_number: Optional[str] = None
     email: Optional[str] = None
     website_url: Optional[str] = None
-    main_contact_name: Optional[str] = None
-    main_contact_email: Optional[str] = None
-    main_contact_phone: Optional[str] = None
+    # main_contact_name / main_contact_email / main_contact_phone — REMOVED (B0 PII hotfix).
+    # These are admin-only contact fields and must never be exposed by the public API.
 
     # Social Media
     instagram_username: Optional[str] = None
@@ -312,8 +318,8 @@ class POIDetail(BaseModel):
     park_entry_photo: Optional[str] = None
 
     # Emergency
-    offsite_emergency_contact: Optional[str] = None
-    emergency_protocols: Optional[str] = None
+    # offsite_emergency_contact / emergency_protocols — REMOVED (B0 PII hotfix).
+    # Admin-only emergency fields; must never be exposed by the public API.
 
     # Ideal For
     ideal_for: Optional[Any] = None
@@ -339,4 +345,13 @@ class POIDetail(BaseModel):
     last_updated: Optional[datetime] = None
     publication_status: Optional[str] = None
 
-    model_config = ConfigDict(from_attributes=True, arbitrary_types_allowed=True)
+    # extra="allow" — the registry-driven serializer (serialize_poi_detail)
+    # restores previously-dropped PUBLIC fields (e.g. alcohol_available,
+    # what3words_address, the icon_* booleans) that are not declared above. They
+    # pass through as extra keys. This is SAFE ONLY because serialize_poi_detail
+    # builds the payload STRICTLY from the public registry (public_fields_for) —
+    # never from all model columns — so admin/PII columns can never appear. The
+    # legacy model_validate path still drops unknown keys, so it is unaffected.
+    model_config = ConfigDict(
+        from_attributes=True, arbitrary_types_allowed=True, extra="allow"
+    )

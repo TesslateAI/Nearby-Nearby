@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import './Map.css';
 
 // Fix for default marker icons in React-Leaflet
 delete L.Icon.Default.prototype._getIconUrl;
@@ -14,25 +13,25 @@ L.Icon.Default.mergeOptions({
 
 // Create a yellow/gold circle for current POI
 const createCurrentIcon = () => {
-  const svg = `<svg width="32" height="32" xmlns="http://www.w3.org/2000/svg">
-    <circle cx="16" cy="16" r="12" fill="#F4C542" stroke="white" stroke-width="3"/>
-    <circle cx="16" cy="16" r="4" fill="white"/>
+  const svg = `<svg width="38" height="38" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="18" cy="18" r="16" fill="#F4C542" stroke="#562556" stroke-width="2"/>
+    <circle cx="18" cy="18" r="6" fill="#562556"/>
   </svg>`;
   const svgUrl = 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg);
 
   return new L.Icon({
     iconUrl: svgUrl,
-    iconSize: [32, 32],
-    iconAnchor: [16, 16],
-    popupAnchor: [0, -16]
+    iconSize: [38, 38],
+    iconAnchor: [18, 18],
+    popupAnchor: [0, -18]
   });
 };
 
 // Create numbered purple marker for nearby POIs
 const createNumberedIcon = (number, isHighlighted = false) => {
   const bgColor = isHighlighted ? '#328170' : '#562556';
-  const size = isHighlighted ? 40 : 32;
-  const fontSize = isHighlighted ? 16 : 14;
+  const size = isHighlighted ? 46 : 38;
+  const fontSize = isHighlighted ? 20 : 18;
 
   const textEl = number != null
     ? `<text x="${size/2}" y="${size/2 + fontSize/3}" text-anchor="middle" font-family="Arial,sans-serif" font-size="${fontSize}" font-weight="bold" fill="white">${number}</text>`

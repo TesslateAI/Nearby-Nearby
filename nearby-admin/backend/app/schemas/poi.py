@@ -13,6 +13,7 @@ from geoalchemy2.shape import to_shape
 
 from .category import Category
 from .primary_type import PrimaryType
+from ._coercers import EmptyStringToNoneMixin
 
 # Type for titled links - supports both old string format and new dict format
 TitledLink = Union[str, Dict[str, str]]
@@ -74,7 +75,7 @@ class PointGeometry(BaseModel):
 # Business Schemas
 PRICE_RANGES = Literal['$', '$$', '$$$', '$$$$']
 
-class BusinessBase(BaseModel):
+class BusinessBase(EmptyStringToNoneMixin, BaseModel):
     price_range: Optional[PRICE_RANGES] = None
 
 class BusinessCreate(BusinessBase): pass
@@ -99,7 +100,7 @@ SPONSOR_LEVELS = Literal['platform','state','county','town']
 ALCOHOL_AVAILABLE = Literal['full_bar','beer_wine','byob','no_alcohol','seasonal','nearby']
 TRAIL_LIGHTING = Literal['partial','full','seasonal','dusk_to_dawn']
 
-class TrailBase(BaseModel):
+class TrailBase(EmptyStringToNoneMixin, BaseModel):
     length_text: Optional[str] = None
     length_segments: Optional[List[Dict[str, str]]] = None
     difficulty: Optional[str] = None
@@ -312,7 +313,7 @@ OTHER_STATUS_TYPES = Literal[
     'Warning', 'Limited Capacity', 'Coming Soon', 'Under Development', 'Alert'
 ]
 
-class PointOfInterestBase(BaseModel):
+class PointOfInterestBase(EmptyStringToNoneMixin, BaseModel):
     poi_type: POI_TYPES
     name: str
     slug: Optional[str] = None  # SEO-friendly URL slug (auto-generated from name + city)
@@ -486,6 +487,8 @@ class PointOfInterestBase(BaseModel):
     alcohol_notes: Optional[str] = None
     # wheelchair_accessible - DROPPED (Issue #45 PR2 Migration B)
     wheelchair_details: Optional[str] = None
+    mobility_access: Optional[Dict[str, Any]] = None
+    cell_service: Optional[str] = None  # single value: Good/Limited/Unknown/None
     smoking_options: Optional[List[str]] = None
     smoking_details: Optional[str] = None
     wifi_options: Optional[List[str]] = None
@@ -515,7 +518,10 @@ class PointOfInterestBase(BaseModel):
     playground_locations: Optional[Any] = None  # List of dicts (multiple playgrounds). Accepts a single dict for backward-compat; migration g67_001 wraps legacy singular rows.
 
     # Parks & Trails Additional Info
-    payphone_location: Optional[Dict[str, Any]] = None
+    # payphone_location (singular) removed — deprecated to _deprecated_payphone_location
+    # in migration m_payphone_001; data consolidated into the plural array below.
+    # (Leaving it here would crash create_poi's PointOfInterest(**poi_data) since the
+    # column no longer exists on the model.)
     payphone_locations: Optional[List[Dict[str, Any]]] = None
     park_entry_notes: Optional[str] = None
     # park_entry_photo - DEPRECATED: moved to Images table (image_type='entry')
@@ -584,7 +590,7 @@ class PointOfInterestCreate(PointOfInterestBase):
                 raise ValueError("Event data required for poi_type 'EVENT'")
         return values
 
-class PointOfInterestUpdate(BaseModel):
+class PointOfInterestUpdate(EmptyStringToNoneMixin, BaseModel):
     poi_type: Optional[POI_TYPES] = None
     name: Optional[str] = None
     slug: Optional[str] = None  # SEO-friendly URL slug
@@ -693,6 +699,8 @@ class PointOfInterestUpdate(BaseModel):
     alcohol_notes: Optional[str] = None
     # wheelchair_accessible - DROPPED (Issue #45 PR2 Migration B)
     wheelchair_details: Optional[str] = None
+    mobility_access: Optional[Dict[str, Any]] = None
+    cell_service: Optional[str] = None  # single value: Good/Limited/Unknown/None
     smoking_options: Optional[List[str]] = None
     smoking_details: Optional[str] = None
     wifi_options: Optional[List[str]] = None
@@ -714,7 +722,10 @@ class PointOfInterestUpdate(BaseModel):
     playground_notes: Optional[str] = None
     # playground_photos - DEPRECATED: moved to Images table (image_type='playground')
     playground_locations: Optional[Any] = None  # List of dicts (multiple playgrounds). Accepts a single dict for backward-compat; migration g67_001 wraps legacy singular rows.
-    payphone_location: Optional[Dict[str, Any]] = None
+    # payphone_location (singular) removed — deprecated to _deprecated_payphone_location
+    # in migration m_payphone_001; data consolidated into the plural array below.
+    # (Leaving it here would crash create_poi's PointOfInterest(**poi_data) since the
+    # column no longer exists on the model.)
     payphone_locations: Optional[List[Dict[str, Any]]] = None
     park_entry_notes: Optional[str] = None
     # park_entry_photo - DEPRECATED: moved to Images table (image_type='entry')

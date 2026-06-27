@@ -9,7 +9,8 @@ The Search System in nearby-app uses a **multi-signal search engine** that score
 - `nearby-app/backend/app/search/query_processor.py` - Natural language query parsing
 - `nearby-app/backend/app/search/constants.py` - Signal weights, synonyms, amenity patterns
 - `nearby-app/backend/app/api/endpoints/pois.py` - Search API endpoints
-- `nearby-app/backend/app/main.py` - ML model initialization, tsvector index creation
+- `nearby-app/backend/app/main.py` - Embedding client wiring (`app.state.embedding_client`), extension + tsvector index creation
+- `shared/embeddings/` - Fail-soft TEI client + canonical searchable-text builder (shared by both backends)
 - `nearby-app/app/src/components/SearchBar.jsx` - Frontend search with dropdown
 - `nearby-app/app/src/pages/Explore.jsx` - Full-page search results
 
@@ -95,14 +96,27 @@ This catches description-only matches (e.g., searching "kayak" finds a park whos
 
 ### Signal 4: Semantic Search (weight: 0.45)
 
-Uses pgvector ML embeddings from the `embeddinggemma-300m` model. Encodes the full original query and finds nearest neighbors by cosine distance.
+Uses pgvector ML embeddings from the `michaelfeil/embeddinggemma-300m` model (768-dim). The query is encoded **out-of-process** by a TEI embedding service (see "Embedding Service" below) via the shared fail-soft client, then nearest neighbors are found by cosine distance against the stored `embedding vector(768)` column.
 
 ```python
-query_embedding = model.encode(query).tolist()
-# cosine_distance query via pgvector
+# nearby-app/backend/app/search/search_engine.py :: _signal_semantic
+# `client` is app.state.embedding_client (shared.embeddings.EmbeddingClient).
+query_embedding = client.embed(query, kind="query")  # prepends the query prefix
+if query_embedding is None:
+    return {}                                          # → keyword-only fallback
+
+# pgvector cosine: 1 - (embedding <=> :query_embedding) AS similarity
+# WHERE publication_status = 'published' AND embedding IS NOT NULL
+# ORDER BY embedding <=> :query_embedding LIMIT 30
 ```
 
-Falls back to keyword-only search if pgvector is unavailable or embeddings haven't been generated.
+The signal is **gated three ways** and degrades silently to the other 5 signals when any fails:
+
+1. `client is None` (model wiring failed at startup) → `{}`.
+2. `embedding` column missing (checked against `information_schema.columns`) → `{}`.
+3. `client.embed(...)` returns `None` — disabled client (`EMBEDDING_SERVICE_URL` unset), TEI down/timeout, or a wrong-dimension vector. The shared client never raises; it returns `None` and the signal returns `{}`.
+
+This is why semantic search is **fail-soft**: with `EMBEDDING_SERVICE_URL` unset or the TEI service down, search still works (keyword + full-text + trigram), it just loses the semantic signal.
 
 ### Signal 5: Structured Filter Match (weight: 0.10)
 
@@ -165,13 +179,13 @@ After all 6 signals return their scores, the engine:
 2. **Dynamic threshold**: Drop any POI scoring below 20% of the top result (minimum absolute: 0.02)
 3. **Sort**: Return results ordered by combined score, descending
 
-Constants from `constants.py`:
+Constants from `constants.py` (must sum to 1.0):
 ```python
 SIGNAL_WEIGHTS = {
     "semantic": 0.45,
     "keyword_name": 0.15,
-    "exact_name": 0.15,
     "fulltext": 0.10,
+    "exact_name": 0.15,
     "structured_filter": 0.10,
     "type_city_boost": 0.05,
 }
@@ -179,6 +193,8 @@ MIN_ABSOLUTE_SCORE = 0.02
 RELATIVE_SCORE_THRESHOLD = 0.20
 TRIGRAM_SIMILARITY_THRESHOLD = 0.15
 ```
+
+`multi_signal_search(db, query, limit, poi_type, client)` runs all 6 signals, weight-combines them per POI, applies the dynamic threshold, and returns ranked ORM objects. The semantic `client` is threaded through from `app.state.embedding_client`; when it is `None`/disabled the blend is purely the 5 keyword signals.
 
 ---
 
@@ -251,12 +267,104 @@ The homepage Hero section has quick-filter pills that link to `/explore?type=BUS
 
 ---
 
+## Embedding Service (TEI)
+
+The embedding model is no longer loaded in-process. It runs as a **separate
+[Text Embeddings Inference (TEI)](https://huggingface.co/docs/text-embeddings-inference)
+service** and is consumed over HTTP by a thin, fail-soft client. This removed
+`torch` / `sentence-transformers` (~1GB) from the nearby-app image and put the
+app back on CI builds.
+
+| Aspect | Value |
+|--------|-------|
+| Server | `ghcr.io/huggingface/text-embeddings-inference:cpu-1.8.1` (TEI 1.8.1, CPU) |
+| Model | `michaelfeil/embeddinggemma-300m` (ungated EmbeddingGemma mirror, no HF token) |
+| Dimension | **768** (matches the `vector(768)` column + HNSW index) |
+| Wire contract | `POST {base}/embed` with `{"inputs": [...], "normalize": true, "truncate": false}` → array-of-arrays |
+| Discovery | `EMBEDDING_SERVICE_URL` env var; local `http://embedding:80`, prod `http://embedding.<namespace>:80` (ECS Service Connect) |
+
+**Key files:**
+- `shared/embeddings/client.py` — `EmbeddingClient` + `get_embedding_client()` singleton
+- `shared/embeddings/text_builder.py` — canonical `build_searchable_text(...)` / `build_searchable_text_from_orm(poi)`
+- `nearby-admin/backend/app/crud/embedding_writer.py` — embed-on-write
+- `nearby-admin/backend/scripts/backfill_embeddings.py` — bulk (re)embed
+
+### The shared client (`shared.embeddings`)
+
+Both backends import `from shared.embeddings import get_embedding_client`. The
+client is deliberately fail-soft (the rest of the codebase relies on this):
+
+- **Disabled when `EMBEDDING_SERVICE_URL` is unset/empty** → `embed()` returns
+  `None` with **no network call**. Callers fall back to keyword search.
+- **Never raises.** On any error (timeout, connection refused, non-2xx,
+  malformed JSON, wrong vector dimension) it logs once and returns `None`.
+- **Defensively L2-normalizes** every returned vector so cosine-distance SQL is
+  correct even if the server did not normalize, and rejects (returns `None` for)
+  any vector whose length ≠ 768.
+- The singleton reads `EMBEDDING_SERVICE_URL` and `EMBEDDING_MODEL` (model id is
+  informational only — TEI serves one model per container).
+
+### Asymmetric query/document prompts
+
+EmbeddingGemma is trained for **asymmetric, task-prefixed** encoding: queries and
+documents must get different prefixes or retrieval quality drops sharply. The
+shared client prepends the prefix by `kind` **before** sending to TEI (and calls
+`/embed` without `prompt_name` so TEI does not double-apply a prefix):
+
+| `kind` | Prefix prepended | Used by |
+|--------|------------------|---------|
+| `"query"` | `task: search result \| query: ` | `_signal_semantic` (search time) |
+| `"document"` | `title: none \| text: ` | embed-on-write + backfill |
+
+### Write path — embed-on-write (admin)
+
+`embedding_writer.write_embedding_best_effort(db, poi_id)` is called **after**
+the commit on POI create, update, and (text-relevant) autosave in nearby-admin.
+It is best-effort by contract:
+
+- Reloads the POI on a **fresh session** with the trail/event/business/category
+  joins, builds the document text via `build_searchable_text_from_orm`, and
+  embeds with `kind="document"`.
+- Writes with raw SQL in its **own transaction** —
+  `UPDATE points_of_interest SET embedding = CAST(:e AS vector) WHERE id = :id`
+  (the `embedding` column is intentionally **not** ORM-mapped). This can never
+  roll back or corrupt the already-committed POI row.
+- **Swallows all errors.** If TEI is unconfigured or down, the write is a clean
+  no-op and the POI save still succeeds; the backfill self-heals later.
+- Autosave only re-embeds when a field in `EMBED_RELEVANT_FIELDS` changed
+  (`should_reembed`), so it does not re-embed on every keystroke-batch.
+
+### The canonical searchable text
+
+`build_searchable_text` assembles a pipe-joined string from name, type,
+categories, descriptions, business/youth/entertainment amenities, accessibility
+& wifi/pet/toilet features, park facilities/things-to-do/natural-features,
+trail difficulty/length/route/surfaces/experiences, event venue settings,
+business price range, cost/pricing, alcohol, discounts, and city. The
+embed-on-write path and the backfill use the **same builder**, so write-time and
+backfill embeddings are byte-identical.
+
+---
+
 ## Generating Embeddings
 
+The pgvector `embedding` column and its HNSW index are created by the Alembic
+migration `k_embedding_001` (run on admin startup / `alembic upgrade head`).
+Embeddings are written **on every POI create/update/autosave** in nearby-admin
+(`embedding_writer.write_embedding_best_effort`). To (re)embed in bulk — e.g.
+after a mass import or a text-builder change — run the admin backfill script,
+which embeds through the out-of-process TEI service via `shared.embeddings`:
+
 ```bash
-# Generate embeddings for all POIs (run after data changes)
-python generate_embeddings.py --force
+# From the nearby-admin backend (requires EMBEDDING_SERVICE_URL set to the TEI URL)
+python scripts/backfill_embeddings.py --force   # re-embed ALL POIs
+python scripts/backfill_embeddings.py           # only POIs WHERE embedding IS NULL
 ```
+
+> The legacy in-process scripts `nearby-app/backend/add_embeddings_column.py`
+> and `nearby-app/backend/generate_embeddings.py` were retired: the DDL now
+> lives in migration `k_embedding_001` and the embedding logic in
+> `shared/embeddings` + `nearby-admin/backend/scripts/backfill_embeddings.py`.
 
 The embedding text now includes categories, amenities, facilities, and trail-specific info for richer semantic matching.
 
@@ -266,9 +374,10 @@ The embedding text now includes categories, amenities, facilities, and trail-spe
 
 | Condition | Behavior |
 |-----------|----------|
-| No pgvector extension | Semantic signal returns empty; other 5 signals still work |
-| No embeddings generated | Same as above |
-| ML model not loaded | Semantic signal skipped |
+| No pgvector extension / no `embedding` column | Semantic signal returns empty; other 5 signals still work |
+| No embeddings generated (`embedding IS NULL`) | Those POIs are excluded from the semantic signal only |
+| `EMBEDDING_SERVICE_URL` unset | Client disabled; `embed()` returns `None` (no network); semantic signal skipped |
+| TEI service down / timeout / bad vector | Client returns `None` (never raises); semantic signal skipped |
 | Empty/nonsense query | Returns empty list (no crash) |
 | Query too short (< 2 chars) | Frontend doesn't fire search |
 
@@ -286,21 +395,23 @@ CREATE INDEX idx_poi_city_trgm ON points_of_interest USING gin (address_city gin
 -- tsvector GIN index for full-text search
 CREATE INDEX idx_poi_tsvector ON points_of_interest USING gin (tsvector_col);
 
--- pgvector IVFFlat index for vector search (production)
-CREATE INDEX idx_poi_embedding ON points_of_interest USING ivfflat (embedding vector_cosine_ops);
+-- pgvector HNSW index for vector search (created by migration k_embedding_001)
+CREATE INDEX poi_embedding_hnsw_idx ON points_of_interest
+  USING hnsw (embedding vector_cosine_ops) WITH (m = 16, ef_construction = 64);
 ```
 
 ### Caching
 
-- ML model loaded once at startup (global variable)
+- The embedding client is a cheap, pooled HTTP singleton (no in-process model)
 - tsvector column is GENERATED STORED (no runtime computation)
 - Consider LRU cache for frequent queries
 
 ### Batch Processing
 
 ```python
-# For bulk embedding generation
-def batch_encode(texts: list[str], batch_size: int = 32):
-    embeddings = model.encode(texts, batch_size=batch_size)
-    return embeddings
+# Bulk (re)embed through the TEI service, document prefix applied per item.
+# Used by nearby-admin/backend/scripts/backfill_embeddings.py.
+from shared.embeddings import get_embedding_client
+client = get_embedding_client()
+vectors = client.embed_batch(texts, kind="document")  # list[list[float] | None]
 ```

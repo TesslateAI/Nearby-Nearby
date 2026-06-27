@@ -1,5 +1,5 @@
 import { useState, useRef, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 
 import NearbySection from '../../nearby-feature/NearbySection';
 import PhotoLightbox from '../PhotoLightbox';
@@ -7,6 +7,8 @@ import HeroBanner from '../HeroBanner';
 import SuggestEditOverlay from '../SuggestEditOverlay';
 import PoiHeader from '../PoiHeader';
 import DirectionsModal from '../../common/DirectionsModal';
+import AttributeSections from '../AttributeSections';
+import { bespokeAutoKeysFor } from '../widgets/bespokeCoverage';
 
 import { getDisplayableLocation } from '../../../utils/getDisplayableLocation';
 import { isPaidTier } from '../../../utils/poiTier';
@@ -21,15 +23,12 @@ export default function POIDetailLayout({
   extraButtons,
   titleLeader,
   subtitleExtras,
-  backLabel = '← Back to Search',
-  backTo = '/',
   showHero = true,
   children,
   seoComponent,
   beforeHeader,
   afterMain,
 }) {
-  const navigate = useNavigate();
   const [copiedCoords, setCopiedCoords] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
@@ -52,6 +51,11 @@ export default function POIDetailLayout({
     statusVariant = derived.variant || undefined;
     statusLabel = derived.label;
   }
+
+  // Breadcrumb (Barry's design replaces the single back-link): Home \ Explore \ Type \ Name
+  const _typeRaw = (poi?.poi_type || '').toString();
+  const typeParam = _typeRaw.toUpperCase();
+  const typeLabel = _typeRaw ? _typeRaw.charAt(0).toUpperCase() + _typeRaw.slice(1).toLowerCase() : '';
 
   const handleDirections = () => setDirectionsOpen(true);
   const handleCopyCoords = async () => {
@@ -82,10 +86,22 @@ export default function POIDetailLayout({
       {seoComponent}
       {showHero && <HeroBanner poi={poi} />}
 
-      <div className="wrapper_default" style={{ paddingTop: 35, paddingBottom: 0 }}>
-        <button type="button" onClick={() => navigate(backTo)} className="poi-detail__back-link">
-          {backLabel}
-        </button>
+      <div id="search_back_wrapper">
+        <div id="show_back_or_breadcrumbs" className="wrapper_default">
+          <nav className="poi_breadcrumbs" aria-label="Breadcrumb">
+            <Link to="/">Home</Link>
+            <span className="poi_breadcrumb_sep" aria-hidden="true">\</span>
+            <Link to="/explore">Explore</Link>
+            {typeLabel && (
+              <>
+                <span className="poi_breadcrumb_sep" aria-hidden="true">\</span>
+                <Link className="poi_breadcrumb_type" to={`/explore?type=${typeParam}`}>{typeLabel}</Link>
+              </>
+            )}
+            <span className="poi_breadcrumb_sep" aria-hidden="true">\</span>
+            <span aria-current="page">{poi?.name}</span>
+          </nav>
+        </div>
       </div>
 
       {beforeHeader}
@@ -112,6 +128,13 @@ export default function POIDetailLayout({
           {typeof children === 'function'
             ? children({ images, openLightbox, paid, displayLoc, coords, copiedCoords })
             : children}
+
+          {/* Registry-driven auto fields: renders every public render==="auto"
+              field for this POI type below the bespoke sections. render!=="auto"
+              fields are excluded by groupsFor; auto fields a detail page already
+              renders in a curated section are excluded via bespokeAutoKeysFor so
+              nothing is double-rendered. */}
+          <AttributeSections poi={poi} excludeKeys={bespokeAutoKeysFor(poi?.poi_type)} />
         </div>
       </main>
 

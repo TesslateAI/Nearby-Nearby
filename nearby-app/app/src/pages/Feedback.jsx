@@ -2,8 +2,6 @@ import { useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { CheckCircle, Upload, X } from 'lucide-react';
 import { getApiUrl } from '../config';
-import '../styles/forms.css';
-import './Feedback.css';
 
 const MAX_FILES = 10;
 const MAX_SIZE_MB = 10;

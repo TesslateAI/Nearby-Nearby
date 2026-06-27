@@ -1,6 +1,7 @@
 import React from 'react';
-import { Checkbox, Divider, NumberInput, SimpleGrid, Text } from '@mantine/core';
+import { Checkbox, Divider, SimpleGrid, Text } from '@mantine/core';
 import { RepeatableLocationGroup } from './RepeatableLocationGroup';
+import CoordinateInput from './CoordinateInput';
 import RichTextEditor from '../../RichTextEditor';
 import { PLAYGROUND_TYPES, PLAYGROUND_SURFACES } from '../../../utils/outdoorConstants';
 import { PlaygroundPhotosUpload, shouldUseImageUpload } from '../ImageIntegration';
@@ -22,13 +23,21 @@ export const PlaygroundLocationGroup = React.memo(function PlaygroundLocationGro
   label = 'Playgrounds',
   fieldName = 'playground_locations',
 }) {
+  const playgroundCount = Array.isArray(form.values.playground_locations) ? form.values.playground_locations.length : 0;
+  React.useEffect(() => {
+    const hasPlaygrounds = playgroundCount > 0;
+    if (!!form.values.playground_available !== hasPlaygrounds) {
+      form.setFieldValue('playground_available', hasPlaygrounds);
+    }
+  }, [playgroundCount]);
+
   return (
     <RepeatableLocationGroup
       form={form}
       fieldName={fieldName}
       label={label}
       addButtonLabel="Add Another Playground"
-      defaultRow={{ lat: null, lng: null, types: [], surfaces: [], notes: '' }}
+      defaultRow={{ lat: null, lng: null, w3w: '', types: [], surfaces: [], notes: '' }}
       renderRow={(row, index) => (
         <>
           <Text fw={500}>Playground {index + 1}</Text>
@@ -58,20 +67,17 @@ export const PlaygroundLocationGroup = React.memo(function PlaygroundLocationGro
           </Checkbox.Group>
 
           <Divider my="xs" label="Location" />
-          <SimpleGrid cols={{ base: 1, sm: 2 }}>
-            <NumberInput
-              label="Latitude"
-              placeholder="35.7128"
-              precision={6}
-              {...form.getInputProps(`${fieldName}.${index}.lat`)}
-            />
-            <NumberInput
-              label="Longitude"
-              placeholder="-79.0064"
-              precision={6}
-              {...form.getInputProps(`${fieldName}.${index}.lng`)}
-            />
-          </SimpleGrid>
+          <CoordinateInput
+            label="Playground Coordinates"
+            latLabel="Playground Latitude"
+            lngLabel="Playground Longitude"
+            value={{ lat: row?.lat ?? null, lng: row?.lng ?? null, w3w: row?.w3w ?? '' }}
+            onChange={(v) => {
+              form.setFieldValue(`${fieldName}.${index}.lat`, v.lat);
+              form.setFieldValue(`${fieldName}.${index}.lng`, v.lng);
+              form.setFieldValue(`${fieldName}.${index}.w3w`, v.w3w ?? '');
+            }}
+          />
 
           <RichTextEditor
             label="Notes"

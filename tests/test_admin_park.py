@@ -63,7 +63,6 @@ class TestCreateParkAllFields:
             "licenses_required": ["NC Fishing License"],
             "hunting_fishing_info": "Season runs Oct-Jan",
             "facilities_options": ["Picnic Tables", "Grills", "Boat Ramp"],
-            "payphone_location": {"lat": 35.9, "lng": -79.1},
             "payphone_locations": [{"lat": 35.9, "lng": -79.1, "description": "Near entrance"}],
             "park_entry_notes": "Enter through main gate on Hwy 64",
             "hours": {"monday": {"open": "07:00", "close": "21:00"}},
@@ -127,10 +126,9 @@ class TestCreateParkFacilities:
             admin_client,
             name="Facilities Park",
             facilities_options=["Picnic Tables", "Grills", "Restrooms"],
-            payphone_location={"lat": 35.9, "lng": -79.1},
             payphone_locations=[{"lat": 35.9, "lng": -79.1, "description": "Entrance"}],
             park_entry_notes="Entrance fee required on weekends",
         )
         assert data["facilities_options"] == ["Picnic Tables", "Grills", "Restrooms"]
         assert data["park_entry_notes"] == "Entrance fee required on weekends"
-        assert data["payphone_location"]["lat"] == 35.9
+        assert data["payphone_locations"][0]["lat"] == 35.9

@@ -105,11 +105,12 @@ In addition to composing the modules listed above, the prod `main.tf` also conta
 
 #### ECR (`terraform/modules/ecr/`)
 
-Three repositories with lifecycle policy (keep last 5 images):
+Repositories with lifecycle policy (keep last 5 images):
 
 - `nearbynearby/nearby-app`
 - `nearbynearby/nearby-admin-backend`
 - `nearbynearby/nearby-admin-frontend`
+- `nearbynearby/embedding` — ECR mirror of `ghcr.io/huggingface/text-embeddings-inference:cpu-1.8.1` (pinned by `var.embedding_image_tag`)
 
 #### ECS (`terraform/modules/ecs/`)
 
@@ -119,8 +120,8 @@ Three repositories with lifecycle policy (keep last 5 images):
 |---------|-------|
 | CPU | 1 vCPU |
 | Memory | 3072 MB (3 GB) |
-| Containers | 1 (FastAPI serving API + pre-built React frontend + ML model) |
-| Health check | `/api/health` with 120s start period (ML model loading) |
+| Containers | 1 (FastAPI serving API + pre-built React frontend; no in-process ML model) |
+| Health check | `/api/health` with 30s start period (no model load — embeddings via TEI service) |
 | Auto-scaling | 1-3 tasks (CPU 70%, memory 80%) |
 
 **nearby-admin service:**
@@ -136,6 +137,23 @@ Three repositories with lifecycle policy (keep last 5 images):
 The admin task definition runs two containers:
 - `nginx`: frontend image, port 5173, depends on backend being healthy
 - `backend`: backend image, port 8000, runs `alembic upgrade heads && uvicorn`
+
+**embedding service (Hugging Face TEI — internal only):**
+
+| Setting | Value |
+|---------|-------|
+| Image | ECR mirror of `text-embeddings-inference:cpu-1.8.1`, `--model-id michaelfeil/embeddinggemma-300m --port 80` |
+| Exposure | **No ALB target group** — internal only, advertised via **ECS Service Connect** |
+| Health check | **None** at the container level (minimal TEI image has no curl/wget; ECS treats it healthy while running) |
+| Consumers | nearby-app and nearby-admin resolve it at `http://embedding.<namespace>:80` |
+
+**Service Connect:** the ECS cluster has Service Connect defaults pointed at a
+private Cloud Map HTTP namespace (`var.service_connect_namespace`). The embedding
+service advertises its port (`client_alias` dns_name `embedding`, port 80); the
+app and admin services are Service Connect **clients** of the same namespace, so
+they reach the embedding container by stable private DNS without any ALB. The
+embedding URL handed to both task definitions is
+`http://embedding.<namespace>:80` (set as `EMBEDDING_SERVICE_URL`).
 
 **IAM roles:**
 - **Task execution role**: Pull ECR images, read SSM parameters, write CloudWatch logs
@@ -169,6 +187,7 @@ CloudWatch log groups with 14-day retention:
 
 - `/ecs/nearbynearby-prod/app`
 - `/ecs/nearbynearby-prod/admin`
+- `/ecs/nearbynearby-prod/embedding` (TEI service)
 
 ### Terraform Outputs
 
@@ -376,8 +395,30 @@ GitHub Actions authenticates via OIDC federation -- no static AWS credentials ar
 | `AWS_REGION` | Task definition | Both |
 | `CLOUDFRONT_DOMAIN` | Task definition | Both |
 | `BACKEND_HOST` | Task definition | nearby-admin (nginx) |
+| `EMBEDDING_SERVICE_URL` | Task definition (`http://embedding.<namespace>:80`) | **Both** (app reads at search time, admin embeds on write) |
+| `POI_SERIALIZER` | Task definition / override (`legacy` \| `registry` \| `shadow`; default `registry`) | nearby-app |
 
 S3 credentials are **not** needed -- ECS tasks use IAM role-based authentication via the task role.
+
+### EMBEDDING_SERVICE_URL
+
+Both task definitions receive `EMBEDDING_SERVICE_URL` pointing at the internal
+TEI service via Service Connect. It is the **single kill switch** for semantic
+search and embed-on-write: unset/empty → the shared client is disabled, returns
+`None` with no network I/O, and search degrades to keyword-only (zero code
+change, instant rollback).
+
+### POI_SERIALIZER (serializer cutover flag)
+
+The public POI detail serializer is registry-driven and selectable per
+deployment via `POI_SERIALIZER` (read once at import in
+`nearby-app/backend/app/api/endpoints/pois.py`):
+
+| Value | Behavior |
+|-------|----------|
+| `registry` | **Default.** Registry-driven `serialize_poi_detail` — public-only payload, closes the admin-PII leak, restores previously-dropped public fields. |
+| `legacy` | Original `POIDetail.model_validate(all-columns)` path. Instant revert. |
+| `shadow` | Build BOTH, log the parity diff at WARNING, **return legacy** (prod observation before flipping). |
 
 ---
 
@@ -392,11 +433,15 @@ Both applications expose `/api/health` endpoints used by ECS and ALB for health 
   "status": "healthy",
   "service": "nearby-app",
   "database": "connected",
-  "ml_model": "loaded"
+  "embedding_service": "configured"
 }
 ```
 
-Returns 503 with `"status": "degraded"` if database connection fails.
+`embedding_service` is `"configured"` when `EMBEDDING_SERVICE_URL` is set and
+`"disabled"` otherwise. It is **informational only** — the health probe never
+calls the TEI service, and the embedding service being down/unconfigured does
+NOT mark the app degraded. Returns 503 with `"status": "degraded"` only if the
+database connection fails.
 
 ### nearby-admin
 
@@ -414,10 +459,12 @@ Returns 503 with `"status": "degraded"` if database connection fails.
 
 | Service | Path | Start Period | Interval | Retries |
 |---------|------|-------------|----------|---------|
-| nearby-app | `/api/health` | 120s | 30s | 3 |
+| nearby-app | `/api/health` | 30s | 30s | 3 |
 | nearby-admin | `/api/health` | 60s | 30s | 3 |
 
-The start period gives containers time to initialize before health checks begin. The app needs 120s because the ML embedding model (~1GB) takes time to load.
+The start period gives containers time to initialize before health checks begin.
+The app's start period was relaxed **120s → 30s** because the ~1GB embedding
+model no longer loads in-process — it is served by the separate TEI service.
 
 ---
 
@@ -566,11 +613,37 @@ When migrating from the old EC2 setup to ECS:
 
 1. **Database**: `pg_dump` from old RDS --> `pg_restore` to new RDS (if replacing)
 2. **Create forms role**: `CREATE ROLE nearby_forms` with INSERT/SELECT on form tables
-3. **Run migrations**: Happens automatically on admin container startup (`alembic upgrade heads`)
+3. **Run migrations**: Happens automatically on admin container startup (`alembic upgrade heads`) — this also applies `k_embedding_001` (pgvector extension + `embedding vector(768)` column + HNSW index)
 4. **Create admin users**: Via ECS exec (see Step 7 above)
 5. **Push initial images**: First CI/CD push builds and deploys both apps
 6. **Switch DNS**: Update Cloudflare CNAME records to new ALB
 7. **Decommission**: Stop old EC2 instance
+
+### One-Off Embedding Backfill (after migration / mass import)
+
+Embeddings are written automatically on every POI create/update/autosave once
+`EMBEDDING_SERVICE_URL` is set. To populate vectors for existing rows after the
+`k_embedding_001` migration (or after a bulk import / a text-builder change), run
+the admin backfill script as a one-off ECS RunTask:
+
+```bash
+# Override the admin task command to run the backfill once, then exit.
+# EMBEDDING_SERVICE_URL must be set on the task (it is, via Service Connect).
+aws ecs run-task \
+  --cluster nearbynearby-prod \
+  --task-definition nearbynearby-prod-admin \
+  --launch-type FARGATE \
+  --network-configuration '{...private subnets + ECS SG...}' \
+  --overrides '{"containerOverrides":[{"name":"backend","command":[
+      "python","scripts/backfill_embeddings.py"]}]}'
+# Add --force to re-embed ALL POIs (default: only WHERE embedding IS NULL).
+```
+
+The backfill embeds through the TEI service via `shared.embeddings` (no
+in-process model), is fail-soft per item (a TEI failure skips that POI and leaves
+its existing embedding untouched), and exits non-zero only if **zero** embeddings
+succeeded. It uses the same document text builder as embed-on-write, so backfill
+and write-time embeddings are byte-identical.
 
 ---
 

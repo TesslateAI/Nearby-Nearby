@@ -5,7 +5,6 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import listPlugin from '@fullcalendar/list';
 import { API_BASE_URL } from '../config';
-import './EventsCalendar.css';
 
 // ---------------------------------------------------------------------------
 // Helpers

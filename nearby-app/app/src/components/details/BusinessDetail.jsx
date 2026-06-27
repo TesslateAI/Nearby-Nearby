@@ -1,5 +1,4 @@
 import { useMemo, useState } from 'react';
-import { useLocation } from 'react-router-dom';
 
 import {
   AccSection, ContentGroup, ChipList, QuickInfoRow,
@@ -14,7 +13,6 @@ import DirectionsModal from '../common/DirectionsModal';
 
 import { getOpenCloseStatusLabel } from '../../utils/hoursUtils';
 import { getDisplayableLocation } from '../../utils/getDisplayableLocation';
-import { isPaidTier } from '../../utils/poiTier';
 import { copyToClipboard, getCoordinates } from './shared/poiDetailUtils';
 import { sanitizeHtml } from '../../utils/sanitize';
 
@@ -31,13 +29,6 @@ const IDEAL_FOR_GROUPS = [
 ];
 
 export default function BusinessDetail({ poi }) {
-  const location = useLocation();
-  const tierParam = new URLSearchParams(location.search).get('tier');
-  const paid = useMemo(() => {
-    if (tierParam === 'free') return false;
-    if (tierParam === 'paid') return true;
-    return isPaidTier(poi);
-  }, [tierParam, poi]);
   const [directionsOpen, setDirectionsOpen] = useState(false);
 
   const displayLoc = getDisplayableLocation(poi);
@@ -65,7 +56,6 @@ export default function BusinessDetail({ poi }) {
   const parkingLabel = Array.isArray(poi?.parking_types) && poi.parking_types.length > 0 ? poi.parking_types.join(', ') : null;
 
   const amenitiesFlat = useMemo(() => {
-    if (!paid) return [];
     const a = poi?.amenities;
     if (!a || typeof a !== 'object') return [];
     const out = [];
@@ -73,7 +63,7 @@ export default function BusinessDetail({ poi }) {
       if (Array.isArray(v)) v.forEach((x) => hasVal(x) && out.push(typeof x === 'object' ? (x.name || x.label || '') : String(x)));
     });
     return Array.from(new Set(out.filter(Boolean)));
-  }, [poi, paid]);
+  }, [poi]);
 
   const webHref = poi?.website_url ? (poi.website_url.startsWith('http') ? poi.website_url : `https://${poi.website_url}`) : null;
   const phoneHref = poi?.phone_number ? `tel:${poi.phone_number}` : null;
@@ -96,7 +86,7 @@ export default function BusinessDetail({ poi }) {
     return out;
   })();
 
-  const menuLinks = poi?.menu_links || (poi?.menu_link ? [{ title: 'Menu', url: poi.menu_link }] : null);
+  const menuLinks = poi?.menu_link ? [{ title: 'Menu', url: poi.menu_link }] : null;
   const buildLinkGroup = (title, items) => {
     const list = asArray(items).filter((x) => x && (x.url || x.link));
     if (list.length === 0) return null;
@@ -112,8 +102,8 @@ export default function BusinessDetail({ poi }) {
   /* ── Accordion sections ──────────────────────────────────────── */
   const aboutCol1 = [
     hasVal(poi?.description_long) && <ContentGroup key="desc"><div className="acc_content_text" dangerouslySetInnerHTML={{ __html: sanitizeHtml(poi.description_long) }} /></ContentGroup>,
-    paid && Array.isArray(poi?.categories) && poi.categories.length > 0 && <ContentGroup key="cats" title="Categories"><ChipList items={poi.categories.map((c) => c.name || c.label || '')} /></ContentGroup>,
-    paid && goodForLabel && (
+    Array.isArray(poi?.categories) && poi.categories.length > 0 && <ContentGroup key="cats" title="Categories"><ChipList items={poi.categories.map((c) => c.name || c.label || '')} /></ContentGroup>,
+    goodForLabel && (
       <ContentGroup key="ideal" title="Ideal For">
         <ChipList items={(() => { const parts = []; IDEAL_FOR_GROUPS.forEach(({ key }) => { const arr = poi?.ideal_for?.[key]; if (Array.isArray(arr)) parts.push(...arr); }); return parts; })()} />
       </ContentGroup>
@@ -151,12 +141,9 @@ export default function BusinessDetail({ poi }) {
 
   const addrCol2 = [
     hasVal(poi?.parking_types) && <ContentGroup key="parking" title="Parking"><ChipList items={poi.parking_types} /></ContentGroup>,
-    (hasVal(poi?.parking_notes) || hasVal(poi?.parking_paid)) && (
+    hasVal(poi?.parking_notes) && (
       <ContentGroup key="pnotes">
-        <div className="acc_content_text">
-          {hasVal(poi?.parking_paid) && <p><strong>Expect to pay for parking?</strong> {poi.parking_paid === true ? 'Yes' : String(poi.parking_paid)}</p>}
-          {hasVal(poi?.parking_notes) && <p>{poi.parking_notes}</p>}
-        </div>
+        <div className="acc_content_text"><p>{poi.parking_notes}</p></div>
       </ContentGroup>
     ),
   ].filter(Boolean);
@@ -181,7 +168,8 @@ export default function BusinessDetail({ poi }) {
     hasVal(poi?.alcohol_policy_details) && <ContentGroup key="alcp" title="Alcohol Policy"><div className="acc_content_text">{poi.alcohol_policy_details}</div></ContentGroup>,
   ].filter(Boolean);
   const alcSmokCol2 = [
-    hasVal(poi?.smoking_policy) && <ContentGroup key="smoke" title="Smoking Policy"><div className="acc_content_text">{poi.smoking_policy}</div></ContentGroup>,
+    hasVal(poi?.smoking_options) && <ContentGroup key="smokeopt" title="Smoking"><ChipList items={poi.smoking_options} /></ContentGroup>,
+    hasVal(poi?.smoking_details) && <ContentGroup key="smoke" title="Smoking Details"><div className="acc_content_text">{poi.smoking_details}</div></ContentGroup>,
   ].filter(Boolean);
 
   const restroomCol1 = [
@@ -197,7 +185,7 @@ export default function BusinessDetail({ poi }) {
     hasVal(poi?.wheelchair_details) && <ContentGroup key="wd" title="Details"><div className="acc_content_text">{poi.wheelchair_details}</div></ContentGroup>,
   ].filter(Boolean);
   const wheelchairCol2 = [
-    hasVal(poi?.amenities?.mobility_access) && <ContentGroup key="ma" title="Mobility Access"><ChipList items={poi.amenities.mobility_access} /></ContentGroup>,
+    hasVal(poi?.mobility_access) && <ContentGroup key="ma" title="Mobility Access"><ChipList items={Array.isArray(poi.mobility_access) ? poi.mobility_access : Object.keys(poi.mobility_access).filter((k) => poi.mobility_access[k] === true)} /></ContentGroup>,
   ].filter(Boolean);
 
   const petCol1 = [hasVal(poi?.pet_options) && <ContentGroup key="pets" title="Pet Policy"><ChipList items={poi.pet_options} /></ContentGroup>].filter(Boolean);
@@ -205,7 +193,7 @@ export default function BusinessDetail({ poi }) {
 
   const playgroundCol1 = [
     hasVal(poi?.playground_types) && <ContentGroup key="pt" title="Playground Types"><ChipList items={poi.playground_types} /></ContentGroup>,
-    hasVal(poi?.playground_surface) && <ContentGroup key="ps" title="Surface"><div className="acc_content_text">{poi.playground_surface}</div></ContentGroup>,
+    hasVal(poi?.playground_surface_types) && <ContentGroup key="ps" title="Surface"><ChipList items={poi.playground_surface_types} /></ContentGroup>,
   ].filter(Boolean);
   const playgroundCol2 = [
     hasVal(poi?.playground_age_groups) && <ContentGroup key="pag" title="Age Groups"><ChipList items={poi.playground_age_groups} /></ContentGroup>,
@@ -225,7 +213,10 @@ export default function BusinessDetail({ poi }) {
     ),
   ].filter(Boolean);
 
-  const PAID_SECTIONS = [
+  // Single section list. The server tier-gates the underlying fields, so
+  // free-tier listings naturally have empty Menu/Alcohol/Playground sections
+  // and those sections self-hide via the empty-column filter below.
+  const ALL_SECTIONS = [
     { key: 'about', title: 'About + Details', open: true, col1: aboutCol1, col2: aboutCol2 },
     { key: 'addr', title: 'Address + Parking', open: true, col1: addrCol1, col2: addrCol2 },
     { key: 'price', title: 'Pricing + Offers', open: false, col1: pricingCol1, col2: pricingCol2 },
@@ -237,16 +228,7 @@ export default function BusinessDetail({ poi }) {
     { key: 'play', title: 'Playground', open: false, col1: playgroundCol1, col2: playgroundCol2 },
     { key: 'contact', title: 'Contact', open: false, col1: contactCol1, col2: contactCol2 },
   ];
-  const FREE_SECTIONS = [
-    { key: 'about', title: 'About + Details', open: false, col1: aboutCol1, col2: aboutCol2 },
-    { key: 'addr', title: 'Address + Parking', open: false, col1: addrCol1, col2: addrCol2 },
-    { key: 'price', title: 'Pricing + Offers', open: false, col1: pricingCol1, col2: pricingCol2 },
-    { key: 'rest', title: 'Public Restrooms', open: false, col1: restroomCol1, col2: restroomCol2 },
-    { key: 'wc', title: 'Wheelchair Accessible', open: false, col1: wheelchairCol1, col2: wheelchairCol2 },
-    { key: 'pet', title: 'Pet Policy', open: false, col1: petCol1, col2: petCol2 },
-    { key: 'contact', title: 'Contact', open: false, col1: contactCol1, col2: contactCol2 },
-  ];
-  const sections = (paid ? PAID_SECTIONS : FREE_SECTIONS).filter((s) => s.col1.length > 0 || s.col2.length > 0);
+  const sections = ALL_SECTIONS.filter((s) => s.col1.length > 0 || s.col2.length > 0);
 
   return (
     <>
@@ -274,13 +256,13 @@ export default function BusinessDetail({ poi }) {
             onOpenLightbox={openLightbox}
           />
 
-          {paid && amenitiesFlat.length > 0 && (
+          {amenitiesFlat.length > 0 && (
             <AmenitiesBox title="Amenities" amenitiesList={amenitiesFlat} />
           )}
 
           {sections.length > 0 && (
             <div id="accordion_1_box" className="poi_accordion_box">
-              <div id="accordion_1_parent" className="poi_accordion_parent">
+              <div id="accordion_1_parent" className="poi_accordion_parent accordionjs">
                 {sections.map((s) => (
                   <AccSection key={s.key} title={s.title} defaultOpen={s.open} col1={s.col1.length > 0 ? s.col1 : null} col2={s.col2.length > 0 ? s.col2 : null} />
                 ))}

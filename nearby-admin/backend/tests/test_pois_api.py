@@ -4,6 +4,19 @@ from sqlalchemy.orm import Session
 
 # Note: No need to import from app directly, fixtures handle it.
 
+
+def flatten_ideal_for(value):
+    """
+    ideal_for is normalized server-side into a grouped dict
+    ({atmosphere: [...], age_group: [...], social_settings: [...],
+    local_special: [...], _legacy: [...]}) — see crud_poi.normalize_ideal_for.
+    Flatten it back to the set of selected values for comparison. Also tolerates
+    the legacy flat-list shape for back-compat.
+    """
+    if isinstance(value, dict):
+        return {item for items in value.values() for item in items}
+    return set(value or [])
+
 def test_create_and_read_poi(client: TestClient, db_session: Session):
     """
     Tests creating a POI and then retrieving it to ensure correctness.
@@ -47,10 +60,12 @@ def test_read_pois_list(client: TestClient, db_session: Session):
     """
     Tests retrieving a list of all POIs.
     """
-    # Create a POI first
+    # Create a POI first. GET /api/pois/ is the public list (published-only),
+    # so the POI must be published to appear.
     client.post("/api/pois/", json={
         "name": "Another Test POI",
         "poi_type": "PARK",
+        "publication_status": "published",
         "location": {"type": "Point", "coordinates": [-76, 36]},
         "park": {"drone_usage_policy": "Allowed with permit"}
     })
@@ -226,7 +241,7 @@ def test_ideal_for_field_persistence(client: TestClient, db_session: Session):
     # Verify ideal_for and ideal_for_key are saved
     assert "ideal_for" in data
     assert "ideal_for_key" in data
-    assert set(data["ideal_for"]) == set(ideal_for_data)
+    assert flatten_ideal_for(data["ideal_for"]) == set(ideal_for_data)
     assert set(data["ideal_for_key"]) == set(ideal_for_key_data)
 
     # Read the POI back to ensure persistence
@@ -237,7 +252,7 @@ def test_ideal_for_field_persistence(client: TestClient, db_session: Session):
     # Verify all ideal_for sections persisted
     assert "ideal_for" in retrieved_data
     assert "ideal_for_key" in retrieved_data
-    assert set(retrieved_data["ideal_for"]) == set(ideal_for_data), \
+    assert flatten_ideal_for(retrieved_data["ideal_for"]) == set(ideal_for_data), \
         f"ideal_for mismatch: expected {ideal_for_data}, got {retrieved_data['ideal_for']}"
     assert set(retrieved_data["ideal_for_key"]) == set(ideal_for_key_data), \
         f"ideal_for_key mismatch: expected {ideal_for_key_data}, got {retrieved_data['ideal_for_key']}"
@@ -253,7 +268,7 @@ def test_ideal_for_field_persistence(client: TestClient, db_session: Session):
     final_get_response = client.get(f"/api/pois/{poi_id}")
     assert final_get_response.status_code == 200
     final_data = final_get_response.json()
-    assert set(final_data["ideal_for"]) == set(updated_ideal_for)
+    assert flatten_ideal_for(final_data["ideal_for"]) == set(updated_ideal_for)
 
 def test_poi_relationships(client: TestClient, db_session: Session):
     """

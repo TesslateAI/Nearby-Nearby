@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { API_BASE_URL } from '../../config';
-import './EventVendors.css';
 
 /**
  * EventVendors - Displays participating vendors for an event POI

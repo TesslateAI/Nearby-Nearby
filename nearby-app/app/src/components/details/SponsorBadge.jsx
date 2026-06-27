@@ -1,6 +1,5 @@
 import { Star } from 'lucide-react';
 import { sponsorLabel } from '../../utils/poiTier';
-import './SponsorBadge.css';
 
 /**
  * SponsorBadge — small gold-star chip shown in the POI header intro block

@@ -11,7 +11,6 @@ import HoursDisplay from '../common/HoursDisplay';
 import ServiceAnimalAlert from './ServiceAnimalAlert';
 import DirectionsModal from '../common/DirectionsModal';
 import { getDisplayableLocation } from '../../utils/getDisplayableLocation';
-import { isPaidTier } from '../../utils/poiTier';
 import { getOpenCloseStatusLabel } from '../../utils/hoursUtils';
 import { sanitizeHtml } from '../../utils/sanitize';
 
@@ -89,7 +88,7 @@ function buildSections(poi, helpers) {
             {!displayLoc.hideExact && (
               <div className="pd-addr__actions">
                 <button type="button" className="btn_reset button btn_outline_teal btn_poi_button_1" onClick={handleDirections}>
-                  <Navigation size={14} /> <span className="poi_button_title">Get Directions</span>
+                  <Navigation size={14} className="poi_button_icon" aria-hidden="true" style={{fill:'none'}} /> <span className="poi_button_title">Get Directions</span>
                 </button>
                 {hasAddr && (
                   <button type="button" className="btn_reset button btn_outline_teal btn_poi_button_1" onClick={handleCopyAddress}>
@@ -344,7 +343,6 @@ export default function ParkDetail({ poi }) {
   const [directionsOpen, setDirectionsOpen] = useState(false);
 
   const displayLoc = getDisplayableLocation(poi);
-  const paid = isPaidTier(poi);
   const coords = getCoordinates(poi, displayLoc.hideExact);
   const images = useMemo(() => getImages(poi), [poi]);
   const _coords = poi?.location?.coordinates;
@@ -421,7 +419,7 @@ export default function ParkDetail({ poi }) {
           )}
 
           <div id="accordion_1_box" className="poi_accordion_box">
-            <div id="accordion_1_parent" className="poi_accordion_parent">
+            <div id="accordion_1_parent" className="poi_accordion_parent accordionjs">
               {sections.map((s) => (
                 <AccSection key={s.id} id={s.id} title={s.title} defaultOpen={!!s.defaultOpen} col1={s.col1} col2={s.col2} />
               ))}

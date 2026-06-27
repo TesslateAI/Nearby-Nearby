@@ -124,16 +124,39 @@ def test_delete_nonexistent_poi(db_session):
 
 
 def test_get_pois(db_session):
+    # get_pois defaults to published-only (include_drafts=False), so the POIs
+    # must be published to appear in the public listing.
     prefix = f"POI_TEST_SUITE_{int(time.time())}_"
     for i in range(3):
         poi_in = make_poi_create(name=f"{prefix}{i}")
+        poi_in.publication_status = "published"
         crud_poi.create_poi(db_session, poi_in)
     pois = [p for p in crud_poi.get_pois(db_session) if p.name and p.name.startswith(prefix)]
     assert len(pois) == 3
 
 
+def test_get_pois_excludes_drafts(db_session):
+    # Drafts must NOT appear in the published-only default listing.
+    prefix = f"POI_DRAFT_{int(time.time())}_"
+    draft = make_poi_create(name=f"{prefix}draft")
+    draft.publication_status = "draft"
+    crud_poi.create_poi(db_session, draft)
+    published = make_poi_create(name=f"{prefix}published")
+    published.publication_status = "published"
+    crud_poi.create_poi(db_session, published)
+
+    public = [p for p in crud_poi.get_pois(db_session) if p.name and p.name.startswith(prefix)]
+    assert [p.name for p in public] == [f"{prefix}published"]
+
+    # ...but include_drafts=True (admin view) returns both.
+    admin = [p for p in crud_poi.get_pois(db_session, include_drafts=True) if p.name and p.name.startswith(prefix)]
+    assert len(admin) == 2
+
+
 def test_search_pois(db_session):
+    # search_pois defaults to published-only; publish so the result is returned.
     poi_in = make_poi_create(name="UniqueName123")
+    poi_in.publication_status = "published"
     crud_poi.create_poi(db_session, poi_in)
     results = crud_poi.search_pois(db_session, "UniqueName123")
     assert len(results) >= 1

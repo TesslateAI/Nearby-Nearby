@@ -27,6 +27,13 @@ const VENDOR_TYPE_SELECT_DATA = VENDOR_TYPES.map(({ value, label }) => ({ value,
 export const EventVendorsSection = React.memo(function EventVendorsSection({ form, id }) {
   const vendorPoiLinks = form.values.event?.vendor_poi_links || [];
 
+  // Stable Date reference so the DateTimePicker dropdown doesn't close on every
+  // interaction (see the start/end pickers in EventLayout for the full rationale).
+  const deadlineValue = React.useMemo(() => {
+    const v = form.values.event?.vendor_application_deadline;
+    return v instanceof Date ? v : v ? new Date(v) : null;
+  }, [form.values.event?.vendor_application_deadline]);
+
   function addVendorPoiLink() {
     form.setFieldValue('event.vendor_poi_links', [
       ...vendorPoiLinks,
@@ -61,37 +68,8 @@ export const EventVendorsSection = React.memo(function EventVendorsSection({ for
       />
       {form.values.event?.has_vendors && (
         <>
-          <Divider my="md" label="Vendor Types" />
-          <Text size="sm" c="dimmed" mb="md">
-            Select the types of vendors that will be present at your event:
-          </Text>
-          <Checkbox.Group {...getCheckboxGroupProps(form, 'event.vendor_types')}>
-            <Stack spacing="md">
-              {Object.entries(
-                VENDOR_TYPES.reduce((groups, vendor) => {
-                  const group = vendor.group || 'Other';
-                  if (!groups[group]) groups[group] = [];
-                  groups[group].push(vendor);
-                  return groups;
-                }, {})
-              ).map(([groupName, vendors]) => (
-                <div key={groupName}>
-                  <Text fw={500} size="sm" mb="xs">{groupName}</Text>
-                  <SimpleGrid cols={{ base: 2, sm: 3 }} ml="md">
-                    {vendors.map(vendor => (
-                      <Checkbox
-                        key={vendor.value}
-                        value={vendor.value}
-                        label={vendor.label}
-                      />
-                    ))}
-                  </SimpleGrid>
-                </div>
-              ))}
-            </Stack>
-          </Checkbox.Group>
-
-          {/* Vendor POI Links */}
+          {/* Vendor POI Links — each linked vendor carries its own vendor-type
+              dropdown, so the standalone vendor-type checkbox grid was removed. */}
           <Divider my="md" label="Linked Vendor POIs" />
           <Text size="sm" c="dimmed" mb="xs">
             Link specific vendor businesses from the directory to this event.
@@ -135,7 +113,7 @@ export const EventVendorsSection = React.memo(function EventVendorsSection({ for
             label="Vendor Application Deadline"
             placeholder="Select deadline"
             timePickerProps={{ format: '12h', withDropdown: true }}
-            value={form.values.event?.vendor_application_deadline instanceof Date ? form.values.event.vendor_application_deadline : (form.values.event?.vendor_application_deadline ? new Date(form.values.event.vendor_application_deadline) : null)}
+            value={deadlineValue}
             onChange={(val) => form.setFieldValue('event.vendor_application_deadline', val)}
             error={form.errors['event.vendor_application_deadline']}
           />

@@ -7,7 +7,7 @@ import {
 } from '@mantine/core';
 import { IconTrash, IconPlus } from '@tabler/icons-react';
 import {
-  SPONSOR_LEVEL_OPTIONS, LISTING_TYPES,
+  SPONSOR_LEVEL_OPTIONS,
   IDEAL_FOR_ATMOSPHERE, IDEAL_FOR_AGE_GROUP, IDEAL_FOR_SOCIAL_SETTINGS,
   IDEAL_FOR_LOCAL_SPECIAL, IDEAL_FOR_SPECIAL_NEEDS,
   PARKING_OPTIONS, PARKING_ADA_CHECKLIST, ARRIVAL_METHOD_OPTIONS,
@@ -17,74 +17,71 @@ import {
   ALCOHOL_AVAILABLE_OPTIONS, WIFI_OPTIONS, CELL_SERVICE_OPTIONS,
   PET_OPTIONS, PAYMENT_METHODS, DISCOUNT_TYPES,
   PLAYGROUND_AGE_GROUPS, PLAYGROUND_ADA_CATEGORIES,
+  PLAYGROUND_TYPES, PARK_PLAYGROUND_SURFACES,
 } from '../../../utils/constants';
+import CoordinateInput from '../components/CoordinateInput';
+import { PlaygroundPhotosUpload } from '../ImageIntegration';
 
 // -----------------------------------------------------------------------------
-// Admin-Only Section — last item in every layout. Renders only for admin role.
+// Admin-Only Section — last item in every layout. Always rendered as a normal
+// part of the form (every portal account is an admin); not role-gated.
 // -----------------------------------------------------------------------------
-export function AdminOnlyAccordionItem({ form, userRole }) {
-  if (userRole !== 'admin') return null;
+export function AdminOnlyAccordionItem({ form }) {
   return (
     <Accordion.Item value="admin-only">
       <Accordion.Control>
-        <Group>
-          <Text fw={600}>Admin Only</Text>
-          <Badge size="sm" variant="filled" color="red">Admin</Badge>
-        </Group>
+        <Text fw={600}>Admin Only</Text>
       </Accordion.Control>
       <Accordion.Panel>
         <Stack>
+          {/* Verified + Hub badges — drive frontend display */}
+          <Divider label="Verified + Hub Badges" labelPosition="left" />
           <Switch
             label="Verified"
-            description="POI has been reviewed and verified by an admin"
+            description="When ON, the Verified badge shows on the listing card + page"
             checked={!!form.values.is_verified}
             onChange={(e) => form.setFieldValue('is_verified', e.currentTarget.checked)}
           />
           <Switch
             label="Disaster Hub"
-            description="Designated shelter / supply / information hub during emergencies"
+            description="When ON, the Disaster Hub badge shows on the listing card + page"
             checked={!!form.values.is_disaster_hub}
             onChange={(e) => form.setFieldValue('is_disaster_hub', e.currentTarget.checked)}
           />
+
+          {/* Sponsor — drives the sponsor icon on cards */}
+          <Divider label="Sponsor" labelPosition="left" mt="sm" />
           <Switch
             label="Sponsor"
-            description="Toggle to mark this POI as a paid sponsor"
+            description="When ON, the Sponsor icon shows on the listing card"
             checked={!!form.values.is_sponsor}
             onChange={(e) => {
               const v = e.currentTarget.checked;
               form.setFieldValue('is_sponsor', v);
-              if (v) form.setFieldValue('listing_type', 'paid');
-              else form.setFieldValue('sponsor_level', null);
+              if (!v) form.setFieldValue('sponsor_level', null);
             }}
           />
           {form.values.is_sponsor && (
             <Select
               label="Sponsor Level"
+              description="Platform / State / County / Town — controls which level icon displays"
+              placeholder="Select sponsor level"
               data={SPONSOR_LEVEL_OPTIONS}
               value={form.values.sponsor_level}
               onChange={(v) => form.setFieldValue('sponsor_level', v)}
               clearable
             />
           )}
-          <Select
-            label="Listing Type"
-            data={LISTING_TYPES}
-            value={form.values.listing_type}
-            onChange={(v) => form.setFieldValue('listing_type', v)}
-          />
+
+          {/* Internal notes — never displayed publicly */}
+          <Divider label="Internal Notes" labelPosition="left" mt="sm" />
           <Textarea
             label="Admin Notes"
-            description="Internal notes — not shown publicly"
+            description="Internal notes — never displayed publicly"
             minRows={3}
             autosize
             {...form.getInputProps('admin_notes')}
           />
-          <Group>
-            <Text size="sm" c="dimmed">Has Been Published:</Text>
-            <Badge color={form.values.has_been_published ? 'green' : 'gray'}>
-              {form.values.has_been_published ? 'Yes' : 'No'}
-            </Badge>
-          </Group>
         </Stack>
       </Accordion.Panel>
     </Accordion.Item>
@@ -124,8 +121,8 @@ export const IDEAL_FOR_RULES = {
   'Business Free': { visible: true,  cap: 5 },
   'Business Paid': { visible: true,  cap: null },
   'Event':         { visible: true,  cap: 10 },
-  'Park':          { visible: false, cap: null },
-  'Trail':         { visible: false, cap: null },
+  'Park':          { visible: true,  cap: null },
+  'Trail':         { visible: true,  cap: null },
 };
 
 function rulesFor(listingType) {
@@ -555,9 +552,11 @@ export function AlcoholAvailableSelect({ form }) {
 // MultiSelect plus the 4-category ADA checklist.  Pure controlled component
 // driven through the parent form via `fieldName` + index.
 // -----------------------------------------------------------------------------
-function PlaygroundRowExtras({ form, fieldName, idx }) {
+function PlaygroundRowExtras({ form, fieldName, idx, isPark = false, id = null }) {
   const row = form.values?.[fieldName]?.[idx] || {};
   const ageGroups = Array.isArray(row.age_groups) ? row.age_groups : [];
+  const types = Array.isArray(row.types) ? row.types : [];
+  const surfaces = Array.isArray(row.surfaces) ? row.surfaces : [];
   const adaChecklist = (row.ada_checklist && typeof row.ada_checklist === 'object')
     ? row.ada_checklist
     : {};
@@ -583,6 +582,31 @@ function PlaygroundRowExtras({ form, fieldName, idx }) {
         clearable
       />
 
+      {/* #76 Park Acc 9: Playground Types + Surfaces live INSIDE each grouping
+          (moved off the accordion top), plus per-grouping Images + Notes. */}
+      {isPark && (
+        <>
+          <MultiSelect
+            label="Playground Types"
+            placeholder="Select one or more"
+            data={PLAYGROUND_TYPES}
+            value={types}
+            onChange={(v) => form.setFieldValue(`${fieldName}.${idx}.types`, v)}
+            searchable
+            clearable
+          />
+          <MultiSelect
+            label="Playground Surface Types"
+            placeholder="Select one or more"
+            data={PARK_PLAYGROUND_SURFACES}
+            value={surfaces}
+            onChange={(v) => form.setFieldValue(`${fieldName}.${idx}.surfaces`, v)}
+            searchable
+            clearable
+          />
+        </>
+      )}
+
       <Stack gap="xs">
         <Text fw={500}>ADA Accessibility Checklist</Text>
         {Object.entries(PLAYGROUND_ADA_CATEGORIES).map(([catKey, cat]) => {
@@ -604,6 +628,24 @@ function PlaygroundRowExtras({ form, fieldName, idx }) {
           );
         })}
       </Stack>
+
+      {isPark && (
+        <>
+          <Textarea
+            label="Playground Notes"
+            placeholder="Additional details about this playground"
+            autosize
+            minRows={2}
+            value={row.notes || ''}
+            onChange={(e) => form.setFieldValue(`${fieldName}.${idx}.notes`, e.currentTarget.value)}
+          />
+          {id ? (
+            <PlaygroundPhotosUpload poiId={id} playgroundIndex={idx} form={form} />
+          ) : (
+            <Text size="sm" c="dimmed">Save POI first to enable playground photo upload</Text>
+          )}
+        </>
+      )}
     </Stack>
   );
 }
@@ -625,11 +667,17 @@ export function RepeatableLocationGroup({
   extraFields = null,
   addLabel = 'Add another location',
   showName = true,
+  // #76 Park Acc 9 only: when isPark + extraFields='playground', each grouping
+  // uses the CoordinateInput bundle (w3w + manual lat/long) and renders the
+  // per-grouping Types/Surfaces/Images/Notes. Defaults keep Trail/Event intact.
+  isPark = false,
+  id = null,
 }) {
+  const isPlayground = extraFields === 'playground';
   const rows = Array.isArray(form.values?.[fieldName]) ? form.values[fieldName] : [];
 
   const addRow = () => {
-    const next = [...rows, { lat: null, lng: null, name: '' }];
+    const next = [...rows, { lat: null, lng: null, w3w: '', name: '' }];
     form.setFieldValue(fieldName, next);
   };
 
@@ -652,7 +700,7 @@ export function RepeatableLocationGroup({
           <Stack>
             <Group justify="space-between" align="center">
               <Text fw={500}>
-                {extraFields === 'playground' ? 'Playground' : 'Location'} {idx + 1}
+                {isPlayground ? 'Playground' : 'Location'} {idx + 1}
               </Text>
               <ActionIcon
                 variant="light"
@@ -675,27 +723,31 @@ export function RepeatableLocationGroup({
               />
             )}
 
-            <SimpleGrid cols={{ base: 1, sm: 2 }}>
-              <NumberInput
-                label="Latitude"
-                placeholder="35.7128"
-                decimalScale={6}
-                value={row?.lat ?? ''}
-                onChange={(v) => form.setFieldValue(`${fieldName}.${idx}.lat`, v)}
-              />
-              <NumberInput
-                label="Longitude"
-                placeholder="-79.0064"
-                decimalScale={6}
-                value={row?.lng ?? ''}
-                onChange={(v) => form.setFieldValue(`${fieldName}.${idx}.lng`, v)}
-              />
-            </SimpleGrid>
+            {/* Every repeatable location row now offers the what3words +
+                lat/long bundle via CoordinateInput (was previously gated to
+                Park playgrounds only). */}
+            <CoordinateInput
+              label={isPlayground ? 'Playground Coordinates' : 'Coordinates'}
+              latLabel={isPlayground ? 'Playground Latitude' : 'Latitude'}
+              lngLabel={isPlayground ? 'Playground Longitude' : 'Longitude'}
+              value={{ lat: row?.lat ?? null, lng: row?.lng ?? null, w3w: row?.w3w ?? '' }}
+              onChange={(v) => {
+                form.setFieldValue(`${fieldName}.${idx}.lat`, v.lat);
+                form.setFieldValue(`${fieldName}.${idx}.lng`, v.lng);
+                form.setFieldValue(`${fieldName}.${idx}.w3w`, v.w3w ?? '');
+              }}
+            />
 
-            {extraFields === 'playground' && (
+            {isPlayground && (
               <>
                 <Divider my="xs" />
-                <PlaygroundRowExtras form={form} fieldName={fieldName} idx={idx} />
+                <PlaygroundRowExtras
+                  form={form}
+                  fieldName={fieldName}
+                  idx={idx}
+                  isPark={isPark}
+                  id={id}
+                />
               </>
             )}
           </Stack>

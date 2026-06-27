@@ -15,6 +15,7 @@ variable "admin_target_group_arn" { type = string }
 variable "app_image" { type = string }
 variable "admin_backend_image" { type = string }
 variable "admin_frontend_image" { type = string }
+variable "embedding_image" { type = string }
 
 # App sizing
 variable "app_cpu" {
@@ -68,6 +69,28 @@ variable "admin_max_count" {
   default = 2
 }
 
+# Embedding (Hugging Face TEI) sizing
+variable "embedding_cpu" {
+  type    = number
+  default = 1024 # 1 vCPU
+}
+
+variable "embedding_memory" {
+  type    = number
+  default = 3072 # 3 GB
+}
+
+variable "embedding_desired_count" {
+  type    = number
+  default = 1
+}
+
+variable "embedding_model_id" {
+  type        = string
+  default     = "michaelfeil/embeddinggemma-300m"
+  description = "TEI --model-id to serve (ungated mirror, no HF token required)"
+}
+
 # S3 & CloudFront
 variable "s3_bucket_name" { type = string }
 variable "cloudfront_domain" { type = string }
@@ -78,10 +101,25 @@ variable "ssm_database_url_arn" { type = string }
 variable "ssm_forms_database_url_arn" { type = string }
 variable "ssm_secret_key_arn" { type = string }
 variable "ssm_sentry_dsn_arn" { type = string }
+variable "ssm_what3words_api_key_arn" { type = string }
 
 # CloudWatch
 variable "app_log_group_name" { type = string }
 variable "admin_log_group_name" { type = string }
+variable "embedding_log_group_name" { type = string }
+
+# Internal service discovery (Service Connect)
+variable "service_connect_namespace" {
+  type        = string
+  default     = "nearbynearby.internal"
+  description = "Cloud Map HTTP namespace used by ECS Service Connect"
+}
+
+variable "embedding_service_url" {
+  type        = string
+  default     = "http://embedding.nearbynearby.internal:80"
+  description = "Internal Service Connect URL of the embedding (TEI) service, injected into app/admin containers"
+}
 
 # Domain config
 variable "app_allowed_origins" {

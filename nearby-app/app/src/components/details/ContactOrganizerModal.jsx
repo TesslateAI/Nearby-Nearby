@@ -1,5 +1,4 @@
 import { Link } from 'react-router-dom';
-import './ContactOrganizerModal.css';
 
 /**
  * ContactOrganizerModal - Overlay modal showing event organizer contact info

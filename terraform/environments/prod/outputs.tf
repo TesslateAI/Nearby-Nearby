@@ -23,6 +23,11 @@ output "admin_service_name" {
   description = "ECS service name for nearby-admin"
 }
 
+output "embedding_service_name" {
+  value       = module.ecs.embedding_service_name
+  description = "ECS service name for the internal embedding (TEI) service"
+}
+
 output "github_actions_role_arn" {
   value       = module.ecs.github_actions_role_arn
   description = "IAM role ARN for GitHub Actions — set as AWS_ROLE_TO_ASSUME secret"

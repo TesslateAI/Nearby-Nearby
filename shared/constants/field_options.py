@@ -62,6 +62,15 @@ PARKING_OPTIONS = [
     "Valet Parking",
 ]
 
+# Choices for the poi.expect_to_pay_parking radio field. Mirrors the admin
+# POIForm LocationSection Radio.Group (yes / no / sometimes). Added so the
+# registry value_source EXPECT_TO_PAY_PARKING_OPTIONS resolves here.
+EXPECT_TO_PAY_PARKING_OPTIONS = [
+    {"value": "yes", "label": "Yes"},
+    {"value": "no", "label": "No"},
+    {"value": "sometimes", "label": "Sometimes"},
+]
+
 PARKING_ADA_CHECKLIST = [
     "Dedicated accessible parking spaces on site",
     "Accessible spaces closest to main entrance",

@@ -1,5 +1,5 @@
 import uuid
-from sqlalchemy import Column, String, Text, ForeignKey, Numeric, TIMESTAMP, Boolean, Enum
+from sqlalchemy import Column, String, Text, ForeignKey, Numeric, TIMESTAMP, Boolean, Enum, CheckConstraint
 from sqlalchemy.dialects.postgresql import UUID, JSONB, ARRAY
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -13,6 +13,33 @@ from shared.models.enums import POIType
 
 class PointOfInterest(Base):
     __tablename__ = "points_of_interest"
+    __table_args__ = (
+        CheckConstraint(
+            "alcohol_available IS NULL OR alcohol_available IN "
+            "('full_bar','beer_wine','byob','no_alcohol','seasonal','nearby')",
+            name="ck_points_of_interest_alcohol_available_valid",
+        ),
+        CheckConstraint(
+            "expect_to_pay_parking IS NULL OR expect_to_pay_parking IN "
+            "('yes','no','sometimes')",
+            name="ck_points_of_interest_expect_to_pay_parking_valid",
+        ),
+        CheckConstraint(
+            "listing_type IS NULL OR listing_type IN "
+            "('free','paid','paid_founding','community_comped')",
+            name="ck_points_of_interest_listing_type_valid",
+        ),
+        CheckConstraint(
+            "publication_status IS NULL OR publication_status IN "
+            "('draft','published','archived')",
+            name="ck_points_of_interest_publication_status_valid",
+        ),
+        CheckConstraint(
+            "sponsor_level IS NULL OR sponsor_level IN "
+            "('platform','state','county','town')",
+            name="ck_points_of_interest_sponsor_level_valid",
+        ),
+    )
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     poi_type = Column(Enum(POIType), nullable=False)
@@ -109,6 +136,8 @@ class PointOfInterest(Base):
     accessible_parking_details  = Column(JSONB)
     accessible_restroom         = Column(Boolean, nullable=False, server_default='false', default=False)
     accessible_restroom_details = Column(JSONB)
+    mobility_access             = Column(JSONB)  # {step_free_entry, main_area_accessible, ground_level_service}
+    cell_service                = Column(JSONB)  # single CELL_SERVICE_OPTIONS value (Good/Limited/Unknown/None)
     smoking_options = Column(JSONB)  # List of smoking options
     smoking_details = Column(Text)
     wifi_options = Column(JSONB)  # For Events only
@@ -200,7 +229,8 @@ class PointOfInterest(Base):
     inclusive_playground     = Column(Boolean, nullable=False, server_default='false', default=False)
     
     # Parks & Trails Additional Info
-    payphone_location = Column(JSONB)  # {"lat": 0, "lng": 0}
+    # payphone_location renamed to _deprecated_payphone_location (Migration A, m_payphone_001).
+    # Data consolidated into the plural payphone_locations array below.
     payphone_locations = Column(JSONB)  # [{"lat": 0, "lng": 0, "description": "Near entrance"}] - multiple payphones
     park_entry_notes = Column(Text)  # Park entry description/notes
     # park_entry_photo moved to Images table (image_type='entry')
@@ -326,7 +356,13 @@ class POIRelationship(Base):
 
 class Business(Base):
     __tablename__ = "businesses"
-    
+    __table_args__ = (
+        CheckConstraint(
+            "price_range IS NULL OR price_range IN ('$','$$','$$$','$$$$')",
+            name="ck_businesses_price_range_valid",
+        ),
+    )
+
     poi_id = Column(UUID(as_uuid=True), ForeignKey("points_of_interest.id"), primary_key=True)
     price_range = Column(String)  # '$', '$$', '$$$', '$$$$'
     
@@ -344,7 +380,14 @@ class Park(Base):
 
 class Trail(Base):
     __tablename__ = "trails"
-    
+    __table_args__ = (
+        CheckConstraint(
+            "trail_lighting IS NULL OR trail_lighting IN "
+            "('partial','full','seasonal','dusk_to_dawn')",
+            name="ck_trails_trail_lighting_valid",
+        ),
+    )
+
     poi_id = Column(UUID(as_uuid=True), ForeignKey("points_of_interest.id"), primary_key=True)
     length_text = Column(String)  # e.g., "2.5 miles", "1.2 km"
     length_segments = Column(JSONB)  # For multiple loops: [{"name": "Top Loop", "length": "0.25 miles"}]

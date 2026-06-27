@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import NNLogo from './NNLogo';
 import InstallButton from './InstallButton';
 import { getApiUrl } from '../config';
-import './Footer.css';
 
 /**
  * 3-layer footer — ported from nn-templates/default-page-01.html

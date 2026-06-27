@@ -7,7 +7,7 @@ import {
   RotateCcw,
   Calendar as CalendarIcon,
   MapPin,
-  Navigation2,
+  Navigation,
 } from 'lucide-react';
 import Map from '../components/Map';
 import {
@@ -18,7 +18,6 @@ import {
 } from '../components/nearby-feature/NearbyCard';
 import { getApiUrl } from '../config';
 import { getOpenCloseStatusLabel } from '../utils/hoursUtils';
-import './Explore.css';
 
 /* ------------------------------------------------------------------ */
 /* Constants                                                          */
@@ -123,8 +122,20 @@ function dateRangeForFilter(filter, customDate) {
 // so it is dawn/dusk-aware and produces consistent output with detail pages and NearbyCard.
 function exploreStatusLine(hours, lat, lng) {
   if (!hours || typeof hours !== 'object') return null;
-  const { label } = getOpenCloseStatusLabel(hours, new Date(), lat ?? null, lng ?? null);
-  return label || null;
+  const { variant, label } = getOpenCloseStatusLabel(hours, new Date(), lat ?? null, lng ?? null);
+  return label ? { variant, label } : null;
+}
+
+// Barry's design: color only the leading status word (mirrors NearbyCard).
+function renderHoursStatus(status) {
+  if (!status?.label) return null;
+  const cls = status.variant === 'open' ? 'nearby-card__hours--open'
+    : status.variant === 'opensoon' ? 'nearby-card__hours--soon'
+    : status.variant === 'closed' ? 'nearby-card__hours--closed' : '';
+  const sp = status.label.indexOf(' ');
+  const lead = sp === -1 ? status.label : status.label.slice(0, sp);
+  const rest = sp === -1 ? '' : status.label.slice(sp);
+  return (<><span className={cls}>{lead}</span>{rest}</>);
 }
 
 // Same matcher as NearbyCard — accept any non-empty / non-"no" entry.
@@ -195,7 +206,7 @@ const ResultCard = forwardRef(function ResultCard({ poi, index, isHighlighted },
 
       {cityLine && <div className="one_search_map_single_city">{cityLine}</div>}
 
-      {statusLine && <div className="one_search_map_result_hours">{statusLine}</div>}
+      {statusLine && <div className="one_search_map_result_hours">{renderHoursStatus(statusLine)}</div>}
 
       {(categoryLabel || amenities.length > 0) && (
         <div className="one_search_map_result_type_amenities_group">
@@ -203,7 +214,7 @@ const ResultCard = forwardRef(function ResultCard({ poi, index, isHighlighted },
             <div className="one_search_map_result_type">{categoryLabel}</div>
           )}
           {amenities.length > 0 && (
-            <div className="one_search_map_result_amenities" aria-label="Amenities">
+            <div className="one_search_map_result_amenities" aria-label="Amenities" onClick={stop}>
               {amenities.map(({ key, title, Icon }) => (
                 <span
                   key={key}
@@ -228,7 +239,7 @@ const ResultCard = forwardRef(function ResultCard({ poi, index, isHighlighted },
             rel="noopener noreferrer"
             onClick={stop}
           >
-            <Navigation2 size={14} className="poi_button_icon" aria-hidden="true" />
+            <Navigation size={14} className="poi_button_icon" aria-hidden="true" style={{fill:'none'}} />
             <span className="poi_button_title">Directions</span>
           </a>
         )}
@@ -598,7 +609,7 @@ export default function Explore() {
         <div className="wrapper_default explore__title-inner">
           {(urlQuery || urlType) && (
             <Link to="/explore" className="explore__back" aria-label="Back to all places">
-              <X size={18} aria-hidden="true" />
+              <X size={18} aria-hidden="true" color="white" />
             </Link>
           )}
           <h1 className="explore__title">{pageTitle}</h1>
