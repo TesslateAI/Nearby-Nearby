@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import Dict, Any
 
 from sqlalchemy import Column, String, Integer, Text, TIMESTAMP, Enum, ForeignKey, Boolean
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 
@@ -109,6 +109,15 @@ IMAGE_TYPE_CONFIG: Dict[ImageType, Dict[str, Any]] = {
             "medium": (400, 400)
         }
     },
+    ImageType.access_point: {
+        "max_count": 10,
+        "max_size_mb": 5,
+        "allowed_mimes": ["image/jpeg", "image/png", "image/webp"],
+        "sizes": {
+            "thumbnail": (150, 150),
+            "medium": (400, 400)
+        }
+    },
     ImageType.map: {
         "max_count": 5,
         "max_size_mb": 20,
@@ -165,6 +174,7 @@ class Image(Base):
     alt_text = Column(Text, nullable=True)
     caption = Column(Text, nullable=True)
     display_order = Column(Integer, nullable=True, default=0)
+    function_tags = Column(JSONB, nullable=True)  # ["storefront", "entrance", "interior"]
 
     # Tracking
     uploaded_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)

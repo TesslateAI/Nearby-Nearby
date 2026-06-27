@@ -31,40 +31,67 @@ variable "cloudfront_domain" {
 
 # Secrets (passed to SSM Parameter Store)
 variable "database_url" {
-  type      = string
-  sensitive = true
+  type        = string
+  sensitive   = true
   description = "Full PostgreSQL connection string for main role"
 }
 
 variable "forms_database_url" {
-  type      = string
-  sensitive = true
+  type        = string
+  sensitive   = true
   description = "PostgreSQL connection string for forms role"
 }
 
 variable "secret_key" {
-  type      = string
-  sensitive = true
+  type        = string
+  sensitive   = true
   description = "JWT signing secret key"
+}
+
+variable "sentry_dsn" {
+  type        = string
+  sensitive   = true
+  default     = "disabled"
+  description = "Sentry DSN for error tracking (set to actual DSN to enable)"
+}
+
+variable "what3words_api_key" {
+  type        = string
+  sensitive   = true
+  default     = "placeholder-set-via-aws-cli"
+  description = "what3words API key for admin coordinate-lookup endpoint (set via TF_VAR_what3words_api_key or SSM put-parameter)"
 }
 
 # Container images (defaults to placeholder, overridden after first push)
 variable "app_image" {
-  type    = string
-  default = ""
+  type        = string
+  default     = ""
   description = "nearby-app ECR image URI (leave empty for initial plan)"
 }
 
 variable "admin_backend_image" {
-  type    = string
-  default = ""
+  type        = string
+  default     = ""
   description = "nearby-admin backend ECR image URI"
 }
 
 variable "admin_frontend_image" {
-  type    = string
-  default = ""
+  type        = string
+  default     = ""
   description = "nearby-admin frontend ECR image URI"
+}
+
+# Embedding (Hugging Face TEI) service
+variable "embedding_image_tag" {
+  type        = string
+  default     = "cpu-1.8.1"
+  description = "Tag of the nearbynearby/embedding ECR image (mirror of ghcr.io/huggingface/text-embeddings-inference:cpu-1.8.1)"
+}
+
+variable "service_connect_namespace" {
+  type        = string
+  default     = "nearbynearby.internal"
+  description = "Cloud Map HTTP namespace for ECS Service Connect (internal service-to-service DNS)"
 }
 
 # VPC Peering (ECS VPC → default VPC where existing RDS lives)

@@ -198,13 +198,44 @@ The system manages four POI types with shared base attributes and extensive type
 ## Key Development Patterns
 
 ### Adding New POI Fields
-1. Update SQLAlchemy model in `backend/app/models/poi.py` (or specific type models like `business.py`, `event.py`, `trail.py`)
-2. Create Alembic migration with `docker-compose exec backend alembic revision --autogenerate -m "Description"`
-3. Update Pydantic schemas in `backend/app/schemas/poi.py`
-4. Add field to appropriate POIForm section in `frontend/src/components/POIForm/sections/`
-5. Update form constants and validation in `frontend/src/components/POIForm/constants/`
-6. Consider image fields: update `backend/app/models/image.py` for new ImageType enum values
-7. Extend field options if needed in `frontend/src/utils/fieldOptions.js`
+
+> **🔴 The POI field registry (`shared/poi_fields.json`) is the single source of
+> truth.** The public API serializer, the user-facing app, the SEO output, and
+> the contract tests all DERIVE from it. **If you add an admin field but do not
+> propagate it through the registry, it is captured in admin and silently
+> INVISIBLE to the user-facing app.** Never hand-edit `shared/poi_fields.json` —
+> it is generated.
+
+1. **Migration + model first.** Update the SQLAlchemy model in
+   `backend/app/models/poi.py` (or the subtype models `business.py`, `event.py`,
+   `trail.py`, `park.py`) and create the Alembic migration:
+   `docker-compose exec backend alembic revision --autogenerate -m "Description"`.
+   Admin owns the shared schema. If the app must read the column, also add it to
+   `nearby-app/backend/app/models/poi.py`.
+2. **Regenerate the registry.** Run `python3 scripts/gen_poi_registry.py` (from
+   the repo root). This reflects the new column and writes **BOTH** the source of
+   truth `shared/poi_fields.json` **AND** the Vite frontend mirror
+   `nearby-app/app/src/data/poi_fields.json`. **The mirror MUST stay
+   byte-identical** to the shared copy — the Vite build context cannot reach
+   repo-root `shared/`, so the mirror is required, and `tests/test_registry_valid.py`
+   has a drift check that fails if the two ever diverge.
+3. **Review the generated entry.** Set `audience` correctly
+   (`public` | `admin` | `partner`) — **anything containing PII / contact people
+   / emergency / internal-ops data MUST be `audience: "admin"`** or it leaks to
+   the public API. Set `tier` (`free`/`paid`/`any`), `applies_to`, `group`/`order`,
+   `render` (`auto`/`bespoke`/`hidden`), and `value_source` (must name a real
+   constant in `shared/constants/field_options.py`). Encode overrides in the
+   generator's override maps so re-running stays deterministic.
+4. **If you added an option list**, add the matching constant to
+   `shared/constants/field_options.py` and point the field's `value_source` at it.
+5. **Run the guards** — `pytest tests/test_registry_valid.py` (validity + PII
+   regression + mirror-drift) and `pytest tests/test_poi_field_contract.py`
+   (public response keys == public registry fields; no drop, no leak, no orphans).
+6. Update Pydantic schemas in `backend/app/schemas/poi.py` and add the field to
+   the appropriate POIForm section/constants/validation under
+   `frontend/src/components/POIForm/`.
+7. Consider image fields: update `backend/app/models/image.py` for new ImageType
+   enum values; extend `frontend/src/utils/fieldOptions.js` if needed.
 
 ### Creating API Endpoints
 1. Add endpoint in `backend/app/api/endpoints/`
@@ -243,6 +274,8 @@ The system manages four POI types with shared base attributes and extensive type
 - Production domain support via `PRODUCTION_DOMAIN`
 - Image storage configuration: `IMAGE_STORAGE_PATH` and `IMAGE_BASE_URL`
 - Frontend API base URL: `VITE_API_BASE_URL`
+- To enable What3Words coordinate lookup, set `WHAT3WORDS_API_KEY` in your `.env`.
+  In prod, set as SSM SecureString at `/nearbynearby/prod/what3words-api-key` and inject it as the env var on the admin ECS task.
 
 ## Workflow Preferences
 - Focus only on task-relevant code areas

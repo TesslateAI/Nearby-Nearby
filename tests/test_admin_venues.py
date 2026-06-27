@@ -6,8 +6,8 @@ from conftest import create_business, create_park, create_event, create_trail
 
 
 class TestVenueList:
-    def test_venue_list_only_business_park(self, admin_client):
-        """Only BUSINESS and PARK in venue list."""
+    def test_venue_list_business_park_trail(self, admin_client):
+        """Phase 1: BUSINESS, PARK and TRAIL all appear in venue list; EVENT still excluded."""
         biz = create_business(admin_client, name="Venue List Biz")
         park = create_park(admin_client, name="Venue List Park")
         trail = create_trail(admin_client, name="Venue List Trail")
@@ -19,7 +19,7 @@ class TestVenueList:
         venue_names = [v["name"] for v in venues]
         assert "Venue List Biz" in venue_names
         assert "Venue List Park" in venue_names
-        assert "Venue List Trail" not in venue_names
+        assert "Venue List Trail" in venue_names
         assert "Venue List Event" not in venue_names
 
     def test_venue_list_search(self, admin_client):
@@ -50,7 +50,7 @@ class TestVenueData:
             website_url="https://venuebiz.com",
             parking_types=["Lot"],
             parking_notes="Free lot behind building",
-            wheelchair_accessible=["Entrance"],
+            # wheelchair_accessible removed — column dropped (Issue #45 PR2 Migration B)
             wheelchair_details="Ramp at front",
             public_toilets=["Indoor"],
             toilet_description="ADA compliant",
@@ -65,7 +65,7 @@ class TestVenueData:
         assert data["address_city"] == "Pittsboro"
         assert data["phone_number"] == "919-555-1234"
         assert data["parking_types"] == ["Lot"]
-        assert data["wheelchair_accessible"] == ["Entrance"]
+        # wheelchair_accessible assertion removed — column dropped (Issue #45 PR2 Migration B)
         assert data["public_toilets"] == ["Indoor"]
         assert data["hours"]["monday"]["open"] == "09:00"
 

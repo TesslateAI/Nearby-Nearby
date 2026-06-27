@@ -1,18 +1,16 @@
 import React from 'react';
 import {
-  Stack, SimpleGrid, Select, Switch, Alert, Text, Button, Divider
+  Stack, SimpleGrid, Select, Switch, Alert, Text, Divider
 } from '@mantine/core';
-import { DateTimePicker } from '@mantine/dates';
-import { IconPlus } from '@tabler/icons-react';
 import RichTextEditor from '../../RichTextEditor';
 import { DebouncedTextInput } from '../../DebouncedTextInput';
 import { getDebouncedInputProps } from '../constants/helpers';
-import { getStatusOptions, KEY_FACILITIES } from '../../../utils/constants';
+import { getStatusOptions } from '../../../utils/constants'; // KEY_FACILITIES removed (Migration A #34)
 import {
   FeaturedImageUpload,
   shouldUseImageUpload
 } from '../ImageIntegration';
-import { CheckboxGroupSection } from '../components/CheckboxGroupSection';
+// CheckboxGroupSection import removed — no longer used after key_facilities removal (Migration A #34)
 
 export const CoreInformationSection = React.memo(function CoreInformationSection({
   form,
@@ -44,8 +42,10 @@ export const CoreInformationSection = React.memo(function CoreInformationSection
           data={[
             { value: 'free', label: 'Free' },
             { value: 'paid', label: 'Paid' },
-            { value: 'paid_founding', label: 'Paid Founding' },
-            { value: 'sponsor', label: 'Sponsor' },
+            { value: 'sponsor_platform', label: 'Sponsor – Platform' },
+            { value: 'sponsor_state', label: 'Sponsor – State' },
+            { value: 'sponsor_county', label: 'Sponsor – County' },
+            { value: 'sponsor_town', label: 'Sponsor – Town' },
             { value: 'community_comped', label: 'Community Comped' }
           ]}
           {...form.getInputProps('listing_type')}
@@ -93,115 +93,65 @@ export const CoreInformationSection = React.memo(function CoreInformationSection
         />
       )}
 
-      <SimpleGrid cols={{ base: 1, sm: 2 }}>
-        <Select
-          label="Status"
-          placeholder="Select status"
-          data={getStatusOptions(form.values.poi_type)}
-          {...form.getInputProps('status')}
-        />
-        <DebouncedTextInput
-          label="Status Message"
-          placeholder="Additional status info (max 100 chars)"
-          maxLength={100}
-          {...getDebouncedInputProps(form, 'status_message')}
-        />
-      </SimpleGrid>
+      {!isEvent && (
+        <SimpleGrid cols={{ base: 1, sm: 2 }}>
+          <Select
+            label="Status"
+            placeholder="Select status"
+            data={getStatusOptions(form.values.poi_type)}
+            {...form.getInputProps('status')}
+          />
+          <DebouncedTextInput
+            label="Status Message"
+            placeholder="Additional status info (max 100 chars)"
+            maxLength={100}
+            {...getDebouncedInputProps(form, 'status_message')}
+          />
+        </SimpleGrid>
+      )}
 
-      <SimpleGrid cols={{ base: 1, sm: 3 }}>
-        <Switch
-          label="Verified"
-          {...form.getInputProps('is_verified', { type: 'checkbox' })}
-        />
-        <Switch
-          label="Disaster Hub"
-          {...form.getInputProps('is_disaster_hub', { type: 'checkbox' })}
-        />
-        <Switch
-          label="Lat/Long Most Accurate"
-          description="Map coordinates are the most reliable location"
-          {...form.getInputProps('lat_long_most_accurate', { type: 'checkbox' })}
-        />
-        {isBusiness && (
+      {/* Business Free (#74) + Business Paid (#75) + Park (#76) + Trail (#77) +
+          Event (#73): these toggles move OUT of Identity — is_verified /
+          is_disaster_hub → Admin-Only; lat_long_most_accurate → Address. Other
+          POI types keep them here. */}
+      {!((isBusiness && (isFreeListing || isPaidListing)) || isPark || isTrail || isEvent) && (
+        <SimpleGrid cols={{ base: 1, sm: 3 }}>
           <Switch
-            label="Don't Display Location"
-            {...form.getInputProps('dont_display_location', { type: 'checkbox' })}
+            label="Verified"
+            {...form.getInputProps('is_verified', { type: 'checkbox' })}
           />
-        )}
-      </SimpleGrid>
-
-      {/* Key Facilities - available for all POI types */}
-      <CheckboxGroupSection
-        label="Key Facilities"
-        fieldName="key_facilities"
-        options={KEY_FACILITIES}
-        cols={{ base: 2, sm: 3 }}
-        form={form}
-      />
-
-      {isEvent && (
-        <>
-          <Divider my="md" label="Event Details" />
-          <Alert color="blue" variant="light" mb="md">
-            <Text size="sm">
-              <strong>Date Instructions:</strong>
-              <br />• If your event takes place on multiple separate days, please create a Repeat Event and enter each day individually.
-              <br />• If your event runs past midnight (for example, December 31st at 10:00 AM until January 1st at 3:00 AM), enter it as one single event since it's continuous.
-            </Text>
-          </Alert>
-          <SimpleGrid cols={{ base: 1, sm: 2 }}>
-            <DateTimePicker
-              label="Start Date & Time"
-              placeholder="Select start date and time"
-              valueFormat="MM/DD/YYYY hh:mm A"
-              {...form.getInputProps('event.start_datetime')}
+          <Switch
+            label="Disaster Hub"
+            {...form.getInputProps('is_disaster_hub', { type: 'checkbox' })}
+          />
+          <Switch
+            label="Lat/Long Most Accurate"
+            description="Map coordinates are the most reliable location"
+            {...form.getInputProps('lat_long_most_accurate', { type: 'checkbox' })}
+          />
+          {isBusiness && (
+            <Switch
+              label="Don't Display Location"
+              {...form.getInputProps('dont_display_location', { type: 'checkbox' })}
             />
-            <DateTimePicker
-              label="End Date & Time"
-              placeholder="Select end date and time"
-              valueFormat="MM/DD/YYYY hh:mm A"
-              {...form.getInputProps('event.end_datetime')}
-            />
-          </SimpleGrid>
-          <Button
-            variant="outline"
-            leftSection={<IconPlus size={16} />}
-            onClick={() => {
-              alert('Recurring events functionality will be implemented in a future update');
-            }}
-          >
-            Create Repeating Event
-          </Button>
-        </>
+          )}
+        </SimpleGrid>
       )}
 
-      {isEvent && (
-        <>
-          <Divider my="md" label="Cost Information" />
-          <SimpleGrid cols={{ base: 1, sm: 2 }}>
-            <DebouncedTextInput
-              label="Cost"
-              placeholder="e.g., $10 or $0-$50 or 0 (for free)"
-              {...getDebouncedInputProps(form, 'cost')}
-            />
-            <DebouncedTextInput
-              label="Ticket Link"
-              placeholder="URL to purchase tickets"
-              {...getDebouncedInputProps(form, 'ticket_link')}
-            />
-          </SimpleGrid>
-          <RichTextEditor
-            label="Pricing Details"
-            placeholder="Additional pricing info (e.g., Kids under 2 are free)"
-            value={form.values.pricing_details || ''}
-            onChange={(html) => form.setFieldValue('pricing_details', html)}
-            error={form.errors.pricing_details}
-            minRows={3}
-          />
-        </>
-      )}
+      {/* key_facilities removed — renamed _deprecated_key_facilities (Migration A #34) */}
 
-      {(isPaidListing || isPark || isTrail) && (
+      {/* #73 Event reorg: the Event Details block (Date Instructions banner +
+          Start/End Date & Time) moved OUT of Event Identity into the Event
+          Details accordion (Acc 3), rendered directly in EventLayout. The dead
+          "Create Repeating Event" button was removed entirely — the working
+          mechanism is RecurringEventSection in Acc 3. */}
+
+      {/* Event cost moved to EventCostSection (Task 139) */}
+
+      {/* #75 Business Paid + #76 Park + #77 Trail + #73 Event move the History
+          paragraph OUT of Identity into the dedicated "Locally Found + History"
+          accordion, so it must NOT render here for those types. */}
+      {(isPaidListing && !isBusiness && !isPark && !isTrail && !isEvent) && (
         <>
           <Divider my="md" label="History" />
           <RichTextEditor
@@ -215,20 +165,26 @@ export const CoreInformationSection = React.memo(function CoreInformationSection
         </>
       )}
 
-      {shouldUseImageUpload(id) ? (
-        <FeaturedImageUpload
-          key={`featured-image-${id}`}
-          poiId={id}
-          isBusiness={isBusiness}
-          isFreeListing={isFreeListing}
-          form={form}
-        />
-      ) : (
-        <Alert color="blue" variant="light" key={`featured-placeholder-${id || 'new'}`}>
-          <Text size="sm">
-            {isBusiness && isFreeListing ? "Logo" : "Featured Image"} upload will be available shortly...
-          </Text>
-        </Alert>
+      {/* Business Free (#74) + Business Paid (#75) + Park (#76) + Trail (#77) +
+          Event (#73): the Featured / Main Image upload moves to the dedicated
+          Images accordion (rendered there via <FeaturedImageUpload>). For every
+          other POI type the Featured Image stays inline in Core Information. */}
+      {!((isBusiness && (isFreeListing || isPaidListing)) || isPark || isTrail || isEvent) && (
+        shouldUseImageUpload(id) ? (
+          <FeaturedImageUpload
+            key={`featured-image-${id}`}
+            poiId={id}
+            isBusiness={isBusiness}
+            isFreeListing={isFreeListing}
+            form={form}
+          />
+        ) : (
+          <Alert color="blue" variant="light" key={`featured-placeholder-${id || 'new'}`}>
+            <Text size="sm">
+              Featured Image upload will be available shortly...
+            </Text>
+          </Alert>
+        )
       )}
     </Stack>
   );

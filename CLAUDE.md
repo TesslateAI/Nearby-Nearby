@@ -1,3 +1,5 @@
+nn-templates submodule is Barry's designs / templates. 
+
 # Claude Code Guidelines - Nearby Nearby Projects
 
 This file provides guidance to Claude Code (claude.ai/code) when working with the Nearby Nearby platform.
@@ -126,7 +128,7 @@ User views POI detail page (e.g., "Jordan Lake State Park")
 "NEARBY" section loads with POIs within default 5-mile radius
     ↓
 User can:
-  • Filter by type using horizontal scrolling pills (All, Businesses, Events, Parks, Trails, Youth Events)
+  • Filter by type using horizontal scrolling pills (All, Businesses, Events, Parks, Trails)
   • Search within nearby results using hybrid AI search (keyword + semantic)
   • Adjust radius via dropdown (1, 3, 5, 10, 15 miles)
   • Select date via smart dropdown (Today, Tomorrow, This Weekend, or pick custom)
@@ -164,7 +166,7 @@ User can:
 ### Features
 
 **Filtering & Search:**
-- **Type filter pills**: All, Businesses, Events, Parks, Trails, Youth Events (with lucide icons)
+- **Type filter pills**: All, Businesses, Events, Parks, Trails (with lucide icons)
 - **Horizontal scroll**: Filter pills scroll horizontally on mobile with hidden scrollbar
 - **Hybrid AI search**: Uses `/api/pois/hybrid-search` filtered to nearby results only
 - **Date presets**: Today, Tomorrow, This Weekend, or pick a custom date (no manual entry)
@@ -245,6 +247,10 @@ Internet → Cloudflare (HTTPS) → ALB (HTTP port 80) → ECS Fargate
                               RDS PostgreSQL (existing, via VPC peering)
                               S3 + CloudFront (existing)
 ```
+
+### AWS Account & CLI Profile
+
+> **All prod AWS commands use the `nn-prod` profile (the `manav-terraform` user): `--profile nn-prod --region us-east-1`.** The default profile is a different org account with no NN resources. (NN is ECS Fargate — no `kubectl`. ECR images are tagged with the git commit SHA, so a task's image tag = the deployed commit.)
 
 ### How to Deploy
 
@@ -668,6 +674,58 @@ For detailed documentation about each application:
 ---
 
 For EDITS to the database structure, make migrations not manual edits.
+
+---
+
+## POI Field Registry — Single Source of Truth (READ BEFORE CHANGING POI FIELDS)
+
+POI fields are no longer hand-wired in four places. A single registry,
+**`shared/poi_fields.json`**, describes every POI field (its `audience`,
+`tier`, `applies_to` types, `group`, `value_source`, `source` ORM path,
+`render` mode, etc.). The public API serializer, the user-facing app, the SEO
+output, and the contract tests all **derive** from it. The registry is
+**generated** from the admin POI model by `scripts/gen_poi_registry.py` — never
+hand-edit the JSON.
+
+**🔴 If you add or change an admin field / the data model / an admin form, you
+MUST propagate it through the registry or it will silently NOT appear in the
+user-facing app.** The cost of a new field is now ~2 steps, not 4 — but skipping
+the registry step means the field is captured in admin and invisible to users.
+
+When you add or rename a POI column (or change which types it applies to, its
+audience, or its option list):
+
+1. **Migration first** — add/alter the column via an alembic migration in
+   `nearby-admin/backend/alembic` (admin owns the shared schema). Add the column
+   to the ORM model(s) (`nearby-admin/.../models/poi.py`, and
+   `nearby-app/.../models/poi.py` if the app must read it).
+2. **Regenerate the registry** — run `python3 scripts/gen_poi_registry.py`. This
+   reflects the new column and writes **BOTH** the source of truth
+   `shared/poi_fields.json` **AND** the Vite frontend mirror
+   `nearby-app/app/src/data/poi_fields.json` (the frontend build context can't
+   reach repo-root `shared/`, so the mirror is required and must stay
+   byte-identical).
+3. **Review the generated entry** — set `audience` correctly (`public` |
+   `admin` | `partner`). **Anything containing PII / contact people / emergency
+   / internal-ops data MUST be `audience: "admin"`** (the serializer emits every
+   `audience=="public"` field regardless of `render`). Set `tier`
+   (`free`/`paid`/`any`), `applies_to`, `group`/`order`, and `value_source`
+   (must name a real constant in `shared/constants/field_options.py`). Encode any
+   override in the generator's override maps (`ADMIN_FIELDS`, `PAID_FIELDS`,
+   `VALUE_SOURCE`, `GROUP_BY_FIELD`, …) so re-running stays deterministic.
+4. **If you add an option list** (Radio/Select/multi values) in an admin form,
+   add the matching constant to `shared/constants/field_options.py` and point the
+   field's `value_source` at it.
+5. **Run the guards** — `pytest tests/test_registry_valid.py` (validity + the
+   PII regression guard + the mirror-drift check) and
+   `pytest tests/test_poi_field_contract.py` (the derivation contract: public
+   response keys == public registry fields, no drop, no leak, no orphans).
+
+Key files: `shared/poi_fields.json` (source of truth), `shared/poi_fields.schema.json`
+(meta-schema), `scripts/gen_poi_registry.py` (generator),
+`shared/constants/poi_registry.py` + `nearby-app/app/src/utils/poiRegistry.js`
+(loaders), `nearby-app/app/src/data/poi_fields.json` (frontend mirror — generated,
+do not hand-edit).
 
 ## User Management
 

@@ -107,6 +107,17 @@ VITE_API_BASE_URL=
 # # No AWS keys needed - IAM role will be used automatically
 
 #==============================================================================
+# 🌍 WHAT3WORDS API
+#==============================================================================
+# What3Words coordinate-lookup. Without this set, the admin POI form's
+# "Convert to coordinates" button returns HTTP 503 from
+# /api/utils/what3words-to-coords. Retrieve the key from the team's secret
+# store; never commit a real value.
+# In production, set as SSM SecureString /nearbynearby/prod/what3words-api-key
+# and inject as WHAT3WORDS_API_KEY on the admin ECS task definition.
+WHAT3WORDS_API_KEY=
+
+#==============================================================================
 # 📸 IMAGE STORAGE CONFIGURATION
 #==============================================================================
 

@@ -68,6 +68,8 @@ module "secrets" {
   database_url       = var.database_url
   forms_database_url = var.forms_database_url
   secret_key         = var.secret_key
+  sentry_dsn         = var.sentry_dsn
+  what3words_api_key = var.what3words_api_key
 }
 
 # --- Monitoring (CloudWatch) ---
@@ -110,6 +112,9 @@ module "ecs" {
   admin_backend_image  = "${local.ecr_base}/nearbynearby/nearby-admin-backend:latest"
   admin_frontend_image = "${local.ecr_base}/nearbynearby/nearby-admin-frontend:latest"
 
+  # Embedding service: ECR mirror of ghcr.io/huggingface/text-embeddings-inference:cpu-1.8.1
+  embedding_image = "${local.ecr_base}/nearbynearby/embedding:${var.embedding_image_tag}"
+
   # Existing S3 & CloudFront (not managed by Terraform)
   s3_bucket_name       = var.s3_bucket_name
   cloudfront_domain    = var.cloudfront_domain
@@ -119,10 +124,17 @@ module "ecs" {
   ssm_database_url_arn       = module.secrets.database_url_arn
   ssm_forms_database_url_arn = module.secrets.forms_database_url_arn
   ssm_secret_key_arn         = module.secrets.secret_key_arn
+  ssm_sentry_dsn_arn         = module.secrets.sentry_dsn_arn
+  ssm_what3words_api_key_arn = module.secrets.what3words_api_key_arn
 
   # CloudWatch
-  app_log_group_name   = module.monitoring.app_log_group_name
-  admin_log_group_name = module.monitoring.admin_log_group_name
+  app_log_group_name       = module.monitoring.app_log_group_name
+  admin_log_group_name     = module.monitoring.admin_log_group_name
+  embedding_log_group_name = module.monitoring.embedding_log_group_name
+
+  # Internal embedding service (Service Connect)
+  service_connect_namespace = var.service_connect_namespace
+  embedding_service_url     = "http://embedding.${var.service_connect_namespace}:80"
 
   # GitHub Actions OIDC (provider already exists in this account)
   create_github_oidc       = false

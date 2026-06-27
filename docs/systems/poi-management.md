@@ -5,11 +5,18 @@
 The POI (Point of Interest) Management System is the core of the platform, handling creation, reading, updating, and deletion of location data. It supports 8 different POI types with shared base fields and type-specific extensions.
 
 **Key Files:**
-- `nearby-admin/backend/app/models/poi.py` - SQLAlchemy models
+- `nearby-admin/backend/app/models/poi.py` - SQLAlchemy models (the **column superset** the registry reflects)
 - `nearby-admin/backend/app/crud/crud_poi.py` - CRUD operations
 - `nearby-admin/backend/app/api/endpoints/pois.py` - API endpoints
 - `nearby-admin/backend/app/schemas/poi.py` - Pydantic schemas
 - `nearby-admin/frontend/src/components/POIForm/` - Form components
+- `shared/poi_fields.json` - **POI field registry (single source of truth for every POI field)**
+- `scripts/gen_poi_registry.py` - registry generator (reflects the admin ORM)
+- `nearby-app/backend/app/serialization/poi_serializer.py` - registry-driven public serializer
+
+> **Before changing any POI field, read "POI Field Registry" below.** A new
+> column that is captured in admin but not propagated through the registry is
+> **silently invisible** to the user-facing app.
 
 ---
 
@@ -26,6 +33,72 @@ The POI (Point of Interest) Management System is the core of the platform, handl
 | Jobs | `JOBS` | Job listings |
 | Volunteer | `VOLUNTEER_OPPORTUNITIES` | Volunteer positions |
 | Disaster Hubs | `DISASTER_HUBS` | Emergency resources |
+
+---
+
+## POI Field Registry (Single Source of Truth)
+
+POI fields are described **once** in `shared/poi_fields.json`. The admin POI model
+(`PointOfInterest` + the `Business`/`Park`/`Trail`/`Event` subtype tables) is the
+column **superset**; the registry is **generated** from it by
+`scripts/gen_poi_registry.py` and every downstream consumer derives from it:
+
+- the **public API serializer** (`nearby-app/.../serialization/poi_serializer.py`),
+- the **user-facing app** renderer (`AttributeSections.jsx`, see `attributes.md`),
+- the **SEO / JSON-LD** output, and
+- the **contract tests** (`tests/test_poi_field_contract.py`, `tests/test_registry_valid.py`).
+
+The registry is **generated — never hand-edit `shared/poi_fields.json`.** Encode
+any per-field decision in the generator's override maps so re-running stays
+deterministic (re-running produces byte-identical output).
+
+### Per-field taxonomy
+
+Each entry (213 today) carries:
+
+| Field | Values | Meaning |
+|-------|--------|---------|
+| `key` / `label` | string | Field name + display label |
+| `type` | `text`, `richtext`, `boolean`, `multi`, `dict`, `relation`, `datetime`, `number`, `url`, `phone`, `email`, `enum`, `image`, `image[]`, `geo` | Drives the frontend widget |
+| `audience` | **`public`** \| **`admin`** \| **`partner`** | Who may see it. The serializer emits **only `public`** fields |
+| `tier` | `free` \| `paid` \| `any` | `paid` fields are server-side gated and dropped for free listings |
+| `render` | `auto` \| `bespoke` \| `hidden` | `auto` → generic AttributeSections widget; `bespoke` → a hand-built hero/section; `hidden` → not rendered by the auto-renderer |
+| `applies_to` | list of POIType | Which POI types the field applies to |
+| `group` / `order` | string / int | Accordion grouping + ordering on the detail page |
+| `source` | ORM path | `poi.<col>`, `<subtype>.<col>`, `computed.<fn>`, or `images:<type>` |
+| `value_source` | constant name | Names an option list in `shared/constants/field_options.py` |
+| `card`, `computed`, `deprecated`, `replaced_by`, `icon`, `schema_org` | — | Card eligibility, computed flag, deprecation chain, SEO mapping |
+
+> **PII rule:** anything containing PII / contact people / emergency / internal-ops
+> data **MUST be `audience: "admin"`**. The 8 admin keys that must never leak are
+> `main_contact_name`, `main_contact_email`, `main_contact_phone`,
+> `offsite_emergency_contact`, `emergency_protocols`, `contact_info`,
+> `compliance`, `admin_notes`. `tests/test_registry_valid.py` guards this.
+
+### Add a POI field (runbook)
+
+The cost of a new field is now ~2 steps to propagate, not 4 — but **skipping the
+registry step means the field is captured in admin and invisible to users.**
+
+1. **Migration first** — add/alter the column via an Alembic migration in
+   `nearby-admin/backend/alembic`, and add the `Column` to the ORM model(s)
+   (`nearby-admin/.../models/poi.py`, and `nearby-app/.../models/poi.py` if the
+   app must read it).
+2. **Regenerate the registry** — run `python3 scripts/gen_poi_registry.py`. This
+   reflects the new column and writes **BOTH** the source of truth
+   `shared/poi_fields.json` **AND** the byte-identical Vite mirror
+   `nearby-app/app/src/data/poi_fields.json` (the frontend build context can't
+   reach repo-root `shared/`).
+3. **Review the generated entry** — set `audience` correctly (PII/contact/
+   emergency/internal → `admin`), `tier`, `applies_to`, `group`/`order`, `render`,
+   and `value_source` (must name a real constant in
+   `shared/constants/field_options.py`). Encode overrides in the generator's
+   override maps so re-running stays deterministic.
+4. **If you added an option list**, add the matching constant to
+   `shared/constants/field_options.py` and point the field's `value_source` at it.
+5. **Run the guards** — `pytest tests/test_registry_valid.py` (validity + PII
+   regression + mirror-drift) and `pytest tests/test_poi_field_contract.py`
+   (public response keys == public registry fields; no drop, no leak, no orphans).
 
 ---
 
@@ -148,15 +221,71 @@ class Trail(Base):
 class Event(Base):
     __tablename__ = "events"
 
-    id = Column(UUID, primary_key=True)
-    poi_id = Column(UUID, ForeignKey("points_of_interest.id"))
-    start_datetime = Column(DateTime)
-    end_datetime = Column(DateTime)
-    repeat_pattern = Column(String)
+    poi_id = Column(UUID, ForeignKey("points_of_interest.id"), primary_key=True)
+    start_datetime = Column(TIMESTAMP(timezone=True), nullable=False)
+    end_datetime = Column(TIMESTAMP(timezone=True))
+
+    # Repeating event fields
+    is_repeating = Column(Boolean, default=False)
+    repeat_pattern = Column(JSONB)  # {"frequency": "weekly|daily|monthly|yearly", "interval": 1, "days": ["MO","WE"], "end_date": "...", "excluded_dates": [...], "manual_dates": [...]}
+
+    # Venue inheritance (see "Venue Data Inheritance" section)
+    venue_poi_id = Column(UUID, ForeignKey("points_of_interest.id"), nullable=True)
+    venue_inheritance = Column(JSONB, nullable=True)  # Per-section modes: as_is, use_and_add, do_not_use
+
+    # Recurring events (see "Recurring Events" section)
+    series_id = Column(UUID, nullable=True, index=True)
+    parent_event_id = Column(UUID, ForeignKey("events.poi_id"), nullable=True)
+    excluded_dates = Column(JSONB, nullable=True)    # ["2026-07-04", "2026-12-25"]
+    recurrence_end_date = Column(TIMESTAMP(timezone=True), nullable=True)
+    manual_dates = Column(JSONB, nullable=True)       # ["2026-03-01T18:00:00Z", ...]
+
+    # Event-specific fields
     organizer_name = Column(String)
+    venue_settings = Column(JSONB)  # Indoor, Outdoor, Hybrid, Online Only
+    event_entry_notes = Column(Text)
+    food_and_drink_info = Column(Text)
+    coat_check_options = Column(JSONB)
+
+    # Vendor information
+    has_vendors = Column(Boolean, default=False)
+    vendor_types = Column(JSONB)
+    vendor_application_deadline = Column(TIMESTAMP(timezone=True))
+    vendor_application_info = Column(Text)
+    vendor_fee = Column(String)
+    vendor_requirements = Column(Text)
+    vendor_poi_links = Column(JSONB)  # [{poi_id, vendor_type}] - vendor POIs at this event
+
+    # Event Status (Tasks 134-136)
+    event_status = Column(String(100), default='Scheduled')
+    status_explanation = Column(String(80))  # Required for Postponed, Updated Date, Moved Online (max 80 chars)
+    cancellation_paragraph = Column(Text)
+    contact_organizer_toggle = Column(Boolean, default=False)
+    new_event_link = Column(String)  # UUID string of replacement event (not a FK)
+    rescheduled_from_event_id = Column(UUID, ForeignKey("events.poi_id"), nullable=True)
+
+    # Primary Display Category (Task 137)
+    primary_display_category = Column(String(100))
+
+    # Extended Organizer (Task 138)
     organizer_email = Column(String)
-    ticket_url = Column(String)
-    is_free = Column(Boolean)
+    organizer_phone = Column(String)
+    organizer_website = Column(String)
+    organizer_social_media = Column(JSONB)
+    organizer_poi_id = Column(UUID, ForeignKey("points_of_interest.id"), nullable=True)
+
+    # Cost & Ticketing (Task 139)
+    cost_type = Column(String(50))  # free, single_price, range
+    ticket_links = Column(JSONB)    # [{"url": "...", "title": "..."}]
+
+    # Sponsors (Task 140)
+    sponsors = Column(JSONB)  # [{poi_id, tier} | {name, url, logo_url, tier}]
+
+    poi = relationship("PointOfInterest", back_populates="event", foreign_keys=[poi_id])
+    venue_poi = relationship("PointOfInterest", foreign_keys=[venue_poi_id])
+    parent_event = relationship("Event", remote_side=[poi_id], foreign_keys=[parent_event_id])
+    rescheduled_from_event = relationship("Event", remote_side=[poi_id], foreign_keys=[rescheduled_from_event_id])
+    organizer_poi = relationship("PointOfInterest", foreign_keys=[organizer_poi_id])
 ```
 
 ---
@@ -398,6 +527,470 @@ def unpublish_poi(db: Session, poi_id: UUID):
 | PUT | `/api/pois/{id}` | Update POI | Admin/Editor |
 | DELETE | `/api/pois/{id}` | Delete POI | Admin |
 | GET | `/api/pois/search` | Search POIs | Public |
+| GET | `/api/pois/{id}/venue-data` | Get venue data for event inheritance | Admin/Editor |
+| POST | `/api/pois/{id}/reschedule` | Clone event with new dates, mark original as Rescheduled | Admin/Editor |
+
+---
+
+## Venue Data Inheritance
+
+Events can link to a **venue** (a Business or Park POI) via the `venue_poi_id` field on the Event model. When linked, the event can inherit data from the venue instead of requiring manual re-entry.
+
+### How It Works
+
+1. The admin selects a venue (Business or Park) in the Event form via the **VenueSelector** component.
+2. The frontend calls `GET /api/pois/{venue_poi_id}/venue-data` to fetch copyable data.
+3. The `venue_inheritance` JSONB field stores per-section inheritance configuration, indicating which data sections are inherited from the venue.
+
+### Inheritance Configuration
+
+The `venue_inheritance` field is a JSONB object with per-section modes:
+
+```json
+{
+  "parking": "as_is",
+  "restrooms": "use_and_add",
+  "accessibility": "as_is",
+  "hours": "do_not_use",
+  "amenities": "use_and_add",
+  "address": "as_is",
+  "contact": "do_not_use"
+}
+```
+
+Each section supports three modes:
+
+| Mode | Description |
+|------|-------------|
+| `as_is` | Use venue data directly, replacing event's own data |
+| `use_and_add` | Merge venue base data with event additions (lists are concatenated, dicts are merged with event values taking precedence) |
+| `do_not_use` | Skip venue data entirely, keep event's own data |
+
+### Venue Inheritance Resolution
+
+The resolution engine at `shared/utils/venue_inheritance.py` handles merging:
+
+```python
+from shared.utils.venue_inheritance import resolve_venue_inheritance
+
+result = resolve_venue_inheritance(
+    event_data={"parking_types": ["Street"]},
+    venue_data={"parking_types": ["Dedicated Parking Lot", "Free Parking"]},
+    inheritance_config={"parking": "use_and_add"}
+)
+# result["parking_types"] == ["Dedicated Parking Lot", "Free Parking", "Street"]
+# result["_venue_source"] == {"parking": "use_and_add"}
+```
+
+**Section-to-field mapping** (defined in `_SECTION_FIELDS`):
+
+| Section | Fields Controlled |
+|---------|------------------|
+| `parking` | `parking_types`, `parking_locations`, `parking_notes`, `expect_to_pay_parking`, `public_transit_info` |
+| `restrooms` | `public_toilets`, `toilet_locations`, `toilet_description` |
+| `accessibility` | `wheelchair_accessible`, `wheelchair_details` |
+| `hours` | `hours` |
+| `amenities` | `amenities` |
+| `pet_policy` | `pet_options`, `pet_policy` |
+| `drone_policy` | `drone_usage`, `drone_policy` |
+
+The returned dict includes a `_venue_source` key indicating which sections were inherited and their modes.
+
+### Venue Data Endpoint
+
+```
+GET /api/pois/{poi_id}/venue-data
+```
+
+**Auth**: Admin/Editor required.
+
+**Validation**: Only `BUSINESS` and `PARK` POI types can be used as venues. Returns `400` for other types.
+
+**Response** (`VenueDataForEvent` schema):
+
+| Field Group | Fields Included |
+|-------------|----------------|
+| Identity | `venue_id`, `venue_name`, `venue_type` |
+| Address | `address_full`, `address_street`, `address_city`, `address_state`, `address_zip`, `address_county` |
+| Location | `location`, `front_door_latitude`, `front_door_longitude` |
+| Contact | `phone_number`, `email`, `website_url` |
+| Parking | `parking_types`, `parking_notes`, `parking_locations`, `expect_to_pay_parking`, `public_transit_info` |
+| Accessibility | `wheelchair_accessible`, `wheelchair_details` |
+| Restrooms | `public_toilets`, `toilet_description`, `toilet_locations` |
+| Hours | `hours` |
+| Amenities | `amenities` |
+| Photos | `copyable_images` (entry, parking, restroom image metadata) |
+
+---
+
+## Recurring Events
+
+Events support recurrence through a set of fields on the Event model that enable grouping, parent-child relationships, and flexible scheduling patterns.
+
+### Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `is_repeating` | `Boolean` | Flag indicating this is a recurring event |
+| `repeat_pattern` | `JSONB` | Recurrence pattern: `{"frequency": "weekly", "interval": 1, "days_of_week": ["Monday", "Wednesday"]}` |
+| `series_id` | `UUID` | Groups related event instances into a series (shared across all instances) |
+| `parent_event_id` | `FK → events.poi_id` | Links child event instances back to the parent/template event |
+| `excluded_dates` | `JSONB array` | Dates to skip in the recurrence pattern (e.g., `["2026-07-04", "2026-12-25"]`) |
+| `recurrence_end_date` | `TIMESTAMP` | When the recurrence pattern stops generating new instances |
+| `manual_dates` | `JSONB array` | Manually specified dates for irregular patterns (e.g., `["2026-03-01T18:00:00Z"]`) |
+
+### Recurrence Pattern Structure
+
+The `repeat_pattern` JSONB field supports:
+
+```json
+{
+  "frequency": "weekly",   // "daily", "weekly", "monthly", "yearly"
+  "interval": 1,           // Every N periods (e.g., every 2 weeks)
+  "days": ["MO", "WE"],   // Two-letter day codes for weekly frequency
+  "end_date": "2026-12-31",         // Optional: when the pattern stops
+  "excluded_dates": ["2026-07-04"], // Optional: dates to skip
+  "manual_dates": ["2026-03-01T18:00:00Z"] // Optional: force-included dates
+}
+```
+
+Day codes use two-letter abbreviations: `MO`, `TU`, `WE`, `TH`, `FR`, `SA`, `SU`.
+
+### Recurring Event Expansion
+
+The expansion engine at `shared/utils/recurring_events.py` generates concrete datetime instances from a repeat pattern within a query window:
+
+```python
+from shared.utils.recurring_events import expand_recurring_dates
+
+dates = expand_recurring_dates(
+    start_datetime=event.start_datetime,
+    repeat_pattern=event.repeat_pattern,
+    date_from=window_start,
+    date_to=window_end,
+    excluded_dates=event.excluded_dates,
+    manual_dates=event.manual_dates,
+    recurrence_end_date=event.recurrence_end_date,
+)
+```
+
+**Key behaviors:**
+- Uses `python-dateutil` `rrule` for generation
+- Respects `excluded_dates` (ISO date strings like `"2026-07-04"`)
+- Force-includes `manual_dates` (ISO datetime strings) even if they fall outside the pattern
+- Hard-caps at 60 months from `start_datetime` to prevent unbounded expansion
+- Returns a sorted list of `datetime` objects within the requested range
+
+### Parent-Child Relationship
+
+- The **parent event** serves as the template, storing the recurrence configuration.
+- **Child events** are individual instances linked via `parent_event_id`.
+- All events in a series share the same `series_id` for easy querying.
+- The `excluded_dates` array on the parent tracks cancelled individual occurrences.
+
+---
+
+## Event Status System (Tasks 134-136)
+
+Events have a 7-value status field that controls display and behavior:
+
+| Status | Description |
+|--------|-------------|
+| `Scheduled` | Default. Event is confirmed and upcoming |
+| `Canceled` | Event is permanently canceled. Shows `cancellation_paragraph` if provided |
+| `Postponed` | Event is postponed. Shows `cancellation_paragraph` if provided |
+| `Updated Date and/or Time` | Dates changed without full reschedule |
+| `Rescheduled` | Event has been rescheduled. `new_event_link` points to the replacement event |
+| `Moved Online` | Event has moved from in-person to an online/virtual format |
+| `Unofficial Proposed Date` | A date has been suggested but is not yet confirmed by the organizer |
+
+**Canonical source**: `shared/constants/field_options.py` `EVENT_STATUS_OPTIONS`
+
+### Event Status Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `event_status` | `String(100)` | Current status (default: `"Scheduled"`) |
+| `status_explanation` | `String(80)` | Required when transitioning to `Updated Date and/or Time`, `Postponed`, or `Moved Online`. Max 80 characters (enforced by Pydantic validator) |
+| `cancellation_paragraph` | `Text` | Explanation displayed to users when canceled or postponed |
+| `contact_organizer_toggle` | `Boolean` | Controls whether a "Contact Organizer" button appears |
+| `new_event_link` | `String` | UUID string of replacement event (not a FK) |
+| `rescheduled_from_event_id` | `FK -> events.poi_id` | Links back to the original event that was rescheduled |
+
+**Note**: The frontend includes an `online_event_url` field in form initial values for virtual/online events, but this field is not yet present in the backend SQLAlchemy model or Pydantic schema. It is a frontend-only field at this time.
+
+### Status Transitions
+
+Not all status changes are allowed. The transition rules are defined in `shared/utils/event_status.py`:
+
+- **"Scheduled" is always a valid target** from any status (return to normal).
+- Same-status transitions (no-op) are always allowed.
+
+| Current Status | Allowed Next Statuses |
+|----------------|----------------------|
+| `Scheduled` | Canceled, Postponed, Updated Date and/or Time, Rescheduled, Moved Online, Unofficial Proposed Date |
+| `Canceled` | Scheduled only |
+| `Postponed` | Scheduled, Canceled, Rescheduled, Updated Date and/or Time |
+| `Updated Date and/or Time` | Scheduled, Canceled, Postponed, Rescheduled, Moved Online |
+| `Rescheduled` | Scheduled only |
+| `Moved Online` | Scheduled, Canceled, Postponed, Rescheduled |
+| `Unofficial Proposed Date` | Scheduled, Canceled, Postponed |
+
+Invalid transitions return HTTP 400 with a message listing the allowed targets.
+
+### Status Explanation Requirement
+
+Certain status transitions require a `status_explanation` field to be provided:
+
+- `Updated Date and/or Time`
+- `Postponed`
+- `Moved Online`
+
+If `status_explanation` is missing for these statuses, the update returns HTTP 400.
+
+**Canonical source**: `shared/constants/field_options.py` `EVENT_STATUS_EXPLANATION_REQUIRED`
+
+### Cancel/Postpone Behavior
+
+When an event is canceled or postponed:
+- `cancellation_paragraph` (optional) provides an explanation displayed to users
+- `contact_organizer_toggle` (boolean) controls whether a "Contact Organizer" button appears
+
+### Reschedule Endpoint
+
+```
+POST /api/pois/{poi_id}/reschedule
+```
+
+Clones the POI and Event with new dates. The original event is automatically marked as "Rescheduled" with `new_event_link` pointing to the clone. The new event starts with status "Scheduled".
+
+### Date Change Guard (Task 157)
+
+When updating an event via PUT, if the event's current status is "Updated Date and/or Time" and dates are being changed, the request must also set `event_status` to "Rescheduled". Otherwise the update returns HTTP 400.
+
+### Duplicate Event Prevention
+
+When creating a new event, the CRUD layer checks for duplicates by matching:
+- Same name (case-insensitive)
+- Same `venue_poi_id`
+- Same `start_datetime`
+
+If a duplicate is found, the endpoint returns HTTP 409 with the existing event's ID.
+
+---
+
+## Event Cost & Ticketing (Task 139)
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `cost_type` | String(50) | `free`, `single_price`, `range` |
+| `ticket_links` | JSONB | Array of `{"url": "...", "title": "..."}` objects |
+
+The `cost_type` field uses three values: `free` (no cost), `single_price` (one fixed price), and `range` (variable pricing). The POI's `cost` field stores the actual dollar amount. `ticket_links` supports multiple ticketing platforms per event.
+
+**Canonical source**: `shared/constants/field_options.py` `EVENT_COST_TYPES`
+
+---
+
+## Event Sponsors (Task 140)
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `sponsors` | JSONB | Array of sponsor objects (see below) |
+
+Sponsors are stored as a flexible JSONB array. Each entry can be either a **POI-linked sponsor** or a **freeform sponsor**:
+
+**POI-linked sponsor** (references an existing POI):
+```json
+{"poi_id": "uuid-string", "tier": "Gold"}
+```
+
+**Freeform sponsor** (external organization):
+```json
+{"name": "Acme Corp", "url": "https://acme.com", "logo_url": "https://...", "tier": "Silver"}
+```
+
+The `tier` field is freeform text (e.g., "Title", "Gold", "Silver", "Bronze", "Community").
+
+---
+
+## Extended Organizer (Task 138)
+
+Events have extended organizer fields beyond the basic `organizer_name`:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `organizer_name` | `String` | Organizer display name |
+| `organizer_email` | `String` | Organizer contact email |
+| `organizer_phone` | `String` | Organizer contact phone |
+| `organizer_website` | `String` | Organizer website URL |
+| `organizer_social_media` | `JSONB` | Social media links (e.g., `{"facebook": "...", "instagram": "..."}`) |
+| `organizer_poi_id` | `FK -> points_of_interest.id` | Links to an existing POI as the organizer (e.g., a Business that hosts events) |
+
+When `organizer_poi_id` is set, the event's organizer is an existing POI in the system. The `organizer_poi` relationship provides direct access to the linked POI.
+
+---
+
+## Vendor POI Linking
+
+Events can link to vendor POIs through the `vendor_poi_links` JSONB field:
+
+```json
+[
+  {"poi_id": "uuid-string", "vendor_type": "Food Vendor"},
+  {"poi_id": "uuid-string", "vendor_type": "Craft Vendor"}
+]
+```
+
+Each entry links to an existing POI that is a vendor at the event, along with a `vendor_type` classification. This complements the freeform vendor fields (`vendor_types`, `vendor_application_info`, etc.) with concrete POI references.
+
+---
+
+## Listing Types
+
+POIs support a `listing_type` field that controls feature visibility and restrictions:
+
+| Value | Label | Description |
+|-------|-------|-------------|
+| `free` | Free Listing | Default. Limited features (1 category for businesses) |
+| `paid` | Paid Listing | Full access to all features |
+| `sponsor_platform` | Sponsor – Platform | Platform-level sponsor |
+| `sponsor_state` | Sponsor – State | State-level sponsor |
+| `sponsor_county` | Sponsor – County | County-level sponsor |
+| `sponsor_town` | Sponsor – Town | Town-level sponsor |
+| `community_comped` | Community-Comped | Complimentary listing for community organizations |
+
+**Canonical source**: `shared/constants/field_options.py` `LISTING_TYPES`
+
+All sponsor-level and paid listing types unlock the same paid features (unlimited categories, teaser paragraphs, community connections, etc.).
+
+**Data Migration**: `g7h8i9j0k1l2_listing_type_changes_171_172` — converts legacy `paid_founding` → `paid` and `sponsor` → `sponsor_platform`.
+
+---
+
+## Hours Resolution Engine
+
+The platform includes a Python hours resolution engine at `shared/utils/hours_resolution.py` that determines effective hours for any POI on any given date. This is a port of the frontend JS engine in `nearby-app/app/src/utils/hoursUtils.js`.
+
+### Override Precedence
+
+```
+Exceptions (highest) > Holidays > Seasonal > Regular (lowest)
+```
+
+### API Endpoint
+
+```
+GET /api/pois/{poi_id}/effective-hours?date=YYYY-MM-DD
+```
+
+Returns:
+```json
+{
+  "hours": {"open": "09:00", "close": "17:00"},
+  "source": "regular",
+  "label": null
+}
+```
+
+### Supported Features
+
+- **Regular hours**: Per-day schedule (Sunday through Saturday)
+- **Seasonal hours**: Date ranges in MM-DD format with per-day overrides
+- **Holiday hours**: 20 US holidays including computed dates (Thanksgiving, Easter, Memorial Day, etc.)
+- **One-time exceptions**: Specific dates with modified hours or closure
+- **Recurring exceptions**: Nth-weekday-of-month patterns (e.g., "3rd Wednesday")
+
+### Key Files
+
+| File | Purpose |
+|------|---------|
+| `shared/utils/hours_resolution.py` | Python resolution engine (backend) |
+| `shared/utils/event_status.py` | Event status transition validation |
+| `shared/utils/recurring_events.py` | Recurring event date expansion |
+| `shared/utils/venue_inheritance.py` | Venue data inheritance resolution |
+| `shared/constants/field_options.py` | Canonical field option lists (statuses, cost types, etc.) |
+| `nearby-app/app/src/utils/hoursUtils.js` | JavaScript resolution engine (frontend) |
+| `nearby-app/app/src/components/common/HoursDisplay.jsx` | User-facing hours display |
+| `nearby-admin/frontend/src/components/HoursSelector.jsx` | Admin hours editor UI |
+
+---
+
+## Primary Parking
+
+POIs support a **primary parking location** with dedicated fields, separate from the `parking_locations` JSONB array that stores additional parking areas.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `primary_parking_lat` | `Float` | Latitude of the main parking area |
+| `primary_parking_lng` | `Float` | Longitude of the main parking area |
+| `primary_parking_name` | `String` | Name/label for the primary parking area (e.g., "Main Lot") |
+
+The `parking_locations` JSONB array continues to store additional parking areas as `[{"lat": 0, "lng": 0, "name": "Overflow Lot"}]`.
+
+**Note**: These fields are currently managed on the frontend form (`initialValues.js`, `LocationSection.jsx`, `usePOIHandlers.jsx`) and are not yet added to the backend SQLAlchemy model or schema.
+
+---
+
+## Wheelchair and Mobility Access
+
+Renamed from "Wheelchair Accessibility" to **"Wheelchair and Mobility Access"**. In addition to the existing `wheelchair_accessible` (JSONB list) and `wheelchair_details` (Text) fields, a new `mobility_access` JSONB field provides structured granular data.
+
+### `mobility_access` Field Structure
+
+```json
+{
+  "step_free_entry": "Yes",           // "Yes", "No", "Partial"
+  "main_area_accessible": "Yes",      // "Yes", "No", "Partial"
+  "ground_level_service": "Partial",  // "Yes", "No", "Partial"
+  "accessible_restroom": "Yes",       // "Yes", "No", "Partial"
+  "accessible_parking": "No"          // "Yes", "No", "Partial"
+}
+```
+
+Each sub-field accepts `"Yes"`, `"No"`, or `"Partial"`. The frontend renders these as select inputs in the Facilities section of the POI form.
+
+---
+
+## Restroom Toilet Types Per Location
+
+Each entry in the `toilet_locations` JSONB array now supports a `toilet_types` array field, allowing per-location specification of toilet types available.
+
+### Updated Structure
+
+```json
+[
+  {
+    "lat": 35.720303,
+    "lng": -79.177397,
+    "description": "Near main entrance",
+    "photos": "",
+    "toilet_types": ["Standard", "Family", "Porta Potty"]
+  }
+]
+```
+
+Available toilet type options include: `"Standard"`, `"Family"`, `"Porta Potty"`, and others as configured in the frontend.
+
+---
+
+## Default Values
+
+New POIs are initialized with the following default values (defined in `nearby-admin/frontend/src/components/POIForm/constants/initialValues.js`):
+
+| Field | Default Value |
+|-------|---------------|
+| `address_city` | `Pittsboro` |
+| `address_county` | `Chatham` |
+| `address_state` | `NC` |
+| `longitude` | `-79.177397` (Pittsboro center) |
+| `latitude` | `35.720303` (Pittsboro center) |
+| `poi_type` | `BUSINESS` |
+| `listing_type` | `free` |
+| `publication_status` | `draft` |
+| `status` | `Fully Open` |
+
+These defaults reflect the platform's focus on Chatham County, North Carolina.
 
 ---
 
@@ -508,16 +1101,17 @@ Free business listings (`listing_type == 'free'` and `poi_type == 'BUSINESS'`) h
 | No teaser paragraph | Frontend: field hidden for free business |
 | No Community Connections | Frontend: entire section hidden (community_impact, article_links) |
 | Has public restrooms | Frontend: Facilities & Public Amenities sections always visible |
+| No restroom photo uploads | Frontend: restroom photo upload hidden for free business listings (`!(isBusiness && isFreeListing)` guard) |
 | Has wheelchair accessibility | Frontend: Facilities section always visible |
 | Has parking fields | Frontend: parking_notes, public_transit_info, expect_to_pay_parking always visible |
 
 ### Multiple Playgrounds (JSONB)
 
-The `playground_location` field accepts either a single dict `{lat, lng}` or an array `[{lat, lng, types, surfaces, notes}, ...]`. The frontend normalizes both formats to an array for display. Each playground can have its own photos via `image_context` grouping.
+The `playground_locations` field (plural) accepts an array `[{lat, lng, types, surfaces, notes}, ...]`. Migration `g67_001` renamed this column from the historical singular `playground_location`, and one-time wraps any legacy single-dict rows into a one-element array. The frontend defensively still normalizes a stray single-dict response into an array. Each playground can have its own photos via `image_context` grouping.
 
 ### Multiple Restrooms (JSONB)
 
-The `toilet_locations` field stores an array of restroom objects `[{lat, lng, description}, ...]`. Parks, trails, and events all use the multi-restroom card UI with add/remove buttons.
+The `toilet_locations` field stores an array of restroom objects `[{lat, lng, description, photos, toilet_types}, ...]`. Parks, trails, and events all use the multi-restroom card UI with add/remove buttons. Each restroom location can specify its own `toilet_types` array (e.g., `["Standard", "Family", "Porta Potty"]`). See the "Restroom Toilet Types Per Location" section above for details.
 
 ---
 

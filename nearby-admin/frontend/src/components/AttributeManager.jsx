@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import {
   Table, Button, Group, Box, Title, TextInput, Select, Switch, Stack,
   Modal, Textarea, NumberInput, ActionIcon, Text, Badge, UnstyledButton,
-  Center, Paper
+  Center, Paper, ScrollArea
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { notifications } from '@mantine/notifications';
@@ -286,7 +286,7 @@ function AttributeManager() {
         )}
       </Stack>
 
-      <Table striped highlightOnHover withTableBorder>
+      <ScrollArea type="auto"><Table striped highlightOnHover withTableBorder miw={780}>
         <Table.Thead style={{ backgroundColor: 'var(--mantine-color-deep-purple-0)' }}>
           <Table.Tr>
             <Table.Th>
@@ -348,13 +348,14 @@ function AttributeManager() {
             rows
           )}
         </Table.Tbody>
-      </Table>
+      </Table></ScrollArea>
 
       <Modal
         opened={modalOpened}
         onClose={() => setModalOpened(false)}
         title={editingAttribute ? 'Edit Attribute' : 'Create Attribute'}
         size="md"
+        fullScreen={typeof window !== 'undefined' && window.matchMedia('(max-width: 600px)').matches}
       >
         <form onSubmit={form.onSubmit(handleSubmit)}>
           <Stack>

@@ -3,6 +3,7 @@ variable "repository_names" {
   default = [
     "nearbynearby/nearby-app",
     "nearbynearby/nearby-admin-backend",
-    "nearbynearby/nearby-admin-frontend"
+    "nearbynearby/nearby-admin-frontend",
+    "nearbynearby/embedding"
   ]
 }

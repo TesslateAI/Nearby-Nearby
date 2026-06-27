@@ -24,6 +24,7 @@ slowapi
 # Utilities
 python-multipart
 bleach
+python-dateutil
 
 # Image processing
 Pillow
@@ -33,11 +34,16 @@ aiofiles
 boto3
 botocore
 
+# Error tracking
+sentry-sdk[fastapi]
+
 # Testing dependencies
 pytest
 httpx
 
 # Machine Learning / Embeddings
-sentence-transformers
-torch
+# Embeddings are served out-of-process by a TEI container and consumed via the
+# fail-soft HTTP client in shared.embeddings — no in-process model is loaded,
+# so torch / sentence-transformers are no longer bundled (large image-size win).
+# `transformers` is kept only as a lightweight tokenizer-side dependency.
 transformers

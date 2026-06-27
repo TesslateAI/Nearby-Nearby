@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import usePWAInstall from '../hooks/usePWAInstall';
-import './InstallButton.css';
 
-function InstallButton({ variant = 'default', className = '' }) {
+function InstallButton() {
   const { isInstallable, isInstalled, isIOS, promptInstall } = usePWAInstall();
   const [showIOSInstructions, setShowIOSInstructions] = useState(false);
 
@@ -23,7 +22,7 @@ function InstallButton({ variant = 'default', className = '' }) {
 
   if (isInstalled) {
     return (
-      <span className={`install-button install-button--installed ${className}`}>
+      <span className="button">
         Installed
       </span>
     );
@@ -33,7 +32,7 @@ function InstallButton({ variant = 'default', className = '' }) {
     <>
       <button
         onClick={handleClick}
-        className={`install-button install-button--${variant} ${className}`}
+        className="button btn_small"
         aria-label="Download Nearby Nearby app"
       >
         <svg

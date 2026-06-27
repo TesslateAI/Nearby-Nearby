@@ -39,7 +39,7 @@ class TestCreateParkAllFields:
             "is_verified": True,
             "parking_types": ["Lot", "Overflow"],
             "parking_notes": "Main lot fills up by 10am on weekends",
-            "wheelchair_accessible": ["Paved Trails", "Restroom"],
+            # "wheelchair_accessible" removed — column dropped (Issue #45 PR2 Migration B)
             "public_toilets": ["Indoor", "Portable"],
             "pet_options": ["Leashed Dogs"],
             "pet_policy": "Dogs must be on 6-foot leash at all times",
@@ -50,7 +50,7 @@ class TestCreateParkAllFields:
             "playground_types": ["Swings", "Climbing"],
             "playground_surface_types": ["Rubber", "Sand"],
             "playground_notes": "Ages 5-12 playground near entrance",
-            "playground_location": {"lat": 35.9, "lng": -79.1},
+            "playground_locations": [{"lat": 35.9, "lng": -79.1}],
             "natural_features": ["Lake", "Waterfall", "Old Growth Forest"],
             "outdoor_types": ["State Park", "Recreation Area"],
             "things_to_do": ["Hiking", "Swimming", "Fishing", "Kayaking"],
@@ -63,13 +63,12 @@ class TestCreateParkAllFields:
             "licenses_required": ["NC Fishing License"],
             "hunting_fishing_info": "Season runs Oct-Jan",
             "facilities_options": ["Picnic Tables", "Grills", "Boat Ramp"],
-            "payphone_location": {"lat": 35.9, "lng": -79.1},
             "payphone_locations": [{"lat": 35.9, "lng": -79.1, "description": "Near entrance"}],
             "park_entry_notes": "Enter through main gate on Hwy 64",
             "hours": {"monday": {"open": "07:00", "close": "21:00"}},
             "downloadable_maps": [{"name": "Trail Map", "url": "https://park.com/map.pdf"}],
             "history_paragraph": "Established in 1935 as part of the CCC program.",
-            "key_facilities": ["Boat Ramp", "Swimming Beach"],
+            # "key_facilities" removed — renamed _deprecated_key_facilities (Migration A #34)
             "park": {"drone_usage_policy": "Not allowed in wildlife areas"},
         }
 
@@ -127,10 +126,9 @@ class TestCreateParkFacilities:
             admin_client,
             name="Facilities Park",
             facilities_options=["Picnic Tables", "Grills", "Restrooms"],
-            payphone_location={"lat": 35.9, "lng": -79.1},
             payphone_locations=[{"lat": 35.9, "lng": -79.1, "description": "Entrance"}],
             park_entry_notes="Entrance fee required on weekends",
         )
         assert data["facilities_options"] == ["Picnic Tables", "Grills", "Restrooms"]
         assert data["park_entry_notes"] == "Entrance fee required on weekends"
-        assert data["payphone_location"]["lat"] == 35.9
+        assert data["payphone_locations"][0]["lat"] == 35.9

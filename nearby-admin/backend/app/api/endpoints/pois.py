@@ -1,13 +1,18 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Body
 from sqlalchemy.orm import Session
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
+from pydantic import BaseModel
+from datetime import datetime
 import uuid
 
 # The __init__.py files now allow these cleaner imports
-from app import crud, schemas
+from app import crud, schemas, models
 from app.database import get_db
 from app.core.security import get_current_user
 from app.core.permissions import require_admin_or_editor
+from app.utils.autosave_whitelist import AUTOSAVE_ALLOWED_FIELDS, AUTOSAVE_DENIED_FIELDS
+from app.crud.crud_poi import apply_phase1_computed
+from app.schemas._coercers import coerce_empty_literals
 
 router = APIRouter()
 
@@ -118,10 +123,110 @@ def delete_poi(
     db: Session = Depends(get_db),
     current_user = Depends(require_admin_or_editor())
 ):
+    db_poi = crud.get_poi(db, poi_id=poi_id)
+    if db_poi is None:
+        raise HTTPException(status_code=404, detail="Point of Interest not found")
+    if db_poi.has_been_published:
+        raise HTTPException(status_code=409, detail={
+            "detail": "POI has been published; archive instead of deleting.",
+            "action": "archive"
+        })
     db_poi = crud.delete_poi(db, poi_id=poi_id)
     if db_poi is None:
         raise HTTPException(status_code=404, detail="Point of Interest not found")
     return db_poi
+
+
+@router.patch("/pois/{poi_id}/autosave")
+def autosave_poi(
+    poi_id: uuid.UUID,
+    payload: Dict[str, Any] = Body(...),
+    db: Session = Depends(get_db),
+    current_user = Depends(require_admin_or_editor())
+):
+    """
+    Partial autosave: whitelist-filter the payload, setattr onto the POI (and
+    its Trail/Event subtype if applicable), run the computed-field helper, and
+    commit. Anything outside AUTOSAVE_ALLOWED_FIELDS (or inside
+    AUTOSAVE_DENIED_FIELDS) is silently dropped.
+    """
+    poi = db.query(models.PointOfInterest).filter(
+        models.PointOfInterest.id == poi_id
+    ).first()
+    if not poi:
+        raise HTTPException(status_code=404, detail="POI not found")
+
+    filtered = {
+        k: v for k, v in (payload or {}).items()
+        if k in AUTOSAVE_ALLOWED_FIELDS and k not in AUTOSAVE_DENIED_FIELDS
+    }
+    coerce_empty_literals(filtered, schemas.PointOfInterestUpdate)
+
+    # Build a merged snapshot so the computed helper can read current values.
+    merged: Dict[str, Any] = {c.name: getattr(poi, c.name) for c in poi.__table__.columns}
+    for sub_attr in ('business', 'park', 'trail', 'event'):
+        sub = getattr(poi, sub_attr, None)
+        if sub is not None:
+            for c in sub.__table__.columns:
+                if c.name == 'poi_id':
+                    continue
+                merged[c.name] = getattr(sub, c.name)
+    merged.update(filtered)
+    coerce_empty_literals(merged, schemas.PointOfInterestUpdate)
+
+    apply_phase1_computed(merged)
+
+    # Fields the computed helper may mutate, in addition to whatever was passed.
+    computed_fields = {
+        'icon_free_wifi', 'icon_pet_friendly', 'icon_public_restroom',
+        'icon_wheelchair_accessible', 'accessible_restroom',
+        'inclusive_playground', 'listing_type', 'amenities',
+    }
+    allow = set(filtered.keys()) | computed_fields
+
+    poi_cols = {c.name for c in poi.__table__.columns}
+    subtype_objs = {
+        'business': getattr(poi, 'business', None),
+        'park':     getattr(poi, 'park', None),
+        'trail':    getattr(poi, 'trail', None),
+        'event':    getattr(poi, 'event', None),
+    }
+
+    for k in allow:
+        if k not in merged:
+            continue
+        if k in AUTOSAVE_DENIED_FIELDS:
+            continue
+        if k in poi_cols:
+            setattr(poi, k, merged[k])
+            continue
+        # Fall through to subtype tables
+        for sub in subtype_objs.values():
+            if sub is None:
+                continue
+            sub_cols = {c.name for c in sub.__table__.columns}
+            if k in sub_cols and k != 'poi_id':
+                setattr(sub, k, merged[k])
+                break
+
+    db.commit()
+
+    # Best-effort embed-on-write (A7): AFTER the commit above, never before.
+    # Only re-embed when a field that feeds the searchable text actually changed
+    # (so a keystroke-batch that only touched irrelevant fields skips the TEI
+    # round-trip). Fully contained — a writer bug must never break an autosave.
+    try:
+        from app.crud.embedding_writer import should_reembed, write_embedding_best_effort
+        if should_reembed(set(filtered.keys())):
+            write_embedding_best_effort(db, poi_id)
+    except Exception:
+        pass
+
+    return {
+        "status": "ok",
+        "id": str(poi.id),
+        "saved_at": datetime.utcnow().isoformat(),
+    }
 
 
 @router.get("/pois/venues/list", response_model=List[schemas.PointOfInterest])
@@ -133,13 +238,13 @@ def get_available_venues(
     current_user = Depends(require_admin_or_editor())
 ):
     """
-    Get all POIs that can be used as venues (BUSINESS and PARK types).
+    Get all POIs that can be used as venues (BUSINESS, PARK, and TRAIL types).
     Used for venue selection when creating events.
     """
     from app.models.poi import PointOfInterest, POIType
 
     query = db.query(PointOfInterest).filter(
-        PointOfInterest.poi_type.in_([POIType.BUSINESS, POIType.PARK])
+        PointOfInterest.poi_type.in_([POIType.BUSINESS, POIType.PARK, POIType.TRAIL])
     )
 
     if search:
@@ -168,12 +273,12 @@ def get_venue_data_for_event(
     if db_poi is None:
         raise HTTPException(status_code=404, detail="POI not found")
 
-    # Validate POI type - only BUSINESS and PARK can be venues
+    # Validate POI type - BUSINESS, PARK, and TRAIL can be venues
     poi_type = db_poi.poi_type.value if hasattr(db_poi.poi_type, 'value') else str(db_poi.poi_type)
-    if poi_type not in ['BUSINESS', 'PARK']:
+    if poi_type not in ['BUSINESS', 'PARK', 'TRAIL']:
         raise HTTPException(
             status_code=400,
-            detail=f"POI type '{poi_type}' cannot be used as a venue. Only BUSINESS and PARK are valid."
+            detail=f"POI type '{poi_type}' cannot be used as a venue. Only BUSINESS, PARK, and TRAIL are valid."
         )
 
     # Get copyable images (entry, parking, restroom)
@@ -222,8 +327,8 @@ def get_venue_data_for_event(
         parking_notes=db_poi.parking_notes,
         parking_locations=db_poi.parking_locations,
         expect_to_pay_parking=db_poi.expect_to_pay_parking,
-        public_transit_info=db_poi.public_transit_info,
-        wheelchair_accessible=db_poi.wheelchair_accessible,
+        # public_transit_info removed (Migration A #33 — renamed to _deprecated_public_transit_info)
+        # wheelchair_accessible removed (Issue #45 PR2 Migration B — column dropped)
         wheelchair_details=db_poi.wheelchair_details,
         public_toilets=db_poi.public_toilets,
         toilet_description=db_poi.toilet_description,
@@ -232,3 +337,103 @@ def get_venue_data_for_event(
         amenities=db_poi.amenities,
         copyable_images=copyable_images
     )
+
+
+@router.get("/event-statuses", summary="Get all event statuses with helper text and valid transitions")
+def get_event_statuses(
+    current_user=Depends(require_admin_or_editor())
+):
+    """Return all event statuses with helper text and valid transitions for admin UI."""
+    from shared.constants.field_options import EVENT_STATUS_OPTIONS, EVENT_STATUS_HELPER_TEXT
+    from shared.utils.event_status import EVENT_STATUS_TRANSITIONS
+
+    result = []
+    for status in EVENT_STATUS_OPTIONS:
+        transitions = list(EVENT_STATUS_TRANSITIONS.get(status, []))
+        # "Return to Scheduled" is always allowed (except from Scheduled itself)
+        if status != "Scheduled" and "Scheduled" not in transitions:
+            transitions.insert(0, "Scheduled")
+        result.append({
+            "status": status,
+            "helper_text": EVENT_STATUS_HELPER_TEXT.get(status, ""),
+            "valid_transitions": transitions,
+        })
+    return result
+
+
+# Task 136: Reschedule endpoint
+class RescheduleRequest(BaseModel):
+    new_start_datetime: datetime
+    new_end_datetime: Optional[datetime] = None
+
+
+@router.post("/pois/{poi_id}/reschedule", response_model=schemas.PointOfInterest, status_code=201)
+def reschedule_event(
+    poi_id: uuid.UUID,
+    body: RescheduleRequest,
+    db: Session = Depends(get_db),
+    current_user=Depends(require_admin_or_editor())
+):
+    """
+    Reschedule an event: clone the POI+Event with new dates, mark original as Rescheduled.
+    """
+    from app.crud.crud_poi import generate_slug, ensure_unique_slug
+    from geoalchemy2.shape import to_shape
+
+    db_poi = crud.get_poi(db, poi_id=poi_id)
+    if not db_poi:
+        raise HTTPException(status_code=404, detail="POI not found")
+
+    poi_type = db_poi.poi_type.value if hasattr(db_poi.poi_type, 'value') else str(db_poi.poi_type)
+    if poi_type != 'EVENT' or not db_poi.event:
+        raise HTTPException(status_code=400, detail="Only EVENT POIs can be rescheduled")
+
+    # Clone base POI fields
+    new_poi_id = uuid.uuid4()
+    base_slug = generate_slug(db_poi.name, db_poi.address_city)
+    new_slug = ensure_unique_slug(db, base_slug, exclude_id=None)
+
+    # Get columns to copy from POI (exclude id, slug, timestamps, relationships)
+    skip_cols = {'id', 'slug', 'created_at', 'last_updated', 'location'}
+    poi_data = {}
+    for col in models.PointOfInterest.__table__.columns:
+        if col.name not in skip_cols:
+            poi_data[col.name] = getattr(db_poi, col.name)
+
+    new_poi = models.PointOfInterest(id=new_poi_id, slug=new_slug, **poi_data)
+
+    # Copy location geometry
+    if db_poi.location:
+        point = to_shape(db_poi.location)
+        coords = list(point.coords)[0]
+        new_poi.location = f'POINT({coords[0]} {coords[1]})'
+
+    db.add(new_poi)
+    db.flush()
+
+    # Clone event fields
+    event_skip = {'poi_id'}
+    event_data = {}
+    for col in models.Event.__table__.columns:
+        if col.name not in event_skip:
+            event_data[col.name] = getattr(db_poi.event, col.name)
+
+    # Override with new dates and status
+    event_data['start_datetime'] = body.new_start_datetime
+    event_data['end_datetime'] = body.new_end_datetime
+    event_data['event_status'] = 'Scheduled'
+    event_data['rescheduled_from_event_id'] = poi_id
+    event_data['new_event_link'] = None
+    event_data['cancellation_paragraph'] = None
+    event_data['contact_organizer_toggle'] = False
+
+    new_event = models.Event(poi_id=new_poi_id, **event_data)
+    db.add(new_event)
+
+    # Update original event status
+    db_poi.event.event_status = 'Rescheduled'
+    db_poi.event.new_event_link = str(new_poi_id)
+
+    db.commit()
+    db.refresh(new_poi)
+    return new_poi

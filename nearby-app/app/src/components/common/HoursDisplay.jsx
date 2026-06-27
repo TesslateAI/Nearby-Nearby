@@ -6,7 +6,7 @@ import {
   getUpcomingHolidays,
   formatHolidayStatus
 } from '../../utils/hoursUtils';
-import './HoursDisplay.css';
+import { sanitizeHtml } from '../../utils/sanitize';
 
 /**
  * HoursDisplay - Reusable component for displaying POI hours
@@ -14,15 +14,17 @@ import './HoursDisplay.css';
  *
  * Props:
  * - hours: JSONB hours data (new format with regular/seasonal/holidays/exceptions)
- * - holidayHours: JSONB holiday_hours data (legacy format or additional holidays)
  * - appointmentLinks: Array of {title, url} for appointment services
  * - appointmentBookingUrl: Single URL string for booking
  * - appointmentRequired: Boolean flag for "appointment required" notice
  * - hoursNotes: General notes about hours
+ *
+ * Issue #70: the legacy `holidayHours` prop (fed from the now-deprecated
+ * top-level `holiday_hours` column) has been removed. Holiday hours are read
+ * exclusively from the nested `hours.holidays` key.
  */
 function HoursDisplay({
   hours,
-  holidayHours,
   appointmentLinks,
   appointmentBookingUrl,
   appointmentRequired,
@@ -37,8 +39,8 @@ function HoursDisplay({
   // Handle legacy hours format (simple day: time strings)
   const legacyHours = !weekHours.length && hours ? formatLegacyHours(hours) : [];
 
-  // Get upcoming holidays from holiday_hours
-  const upcomingHolidays = getUpcomingHolidays(holidayHours || hours?.holidays);
+  // Issue #70: only read holidays from the canonical nested key.
+  const upcomingHolidays = getUpcomingHolidays(hours?.holidays);
 
   // Determine which holidays to show
   const visibleHolidays = showAllHolidays
@@ -104,7 +106,7 @@ function HoursDisplay({
             {hoursNotes && (
               <div
                 className="hours-display__notes-text"
-                dangerouslySetInnerHTML={{ __html: hoursNotes }}
+                dangerouslySetInnerHTML={{ __html: sanitizeHtml(hoursNotes) }}
               />
             )}
           </div>

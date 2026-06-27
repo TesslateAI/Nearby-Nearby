@@ -35,7 +35,7 @@ RUN npm install
 COPY nearby-app/app/ ./
 RUN npm run build
 
-# Stage 2: Python backend + baked frontend + ML model
+# Stage 2: Python backend + baked frontend (NO in-process ML model)
 FROM python:3.11-slim
 WORKDIR /app
 RUN apt-get update && apt-get install -y gcc postgresql-client libpq-dev curl \
@@ -43,10 +43,11 @@ RUN apt-get update && apt-get install -y gcc postgresql-client libpq-dev curl \
 COPY nearby-app/backend/requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Pre-download ML model (~1GB) during build to avoid slow cold starts
-RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('michaelfeil/embeddinggemma-300m')"
+# No ML model is bundled anymore: embeddings are served by a separate TEI
+# container and consumed via the shared fail-soft HTTP client. (torch /
+# sentence-transformers removed from requirements; no model prefetch step.)
 
-COPY shared/ ./shared/                                    # Shared enums package
+COPY shared/ ./shared/                                    # Shared enums + embeddings client
 COPY nearby-app/backend/ ./                                # Backend code
 COPY --from=frontend-builder /app/backend/static ./static  # Pre-built frontend
 
@@ -54,16 +55,22 @@ EXPOSE 8000
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONPATH=/app
 
-HEALTHCHECK --interval=30s --timeout=10s --start-period=120s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
     CMD curl -f http://localhost:8000/api/health || exit 1
 
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
 ```
 
 **Key details:**
-- ML model (`embeddinggemma-300m`, ~1GB) is baked into the image layer cache — containers load from disk (~30s) instead of downloading from HuggingFace (~2-3 min)
-- `HEALTHCHECK` start period is 120s to allow ML model loading
-- `shared/` package is copied for enum imports
+- **No ML model in the image.** `torch` and `sentence-transformers` (~1GB) were
+  removed from `nearby-app/backend/requirements.txt`, and the model prefetch
+  `RUN python -c "...SentenceTransformer(...)"` step was dropped. The image is
+  much smaller and builds on CI again (previously ~5.7GB / QEMU-only). Embeddings
+  come from the separate TEI service (see "Embedding Service (TEI)" below).
+- `HEALTHCHECK` start period is relaxed **120s → 30s** — there is no longer a
+  1GB model to load at startup, just an HTTP-client singleton.
+- `shared/` package is copied for enum imports **and** the `shared.embeddings`
+  fail-soft TEI client.
 - Vite outputs built React to `../backend/static` which gets copied as the static directory
 
 ### nearby-admin Backend (`nearby-admin/backend/Dockerfile.ecs`)
@@ -163,12 +170,23 @@ server {
 # nearby-admin/docker-compose.yml (development)
 services:
   db:
-    image: postgis/postgis:15-3.4
-    ports: ["5432:5432"]
+    # Custom PostGIS + pgvector image (nearby-admin/db/Dockerfile) so local dev
+    # runs real semantic search, mirroring prod RDS. Replaces stock postgis.
+    build: { context: ./db, dockerfile: Dockerfile }
 
   minio:
     image: minio/minio
     ports: ["9000:9000", "9001:9001"]
+
+  # Embedding model served out-of-process by Hugging Face TEI (mirrors prod ECS).
+  # Reachable on the shared network at http://embedding:80; 8085 published for
+  # ad-hoc curl/parity. No healthcheck (the minimal TEI image has no curl/wget);
+  # dependents use service_started + the fail-soft client.
+  embedding:
+    image: ghcr.io/huggingface/text-embeddings-inference:cpu-1.8.1
+    command: ["--model-id", "michaelfeil/embeddinggemma-300m", "--port", "80"]
+    ports: ["8085:80"]
+    volumes: [embedding_cache:/data]
 
   backend:
     build: { context: ./backend, dockerfile: Dockerfile }
@@ -176,15 +194,26 @@ services:
     ports: ["8001:8000"]
     volumes:
       - ./backend:/app
-      - ../shared:/app/shared    # Mount shared enums
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+      - ../shared:/app/shared    # Mount shared enums + embeddings client
+    environment:
+      # Embed-on-write target; fail-soft if the embedding service is down.
+      - EMBEDDING_SERVICE_URL=${EMBEDDING_SERVICE_URL:-http://embedding:80}
+    command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+    depends_on:
+      embedding: { condition: service_started }
 
   frontend:
     build: { context: ./frontend, dockerfile: Dockerfile }
     container_name: nearby-admin-frontend
-    ports: ["5175:5173"]
+    ports: ["5176:5173"]
     command: npm run dev -- --host 0.0.0.0
 ```
+
+> **pgvector DB images:** the stock `postgis/postgis` image lacks pgvector. Local
+> dev builds `nearby-admin/db/Dockerfile` (PostGIS + `postgresql-15-pgvector`);
+> CI and the integration tests build `tests/Dockerfile.testdb`
+> (`postgis/postgis:15-3.3` + `postgresql-15-pgvector`) so `CREATE EXTENSION vector`
+> and the `vector(768)` column work everywhere.
 
 ```bash
 # Start development
@@ -326,9 +355,11 @@ AWS_SECRET_ACCESS_KEY=minioadmin123
 Both apps expose `/api/health`:
 
 ```bash
-# nearby-app (includes ML model status)
+# nearby-app (reports the embedding service status — informational only)
 curl http://localhost:8002/api/health
-# {"status":"healthy","service":"nearby-app","database":"connected","ml_model":"loaded"}
+# {"status":"healthy","service":"nearby-app","database":"connected","embedding_service":"configured"}
+# embedding_service is "disabled" when EMBEDDING_SERVICE_URL is unset; it NEVER
+# affects overall health (semantic search just degrades to keyword search).
 
 # nearby-admin
 curl http://localhost:8001/api/health
@@ -338,14 +369,19 @@ curl http://localhost:8001/api/health
 ### Docker HEALTHCHECK
 
 ```dockerfile
-# nearby-app (120s start period for ML model)
-HEALTHCHECK --interval=30s --timeout=10s --start-period=120s --retries=3 \
+# nearby-app (30s start period — no more 1GB model load)
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
     CMD curl -f http://localhost:8000/api/health || exit 1
 
 # nearby-admin backend (60s start period for alembic + startup)
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
     CMD curl -f http://localhost:8000/api/health || exit 1
 ```
+
+The TEI `embedding` container has **no** healthcheck (its minimal image ships no
+curl/wget); ECS treats the essential container as healthy while running and
+Service Connect routes to it, with the fail-soft client degrading to keyword
+search while the model loads.
 
 ---
 

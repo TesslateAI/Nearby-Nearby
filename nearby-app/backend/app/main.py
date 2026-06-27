@@ -3,9 +3,13 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
+from .core.sentry import init_sentry
 from .core.config import settings
+
+init_sentry()
 from .api.endpoints import (
     pois, waitlist, community_interest, contact, feedback, business_claims,
+    event_suggestions, sitemap,
 )
 from .database import engine, get_db
 from sqlalchemy import text
@@ -48,7 +52,17 @@ async def startup_event():
                 print("[INFO] Fuzzy search will still work with basic matching")
                 connection.rollback()
 
-            # Enable pgvector extension for semantic search
+            # Enable pgvector extension for semantic search.
+            #
+            # NOTE: The canonical source for the pgvector extension, the
+            # `embedding vector(768)` column, and its HNSW index is the admin
+            # Alembic migration `k_embedding_001` (admin owns the shared
+            # schema). This startup `CREATE EXTENSION IF NOT EXISTS` is kept
+            # ONLY as belt-and-suspenders for app-only local databases that
+            # never run admin migrations — it is idempotent and intentionally
+            # does NOT create the column/index (the app must not own schema).
+            # Failure here is non-fatal: semantic search degrades to keyword
+            # search.
             try:
                 connection.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
                 connection.commit()
@@ -110,29 +124,76 @@ async def startup_event():
         print(f"[ERROR] Database connection failed: {e}")
         raise
 
-    # Load embedding model for semantic search
-    print("\n[EMBEDDING] Loading michaelfeil/embeddinggemma-300m model...")
+    # Wire up the shared embedding client for semantic search. The model is now
+    # served out-of-process by a TEI container, so this is a cheap, fail-soft
+    # HTTP client — no ~1GB model is loaded into this process. If the service
+    # URL is unset or the service is down, the client is disabled and semantic
+    # search transparently degrades to keyword search.
+    print("\n[EMBEDDING] Configuring shared embedding client...")
     try:
-        from sentence_transformers import SentenceTransformer
-        import time
-        start_time = time.time()
-        app.state.embedding_model = SentenceTransformer("michaelfeil/embeddinggemma-300m")
-        load_time = time.time() - start_time
-        print(f"[SUCCESS] Embedding model loaded in {load_time:.1f}s and ready for fast searches!")
-        print(f"[INFO] Model will stay in memory (~1GB RAM) for instant search responses")
+        from shared.embeddings import get_embedding_client
+        app.state.embedding_client = get_embedding_client()
+        if app.state.embedding_client.enabled:
+            print(f"[SUCCESS] Embedding client configured (service: {app.state.embedding_client.base_url})")
+        else:
+            print("[INFO] Embedding service not configured (EMBEDDING_SERVICE_URL unset)")
+            print("[INFO] Semantic search will fall back to keyword search")
     except Exception as e:
-        print(f"[WARNING] Could not load embedding model: {e}")
+        print(f"[WARNING] Could not configure embedding client: {e}")
         print("[INFO] Semantic search will fall back to keyword search")
-        app.state.embedding_model = None
+        app.state.embedding_client = None
 
-# CORS Middleware
+# CORS Middleware — restrict methods/headers explicitly. With
+# allow_credentials=True, wildcard methods/headers expand the cross-origin
+# attack surface to anything an allowed-origin page can issue.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.ALLOWED_ORIGINS.split(','),
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "X-Requested-With", "Accept"],
+    max_age=600,
 )
+
+
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    """
+    Apply baseline security headers to every response. The nearby-app serves
+    its own SPA via FastAPI (no fronting nginx for the user app), so headers
+    must originate here.
+
+    - HSTS: force HTTPS for one year on all subdomains.
+    - X-Content-Type-Options: stop browsers from MIME-sniffing.
+    - Referrer-Policy: leak as little URL info as possible to third parties.
+    - Permissions-Policy: disable powerful browser APIs by default.
+    - X-Frame-Options: clickjacking guard.
+    - CSP: blocks injected <script> from running. 'unsafe-inline' is kept for
+      Vite's build runtime; migrate to nonces if/when feasible.
+    """
+    response = await call_next(request)
+    response.headers.setdefault("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    response.headers.setdefault("X-Frame-Options", "SAMEORIGIN")
+    response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+    response.headers.setdefault(
+        "Permissions-Policy",
+        "camera=(), microphone=(), geolocation=(self), payment=()",
+    )
+    response.headers.setdefault(
+        "Content-Security-Policy",
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline'; "
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+        "font-src 'self' https://fonts.gstatic.com data:; "
+        "img-src 'self' data: https: blob:; "
+        "connect-src 'self' https: wss:; "
+        "frame-ancestors 'self'; "
+        "base-uri 'self'; "
+        "form-action 'self'; "
+        "object-src 'none'",
+    )
+    return response
 
 # Include API Routers
 app.include_router(pois.router, prefix="/api", tags=["Points of Interest"])
@@ -141,6 +202,8 @@ app.include_router(community_interest.router, prefix="/api", tags=["Community In
 app.include_router(contact.router, prefix="/api", tags=["Contact"])
 app.include_router(feedback.router, prefix="/api", tags=["Feedback"])
 app.include_router(business_claims.router, prefix="/api", tags=["Business Claims"])
+app.include_router(event_suggestions.router, prefix="/api", tags=["Event Suggestions"])
+app.include_router(sitemap.router, tags=["Sitemap"])
 
 # Static files configuration
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -245,7 +308,12 @@ def inject_meta_tags(html: str, meta_tags: str) -> str:
     return html
 
 
-# Health check endpoint for ECS/ALB
+# Health check endpoint for ECS/ALB. Return only the minimum signal needed
+# for liveness probes — never raw exception text (leaks driver state, host
+# names, etc.).
+import logging as _logging
+_health_logger = _logging.getLogger("nearby_app.health")
+
 @app.get("/api/health")
 async def health_check():
     health = {"status": "healthy", "service": "nearby-app"}
@@ -253,10 +321,20 @@ async def health_check():
         with engine.connect() as connection:
             connection.execute(text("SELECT 1"))
             health["database"] = "connected"
-    except Exception as e:
+    except Exception:
+        _health_logger.exception("Health check database probe failed")
         health["status"] = "degraded"
-        health["database"] = str(e)
-    health["ml_model"] = "loaded" if getattr(app.state, 'embedding_model', None) else "not loaded"
+        health["database"] = "disconnected"
+    # Report the embedding service status. This is informational only and must
+    # NOT affect overall health: if the embedding service is unconfigured or
+    # down, semantic search simply degrades to keyword search — the app stays
+    # healthy. We never make a network call here (the health probe must be fast
+    # and cannot depend on a third-party container being up).
+    client = getattr(app.state, 'embedding_client', None)
+    if client is not None and getattr(client, 'enabled', False):
+        health["embedding_service"] = "configured"
+    else:
+        health["embedding_service"] = "disabled"
     status_code = 200 if health["status"] == "healthy" else 503
     return JSONResponse(content=health, status_code=status_code)
 

@@ -324,7 +324,7 @@ const PoiDetailPage = () => {
     
     const keyFeatures = [
         poi.public_toilets?.includes('yes') ? 'Public Toilet' : null,
-        poi.wheelchair_accessible?.includes('yes') ? 'Wheelchair Friendly' : null,
+        // wheelchair_accessible removed — column dropped (Issue #45 PR2 Migration B)
         poi.parking_types?.includes('street') ? 'Parking on Street' : null,
         poi.parking_types?.includes('lot') ? 'Parking Lot' : null,
         poi.playground_available ? 'Playground Available' : null,
@@ -428,9 +428,14 @@ const PoiDetailPage = () => {
                             {poi.pricing_details && (
                                 <DetailItem label="Pricing Details" value={poi.pricing_details} icon={{ type: IconBuilding, props: {} }} />
                             )}
-                            {poi.ticket_link && (
-                                <DetailItem label="Tickets" value={poi.ticket_link} icon={{ type: IconLink, props: {} }} />
-                            )}
+                            {(poi.ticket_links || poi.event?.ticket_links || []).map((tl, i) => (
+                                <DetailItem
+                                    key={i}
+                                    label={tl.platform || tl.name || 'Tickets'}
+                                    value={tl.url}
+                                    icon={{ type: IconLink, props: {} }}
+                                />
+                            ))}
                             <DetailItem label="Phone Number" value={poi.phone_number} icon={{ type: IconPhone, props: {} }} />
                             <DetailItem label="Website" value={poi.website_url} icon={{ type: IconWorldWww, props: {} }} />
                             <DetailItem label="Good For" value={poi.ideal_for || poi.ideal_for_key} icon={{ type: IconCheck, props: {} }} />
@@ -537,8 +542,11 @@ const PoiDetailPage = () => {
                                     <DetailItem label="History" value={poi.history_paragraph} />
                                 )}
                                 <HoursDisplay hours={poi.hours} />
-                                {poi.holiday_hours && (
-                                    <DetailItem label="Holiday Hours" value={JSON.stringify(poi.holiday_hours)} />
+                                {/* Issue #70: holiday_hours top-level column is deprecated.
+                                    Holiday hours now live in poi.hours.holidays and render
+                                    inside <HoursDisplay /> above. */}
+                                {poi.hours?.holidays && Object.keys(poi.hours.holidays).length > 0 && (
+                                    <DetailItem label="Holiday Hours" value={JSON.stringify(poi.hours.holidays)} />
                                 )}
                                 {poiTypeData.length && (
                                     <DetailItem label="Length" value={poiTypeData.length} icon={{ type: IconRoute, props: {} }} />
@@ -610,8 +618,8 @@ const PoiDetailPage = () => {
                                 <DetailItem label="Parking Options" value={poi.parking_types} icon={{ type: IconCar, props: {} }} />
                                 <DetailItem label="Parking Notes" value={poi.parking_notes} icon={{ type: IconCar, props: {} }} />
                                 <DetailItem label="Expected Parking Cost" value={poi.expect_to_pay_parking} icon={{ type: IconCar, props: {} }} />
-                                <DetailItem label="Public Transit" value={poi.public_transit_info} icon={{ type: IconCar, props: {} }} />
-                                <DetailItem label="Wheelchair Accessible" value={poi.wheelchair_accessible} icon={{ type: IconInfoCircle, props: {} }} />
+                                {/* public_transit_info removed — renamed _deprecated_public_transit_info (Migration A #33) */}
+                                {/* wheelchair_accessible removed — column dropped (Issue #45 PR2 Migration B) */}
                                 <DetailItem label="Accessibility Details" value={poi.wheelchair_details} icon={{ type: IconInfoCircle, props: {} }} />
                             </Stack>
                         </Accordion.Panel>
@@ -631,7 +639,7 @@ const PoiDetailPage = () => {
                                 <DetailItem label="Pet Policy" value={poi.pet_policy} icon={{ type: IconInfoCircle, props: {} }} />
                                 <DetailItem label="Alcohol Available" value={poi.alcohol_options} icon={{ type: IconInfoCircle, props: {} }} />
                                 <DetailItem label="WiFi Available" value={poi.wifi_options} icon={{ type: IconInfoCircle, props: {} }} />
-                                <DetailItem label="Key Facilities" value={poi.key_facilities} icon={{ type: IconCheck, props: {} }} />
+                                {/* key_facilities removed — renamed _deprecated_key_facilities (Migration A #34) */}
                                 {poiTypeData.dronePolicy && (
                                     <DetailItem label="Drone Policy" value={poiTypeData.dronePolicy} icon={{ type: IconTree, props: {} }} />
                                 )}

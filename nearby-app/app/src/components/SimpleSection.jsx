@@ -1,4 +1,3 @@
-import './SimpleSection.css';
 
 function SimpleSection() {
   return (

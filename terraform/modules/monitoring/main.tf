@@ -12,6 +12,13 @@ resource "aws_cloudwatch_log_group" "admin" {
   tags = { Name = "${var.project}-${var.environment}-admin-logs" }
 }
 
+resource "aws_cloudwatch_log_group" "embedding" {
+  name              = "/ecs/${var.project}-${var.environment}/embedding"
+  retention_in_days = var.log_retention_days
+
+  tags = { Name = "${var.project}-${var.environment}-embedding-logs" }
+}
+
 # --- Optional 5xx Alarm ---
 resource "aws_cloudwatch_metric_alarm" "alb_5xx" {
   count = var.enable_alb_alarm ? 1 : 0

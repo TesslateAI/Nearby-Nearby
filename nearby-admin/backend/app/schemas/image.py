@@ -17,6 +17,7 @@ class ImageTypeEnum(str, Enum):
     MENU = "menu"
     TRAIL_HEAD = "trail_head"
     TRAIL_EXIT = "trail_exit"
+    ACCESS_POINT = "access_point"
     MAP = "map"
     DOWNLOADABLE_MAP = "downloadable_map"
 
@@ -40,6 +41,7 @@ class ImageUpdate(BaseModel):
     alt_text: Optional[str] = None
     caption: Optional[str] = None
     display_order: Optional[int] = None
+    function_tags: Optional[List[str]] = None
 
 
 class ImageResponse(ImageBase):
@@ -55,9 +57,13 @@ class ImageResponse(ImageBase):
     uploaded_by: Optional[UUID]
     created_at: datetime
     updated_at: Optional[datetime]
+    function_tags: Optional[List[str]] = None
 
-    # Computed URLs
-    url: str
+    # Computed URLs. `url` is None for image records that have no stored file
+    # yet (e.g. created before S3 upload completed) — see
+    # ImageService.get_image_urls, which returns None as a documented fallback.
+    # Keep this optional so listing/serializing such records never 500s.
+    url: Optional[str] = None
     thumbnail_url: Optional[str] = None
     medium_url: Optional[str] = None
     large_url: Optional[str] = None

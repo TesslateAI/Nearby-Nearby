@@ -1,8 +1,7 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import Overlay from './Overlay';
 import NNLogo from './NNLogo';
-import './Navbar.css';
 
 /**
  * Redesigned header/navbar — ported from nn-templates/default-page-01.html
@@ -33,16 +32,24 @@ export default function Navbar({ navOverlay, searchOverlay }) {
     return () => window.removeEventListener('resize', handler);
   }, []);
 
+  // Desktop hover handlers for submenu
+  const handleMouseEnter = useCallback(() => {
+    if (window.innerWidth >= 1200) setMoreOpen(true);
+  }, []);
+  const handleMouseLeave = useCallback(() => {
+    if (window.innerWidth >= 1200) setMoreOpen(false);
+  }, []);
+
   return (
     <header id="header_primary_parent">
       <div id="logo1">
         <Link id="link_logo_primary1" to="/" aria-label="Nearby Nearby home">
-          <img src="/Logo.png" alt="Nearby Nearby" className="navbar-logo-img" />
+          <NNLogo className="navbar-logo-img" />
         </Link>
       </div>
 
       <div id="wrapper_header_primary">
-        {/* Nav overlay — mobile panel, desktop inline */}
+        {/* Nav overlay — mobile: fixed panel, desktop: inline */}
         <Overlay
           id="nav_overlay"
           isOpen={navOverlay.isOpen}
@@ -53,7 +60,7 @@ export default function Navbar({ navOverlay, searchOverlay }) {
           <div id="navigation_primary1">
             <div id="logo2">
               <Link to="/" onClick={navOverlay.close} aria-label="Nearby Nearby home">
-                <NNLogo />
+                <NNLogo className="navbar-logo-img" />
               </Link>
             </div>
 
@@ -64,7 +71,7 @@ export default function Navbar({ navOverlay, searchOverlay }) {
                   <li role="none" className="aaa_menu_1_list_item search_link_parent_header">
                     <button
                       id="btn_search_nav_header"
-                      className="btn_reset btn_trigger btn_nav_icon_style_2"
+                      className={`btn_reset btn_trigger btn_nav_icon_style_2${searchOverlay.isOpen ? ' is_active' : ''}`}
                       type="button"
                       onClick={() => { navOverlay.close(); searchOverlay.toggle(); }}
                       aria-expanded={searchOverlay.isOpen}
@@ -89,27 +96,31 @@ export default function Navbar({ navOverlay, searchOverlay }) {
                     <Link role="menuitem" to="/explore?type=EVENT" className="aaa_menu_1_link" onClick={navOverlay.close}>Events</Link>
                   </li>
                   <li role="none" className="aaa_menu_1_list_item">
-                    <a role="menuitem" href="/disaster-network/" className="aaa_menu_1_link" title="link to Disaster Network page">Disaster</a>
+                    <Link role="menuitem" to="/disaster-network" className="aaa_menu_1_link" onClick={navOverlay.close}>Disaster</Link>
                   </li>
                   <li role="none" className="aaa_menu_1_list_item">
                     <a role="menuitem" href="https://blog.nearbynearby.com/" className="aaa_menu_1_link" target="_blank" rel="noopener noreferrer">Updates</a>
                   </li>
 
-                  {/* More dropdown */}
+                  {/* More dropdown — submenu always in DOM, toggled via class */}
                   <li
                     role="none"
                     className={`aaa_menu_1_list_item aaa_menu_1_has_sub_menu${moreOpen ? ' aaa_menu_open' : ''}`}
                     ref={moreRef}
+                    onMouseEnter={handleMouseEnter}
+                    onMouseLeave={handleMouseLeave}
                   >
                     <a
                       role="menuitem"
                       href="#"
                       className="aaa_menu_1_link"
+                      aria-haspopup="true"
                       onClick={(e) => { e.preventDefault(); setMoreOpen(v => !v); }}
                     >
                       More
                     </a>
                     <button
+                      type="button"
                       className="aaa_menu_1_dd_button"
                       aria-expanded={moreOpen}
                       aria-label="show submenu"
@@ -117,19 +128,17 @@ export default function Navbar({ navOverlay, searchOverlay }) {
                     >
                       &#9662;
                     </button>
-                    {moreOpen && (
-                      <ul role="menu" className="aaa_menu_1_sub_menu">
-                        <li role="none" className="aaa_menu_1_list_item">
-                          <a role="menuitem" href="/help/" className="aaa_menu_1_link" onClick={navOverlay.close}>Help / FAQ's</a>
-                        </li>
-                        <li role="none" className="aaa_menu_1_list_item">
-                          <a role="menuitem" href="/contact/" className="aaa_menu_1_link" onClick={navOverlay.close}>Contact</a>
-                        </li>
-                        <li role="none" className="aaa_menu_1_list_item">
-                          <Link role="menuitem" to="/suggest-place" className="aaa_menu_1_link" onClick={navOverlay.close}>Register Your Business</Link>
-                        </li>
-                      </ul>
-                    )}
+                    <ul role="menu" className={`aaa_menu_1_sub_menu${moreOpen ? ' aaa_menu_open' : ''}`}>
+                      <li role="none" className="aaa_menu_1_list_item">
+                        <Link role="menuitem" to="/help" className="aaa_menu_1_link" onClick={navOverlay.close}>Help / FAQ's</Link>
+                      </li>
+                      <li role="none" className="aaa_menu_1_list_item">
+                        <Link role="menuitem" to="/contact" className="aaa_menu_1_link" onClick={navOverlay.close}>Contact</Link>
+                      </li>
+                      <li role="none" className="aaa_menu_1_list_item">
+                        <Link role="menuitem" to="/claim-business" className="aaa_menu_1_link" onClick={navOverlay.close}>Register Your Business</Link>
+                      </li>
+                    </ul>
                   </li>
                 </ul>
               </div>
@@ -138,10 +147,7 @@ export default function Navbar({ navOverlay, searchOverlay }) {
           </div>
         </Overlay>
 
-        <div id="account_box">
-          <a href="/login" className="account_link">Login</a>
-          <a href="/signup" className="account_link account_link--signup">Sign Up</a>
-        </div>
+{/* Account box removed per user request */}
       </div>
 
     </header>

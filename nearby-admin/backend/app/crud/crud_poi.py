@@ -10,6 +10,159 @@ from app import models, schemas
 from app.crud.crud_category import get_category
 from app.utils.html_sanitizer import sanitize_poi_fields
 from geoalchemy2.types import Geography
+from shared.constants.field_options import EVENT_STATUS_EXPLANATION_REQUIRED
+from shared.utils.event_status import validate_status_transition
+
+
+def compute_icon_booleans(poi: dict) -> dict:
+    wifi_opts = poi.get('wifi_options') or []
+    amenities = poi.get('amenities') or {}
+    poi['icon_free_wifi'] = (
+        'Free Public Wifi' in wifi_opts or 'Free Wifi' in wifi_opts
+        or amenities.get('wifi') == 'Free Wifi'
+    )
+    # Issue #48: pet_options list no longer contains negative items
+    # (handled by the "Are pets allowed?" Yes/No gate). Any non-empty list
+    # of pet_options means the POI is pet friendly.
+    pets = poi.get('pet_options') or []
+    poi['icon_pet_friendly'] = bool(pets)
+    toilets = poi.get('public_toilets') or []
+    poi['icon_public_restroom'] = bool(toilets) and toilets != ['No Public Restroom'] and toilets != ['No']
+    acc_parking = poi.get('accessible_parking_details') or []
+    # mobility_access is now a top-level dict ({step_free_entry, main_area_accessible,
+    # ground_level_service} with 'yes'/'no'/'unknown'); fall back to the legacy
+    # amenities.mobility_access / list shapes for older rows.
+    mobility = (
+        poi.get('mobility_access')
+        or amenities.get('mobility_access')
+        or amenities.get('accessibility')
+        or []
+    )
+    mobility_dict_accessible = isinstance(mobility, dict) and any(
+        str(v).lower() == 'yes' for v in mobility.values()
+    )
+    poi['icon_wheelchair_accessible'] = (
+        bool(poi.get('accessible_restroom'))
+        or bool(acc_parking)
+        or bool(poi.get('inclusive_playground'))
+        or (isinstance(mobility, list) and len(mobility) > 0)
+        or (isinstance(mobility, bool) and mobility)
+        or mobility_dict_accessible
+    )
+    return poi
+
+def compute_accessible_restroom(poi: dict) -> dict:
+    """Strict ALL-THREE accessible-restroom rule (Wave 3 #47).
+
+    A restroom is marked accessible only when the admin has checked all three
+    of:
+      1. Wide door — minimum 32 inches clear width
+      2. Either Side grab bar installed OR Rear grab bar installed
+      3. Level entry — no lip or step
+
+    The checklist field `accessible_restroom_details` stores the exact label
+    strings from `shared.constants.field_options.RESTROOM_ADA_CHECKLIST`. We
+    substring-match because legacy data may have minor whitespace/punctuation
+    drift. Both list (current) and dict (legacy) shapes are supported.
+    """
+    cl = poi.get('accessible_restroom_details')
+    if isinstance(cl, list):
+        checked = [str(x) for x in cl if x]
+    elif isinstance(cl, dict):
+        # Legacy shape: {label: bool} or {group: [labels]}.
+        checked = []
+        for k, v in cl.items():
+            if isinstance(v, bool) and v:
+                checked.append(str(k))
+            elif isinstance(v, list):
+                checked.extend(str(x) for x in v if x)
+            elif isinstance(v, str):
+                checked.append(v)
+    else:
+        checked = []
+
+    def _has(needle: str) -> bool:
+        n = needle.lower()
+        return any(n in s.lower() for s in checked)
+
+    wide_door = _has('Wide door')
+    grab_bar = _has('Side grab bar') or _has('Rear grab bar')
+    level_entry = _has('Level entry')
+
+    poi['accessible_restroom'] = bool(wide_door and grab_bar and level_entry)
+    return poi
+
+def compute_inclusive_playground(poi: dict) -> dict:
+    cl = poi.get('playground_ada_checklist') or []
+    required = {'Accessible route to play area','Ground-level play components accessible',
+                'Unitary surface (poured-rubber/tiles)'}
+    if isinstance(cl, list):
+        poi['inclusive_playground'] = required.issubset(set(cl))
+    elif isinstance(cl, dict):
+        flat = {item for items in cl.values() for item in (items or [])}
+        poi['inclusive_playground'] = required.issubset(flat)
+    else:
+        poi['inclusive_playground'] = False
+    return poi
+
+def compute_wifi_mirror(poi: dict) -> dict:
+    amenities = poi.get('amenities') or {}
+    if amenities.get('wifi'):
+        return poi
+    wifi_opts = poi.get('wifi_options') or []
+    mapping = {'Free Public Wifi':'Free Wifi','Paid Public Wifi':'Paid Wifi',
+               'No Public Wifi':'No Public Wifi'}
+    for src, dst in mapping.items():
+        if src in wifi_opts:
+            amenities['wifi'] = dst
+            break
+    poi['amenities'] = amenities
+    return poi
+
+def apply_sponsor_rule(poi: dict) -> dict:
+    if poi.get('is_sponsor'):
+        poi['listing_type'] = 'paid'
+    return poi
+
+
+_IDEAL_FOR_GROUP_MAP = None
+
+def _get_ideal_for_map():
+    global _IDEAL_FOR_GROUP_MAP
+    if _IDEAL_FOR_GROUP_MAP is None:
+        from shared.constants.field_options import (
+            IDEAL_FOR_ATMOSPHERE, IDEAL_FOR_AGE_GROUP,
+            IDEAL_FOR_SOCIAL_SETTINGS, IDEAL_FOR_LOCAL_SPECIAL,
+        )
+        m = {}
+        for v in IDEAL_FOR_ATMOSPHERE: m[v] = 'atmosphere'
+        for v in IDEAL_FOR_AGE_GROUP: m[v] = 'age_group'
+        for v in IDEAL_FOR_SOCIAL_SETTINGS: m[v] = 'social_settings'
+        for v in IDEAL_FOR_LOCAL_SPECIAL: m[v] = 'local_special'
+        _IDEAL_FOR_GROUP_MAP = m
+    return _IDEAL_FOR_GROUP_MAP
+
+def normalize_ideal_for(poi: dict) -> dict:
+    val = poi.get('ideal_for')
+    if val is None or isinstance(val, dict):
+        return poi
+    if isinstance(val, list):
+        m = _get_ideal_for_map()
+        out = {'atmosphere': [], 'age_group': [], 'social_settings': [],
+               'local_special': [], '_legacy': []}
+        for item in val:
+            out[m.get(item, '_legacy')].append(item)
+        poi['ideal_for'] = out
+    return poi
+
+def apply_phase1_computed(poi: dict) -> dict:
+    normalize_ideal_for(poi)
+    compute_wifi_mirror(poi)
+    compute_accessible_restroom(poi)
+    compute_inclusive_playground(poi)
+    compute_icon_booleans(poi)
+    apply_sponsor_rule(poi)
+    return poi
 
 
 def generate_slug(name: str, city: str = None) -> str:
@@ -181,6 +334,10 @@ def create_poi(db: Session, poi: schemas.PointOfInterestCreate):
         base_slug = generate_slug(poi_data.get('name', ''), poi_data.get('address_city'))
         poi_data['slug'] = ensure_unique_slug(db, base_slug)
 
+    # Apply Phase 1 computed fields (icon booleans, accessible_restroom,
+    # inclusive_playground, amenities.wifi mirror, sponsor listing_type)
+    apply_phase1_computed(poi_data)
+
     db_poi = models.PointOfInterest(**poi_data)
 
     # Set the location geometry
@@ -194,19 +351,25 @@ def create_poi(db: Session, poi: schemas.PointOfInterestCreate):
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Error creating POI: {e}")
 
-    # Handle main category via poi_categories table with is_main=True
+    # Handle main category via poi_categories table with is_main=True.
+    # Issue #42: enforce that the chosen main category is one of the POI's
+    # selected categories (membership), not just any category in the tree.
     if hasattr(poi, 'main_category_id') and poi.main_category_id:
         main_category = get_category(db, poi.main_category_id)
-        if main_category and main_category.parent_id is None:
-            # Insert into poi_categories with is_main=True
-            from app.models.category import poi_category_association
-            db.execute(poi_category_association.insert().values(
-                poi_id=db_poi.id,
-                category_id=poi.main_category_id,
-                is_main=True
-            ))
-        else:
+        if not main_category:
             raise HTTPException(status_code=400, detail="Invalid main category")
+        selected_category_ids = set(getattr(poi, 'category_ids', None) or [])
+        if selected_category_ids and poi.main_category_id not in selected_category_ids:
+            raise HTTPException(
+                status_code=422,
+                detail="main_category_id must be one of the POI's selected category_ids",
+            )
+        from app.models.category import poi_category_association
+        db.execute(poi_category_association.insert().values(
+            poi_id=db_poi.id,
+            category_id=poi.main_category_id,
+            is_main=True
+        ))
 
     # Validate free business category limit
     if poi.category_ids:
@@ -215,10 +378,16 @@ def create_poi(db: Session, poi: schemas.PointOfInterestCreate):
         if listing_type == 'free' and poi_type_str == 'BUSINESS' and len(poi.category_ids) > 1:
             raise HTTPException(status_code=400, detail="Free business listings are limited to 1 category")
 
-    # Add secondary categories via poi_categories table with is_main=False
+    # Add secondary categories via poi_categories table with is_main=False.
+    # Issue #42: skip the main category — it's already inserted above as
+    # is_main=True; re-inserting would either violate the (poi_id, category_id)
+    # unique constraint or duplicate the row depending on schema.
+    main_cat_id_create = getattr(poi, 'main_category_id', None)
     if poi.category_ids:
         from app.models.category import poi_category_association
         for cat_id in poi.category_ids:
+            if cat_id == main_cat_id_create:
+                continue
             category = get_category(db, cat_id)
             if category:
                 # Insert into poi_categories with is_main=False
@@ -240,6 +409,22 @@ def create_poi(db: Session, poi: schemas.PointOfInterestCreate):
     elif poi.poi_type == 'EVENT' and poi.event:
         event_data = poi.event.model_dump()
         event_data = sanitize_poi_fields({'event': event_data}).get('event', {})
+        # Duplicate prevention: check same venue + date + name
+        venue_id = event_data.get('venue_poi_id')
+        start_dt = event_data.get('start_datetime')
+        if venue_id and start_dt:
+            existing = db.query(models.PointOfInterest).join(
+                models.Event, models.PointOfInterest.id == models.Event.poi_id
+            ).filter(
+                func.lower(models.PointOfInterest.name) == func.lower(poi_data.get('name', '')),
+                models.Event.venue_poi_id == venue_id,
+                models.Event.start_datetime == start_dt,
+            ).first()
+            if existing:
+                raise HTTPException(
+                    status_code=409,
+                    detail=f"Duplicate event: an event with the same name, venue, and start time already exists (ID: {existing.id})."
+                )
         db_poi.event = models.Event(**event_data)
 
     try:
@@ -252,6 +437,14 @@ def create_poi(db: Session, poi: schemas.PointOfInterestCreate):
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {e}")
+
+    # Best-effort embed-on-write (A7): AFTER the commit above, never before.
+    # Fully contained — a writer bug must never break a successful POI create.
+    try:
+        from app.crud.embedding_writer import write_embedding_best_effort
+        write_embedding_best_effort(db, db_poi.id)
+    except Exception:
+        pass
 
     return db_poi
 
@@ -270,6 +463,11 @@ def update_poi(db: Session, *, db_obj: models.PointOfInterest, obj_in: schemas.P
 
     # Sanitize HTML content in the update data
     update_data = sanitize_poi_fields(update_data)
+
+    # Apply Phase 1 computed fields (icon booleans, accessible_restroom,
+    # inclusive_playground, amenities.wifi mirror, sponsor listing_type).
+    # Only touches keys the helpers know about; safe for partial updates.
+    apply_phase1_computed(update_data)
 
     # Regenerate slug if name or city changed
     name_changed = 'name' in update_data and update_data['name'] != db_obj.name
@@ -321,13 +519,38 @@ def update_poi(db: Session, *, db_obj: models.PointOfInterest, obj_in: schemas.P
 
     if 'event' in update_data and poi_type_str == 'EVENT':
         event_data = update_data.pop('event')
+        # Task 157: Date Change Guard
+        date_changing = event_data.get('start_datetime') or event_data.get('end_datetime')
+        current_status = getattr(db_obj.event, 'event_status', None) if db_obj.event else None
+        new_status = event_data.get('event_status', current_status)
+        if date_changing and current_status == 'Updated Date and/or Time' and new_status != 'Rescheduled':
+            raise HTTPException(
+                400,
+                "Changing event dates when status is 'Updated Date and/or Time' requires selecting 'Rescheduled' status first."
+            )
+        # Validate status transition
+        if new_status and current_status and new_status != current_status:
+            valid, msg = validate_status_transition(current_status, new_status)
+            if not valid:
+                raise HTTPException(400, msg)
+        # Require status_explanation for certain status transitions
+        if new_status and new_status != current_status and new_status in EVENT_STATUS_EXPLANATION_REQUIRED:
+            explanation = event_data.get('status_explanation')
+            if not explanation:
+                raise HTTPException(
+                    400,
+                    f"status_explanation is required when setting event_status to '{new_status}'."
+                )
         if db_obj.event:
             for key, value in event_data.items():
                 setattr(db_obj.event, key, value)
         else:
             db_obj.event = models.Event(**event_data)
 
-    # Handle main category update via poi_categories table
+    # Handle main category update via poi_categories table.
+    # Issue #42: validate membership — the chosen main category must be one
+    # of the POI's selected categories (either the incoming category_ids in
+    # this same request, or the existing rows on poi_categories).
     if 'main_category_id' in update_data:
         main_category_id = update_data.pop('main_category_id')
         from app.models.category import poi_category_association
@@ -341,28 +564,43 @@ def update_poi(db: Session, *, db_obj: models.PointOfInterest, obj_in: schemas.P
         # Add/update new main category if provided
         if main_category_id:
             main_category = get_category(db, main_category_id)
-            if main_category and main_category.parent_id is None:
-                # Check if this category already exists for this POI
-                existing = db.execute(poi_category_association.select().where(
+            if not main_category:
+                raise HTTPException(status_code=400, detail="Invalid main category")
+
+            # Determine the effective category membership for validation.
+            if 'category_ids' in update_data:
+                effective_category_ids = set(update_data.get('category_ids') or [])
+            else:
+                existing_rows = db.execute(poi_category_association.select().where(
+                    poi_category_association.c.poi_id == db_obj.id
+                )).fetchall()
+                effective_category_ids = {row.category_id for row in existing_rows}
+
+            if effective_category_ids and main_category_id not in effective_category_ids:
+                raise HTTPException(
+                    status_code=422,
+                    detail="main_category_id must be one of the POI's selected category_ids",
+                )
+
+            # Check if this category already exists for this POI
+            existing = db.execute(poi_category_association.select().where(
+                poi_category_association.c.poi_id == db_obj.id,
+                poi_category_association.c.category_id == main_category_id
+            )).fetchone()
+
+            if existing:
+                # Update existing to be main
+                db.execute(poi_category_association.update().where(
                     poi_category_association.c.poi_id == db_obj.id,
                     poi_category_association.c.category_id == main_category_id
-                )).fetchone()
-
-                if existing:
-                    # Update existing to be main
-                    db.execute(poi_category_association.update().where(
-                        poi_category_association.c.poi_id == db_obj.id,
-                        poi_category_association.c.category_id == main_category_id
-                    ).values(is_main=True))
-                else:
-                    # Insert new main category
-                    db.execute(poi_category_association.insert().values(
-                        poi_id=db_obj.id,
-                        category_id=main_category_id,
-                        is_main=True
-                    ))
+                ).values(is_main=True))
             else:
-                raise HTTPException(status_code=400, detail="Invalid main category")
+                # Insert new main category
+                db.execute(poi_category_association.insert().values(
+                    poi_id=db_obj.id,
+                    category_id=main_category_id,
+                    is_main=True
+                ))
 
     # Handle secondary category updates via poi_categories table
     if 'category_ids' in update_data:
@@ -401,47 +639,13 @@ def update_poi(db: Session, *, db_obj: models.PointOfInterest, obj_in: schemas.P
                 ))
         db.flush()
 
-    # Update remaining fields
+    # Update remaining fields (subtype dicts already popped above when type matches)
+    # Skip any subtype relationship fields that weren't popped (e.g. type mismatch)
+    subtype_fields = {"event", "business", "park", "trail"}
     for field, value in update_data.items():
-        # For relationship fields, ensure we assign model instances, not dicts
-        if field == "event" and poi_type_str == "EVENT":
-            if isinstance(value, dict):
-                if db_obj.event:
-                    for k, v in value.items():
-                        setattr(db_obj.event, k, v)
-                else:
-                    db_obj.event = models.Event(**value)
-            else:
-                db_obj.event = value
-        elif field == "business" and poi_type_str == "BUSINESS":
-            if isinstance(value, dict):
-                if db_obj.business:
-                    for k, v in value.items():
-                        setattr(db_obj.business, k, v)
-                else:
-                    db_obj.business = models.Business(**value)
-            else:
-                db_obj.business = value
-        elif field == "park" and poi_type_str == "PARK":
-            if isinstance(value, dict):
-                if db_obj.park:
-                    for k, v in value.items():
-                        setattr(db_obj.park, k, v)
-                else:
-                    db_obj.park = models.Park(**value)
-            else:
-                db_obj.park = value
-        elif field == "trail" and poi_type_str == "TRAIL":
-            if isinstance(value, dict):
-                if db_obj.trail:
-                    for k, v in value.items():
-                        setattr(db_obj.trail, k, v)
-                else:
-                    db_obj.trail = models.Trail(**value)
-            else:
-                db_obj.trail = value
-        else:
-            setattr(db_obj, field, value)
+        if field in subtype_fields:
+            continue
+        setattr(db_obj, field, value)
 
     try:
         db.add(db_obj)
@@ -450,6 +654,14 @@ def update_poi(db: Session, *, db_obj: models.PointOfInterest, obj_in: schemas.P
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"An error occurred during update: {e}")
+
+    # Best-effort embed-on-write (A7): AFTER the commit above, never before.
+    # Fully contained — a writer bug must never break a successful POI update.
+    try:
+        from app.crud.embedding_writer import write_embedding_best_effort
+        write_embedding_best_effort(db, db_obj.id)
+    except Exception:
+        pass
 
     return db_obj
 

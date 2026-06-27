@@ -20,7 +20,13 @@ services:
 
   # --- DEVELOPMENT SERVICES ---
   db:
-    image: postgis/postgis:15-3.4
+    # Custom PostGIS image with pgvector (see db/Dockerfile) so local dev can run
+    # real semantic search, mirroring prod RDS. Replaces the stock
+    # postgis/postgis:15-3.4 image; same base tag keeps the postgres_data volume
+    # / PG15 catalog compatible.
+    build:
+      context: ./db
+      dockerfile: Dockerfile
     volumes:
       - postgres_data:/var/lib/postgresql/data/
     environment:
@@ -34,6 +40,17 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+  # --- EMBEDDING SERVICE ---
+  # LOCAL dev uses Docker Model Runner (DMR), NOT a compose service. DMR is built
+  # into Docker Desktop, runs `ai/embeddinggemma` on the host with Metal GPU, and
+  # is reachable from every container at http://model-runner.docker.internal/engines/v1
+  # (OpenAI-compatible). Setup once:  docker model pull ai/embeddinggemma
+  # We deliberately do NOT run the HF TEI image locally: it is amd64-only and its
+  # Intel-MKL CPU kernels segfault under emulation on Apple Silicon. PROD serves
+  # TEI in an amd64 Fargate container (EMBEDDING_BACKEND=tei) — see terraform/ and
+  # docs/systems/search.md. The backends point at DMR via the env vars below and
+  # are fail-soft (keyword search if the embedding server is unreachable).
 
   backend:
     container_name: nearby-admin-backend
@@ -58,6 +75,13 @@ services:
       - IMAGE_STORAGE_PATH=/app/storage/images
       - IMAGE_BASE_URL=/api/images
       - PYTHONPATH=/app
+      # Embed-on-write via Docker Model Runner (see the EMBEDDING SERVICE note
+      # above). Fail-soft: if DMR is unreachable the client is disabled and
+      # writes still succeed without an embedding. Override/unset to disable.
+      - EMBEDDING_BACKEND=${EMBEDDING_BACKEND:-openai}
+      - EMBEDDING_SERVICE_URL=${EMBEDDING_SERVICE_URL:-http://model-runner.docker.internal/engines/v1}
+      - EMBEDDING_MODEL=${EMBEDDING_MODEL:-ai/embeddinggemma}
+      - EMBEDDING_TIMEOUT=${EMBEDDING_TIMEOUT:-60}
     depends_on:
       db:
         condition: service_healthy
@@ -73,7 +97,7 @@ services:
       - ./frontend:/app
       - /app/node_modules
     ports:
-      - "5175:5173"
+      - "5176:5173"
     env_file:
       - .env
     environment:

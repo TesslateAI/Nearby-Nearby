@@ -1,6 +1,7 @@
 import { Button, Group } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { useNavigate } from 'react-router-dom';
+import { validateAccessibleParking } from '../constants/validationRules';
 
 export function FormActions({
   form,
@@ -18,11 +19,24 @@ export function FormActions({
   const validateAndSubmit = (publicationStatus, skipValidation = false) => {
     // Skip validation for unpublishing or when explicitly requested
     if (!skipValidation) {
+      form.clearErrors();
       form.validate();
-      if (Object.keys(form.errors).length > 0) {
+
+      // Accessible Parking ADA sub-options are required once "Accessible Parking"
+      // is selected. Enforced on Publish/Update only — drafts may stay incomplete.
+      const parkingErrors =
+        publicationStatus === 'published' ? validateAccessibleParking(form.values) : {};
+      const hasParkingErrors = Object.keys(parkingErrors).length > 0;
+      if (hasParkingErrors) {
+        form.setErrors({ ...form.errors, ...parkingErrors });
+      }
+
+      if (Object.keys(form.errors).length > 0 || hasParkingErrors) {
         notifications.show({
           title: 'Form Validation Error',
-          message: `Please fix the errors in the form before ${publicationStatus === 'draft' ? 'saving draft' : 'publishing'}`,
+          message: hasParkingErrors
+            ? 'Select at least one Accessible Parking detail (ADA) before publishing.'
+            : `Please fix the errors in the form before ${publicationStatus === 'draft' ? 'saving draft' : 'publishing'}`,
           color: 'red',
           autoClose: 5000
         });

@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { Search } from 'lucide-react';
-import './SearchDropdown.css';
 
 // Friendly display names for POI types
 const TYPE_LABELS = {

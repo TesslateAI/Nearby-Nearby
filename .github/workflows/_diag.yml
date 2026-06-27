@@ -1,0 +1,77 @@
+name: Prod diagnostic (throwaway)
+on:
+  workflow_dispatch: {}
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: us-east-1
+
+      - name: ECS service state
+        continue-on-error: true
+        run: |
+          echo '=== describe-services ==='
+          aws ecs describe-services \
+            --cluster nearbynearby-prod \
+            --services nearbynearby-prod-admin \
+            --query 'services[0].{name:serviceName,running:runningCount,desired:desiredCount,taskDef:taskDefinition,deployments:deployments[].{status:status,taskDef:taskDefinition,rolloutState:rolloutState,runningCount:runningCount,desiredCount:desiredCount,createdAt:createdAt,updatedAt:updatedAt}}' \
+            --output json
+          echo
+          echo '=== service events (last 15) ==='
+          aws ecs describe-services \
+            --cluster nearbynearby-prod \
+            --services nearbynearby-prod-admin \
+            --query 'services[0].events[0:15].{createdAt:createdAt,message:message}' \
+            --output json
+
+      - name: Admin logs tail (30 min)
+        continue-on-error: true
+        run: |
+          echo '=== logs tail ==='
+          aws logs tail '/ecs/nearbynearby-prod/admin' --since 30m --format short 2>&1 | tail -400
+
+      - name: Admin logs filter-log-events
+        continue-on-error: true
+        run: |
+          echo '=== filter-log-events ==='
+          aws logs filter-log-events \
+            --log-group-name '/ecs/nearbynearby-prod/admin' \
+            --start-time $(( ($(date +%s) - 1800) * 1000 )) \
+            --query 'events[-200:].[timestamp,message]' \
+            --output text 2>&1 | tail -400
+
+      - name: Admin logs get-log-events (from latest stream)
+        continue-on-error: true
+        run: |
+          echo '=== describe-log-streams (latest) ==='
+          STREAM=$(aws logs describe-log-streams \
+            --log-group-name '/ecs/nearbynearby-prod/admin' \
+            --order-by LastEventTime --descending --max-items 1 \
+            --query 'logStreams[0].logStreamName' --output text 2>&1)
+          echo "stream=$STREAM"
+          if [ -n "$STREAM" ] && [ "$STREAM" != "None" ] && [ "$STREAM" != "null" ]; then
+            echo '=== get-log-events (last 200) ==='
+            aws logs get-log-events \
+              --log-group-name '/ecs/nearbynearby-prod/admin' \
+              --log-stream-name "$STREAM" \
+              --limit 200 \
+              --query 'events[].[timestamp,message]' \
+              --output text 2>&1 | tail -400
+          fi
+
+      - name: ECR latest admin images
+        continue-on-error: true
+        run: |
+          echo '=== admin-backend images ==='
+          aws ecr describe-images --repository-name nearbynearby-prod-admin-backend \
+            --query 'sort_by(imageDetails,&imagePushedAt)[-5:].{pushed:imagePushedAt,digest:imageDigest,tags:imageTags}' \
+            --output json 2>&1 || true

@@ -2,7 +2,104 @@
 
 ## Overview
 
-The Attribute System provides dynamic, admin-configurable fields for POIs. Instead of hardcoding every possible field, attributes allow flexible field definitions that can be added, modified, or removed without code changes.
+The platform has **two** attribute mechanisms, which serve different purposes:
+
+1. **The POI Field Registry (`shared/poi_fields.json`) — the authoritative
+   description of every built-in POI field.** It declares the field's audience,
+   tier, render mode, applicability, and data source, and is the single source
+   of truth from which the public API serializer, the user-facing renderer, the
+   SEO output, and the contract tests all derive. Covered first, below.
+2. **The dynamic `Attribute` model** — admin-configurable, ad-hoc fields stored
+   in a JSONB column without code changes. Covered in "Dynamic Attribute System".
+
+---
+
+## POI Field Registry (Single Source of Truth)
+
+`shared/poi_fields.json` describes every built-in POI field. It is **generated**
+from the admin ORM by `scripts/gen_poi_registry.py` (the admin POI model is the
+column superset) — **never hand-edit the JSON**. Re-running the generator
+produces byte-identical output and writes BOTH the source of truth and a
+byte-identical Vite mirror at `nearby-app/app/src/data/poi_fields.json`.
+
+**Key Files:**
+- `shared/poi_fields.json` — the registry (source of truth)
+- `shared/poi_fields.schema.json` — meta-schema
+- `scripts/gen_poi_registry.py` — generator (reflects admin ORM columns)
+- `shared/constants/poi_registry.py` — Python loader (`public_fields_for(type)`)
+- `nearby-app/app/src/utils/poiRegistry.js` — JS loader (`groupsFor(type)`)
+- `nearby-app/app/src/data/poi_fields.json` — generated frontend mirror
+- `nearby-app/backend/app/serialization/poi_serializer.py` — registry-driven serializer
+- `nearby-app/app/src/components/details/AttributeSections.jsx` — registry-driven renderer
+
+### Taxonomy: audience / tier / render
+
+Each entry carries (among others):
+
+| Key | Values | Meaning |
+|-----|--------|---------|
+| `audience` | **`public`** \| **`admin`** \| **`partner`** | Who may see it. The serializer emits **only `public`** — admin/PII fields can never leak |
+| `tier` | `free` \| `paid` \| `any` | `paid` fields are **server-side** gated and dropped for free listings (a free POI never receives them) |
+| `render` | `auto` \| `bespoke` \| `hidden` | `auto` → generic AttributeSections widget; `bespoke` → a hand-built hero/section; `hidden` → not auto-rendered |
+| `type` | `text`, `richtext`, `boolean`, `multi`, `dict`, `relation`, `datetime`, `number`, `url`, `phone`, `email`, `enum`, `image`, `image[]`, `geo` | Drives the frontend widget |
+| `applies_to` / `group` / `order` | lists / string / int | Type applicability + accordion grouping + ordering |
+| `source` | `poi.<col>` \| `<subtype>.<col>` \| `computed.<fn>` \| `images:<type>` | Where the serializer reads the value |
+| `value_source` | constant name | Option list in `shared/constants/field_options.py` |
+
+> **PII rule:** PII / contact people / emergency / internal-ops data **MUST be
+> `audience: "admin"`**. The 8 protected keys (`main_contact_name`,
+> `main_contact_email`, `main_contact_phone`, `offsite_emergency_contact`,
+> `emergency_protocols`, `contact_info`, `compliance`, `admin_notes`) are guarded
+> by `tests/test_registry_valid.py` and `tests/test_poi_field_contract.py`.
+
+### Registry-driven serializer (backend)
+
+`serialize_poi_detail(db, poi, audience="public")` builds the public payload
+**strictly** from `public_fields_for(poi_type)` — which already filters to
+`audience == "public"`, `poi_type in applies_to`, and `not deprecated`. It
+**never** iterates `poi.__table__.columns`, which is what structurally closes the
+historical PII leak. For each entry it reads the value via the entry's `source`
+dispatch (`poi.col` / `subtype.col` / `computed.fn` / `images:type`) and applies
+server-side tier gating (paid-only fields dropped for free POIs). The cutover is
+behind the `POI_SERIALIZER` env flag (`legacy` | `registry` | `shadow`, default
+`registry` — see `docs/infrastructure/deployment.md`).
+
+### Registry-driven renderer (frontend)
+
+`AttributeSections.jsx` renders the `render === "auto"` public fields, grouped and
+ordered via `groupsFor(poi_type)`. Each field dispatches on `entry.type` to a
+widget (`details/widgets/`: BooleanPill, ChipList, ProseBlock, etc.). Bespoke hero
+sections handle `render === "bespoke"` fields (an `excludeKeys` allowlist prevents
+double-rendering), and a defensive PII guard rejects the 8 admin keys even though
+`groupsFor` already excludes them. Because the server pre-gates by tier, the
+frontend does not re-gate paid fields.
+
+### Add a POI field (runbook)
+
+1. **Migration first** — Alembic migration in `nearby-admin/backend/alembic` +
+   add the `Column` to the ORM model(s) (`nearby-admin/.../models/poi.py`, and
+   `nearby-app/.../models/poi.py` if the app must read it).
+2. **Regenerate** — `python3 scripts/gen_poi_registry.py` writes BOTH
+   `shared/poi_fields.json` and the byte-identical frontend mirror
+   `nearby-app/app/src/data/poi_fields.json`.
+3. **Review** the generated entry — set `audience` (PII/contact/emergency/
+   internal → `admin`), `tier`, `applies_to`, `group`/`order`, `render`, and
+   `value_source`; encode overrides in the generator's override maps.
+4. **Option list?** Add the constant to `shared/constants/field_options.py` and
+   point `value_source` at it.
+5. **Run the guards** — `pytest tests/test_registry_valid.py` (validity + PII +
+   mirror-drift) and `pytest tests/test_poi_field_contract.py` (public response
+   keys == public registry fields; no drop, no leak, no orphans).
+
+---
+
+## Dynamic Attribute System
+
+The dynamic Attribute System provides admin-configurable, ad-hoc fields for POIs.
+Instead of hardcoding every possible field, attributes allow flexible field
+definitions that can be added, modified, or removed without code changes. (Use
+this for one-off / experimental fields; promote a field into the registry above
+when it becomes a first-class, serialized POI field.)
 
 **Key Files:**
 - `nearby-admin/backend/app/models/attribute.py` - Attribute model
@@ -483,6 +580,146 @@ def validate_attribute_values(
 
 ---
 
+## Built-in Structured Attributes
+
+In addition to the dynamic attribute system above, the platform includes several structured attributes stored as dedicated columns or JSONB fields on the POI and Image models.
+
+---
+
+### Mobility Access
+
+**Field:** `mobility_access` (JSONB on `points_of_interest`)
+
+Replaces the simple `wheelchair_accessible` field with a richer, multi-dimensional accessibility model. Each sub-field accepts a `yes`, `no`, or `unknown` value (with `accessible_parking` having its own option set).
+
+**Key Files:**
+- `nearby-admin/frontend/src/components/POIForm/sections/FacilitiesSection.jsx` - UI controls
+- `nearby-admin/frontend/src/components/POIForm/constants/initialValues.js` - Default empty object
+
+**Sub-fields:**
+
+| Sub-field | Label | Allowed Values |
+|-----------|-------|----------------|
+| `step_free_entry` | Step-Free Entry | `yes`, `no`, `unknown` |
+| `main_area_accessible` | Main Service Area Reachable Without Stairs | `yes`, `no`, `unknown` |
+| `ground_level_service` | Primary Service on Ground Level | `yes`, `no`, `unknown` |
+| `accessible_restroom` | Accessible Restroom Available | `yes`, `no`, `unknown` |
+| `accessible_parking` | Accessible Parking | `dedicated_ada`, `street_level`, `none`, `unknown` |
+
+**Example stored data:**
+```json
+{
+  "step_free_entry": "yes",
+  "main_area_accessible": "yes",
+  "ground_level_service": "yes",
+  "accessible_restroom": "no",
+  "accessible_parking": "dedicated_ada"
+}
+```
+
+---
+
+### Image Function Tags
+
+**Field:** `function_tags` (JSONB on `images`)
+
+A list of predefined tags that describe the functional purpose of an image. This enables filtering and categorizing images beyond their `image_type` (e.g., a gallery image could be tagged as both "interior" and "food_drink").
+
+**Key Files:**
+- `nearby-admin/backend/app/models/image.py` - `Image.function_tags` column
+- `shared/constants/field_options.py` - `IMAGE_FUNCTION_TAGS` constant (canonical list)
+
+**Predefined Tags (20 total):**
+
+```python
+IMAGE_FUNCTION_TAGS = [
+    "storefront", "entrance", "interior", "exterior", "signage",
+    "parking", "restrooms", "playground", "aerial", "food_drink",
+    "menu", "staff", "product", "trail_marker", "scenic",
+    "map", "floorplan", "event_setup", "stage", "vendor_area",
+]
+```
+
+**Example stored data:**
+```json
+["storefront", "entrance", "signage"]
+```
+
+---
+
+### Toilet Types per Location
+
+**Field:** `toilet_locations` (JSONB on `points_of_interest`)
+
+Each entry in the `toilet_locations` array now supports a `toilet_types` sub-array that describes what kinds of restroom facilities are available at that specific location. The options come from `PUBLIC_TOILET_OPTIONS` in `shared/constants/field_options.py`, excluding the simple "Yes"/"No" values.
+
+**Key Files:**
+- `nearby-admin/frontend/src/components/POIForm/sections/FacilitiesSection.jsx` - UI with per-location checkbox group
+- `shared/constants/field_options.py` - `PUBLIC_TOILET_OPTIONS` constant
+
+**Example stored data:**
+```json
+[
+  {
+    "lat": 35.7128,
+    "lng": -79.0064,
+    "description": "Near main entrance",
+    "photos": "",
+    "toilet_types": ["Family", "Baby Changing Station", "Wheelchair/Handicap Accessible"]
+  },
+  {
+    "lat": 35.7135,
+    "lng": -79.0070,
+    "description": "Campground area",
+    "photos": "",
+    "toilet_types": ["Porta Potti"]
+  }
+]
+```
+
+**Available toilet type values:**
+- `Family`
+- `Baby Changing Station`
+- `Wheelchair/Handicap Accessible`
+- `Porta Potti`
+- `Porta Potti Only`
+
+---
+
+### Primary Parking
+
+**Fields on `points_of_interest`:**
+- `primary_parking_lat` (Numeric) - Latitude of the main parking area
+- `primary_parking_lng` (Numeric) - Longitude of the main parking area
+- `primary_parking_name` (String) - Human-readable name (e.g., "Main Lot", "Front Parking")
+
+These top-level fields designate a single primary parking location, separate from the `parking_locations` JSONB array which can hold multiple additional parking areas. The primary parking point is displayed prominently in the Location section of the POI form and can be shown as a dedicated map marker.
+
+**Key Files:**
+- `nearby-admin/frontend/src/components/POIForm/sections/LocationSection.jsx` - Input fields for lat, lng, and name
+- `nearby-admin/frontend/src/components/POIForm/constants/initialValues.js` - Default `null`/`''` values
+
+**Example usage in the form:**
+```jsx
+<NumberInput
+  label="Primary Parking Latitude"
+  value={form.values.primary_parking_lat || ''}
+  onChange={(value) => form.setFieldValue('primary_parking_lat', value)}
+/>
+<NumberInput
+  label="Primary Parking Longitude"
+  value={form.values.primary_parking_lng || ''}
+  onChange={(value) => form.setFieldValue('primary_parking_lng', value)}
+/>
+<TextInput
+  label="Primary Parking Area Name"
+  value={form.values.primary_parking_name || ''}
+  onChange={(e) => form.setFieldValue('primary_parking_name', e.target.value)}
+/>
+```
+
+---
+
 ## Best Practices
 
 1. **Use meaningful keys** - Keys should be snake_case and descriptive
@@ -492,3 +729,6 @@ def validate_attribute_values(
 5. **Order attributes** - Use display_order for logical grouping
 6. **Document changes** - Track when attributes are modified
 7. **Migrate data** - Handle existing data when changing attribute types
+8. **Use `mobility_access` over `wheelchair_accessible`** - The JSONB field provides a richer accessibility model; the old boolean/list field is kept for backward compatibility
+9. **Tag images with function tags** - Apply `function_tags` to images for better discoverability and filtering beyond the basic `image_type`
+10. **Include toilet types per location** - When adding `toilet_locations` entries, populate the `toilet_types` sub-array for each location to give users detailed restroom information

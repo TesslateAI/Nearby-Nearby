@@ -40,6 +40,18 @@ def get_url():
 def include_object(object, name, type_, reflected, compare_to):
     if type_ == "table" and name not in target_metadata.tables:
         return False
+    # The pgvector `embedding` column on points_of_interest is intentionally NOT
+    # ORM-mapped (the model excludes it so SELECT * never fails where the column
+    # / extension is absent). Without this guard, `alembic revision --autogenerate`
+    # would emit a spurious drop_column for it. Skip it (and, defensively, any
+    # reflected column whose type Alembic cannot map — e.g. vector — which it
+    # represents as NullType) so autogenerate never proposes dropping it.
+    if type_ == "column" and name == "embedding":
+        return False
+    if type_ == "column" and reflected:
+        type_name = type(getattr(object, "type", None)).__name__.lower()
+        if "null" in type_name or "vector" in type_name:
+            return False
     return True
 
 def run_migrations_offline() -> None:
@@ -52,6 +64,10 @@ def run_migrations_offline() -> None:
         dialect_opts={"paramstyle": "named"},
         # Add the include_object function here for offline mode
         include_object=include_object,
+        # Commit per migration so a migration with disable_ddl_transaction=True
+        # (e.g. i63_001's ALTER TYPE ADD VALUE) is durable before the next
+        # migration tries to use the new value (e.g. w63b_001).
+        transaction_per_migration=True,
     )
 
     with context.begin_transaction():
@@ -71,10 +87,14 @@ def run_migrations_online() -> None:
 
     with connectable.connect() as connection:
         context.configure(
-            connection=connection, 
+            connection=connection,
             target_metadata=target_metadata,
             # Add the include_object function here for online mode
             include_object=include_object,
+            # Commit per migration so a migration with disable_ddl_transaction=True
+            # (e.g. i63_001's ALTER TYPE ADD VALUE) is durable before the next
+            # migration tries to use the new value (e.g. w63b_001).
+            transaction_per_migration=True,
         )
 
         with context.begin_transaction():

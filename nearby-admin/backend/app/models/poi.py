@@ -1,5 +1,5 @@
 import uuid
-from sqlalchemy import Column, String, Text, ForeignKey, Numeric, TIMESTAMP, Boolean, Enum
+from sqlalchemy import Column, String, Text, ForeignKey, Numeric, TIMESTAMP, Boolean, Enum, CheckConstraint
 from sqlalchemy.dialects.postgresql import UUID, JSONB, ARRAY
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -13,6 +13,33 @@ from shared.models.enums import POIType
 
 class PointOfInterest(Base):
     __tablename__ = "points_of_interest"
+    __table_args__ = (
+        CheckConstraint(
+            "alcohol_available IS NULL OR alcohol_available IN "
+            "('full_bar','beer_wine','byob','no_alcohol','seasonal','nearby')",
+            name="ck_points_of_interest_alcohol_available_valid",
+        ),
+        CheckConstraint(
+            "expect_to_pay_parking IS NULL OR expect_to_pay_parking IN "
+            "('yes','no','sometimes')",
+            name="ck_points_of_interest_expect_to_pay_parking_valid",
+        ),
+        CheckConstraint(
+            "listing_type IS NULL OR listing_type IN "
+            "('free','paid','paid_founding','community_comped')",
+            name="ck_points_of_interest_listing_type_valid",
+        ),
+        CheckConstraint(
+            "publication_status IS NULL OR publication_status IN "
+            "('draft','published','archived')",
+            name="ck_points_of_interest_publication_status_valid",
+        ),
+        CheckConstraint(
+            "sponsor_level IS NULL OR sponsor_level IN "
+            "('platform','state','county','town')",
+            name="ck_points_of_interest_sponsor_level_valid",
+        ),
+    )
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     poi_type = Column(Enum(POIType), nullable=False)
@@ -37,7 +64,9 @@ class PointOfInterest(Base):
     # Front door coordinates (separate from main location for map pin)
     front_door_latitude = Column(Numeric(precision=10, scale=7))
     front_door_longitude = Column(Numeric(precision=10, scale=7))
-    
+    arrival_methods    = Column(JSONB, server_default='[]')
+    what3words_address = Column(String(100))
+
     # Location (PostGIS)
     location = Column(Geometry(geometry_type='POINT', srid=4326), nullable=False)
     
@@ -47,10 +76,15 @@ class PointOfInterest(Base):
     is_verified = Column(Boolean, default=False)
     is_disaster_hub = Column(Boolean, default=False)
     lat_long_most_accurate = Column(Boolean, default=False)
+    icon_free_wifi             = Column(Boolean, nullable=False, server_default='false', default=False)
+    icon_pet_friendly          = Column(Boolean, nullable=False, server_default='false', default=False)
+    icon_public_restroom       = Column(Boolean, nullable=False, server_default='false', default=False)
+    icon_wheelchair_accessible = Column(Boolean, nullable=False, server_default='false', default=False)
 
     # Publication status (draft, published, archived)
     publication_status = Column(String(20), default='draft', nullable=False)
-    
+    has_been_published = Column(Boolean, nullable=False, server_default='false', default=False)
+
     # Contact info
     website_url = Column(String)
     phone_number = Column(String)
@@ -66,6 +100,9 @@ class PointOfInterest(Base):
     
     # Listing type for all POIs
     listing_type = Column(String(50), default='free')  # 'free', 'paid', 'paid_founding', 'sponsor', 'community_comped'
+    is_sponsor    = Column(Boolean, nullable=False, server_default='false', default=False)
+    sponsor_level = Column(String(30))
+    admin_notes   = Column(Text)
     
     # Main category (required)
     # Main category is now handled through poi_categories table with is_main=True
@@ -73,28 +110,42 @@ class PointOfInterest(Base):
     # Cost fields (for Events, Parks, Trails)
     cost = Column(String(100))  # Flexible format: "$1000" or "$0.00-$1000.00" or "0" (shows as Free)
     pricing_details = Column(Text)  # Additional pricing details like "Kids Under 2 are Free"
-    ticket_link = Column(String)  # For Events - link to buy tickets
-    
+
     # Parking Information (will be in Location accordion on frontend)
     parking_types = Column(JSONB)  # List of parking types selected
     parking_locations = Column(JSONB)  # [{"lat": 0, "lng": 0, "name": "Main lot"}]
     parking_notes = Column(Text)
     # parking_photos moved to Images table (image_type='parking')
-    public_transit_info = Column(Text)
+    # public_transit_info renamed to _deprecated_public_transit_info (Migration A #33)
     expect_to_pay_parking = Column(String)  # 'yes', 'no', 'sometimes'
     
     # Additional Info
     downloadable_maps = Column(JSONB)  # [{"name": "Trail Map", "url": "..."}]
     payment_methods = Column(JSONB)  # List of accepted payment methods
-    key_facilities = Column(JSONB)  # For Events, Parks, Trails
+    # key_facilities renamed to _deprecated_key_facilities (Migration A #34)
     alcohol_options = Column(JSONB)  # List of alcohol availability options
     alcohol_policy_details = Column(Text)  # Additional alcohol policy details
-    wheelchair_accessible = Column(JSONB)  # List of accessibility options
+    alcohol_available = Column(String(50))
+    # Issue #69 — granular alcohol detail surfaced inside the Alcohol accordion
+    # only when alcohol_available != 'no_alcohol'.
+    alcohol_availability = Column(JSONB)  # List of granular alcohol types (beer/wine/...)
+    byob_allowed = Column(Boolean, nullable=False, server_default='false', default=False)
+    alcohol_notes = Column(Text)
+    # wheelchair_accessible removed — column dropped (Issue #45 PR2 Migration B)
     wheelchair_details = Column(Text)
+    accessible_parking_details  = Column(JSONB)
+    accessible_restroom         = Column(Boolean, nullable=False, server_default='false', default=False)
+    accessible_restroom_details = Column(JSONB)
+    mobility_access             = Column(JSONB)  # {step_free_entry, main_area_accessible, ground_level_service}
+    cell_service                = Column(JSONB)  # single CELL_SERVICE_OPTIONS value (Good/Limited/Unknown/None)
     smoking_options = Column(JSONB)  # List of smoking options
     smoking_details = Column(Text)
     wifi_options = Column(JSONB)  # For Events only
-    drone_usage = Column(String)  # For Events, Parks, Trails
+    # Drone fields surface only in Park (s14) + Trail (s15) admin layouts.
+    # Events deliberately render NO drone section (Wave 4 #59 spec — FAA
+    # crowd-area rules), so drone_usage / drone_policy are write-orphans for
+    # POI rows where poi_type='EVENT'. Reads still work; the columns stay.
+    drone_usage = Column(String)
     drone_policy = Column(Text)
     pet_options = Column(JSONB)  # List of pet policy options
     pet_policy = Column(Text)
@@ -172,10 +223,14 @@ class PointOfInterest(Base):
     playground_surface_types = Column(JSONB)  # List of surface types
     playground_notes = Column(Text)
     # playground_photos moved to Images table (image_type='playground')
-    playground_location = Column(JSONB)  # {"lat": 0, "lng": 0}
+    playground_locations = Column(JSONB)  # [{"lat": 0, "lng": 0, "types": [...], "surfaces": [...], "notes": ""}] — plural array, migration g67_001
+    playground_age_groups    = Column(JSONB)
+    playground_ada_checklist = Column(JSONB)
+    inclusive_playground     = Column(Boolean, nullable=False, server_default='false', default=False)
     
     # Parks & Trails Additional Info
-    payphone_location = Column(JSONB)  # {"lat": 0, "lng": 0}
+    # payphone_location renamed to _deprecated_payphone_location (Migration A, m_payphone_001).
+    # Data consolidated into the plural payphone_locations array below.
     payphone_locations = Column(JSONB)  # [{"lat": 0, "lng": 0, "description": "Near entrance"}] - multiple payphones
     park_entry_notes = Column(Text)  # Park entry description/notes
     # park_entry_photo moved to Images table (image_type='entry')
@@ -205,8 +260,12 @@ class PointOfInterest(Base):
     
     # JSONB fields for flexible attributes
     photos = Column(JSONB)  # {"featured": "url", "gallery": ["url1", "url2"]}
-    hours = Column(JSONB)   # Complex hours structure with multiple periods, seasonal, dawn/dusk
-    holiday_hours = Column(JSONB)  # Recurring holiday hours {"christmas": "closed", "thanksgiving": {"open": "10:00", "close": "14:00"}}
+    hours = Column(JSONB)   # Complex hours structure with multiple periods, seasonal, dawn/dusk, holidays
+    # holiday_hours — DEPRECATED (Issue #70). Column renamed to
+    # `_deprecated_holiday_hours` by Alembic migration g70_001. Holiday hours
+    # now live under `hours.holidays`. Not mapped on the ORM so SELECTs ignore
+    # the legacy column; the data was backfilled into hours.holidays by the
+    # migration. The column will be dropped in a later wave.
     amenities = Column(JSONB)  # {"payment_methods": ["Cash", "Credit Card"]}
     ideal_for = Column(JSONB)  # List of ideal_for options
     contact_info = Column(JSONB)  # {"best": {"name": "Rhonda", ...}, "emergency": {...}}
@@ -244,7 +303,7 @@ class PointOfInterest(Base):
     business = relationship("Business", back_populates="poi", uselist=False, cascade="all, delete-orphan")
     park = relationship("Park", back_populates="poi", uselist=False, cascade="all, delete-orphan")
     trail = relationship("Trail", back_populates="poi", uselist=False, cascade="all, delete-orphan")
-    event = relationship("Event", back_populates="poi", uselist=False, cascade="all, delete-orphan")
+    event = relationship("Event", back_populates="poi", uselist=False, cascade="all, delete-orphan", foreign_keys="[Event.poi_id]")
 
     # Images relationship
     images = relationship("Image", back_populates="poi", cascade="all, delete-orphan")
@@ -297,7 +356,13 @@ class POIRelationship(Base):
 
 class Business(Base):
     __tablename__ = "businesses"
-    
+    __table_args__ = (
+        CheckConstraint(
+            "price_range IS NULL OR price_range IN ('$','$$','$$$','$$$$')",
+            name="ck_businesses_price_range_valid",
+        ),
+    )
+
     poi_id = Column(UUID(as_uuid=True), ForeignKey("points_of_interest.id"), primary_key=True)
     price_range = Column(String)  # '$', '$$', '$$$', '$$$$'
     
@@ -315,7 +380,14 @@ class Park(Base):
 
 class Trail(Base):
     __tablename__ = "trails"
-    
+    __table_args__ = (
+        CheckConstraint(
+            "trail_lighting IS NULL OR trail_lighting IN "
+            "('partial','full','seasonal','dusk_to_dawn')",
+            name="ck_trails_trail_lighting_valid",
+        ),
+    )
+
     poi_id = Column(UUID(as_uuid=True), ForeignKey("points_of_interest.id"), primary_key=True)
     length_text = Column(String)  # e.g., "2.5 miles", "1.2 km"
     length_segments = Column(JSONB)  # For multiple loops: [{"name": "Top Loop", "length": "0.25 miles"}]
@@ -327,13 +399,11 @@ class Trail(Base):
     trailhead_location = Column(JSONB)  # {"lat": 0, "lng": 0}
     trailhead_latitude = Column(Numeric(precision=10, scale=7))  # Separate lat field for trailhead
     trailhead_longitude = Column(Numeric(precision=10, scale=7))  # Separate lng field for trailhead
-    trailhead_entrance_photo = Column(String)
-    # trailhead_photo moved to Images table (image_type='trail_head')
-    trailhead_exit_location = Column(JSONB)  # {"lat": 0, "lng": 0}
-    trail_exit_latitude = Column(Numeric(precision=10, scale=7))  # Separate lat field for trail exit
-    trail_exit_longitude = Column(Numeric(precision=10, scale=7))  # Separate lng field for trail exit
-    trailhead_exit_photo = Column(String)
-    # trail_exit_photo moved to Images table (image_type='trail_exit')
+    # trailhead_entrance_photo / trailhead_exit_photo / trail_exit_* / trailhead_exit_location
+    # were dropped by migration w63c_001. Photo URLs moved to the Images table
+    # (image_type='trail_head' / 'access_point') and exit coordinates moved into
+    # ``access_points`` JSONB entries — see w63b_001 for the data migration.
+    # trailhead_photo / trail_exit_photo had previously moved to the Images table.
     trail_markings = Column(Text)
     trailhead_access_details = Column(Text)
     downloadable_trail_map = Column(String)  # URL to map file
@@ -344,20 +414,40 @@ class Trail(Base):
     
     # Trail Experience
     trail_experiences = Column(JSONB)  # List of experience types
-    
+
+    mile_markers          = Column(Boolean, nullable=False, server_default='false', default=False)
+    trailhead_signage     = Column(Boolean, nullable=False, server_default='false', default=False)
+    audio_guide_available = Column(Boolean, nullable=False, server_default='false', default=False)
+    qr_trail_guide        = Column(Boolean, nullable=False, server_default='false', default=False)
+    trail_guide_notes     = Column(Text)
+    trail_lighting        = Column(String(30))
+    access_points         = Column(JSONB)
+    trail_entry_notes     = Column(Text)
+
     poi = relationship("PointOfInterest", back_populates="trail")
 
 
 class Event(Base):
     __tablename__ = "events"
-    
+
     poi_id = Column(UUID(as_uuid=True), ForeignKey("points_of_interest.id"), primary_key=True)
     start_datetime = Column(TIMESTAMP(timezone=True), nullable=False)
     end_datetime = Column(TIMESTAMP(timezone=True))
     # Repeating event fields
     is_repeating = Column(Boolean, default=False)
-    repeat_pattern = Column(JSONB)  # {"frequency": "weekly", "days": ["thursday"], "exceptions": []}
-    
+    repeat_pattern = Column(JSONB)  # {"frequency": "weekly|daily|monthly|yearly", "interval": 1, "days": [...]}
+
+    # Venue inheritance (Task 45)
+    venue_poi_id = Column(UUID(as_uuid=True), ForeignKey("points_of_interest.id"), nullable=True)
+    venue_inheritance = Column(JSONB, nullable=True)  # Per-section inheritance config
+
+    # Recurring events expansion (Task 50)
+    series_id = Column(UUID(as_uuid=True), nullable=True, index=True)
+    parent_event_id = Column(UUID(as_uuid=True), ForeignKey("events.poi_id"), nullable=True)
+    excluded_dates = Column(JSONB, nullable=True)  # ["2026-07-04", "2026-12-25"]
+    recurrence_end_date = Column(TIMESTAMP(timezone=True), nullable=True)
+    manual_dates = Column(JSONB, nullable=True)  # ["2026-03-01T18:00:00Z", ...]
+
     # Event-specific fields
     organizer_name = Column(String)
     venue_settings = Column(JSONB)  # List of venue settings: Indoor, Outdoor, Hybrid, Online Only
@@ -365,7 +455,7 @@ class Event(Base):
     # event_entry_photo moved to Images table (image_type='entry')
     food_and_drink_info = Column(Text)
     coat_check_options = Column(JSONB)  # List of coat check options
-    
+
     # Vendor information
     has_vendors = Column(Boolean, default=False)
     vendor_types = Column(JSONB)  # List of vendor types present
@@ -374,5 +464,38 @@ class Event(Base):
     vendor_fee = Column(String)
     vendor_requirements = Column(Text)
     vendor_poi_links = Column(JSONB)  # List of POI IDs for vendors at this event
-    
-    poi = relationship("PointOfInterest", back_populates="event")
+
+    # Task 134-136: Event Status
+    event_status = Column(String(100), default='Scheduled')
+    status_explanation = Column(String(80))
+    cancellation_paragraph = Column(Text)
+    contact_organizer_toggle = Column(Boolean, default=False)
+    new_event_link = Column(String)  # Stores UUID string of the new event POI (not a FK for flexibility)
+    rescheduled_from_event_id = Column(UUID(as_uuid=True), ForeignKey("events.poi_id"), nullable=True)
+
+    # Task 137: Primary Display Category — DEPRECATED (Issue #42).
+    # Column renamed to `_deprecated_primary_display_category` by Alembic
+    # migration g42_001. Canonical primary-category storage is
+    # `poi_categories.is_main` + `points_of_interest.main_category_id`.
+    # Intentionally not mapped on the ORM model so SELECTs ignore the legacy
+    # data; the column will be dropped in a later wave.
+
+    # Task 138: Extended Organizer
+    organizer_email = Column(String)
+    organizer_phone = Column(String)
+    organizer_website = Column(String)
+    organizer_social_media = Column(JSONB)
+    organizer_poi_id = Column(UUID(as_uuid=True), ForeignKey("points_of_interest.id"), nullable=True)
+
+    # Task 139: Cost & Ticketing
+    cost_type = Column(String(50))
+    ticket_links = Column(JSONB)
+
+    # Task 140: Sponsors
+    sponsors = Column(JSONB)
+
+    poi = relationship("PointOfInterest", back_populates="event", foreign_keys=[poi_id])
+    venue_poi = relationship("PointOfInterest", foreign_keys=[venue_poi_id])
+    parent_event = relationship("Event", remote_side=[poi_id], foreign_keys=[parent_event_id])
+    rescheduled_from_event = relationship("Event", remote_side=[poi_id], foreign_keys=[rescheduled_from_event_id])
+    organizer_poi = relationship("PointOfInterest", foreign_keys=[organizer_poi_id])
