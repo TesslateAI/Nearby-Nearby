@@ -112,7 +112,10 @@ module "ecs" {
   admin_backend_image  = "${local.ecr_base}/nearbynearby/nearby-admin-backend:latest"
   admin_frontend_image = "${local.ecr_base}/nearbynearby/nearby-admin-frontend:latest"
 
-  # Embedding service: ECR mirror of ghcr.io/huggingface/text-embeddings-inference:cpu-1.8.1
+  # Embedding server: ECR mirror of ghcr.io/ggml-org/llama.cpp:server, serving the
+  # ungated unsloth EmbeddingGemma Q8_0 GGUF via its OpenAI-compatible endpoint.
+  # (TEI was the original plan but its CPU/Candle backend crashes on EmbeddingGemma's
+  # Gemma3 dense layers — Intel MKL SGEMM error — so we run llama.cpp instead.)
   embedding_image = "${local.ecr_base}/nearbynearby/embedding:${var.embedding_image_tag}"
 
   # Existing S3 & CloudFront (not managed by Terraform)
@@ -132,9 +135,12 @@ module "ecs" {
   admin_log_group_name     = module.monitoring.admin_log_group_name
   embedding_log_group_name = module.monitoring.embedding_log_group_name
 
-  # Internal embedding service (Service Connect)
+  # Internal embedding service (Service Connect). The namespace is an HTTP
+  # (not private-DNS) namespace, so SC only makes the short client_alias dns_name
+  # ("embedding") resolvable via its proxy — the FQDN does NOT resolve. /v1 base
+  # for the OpenAI-compatible llama.cpp endpoint (client appends /embeddings).
+  embedding_service_url     = "http://embedding:80/v1"
   service_connect_namespace = var.service_connect_namespace
-  embedding_service_url     = "http://embedding.${var.service_connect_namespace}:80"
 
   # GitHub Actions OIDC (provider already exists in this account)
   create_github_oidc       = false
