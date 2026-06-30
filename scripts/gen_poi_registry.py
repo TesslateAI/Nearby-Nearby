@@ -506,7 +506,10 @@ DEPRECATED = {
 PAID_FIELDS = {
     "history_paragraph", "community_impact", "article_links",
     "organization_memberships", "locally_found_at", "service_locations",
-    "ideal_for", "ideal_for_key", "gallery_photos",
+    # ``ideal_for_key`` (the curated "Featured Ideal For" subset) is deliberately
+    # tier "any", NOT paid: free listings also pick up to 3 featured traits, so
+    # the public API must emit it for free POIs too. The app decides display.
+    "ideal_for", "gallery_photos",
     "business_amenities", "youth_amenities", "entertainment_options",
     "menu_photos", "menu_link", "delivery_links", "reservation_links",
     "appointment_links", "online_ordering_links",

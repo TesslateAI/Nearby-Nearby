@@ -198,27 +198,118 @@ export function IdealForGrouped({ form, listingType, totalCap = null }) {
 }
 
 // -----------------------------------------------------------------------------
-// Featured Ideal For — read-only chip display of currently-selected ideal_for
-// items (across all 5 groups). Replaces the old flat "Key Ideal For" checkbox
-// block in CategoriesSection.
+// Featured Ideal For (a.k.a. "Key Ideal For") — interactive top-3 picker.
+//
+// Renders AFTER the IdealForGrouped checkboxes (bottom of the section). The
+// admin checks Ideal-For traits above; those checked traits surface here as
+// clickable chips. Clicking a chip features it (writes it into
+// `form.values.ideal_for_key`); the public app shows up to `cap` (3) of these
+// prominently on the listing card.
+//
+// Rules:
+//   - Candidates = the union of every checked ideal_for group (no separate
+//     option list — it always mirrors what's checked above).
+//   - `ideal_for_key` is kept a strict SUBSET of the checked traits: anything
+//     unchecked above is pruned here automatically.
+//   - Hard cap of `cap` (default 3) featured for every POI type that shows this
+//     control; once the cap is hit, unselected chips lock out.
+//   - Empty state shows the populate-me placeholder.
+//
+// NOT rendered for Park/Trail (those layouts simply don't include it).
 // -----------------------------------------------------------------------------
-export function FeaturedIdealForChips({ form }) {
+export function FeaturedIdealForChips({ form, cap = 3 }) {
   const current = form.values.ideal_for || {};
-  const selected = IDEAL_FOR_GROUPS.flatMap(g => (Array.isArray(current[g.key]) ? current[g.key] : []));
+
+  // Union of all checked traits, in group/option order, deduped.
+  const candidates = [];
+  const checkedSet = new Set();
+  for (const g of IDEAL_FOR_GROUPS) {
+    const list = Array.isArray(current[g.key]) ? current[g.key] : [];
+    for (const opt of list) {
+      if (!checkedSet.has(opt)) { checkedSet.add(opt); candidates.push(opt); }
+    }
+  }
+
+  const stored = Array.isArray(form.values.ideal_for_key) ? form.values.ideal_for_key : [];
+  // Render only featured items that are still checked above (defensive against
+  // legacy `ideal_for_key` rows that predate this subset rule).
+  const selected = stored.filter((v) => checkedSet.has(v));
+
+  // Persist the prune so the saved value never drifts from what's checked.
+  const candidatesKey = candidates.join(' ');
+  useEffect(() => {
+    if (selected.length !== stored.length) {
+      form.setFieldValue('ideal_for_key', selected);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [candidatesKey]);
+
+  const atCap = cap != null && selected.length >= cap;
+
+  const toggle = (name) => {
+    if (selected.includes(name)) {
+      form.setFieldValue('ideal_for_key', selected.filter((v) => v !== name));
+    } else if (!atCap) {
+      form.setFieldValue('ideal_for_key', [...selected, name]);
+    }
+  };
+
   return (
-    <Stack gap="xs">
+    <Stack gap="xs" data-testid="featured-ideal-for">
       <Title order={5}>Featured Ideal For</Title>
       <Text size="sm" c="dimmed">
-        Items currently selected in the Ideal For section above.
+        Pick up to {cap} of your selected Ideal For traits to feature on the
+        listing card. Only items checked above appear here.
       </Text>
-      {selected.length === 0 ? (
-        <Text size="sm" c="dimmed" fs="italic">None selected yet.</Text>
+      {candidates.length === 0 ? (
+        <Text size="sm" c="dimmed" fs="italic" data-testid="featured-ideal-for-empty">
+          Select some Ideal For items above to populate this list.
+        </Text>
       ) : (
-        <Group gap="xs">
-          {selected.map((v) => (
-            <Badge key={v} variant="light" color="blue">{v}</Badge>
-          ))}
-        </Group>
+        <>
+          <Group gap="xs">
+            {candidates.map((name) => {
+              const isOn = selected.includes(name);
+              const locked = !isOn && atCap;
+              return (
+                <Badge
+                  key={name}
+                  variant={isOn ? 'filled' : 'outline'}
+                  color={isOn ? 'grape' : 'gray'}
+                  size="lg"
+                  role="button"
+                  tabIndex={locked ? -1 : 0}
+                  aria-pressed={isOn}
+                  aria-disabled={locked}
+                  data-testid={`featured-chip-${name}`}
+                  data-selected={isOn ? 'true' : 'false'}
+                  style={{
+                    cursor: locked ? 'not-allowed' : 'pointer',
+                    opacity: locked ? 0.45 : 1,
+                    textTransform: 'none',
+                  }}
+                  onClick={() => { if (!locked) toggle(name); }}
+                  onKeyDown={(e) => {
+                    if (locked) return;
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      toggle(name);
+                    }
+                  }}
+                >
+                  {name}
+                </Badge>
+              );
+            })}
+          </Group>
+          <Text
+            size="xs"
+            c={atCap ? 'orange' : 'dimmed'}
+            data-testid="featured-ideal-for-counter"
+          >
+            {selected.length} / {cap} featured on listing card
+          </Text>
+        </>
       )}
     </Stack>
   );

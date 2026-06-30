@@ -24,7 +24,7 @@ import { RestroomLocationGroup } from '../components/RestroomLocationGroup';
 import { PayphoneLocationGroup } from '../components/PayphoneLocationGroup';
 import ServiceAnimalAlert from '../components/ServiceAnimalAlert';
 import {
-  AdminOnlyAccordionItem, IdealForGrouped, FullAmenitiesBlock,
+  AdminOnlyAccordionItem, IdealForGrouped, FeaturedIdealForChips, FullAmenitiesBlock,
   ArrivalMethodsGroup, PAYMENT_METHODS, DISCOUNT_TYPES,
 } from './_shared';
 import {
@@ -84,6 +84,8 @@ export default function BusinessPaidLayout({ form, userRole, poiId }) {
             <CategoriesSection form={form} isPaidListing isFreeListing={false} />
             <Divider my="sm" />
             <IdealForGrouped form={form} listingType="Business Paid" />
+            <Divider my="sm" />
+            <FeaturedIdealForChips form={form} />
           </Stack>
         </Accordion.Panel>
       </Accordion.Item>
