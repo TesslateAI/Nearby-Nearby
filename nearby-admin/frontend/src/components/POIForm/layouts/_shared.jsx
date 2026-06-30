@@ -566,7 +566,11 @@ function PlaygroundRowExtras({ form, fieldName, idx, isPark = false, id = null }
   };
 
   const updateAdaCategory = (catKey, vals) => {
-    form.setFieldValue(`${fieldName}.${idx}.ada_checklist.${catKey}`, vals);
+    // Write the whole ada_checklist object (not a deeper `.${catKey}` path):
+    // Mantine's setPath does NOT create missing intermediate objects, so a
+    // freshly-added playground row (no `ada_checklist` key) would silently drop
+    // the write and the checkboxes would appear unresponsive (#84).
+    form.setFieldValue(`${fieldName}.${idx}.ada_checklist`, { ...adaChecklist, [catKey]: vals });
   };
 
   return (
