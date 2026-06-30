@@ -231,6 +231,12 @@ This rule ensures data integrity and prevents accidental modifications to live p
 
 ---
 
+## Run Only in Docker
+
+**Always run the apps, scripts, migrations, and tests inside Docker — never directly on the host** (no Python venv; only a partial `node_modules`).
+
+---
+
 ## Production Deployment (AWS ECS Fargate)
 
 Production runs on **AWS ECS Fargate** with fully automated CI/CD. There are no manual rebuilds or SSH sessions — push to `main` and it deploys automatically.
