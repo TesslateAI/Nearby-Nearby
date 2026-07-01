@@ -210,12 +210,17 @@ def get_poi(db: Session, poi_id: uuid.UUID):
     ).filter(models.PointOfInterest.id == poi_id).first()
 
 
-def get_pois(db: Session, skip: int = 0, limit: int = 100, include_drafts: bool = False):
+def get_pois(db: Session, skip: int = 0, limit: int = 100, include_drafts: bool = False, poi_types=None):
     query = db.query(models.PointOfInterest)
 
     # Filter by publication status for public view
     if not include_drafts:
         query = query.filter(models.PointOfInterest.publication_status == 'published')
+
+    # Optional POI-type filter (accepts a list of type strings). No filter keeps
+    # the original behavior for backward compatibility.
+    if poi_types:
+        query = query.filter(models.PointOfInterest.poi_type.in_(poi_types))
 
     return query.order_by(
         models.PointOfInterest.last_updated.desc()
@@ -226,13 +231,18 @@ def get_poi_by_slug(db: Session, slug: str):
     return db.query(models.PointOfInterest).filter(models.PointOfInterest.slug == slug).first()
 
 
-def search_pois(db: Session, query_str: str, include_drafts: bool = False):
+def search_pois(db: Session, query_str: str, include_drafts: bool = False, poi_types=None):
     search = f"%{query_str}%"
     query = db.query(models.PointOfInterest)
 
     # Filter by publication status for public view
     if not include_drafts:
         query = query.filter(models.PointOfInterest.publication_status == 'published')
+
+    # Optional POI-type filter (accepts a list of type strings). No filter keeps
+    # the original behavior for backward compatibility.
+    if poi_types:
+        query = query.filter(models.PointOfInterest.poi_type.in_(poi_types))
 
     return query.filter(
         or_(

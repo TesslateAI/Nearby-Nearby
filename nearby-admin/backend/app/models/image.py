@@ -133,6 +133,15 @@ IMAGE_TYPE_CONFIG: Dict[ImageType, Dict[str, Any]] = {
         "max_size_mb": 50,
         "allowed_mimes": ["image/jpeg", "image/png", "image/webp", "application/pdf"],
         "sizes": {}  # No resizing for downloadable maps
+    },
+    ImageType.sponsor_logo: {
+        "max_count": 1,
+        "max_size_mb": 5,
+        "allowed_mimes": ["image/jpeg", "image/png", "image/webp"],
+        "sizes": {
+            "thumbnail": (150, 150),
+            "medium": (400, 400)
+        }
     }
 }
 

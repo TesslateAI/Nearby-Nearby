@@ -45,20 +45,46 @@ vi.mock('../../../common/POISearchSelect', () => ({
 }));
 
 // ---------------------------------------------------------------------------
+// Mock ImageUploadField — avoids network calls (loadExistingImages) and exposes
+// the per-sponsor image_context so tests can assert each sponsor uploads to a
+// distinct, stable context. A button simulates a successful upload.
+// ---------------------------------------------------------------------------
+
+vi.mock('../../../ImageUpload/ImageUploadField', () => ({
+  ImageUploadField: function MockImageUploadField({ context, onImagesChange }) {
+    return (
+      <div data-testid="image-upload" data-context={context}>
+        <button
+          onClick={() =>
+            onImagesChange &&
+            onImagesChange([{ id: `img-${context}`, url: `https://cdn.example.com/${context}.png` }])
+          }
+        >
+          Simulate upload {context}
+        </button>
+      </div>
+    );
+  },
+}));
+
+// ---------------------------------------------------------------------------
 // TestWrapper — provides a real Mantine form so the component can call
 // form.setFieldValue, form.values, etc. without mocking the form API.
 // ---------------------------------------------------------------------------
 
-function TestWrapper({ initialSponsors = [] }) {
+function TestWrapper({ initialSponsors = [], id, onForm }) {
   const form = useForm({
     initialValues: {
       event: { sponsors: initialSponsors },
     },
   });
 
+  // Expose the live form to the test so assertions can read form.values.
+  if (onForm) onForm(form);
+
   return (
     <MantineProvider>
-      <EventSponsorsSection form={form} />
+      <EventSponsorsSection form={form} id={id} />
     </MantineProvider>
   );
 }
@@ -117,7 +143,7 @@ describe('EventSponsorsSection', () => {
     expect(screen.getByTestId('poi-search-select')).toBeInTheDocument();
   });
 
-  it('manual mode shows name, url, and logo_url fields', async () => {
+  it('manual mode shows name, url, and logo upload (or save-first hint when unsaved)', async () => {
     render(<TestWrapper />);
 
     await act(async () => {
@@ -127,7 +153,11 @@ describe('EventSponsorsSection', () => {
     // Switch is OFF by default → manual fields visible
     expect(screen.getByText(/sponsor name/i)).toBeInTheDocument();
     expect(screen.getByText(/sponsor url/i)).toBeInTheDocument();
-    expect(screen.getByText(/logo url/i)).toBeInTheDocument();
+    // Bug #87: the raw "Logo URL" box was replaced with an image uploader. The
+    // test wrapper renders without a POI id (unsaved), so the save-first hint
+    // for the logo is shown instead of the uploader.
+    expect(screen.getByText(/save the poi first to upload a sponsor logo/i)).toBeInTheDocument();
+    expect(screen.queryByText(/logo url/i)).not.toBeInTheDocument();
   });
 
   it('tier select is available in manual mode', async () => {
@@ -195,5 +225,71 @@ describe('EventSponsorsSection', () => {
 
     // When poi_id is present the row should start in link mode → POISearchSelect shown
     expect(screen.getByTestId('poi-search-select')).toBeInTheDocument();
+  });
+
+  // Bug #87: logo image upload
+  it('shows the logo image uploader (not a URL box) when the POI is saved', async () => {
+    render(
+      <TestWrapper
+        id="event-uuid"
+        initialSponsors={[{ _id: 's1', name: 'Acme', tier: 'Gold' }]}
+      />
+    );
+
+    expect(screen.getByTestId('image-upload')).toBeInTheDocument();
+    expect(screen.queryByText(/logo url/i)).not.toBeInTheDocument();
+  });
+
+  it('scopes each sponsor logo to its own stable image_context', () => {
+    render(
+      <TestWrapper
+        id="event-uuid"
+        initialSponsors={[
+          { _id: 's1', name: 'Acme', tier: 'Gold' },
+          { _id: 's2', name: 'Globex', tier: 'Silver' },
+        ]}
+      />
+    );
+
+    const uploaders = screen.getAllByTestId('image-upload');
+    const contexts = uploaders.map((u) => u.getAttribute('data-context'));
+    expect(contexts).toContain('sponsor_s1');
+    expect(contexts).toContain('sponsor_s2');
+    // Distinct contexts → logos never collide between sponsors.
+    expect(new Set(contexts).size).toBe(2);
+  });
+
+  it('mirrors an uploaded logo onto sponsor.logo_url for the public app', async () => {
+    let formRef;
+    render(
+      <TestWrapper
+        id="event-uuid"
+        initialSponsors={[{ _id: 's1', name: 'Acme', tier: 'Gold' }]}
+        onForm={(f) => { formRef = f; }}
+      />
+    );
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /simulate upload sponsor_s1/i }));
+    });
+
+    const sponsor = formRef.values.event.sponsors[0];
+    expect(sponsor.logo_url).toBe('https://cdn.example.com/sponsor_s1.png');
+    expect(sponsor.logo_image_id).toBe('img-sponsor_s1');
+  });
+
+  it('backfills a stable _id for legacy sponsors that lack one', async () => {
+    let formRef;
+    render(
+      <TestWrapper
+        id="event-uuid"
+        initialSponsors={[{ name: 'Legacy Co', tier: 'Bronze', logo_url: 'https://old/logo.png' }]}
+        onForm={(f) => { formRef = f; }}
+      />
+    );
+
+    // The mount effect backfills _id so the logo context is stable.
+    await act(async () => {});
+    expect(formRef.values.event.sponsors[0]._id).toBeTruthy();
   });
 });

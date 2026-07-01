@@ -223,7 +223,15 @@ async def get_poi_images(
     - **image_type**: Optional filter by image type
     - **function_tag**: Optional filter by function tag (e.g., "storefront")
     """
-    query = db.query(Image).filter(Image.poi_id == poi_id)
+    # Return only original images, never size variants (thumbnail/medium/large).
+    # Each original carries its variant URLs via get_image_urls below, so the
+    # frontend still receives thumbnail_url/medium_url/large_url. Returning
+    # variants as separate rows makes the frontend unable to tell originals from
+    # variants and causes delete/metadata to target the wrong row.
+    query = db.query(Image).filter(
+        Image.poi_id == poi_id,
+        Image.parent_image_id.is_(None)
+    )
 
     if image_type:
         try:

@@ -219,7 +219,7 @@ export default function EventLayout({ form, userRole, poiId }) {
       <Accordion.Item value="s6-sponsors">
         <Accordion.Control><Text fw={600}>Event Sponsors</Text></Accordion.Control>
         <Accordion.Panel>
-          <EventSponsorsSection form={form} />
+          <EventSponsorsSection form={form} id={poiId} />
         </Accordion.Panel>
       </Accordion.Item>
 

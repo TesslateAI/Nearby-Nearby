@@ -88,9 +88,17 @@ export const RestroomLocationGroup = React.memo(function RestroomLocationGroup({
               onChange={(value) => form.setFieldValue(`${fieldName}.${index}.toilet_types`, value)}
             >
               <SimpleGrid cols={{ base: 2, sm: 3 }}>
-                {PUBLIC_TOILET_OPTIONS.filter(option => !['Yes', 'No'].includes(option)).map(option => (
-                  <Checkbox key={option} value={option} label={option} />
-                ))}
+                {/* "Wheelchair + ADA Accessible" is excluded here on purpose: this
+                    group has its own standalone ADA checkbox below (with an inline
+                    ADA sub-checklist), so surfacing the plain option too would
+                    duplicate it. Kept in the shared PUBLIC_TOILET_OPTIONS constant
+                    because the legacy PublicAmenitiesSection + backend search still
+                    key off that exact string. */}
+                {PUBLIC_TOILET_OPTIONS
+                  .filter(option => !['Yes', 'No', 'Wheelchair + ADA Accessible'].includes(option))
+                  .map(option => (
+                    <Checkbox key={option} value={option} label={option} />
+                  ))}
               </SimpleGrid>
             </Checkbox.Group>
 

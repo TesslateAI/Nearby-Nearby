@@ -152,7 +152,9 @@ class EventBase(BaseModel):
     parent_event_id: Optional[uuid.UUID] = None
     excluded_dates: Optional[List[str]] = None
     recurrence_end_date: Optional[datetime] = None
-    manual_dates: Optional[List[str]] = None
+    # Manual (one-off) dates. Each entry is either a legacy "YYYY-MM-DD" string
+    # or an object {date, start_time, end_time} carrying a per-date time override.
+    manual_dates: Optional[List[Union[str, Dict[str, Any]]]] = None
     # Event-specific fields
     organizer_name: Optional[str] = None
     venue_settings: Optional[List[str]] = None
@@ -233,7 +235,9 @@ class EventUpdate(BaseModel):
     parent_event_id: Optional[uuid.UUID] = None
     excluded_dates: Optional[List[str]] = None
     recurrence_end_date: Optional[datetime] = None
-    manual_dates: Optional[List[str]] = None
+    # Manual (one-off) dates. Each entry is either a legacy "YYYY-MM-DD" string
+    # or an object {date, start_time, end_time} carrying a per-date time override.
+    manual_dates: Optional[List[Union[str, Dict[str, Any]]]] = None
     # Event-specific fields
     organizer_name: Optional[str] = None
     venue_settings: Optional[List[str]] = None
