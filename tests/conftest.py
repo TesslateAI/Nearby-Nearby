@@ -24,6 +24,11 @@ TEST_DATABASE_URL = os.environ.get(
 
 # Admin backend settings
 os.environ.setdefault("DATABASE_URL", TEST_DATABASE_URL)
+# Admin's TestSettings fallback (nearby-admin core/config.py) reads TEST_DATABASE_URL
+# and otherwise defaults to an in-Docker "test-db" host that is unresolvable when the
+# suite runs on the host (CI + local). Point it at the same DB so the admin
+# embed-on-write path (which opens its OWN SessionLocal) connects correctly.
+os.environ.setdefault("TEST_DATABASE_URL", TEST_DATABASE_URL)
 os.environ.setdefault("SECRET_KEY", "test-secret-key-for-integration-tests-minimum-32-characters-long")
 os.environ.setdefault("ENVIRONMENT", "development")
 os.environ.setdefault("TESTING", "true")
