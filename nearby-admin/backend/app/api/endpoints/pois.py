@@ -34,18 +34,39 @@ def create_poi(
     return crud.create_poi(db=db, poi=poi)
 
 
+def _coerce_poi_types(poi_type: Optional[List[str]]):
+    """
+    Coerce raw poi_type query strings (e.g. ["BUSINESS"]) into POIType enum
+    members for the SQLAlchemy filter. Unknown values are ignored so a bad
+    param degrades to "no type filter" instead of a 500. Returns None when
+    nothing valid was supplied (preserves the unfiltered default behavior).
+    """
+    if not poi_type:
+        return None
+    from app.models.poi import POIType
+    resolved = []
+    for raw in poi_type:
+        try:
+            resolved.append(POIType(raw))
+        except (ValueError, KeyError):
+            continue
+    return resolved or None
+
+
 @router.get("/pois/", response_model=List[schemas.PointOfInterest])
 def read_pois(
     skip: int = 0,
     limit: int = 100,
     search: str = Query(None, description="Search query for POI names"),
+    poi_type: Optional[List[str]] = Query(None, description="Restrict results to one or more POI types (e.g. BUSINESS)"),
     db: Session = Depends(get_db),
     current_user: Optional[str] = Depends(lambda: None)  # Try to get current user but don't require it
 ):
     # Public view - only show published POIs
+    poi_types = _coerce_poi_types(poi_type)
     if search:
-        return crud.search_pois(db=db, query_str=search, include_drafts=False)
-    pois = crud.get_pois(db, skip=skip, limit=limit, include_drafts=False)
+        return crud.search_pois(db=db, query_str=search, include_drafts=False, poi_types=poi_types)
+    pois = crud.get_pois(db, skip=skip, limit=limit, include_drafts=False, poi_types=poi_types)
     return pois
 
 @router.get("/admin/pois/", response_model=List[schemas.PointOfInterest])
@@ -53,13 +74,15 @@ def read_pois_admin(
     skip: int = 0,
     limit: int = 100,
     search: str = Query(None, description="Search query for POI names"),
+    poi_type: Optional[List[str]] = Query(None, description="Restrict results to one or more POI types (e.g. BUSINESS)"),
     db: Session = Depends(get_db),
     current_user = Depends(require_admin_or_editor())  # Require admin or editor role
 ):
     # Admin view - show all POIs including drafts
+    poi_types = _coerce_poi_types(poi_type)
     if search:
-        return crud.search_pois(db=db, query_str=search, include_drafts=True)
-    pois = crud.get_pois(db, skip=skip, limit=limit, include_drafts=True)
+        return crud.search_pois(db=db, query_str=search, include_drafts=True, poi_types=poi_types)
+    pois = crud.get_pois(db, skip=skip, limit=limit, include_drafts=True, poi_types=poi_types)
     return pois
 
 

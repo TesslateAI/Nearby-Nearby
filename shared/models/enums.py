@@ -42,3 +42,4 @@ class ImageType(enum.Enum):
     access_point = "access_point"
     map = "map"
     downloadable_map = "downloadable_map"
+    sponsor_logo = "sponsor_logo"

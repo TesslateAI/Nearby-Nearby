@@ -60,6 +60,7 @@ vi.mock('../_shared', () => ({
     </Accordion.Item>
   ),
   IdealForGrouped: () => <div data-testid="stub-ideal-for" />,
+  FeaturedIdealForChips: () => <div data-testid="stub-featured-ideal-for" />,
 }));
 
 import BusinessFreeLayout from '../BusinessFreeLayout';

@@ -1234,7 +1234,7 @@
       "VOLUNTEER_OPPORTUNITIES",
       "DISASTER_HUBS"
     ],
-    "tier": "paid",
+    "tier": "any",
     "audience": "public",
     "render": "auto",
     "icon": null,

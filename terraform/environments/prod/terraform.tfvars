@@ -8,6 +8,9 @@ aws_account_id = "487615743990"
 s3_bucket_name    = "nearbynearby-prod-images"
 cloudfront_domain = "d24ow80agebvkk.cloudfront.net"
 
+# Embedding server image tag (ECR mirror of ghcr.io/ggml-org/llama.cpp:server)
+embedding_image_tag = "llamacpp-server"
+
 # VPC Peering (ECS VPC → default VPC where existing RDS lives)
 default_vpc_id             = "vpc-0bd0c59269a9c6591"
 default_vpc_route_table_id = "rtb-09ac44ef39d3a69ae"

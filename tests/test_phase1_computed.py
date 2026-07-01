@@ -20,9 +20,12 @@ def test_icon_free_wifi_from_wifi_options():
 
 
 def test_icon_pet_friendly_toggle():
-    assert compute_icon_booleans({"pet_options": ["No Dogs Allowed"]})["icon_pet_friendly"] is False
-    assert compute_icon_booleans({"pet_options": ["Dog Friendly"]})["icon_pet_friendly"] is True
+    # Issue #48: pet_options no longer contains negative items, so ANY non-empty
+    # selection means pet friendly; empty/absent means not.
+    assert compute_icon_booleans({"pet_options": ["Dogs Allowed"]})["icon_pet_friendly"] is True
+    assert compute_icon_booleans({"pet_options": ["Cats Allowed"]})["icon_pet_friendly"] is True
     assert compute_icon_booleans({"pet_options": []})["icon_pet_friendly"] is False
+    assert compute_icon_booleans({})["icon_pet_friendly"] is False
 
 
 def test_icon_public_restroom_toggle():

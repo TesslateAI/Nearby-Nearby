@@ -102,16 +102,31 @@ def expand_recurring_dates(
                 pass
         occurrences = {dt for dt in occurrences if dt.date() not in excluded_set}
 
-    # Add manual dates
+    # Add manual dates. Each entry is either a legacy ISO string ("YYYY-MM-DD"
+    # or a full ISO datetime) or an object {date, start_time, end_time} carrying
+    # a per-date time override. Object form applies start_time ("HH:MM") to the
+    # occurrence datetime; missing time falls back to midnight (the ISO default).
     if manual_dates:
-        for m_str in manual_dates:
+        for m in manual_dates:
             try:
-                manual_dt = isoparse(m_str)
+                if isinstance(m, dict):
+                    date_str = m.get("date")
+                    if not date_str:
+                        continue
+                    manual_dt = isoparse(date_str)
+                    start_time = m.get("start_time")
+                    if start_time and ":" in start_time:
+                        parts = start_time.split(":")
+                        manual_dt = manual_dt.replace(
+                            hour=int(parts[0]), minute=int(parts[1])
+                        )
+                else:
+                    manual_dt = isoparse(m)
                 if manual_dt.tzinfo is None:
                     manual_dt = manual_dt.replace(tzinfo=timezone.utc)
                 if date_from <= manual_dt <= date_to:
                     occurrences.add(manual_dt)
-            except (ValueError, TypeError):
+            except (ValueError, TypeError, KeyError):
                 pass
 
     return sorted(occurrences)

@@ -46,7 +46,8 @@ const IMAGE_TYPE_CONFIG = {
   trail_exit: { maxCount: 10, maxSizeMB: 5, label: 'Trail Exit Photos' },
   access_point: { maxCount: 5, maxSizeMB: 5, label: 'Access Point Photos' },
   map: { maxCount: 5, maxSizeMB: 20, label: 'Maps' },
-  downloadable_map: { maxCount: 5, maxSizeMB: 50, label: 'Downloadable Maps' }
+  downloadable_map: { maxCount: 5, maxSizeMB: 50, label: 'Downloadable Maps' },
+  sponsor_logo: { maxCount: 1, maxSizeMB: 5, label: 'Sponsor Logo' }
 };
 
 export function ImageUploadField({
@@ -84,28 +85,18 @@ export function ImageUploadField({
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       const data = await response.json();
+      // Backend returns only original images (variants are excluded server-side)
+      // and attaches variant URLs to each original, so no client-side dedup is
+      // needed. Every row here is an original, so its id is safe to delete/edit.
       let filteredImages = data.filter(img => img.image_type === imageType);
 
       if (context) {
         filteredImages = filteredImages.filter(img => img.image_context === context);
       }
 
-      // Remove duplicate images - keep only unique original uploads
-      // Backend might return multiple variants (original, medium, thumbnail)
-      const uniqueImages = filteredImages.reduce((acc, img) => {
-        const existingImg = acc.find(i =>
-          i.original_filename === img.original_filename &&
-          i.upload_timestamp === img.upload_timestamp
-        );
-        if (!existingImg) {
-          acc.push(img);
-        }
-        return acc;
-      }, []);
-
-      setImages(uniqueImages);
+      setImages(filteredImages);
       if (onImagesChange) {
-        onImagesChange(uniqueImages);
+        onImagesChange(filteredImages);
       }
     } catch (error) {
       console.error('Error loading images:', error);
@@ -160,7 +151,10 @@ export function ImageUploadField({
         });
 
         if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+          // Surface the real backend reason (e.g. "Maximum N images allowed",
+          // "File too large", "S3 not configured") instead of a generic message.
+          const errBody = await response.json().catch(() => ({}));
+          throw new Error(errBody.detail || `Upload failed (status ${response.status})`);
         }
 
         const uploadedImage = await response.json();
@@ -182,7 +176,7 @@ export function ImageUploadField({
     } catch (error) {
       notifications.show({
         title: 'Upload Failed',
-        message: error.response?.data?.detail || 'Failed to upload images',
+        message: error.message || 'Failed to upload images',
         color: 'red'
       });
     } finally {
@@ -244,10 +238,18 @@ export function ImageUploadField({
         });
 
         if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+          const errBody = await response.json().catch(() => ({}));
+          throw new Error(errBody.detail || `Save failed (status ${response.status})`);
         }
       } catch (error) {
+        // Metadata saves previously failed silently (console-only), so users
+        // thought the change did not persist. Surface the failure.
         console.error('Error updating image metadata:', error);
+        notifications.show({
+          title: 'Save Failed',
+          message: error.message || 'Failed to save image details',
+          color: 'red'
+        });
       }
     }, 1000);
   }, []);

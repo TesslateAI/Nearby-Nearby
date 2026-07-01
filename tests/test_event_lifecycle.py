@@ -607,7 +607,11 @@ class TestEventEndpoints:
 
     def test_by_type_event(self, db_session, app_client):
         """GET /api/pois/by-type/EVENT returns only events."""
-        orm_create_event(db_session, name="Type Filter Event", published=True)
+        # Use a future date so the by-type endpoint's default past-event filter
+        # keeps it (orm_create_event's hardcoded default date has drifted past).
+        future = datetime.now(timezone.utc) + timedelta(days=365)
+        orm_create_event(db_session, name="Type Filter Event", published=True,
+                         event_fields={"start_datetime": future})
         orm_create_business(db_session, name="Not An Event", published=True)
         db_session.commit()
 

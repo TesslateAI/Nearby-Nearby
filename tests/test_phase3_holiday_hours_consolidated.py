@@ -120,10 +120,12 @@ class TestHolidayHoursBackfillSQL:
         # clause's "no holidays key" branch hits).
         db_session.execute(text("""
             INSERT INTO points_of_interest
-                (id, name, location, hours, holiday_hours)
+                (id, name, poi_type, publication_status, location, hours, holiday_hours)
             VALUES (
                 gen_random_uuid(),
                 'Legacy Backfill POI #70',
+                'BUSINESS',
+                'draft',
                 ST_SetSRID(ST_MakePoint(-79, 36), 4326),
                 '{}'::jsonb,
                 '{"christmas": "closed"}'::jsonb

@@ -6,6 +6,19 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 
 ---
 
+## Working Principles
+
+Guardrails to cut common LLM coding mistakes. They bias toward caution over speed; use judgment on trivial tasks.
+
+1. **Think before coding.** State assumptions; if uncertain, ask. If multiple interpretations exist, surface them instead of silently picking one. If a simpler approach exists, say so and push back when warranted. If something is unclear, stop, name what's confusing, and ask.
+2. **Simplicity first.** Write the minimum code that solves the problem, nothing speculative: no unrequested features, no abstractions for single-use code, no configurability nobody asked for, no error handling for impossible cases. If 200 lines could be 50, rewrite it. If a senior engineer would call it overcomplicated, simplify.
+3. **Surgical changes.** Touch only what the request requires; every changed line should trace directly to it. Match existing style even if you'd do it differently. Don't "improve" adjacent code, refactor what isn't broken, or reformat working code. Remove only the imports/vars/functions your own change orphaned; mention pre-existing dead code, don't delete it unless asked.
+4. **Goal-driven execution.** Turn tasks into verifiable goals ("fix the bug" becomes "write a test that reproduces it, then make it pass"; "refactor X" becomes "tests pass before and after"). For multi-step work, state a brief numbered plan with a verify check per step, then loop until verified.
+5. **Be concise.** Keep prose, comments, commit messages, and docs as short as the content allows. Cut filler; don't pad.
+6. **No em dashes.** Do not use em dashes in prose, comments, commit messages, or docs. Use commas, parentheses, colons, or separate sentences instead.
+
+---
+
 ## Documentation Reference (Source of Truth)
 
 The `docs/` folder contains the authoritative documentation for each system:
@@ -231,6 +244,12 @@ This rule ensures data integrity and prevents accidental modifications to live p
 
 ---
 
+## Run Only in Docker
+
+**Always run the apps, scripts, migrations, and tests inside Docker — never directly on the host** (no Python venv; only a partial `node_modules`).
+
+---
+
 ## Production Deployment (AWS ECS Fargate)
 
 Production runs on **AWS ECS Fargate** with fully automated CI/CD. There are no manual rebuilds or SSH sessions — push to `main` and it deploys automatically.
@@ -244,6 +263,12 @@ Internet → Cloudflare (HTTPS) → ALB (HTTP port 80) → ECS Fargate
            1 vCPU / 3GB                  0.5 vCPU / 1GB
            1 container                   2 containers (nginx + backend)
                     └───────────────┬───────────────┘
+                                    │  both reach (Service Connect, private):
+                                    ▼  http://embedding:80/v1   — no ALB
+                       nearbynearby-prod-embedding service
+                       1 vCPU / 3GB — llama.cpp serving EmbeddingGemma
+                       Q8_0 GGUF via an OpenAI-compatible /v1/embeddings API
+                                    │
                               RDS PostgreSQL (existing, via VPC peering)
                               S3 + CloudFront (existing)
 ```
@@ -254,7 +279,9 @@ Internet → Cloudflare (HTTPS) → ALB (HTTP port 80) → ECS Fargate
 
 ### How to Deploy
 
-**Automatic**: Push code changes to `main` branch. GitHub Actions builds, tests, and deploys.
+> **⚠️ CI auto-deploy is BROKEN (repo moved to `NearbyNearby/Nearby-Nearby` on 2026-07-01); deploy manually until you update Terraform `github_repo`→new org + `terraform apply` + re-add the `AWS_ROLE_TO_ASSUME` secret. AWS unaffected.**
+
+**Automatic** (once CI OIDC is re-enabled): Push code changes to `main` branch. GitHub Actions builds, tests, and deploys.
 - `nearby-app/**` or `shared/**` changes → triggers app workflow
 - `nearby-admin/**` or `shared/**` changes → triggers admin workflow
 
@@ -323,24 +350,28 @@ All AWS infrastructure is managed in `terraform/`:
 - **Modules used**: networking, ecr, ecs, alb, secrets, monitoring
 - **Not used in prod**: database, storage (existing RDS and S3 kept as-is)
 - **VPC peering**: ECS VPC (10.0.0.0/16) ↔ Default VPC (172.31.0.0/16) for RDS connectivity
-- **State**: S3 backend with DynamoDB locking
+- **State**: S3 backend. The DynamoDB lock table was removed — run with `-lock=false`.
 
 ```bash
-# Apply infrastructure changes
+# Apply infrastructure changes (prod).
+# MUST use the nn-prod profile or terraform hits the wrong AWS account (403 on the
+# S3 state backend, which has no `profile` set). Lock table is gone → -lock=false.
 cd terraform/environments/prod
-export TF_VAR_database_url="postgresql://..."
-export TF_VAR_forms_database_url="postgresql://..."
-export TF_VAR_secret_key="..."
-terraform plan
-terraform apply
+export AWS_PROFILE=nn-prod AWS_REGION=us-east-1
+export TF_VAR_database_url="$(aws ssm get-parameter --name /nearbynearby/prod/database-url --with-decryption --query Parameter.Value --output text)"
+export TF_VAR_forms_database_url="$(aws ssm get-parameter --name /nearbynearby/prod/forms-database-url --with-decryption --query Parameter.Value --output text)"
+export TF_VAR_secret_key="$(aws ssm get-parameter --name /nearbynearby/prod/secret-key --with-decryption --query Parameter.Value --output text)"
+terraform plan  -lock=false
+terraform apply -lock=false
 ```
 
-### Monthly Cost (~$156)
+### Monthly Cost (~$196)
 
 | Resource | Cost |
 |----------|------|
 | ECS Fargate (app: 1 vCPU/3GB) | ~$73 |
 | ECS Fargate (admin: 0.5 vCPU/1GB) | ~$18 |
+| ECS Fargate (embedding: 1 vCPU/3GB, llama.cpp) | ~$40 |
 | NAT Gateway | ~$32 |
 | ALB | ~$16 |
 | RDS (existing) | ~$13 |
@@ -766,6 +797,31 @@ docker exec nearby-admin-backend-1 python scripts/manage_users.py list
 
 ---
 
+## Embedding / Semantic Search
+
+Semantic + hybrid search use **EmbeddingGemma** (768-dim) through a shared, fail-soft HTTP client (`shared/embeddings/client.py`). The model is served **out-of-process** — never bundled in the app image — and the SERVER differs per environment while the client code is identical (it speaks one of two wire protocols, selected by `EMBEDDING_BACKEND`).
+
+| Environment | Server | `EMBEDDING_BACKEND` | `EMBEDDING_SERVICE_URL` | Model |
+|---|---|---|---|---|
+| **Local (Mac/PC)** | Docker Model Runner (GGUF, native — the amd64 TEI image crashes under emulation on Apple Silicon) | `openai` | `http://model-runner.docker.internal/engines/v1` | `ai/embeddinggemma` (`docker model pull ai/embeddinggemma`) |
+| **Prod (cloud)** | llama.cpp `:server` on Fargate (Service Connect, internal) | `openai` | `http://embedding:80/v1` | unsloth `embeddinggemma-300M-Q8_0.gguf` |
+| **Tests** | deterministic mock client (no network, no torch) | — | unset | hashed 768-vec |
+
+If `EMBEDDING_SERVICE_URL` is unset the client is **disabled** and every call returns `None` with no network I/O → search degrades to keyword. The gemma prompt prefixes (`task: search result | query: ` / `title: none | text: `) are applied by the client.
+
+**Why not TEI in prod:** TEI's CPU/Candle backend crash-loops on EmbeddingGemma's Gemma3 dense/matryoshka layers (`Intel MKL ERROR ... SGEMM`); the ungated ONNX export lacks pooling/dense config. llama.cpp serves the GGUF cleanly.
+
+**Prod gotchas (each silently breaks embedding — all fixed in terraform):**
+- **Service Connect resolves the SHORT name only** (`embedding`), not the FQDN — the namespace is an HTTP (not private-DNS) namespace. URL is `http://embedding:80/v1`.
+- **The ECS SG self-ingress must be INLINE** in `aws_security_group.ecs` (`self = true`). A separate `aws_security_group_rule` conflicts with the SG's inline blocks and is silently wiped on every SG apply → embedding becomes unreachable.
+- The embedding port mapping needs **`appProtocol = "http"`** (else SC's Envoy resets connections). Changing it on a live SC service is immutable → `terraform apply -replace=module.ecs.aws_ecs_service.embedding`.
+- **Never hardcode the embedding task IP** — it changes on every redeploy. App/admin reach it by Service Connect name; one-off tasks must fetch the current IP.
+- Deploys are safe: CI uses `aws ecs update-service --force-new-deployment`, which re-pulls `:latest` into the EXISTING terraform task defs, preserving all `EMBEDDING_*` env. **CI does not run terraform.**
+
+**Backfill existing rows** (one-time; new/edited POIs self-embed via admin embed-on-write): run `nearby-admin/backend/scripts/backfill_embeddings.py` as an ECS `run-task` on the admin task def with a `command` override, `EMBEDDING_SERVICE_URL` pointed at the embedding task's current private IP (`http://<ip>:80/v1`, `EMBEDDING_BACKEND=openai`), and **`--batch-size 1`** (llama.cpp on 1 vCPU returns 504 on larger batches; the live single-doc path is unaffected). Populating the derived `embedding` column this way is the sanctioned exception to the "never modify prod data" rule — it is index data, not user content.
+
+---
+
 ## Known Issues & Solutions
 
 ### Docker DNS Collision (CRITICAL)
@@ -820,25 +876,21 @@ server: {
 
 ### pgvector / Embedding Column
 
-**Problem**: The `nearby-app` SQLAlchemy model defines an `embedding` column using pgvector, but:
-- Local dev database doesn't have pgvector extension installed
-- Production may or may not have the embedding column yet
-- SQLAlchemy includes ALL model columns in SELECT queries, causing failures
+Semantic search is **live in prod** (EmbeddingGemma via llama.cpp — see "Embedding / Semantic Search" above). Don't regress it:
 
-**Solution**:
-1. Remove `embedding` from the SQLAlchemy ORM model (`nearby-app/backend/app/models/poi.py`)
-2. Check for column existence at runtime in search functions
-3. Fall back to keyword search when embedding is unavailable
+- The `embedding vector(768)` column exists in prod via migration `k_embedding_001` (pgvector extension + HNSW index). It is **populated** by admin embed-on-write and the one-time backfill, and **read** by the app's hybrid/semantic search.
+- The column is **intentionally NOT mapped on the `nearby-app` SQLAlchemy ORM**. If it were, every `SELECT *` would emit the vector and fail where pgvector is absent (older local DBs). The search path reads/writes it via **raw SQL**, gated on column existence, with a keyword fallback if the column OR the embedding service is unavailable.
+- Local dev: the embedding model is served by Docker Model Runner (see the per-environment table above), not bundled in the app image.
 
 ```python
-# Check if embedding column exists before using it
+# Search still gates on column existence and falls back to keyword if absent:
 from sqlalchemy import text
 result = db.execute(text(
     "SELECT column_name FROM information_schema.columns "
     "WHERE table_name = 'points_of_interest' AND column_name = 'embedding'"
 )).fetchone()
 if not result:
-    return search_pois(db, query)  # Fallback to keyword search
+    return search_pois(db, query)  # keyword fallback
 ```
 
 ### Publication Status Filtering

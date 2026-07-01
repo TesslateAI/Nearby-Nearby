@@ -20,6 +20,7 @@ class ImageTypeEnum(str, Enum):
     ACCESS_POINT = "access_point"
     MAP = "map"
     DOWNLOADABLE_MAP = "downloadable_map"
+    SPONSOR_LOGO = "sponsor_logo"
 
 
 class ImageBase(BaseModel):

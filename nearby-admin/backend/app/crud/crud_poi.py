@@ -210,12 +210,17 @@ def get_poi(db: Session, poi_id: uuid.UUID):
     ).filter(models.PointOfInterest.id == poi_id).first()
 
 
-def get_pois(db: Session, skip: int = 0, limit: int = 100, include_drafts: bool = False):
+def get_pois(db: Session, skip: int = 0, limit: int = 100, include_drafts: bool = False, poi_types=None):
     query = db.query(models.PointOfInterest)
 
     # Filter by publication status for public view
     if not include_drafts:
         query = query.filter(models.PointOfInterest.publication_status == 'published')
+
+    # Optional POI-type filter (accepts a list of type strings). No filter keeps
+    # the original behavior for backward compatibility.
+    if poi_types:
+        query = query.filter(models.PointOfInterest.poi_type.in_(poi_types))
 
     return query.order_by(
         models.PointOfInterest.last_updated.desc()
@@ -226,13 +231,18 @@ def get_poi_by_slug(db: Session, slug: str):
     return db.query(models.PointOfInterest).filter(models.PointOfInterest.slug == slug).first()
 
 
-def search_pois(db: Session, query_str: str, include_drafts: bool = False):
+def search_pois(db: Session, query_str: str, include_drafts: bool = False, poi_types=None):
     search = f"%{query_str}%"
     query = db.query(models.PointOfInterest)
 
     # Filter by publication status for public view
     if not include_drafts:
         query = query.filter(models.PointOfInterest.publication_status == 'published')
+
+    # Optional POI-type filter (accepts a list of type strings). No filter keeps
+    # the original behavior for backward compatibility.
+    if poi_types:
+        query = query.filter(models.PointOfInterest.poi_type.in_(poi_types))
 
     return query.filter(
         or_(
@@ -371,11 +381,12 @@ def create_poi(db: Session, poi: schemas.PointOfInterestCreate):
             is_main=True
         ))
 
-    # Validate free business category limit
+    # Validate free business category limit. Only a FREE BUSINESS is capped at one
+    # category; paid business and every other POI type may have multiple.
     if poi.category_ids:
-        poi_type_str = poi.poi_type if isinstance(poi.poi_type, str) else poi.poi_type
+        poi_type_str = poi.poi_type.value if hasattr(poi.poi_type, 'value') else str(poi.poi_type)
         listing_type = poi_data.get('listing_type', 'free')
-        if listing_type == 'free' and poi_type_str == 'BUSINESS' and len(poi.category_ids) > 1:
+        if poi_type_str == 'BUSINESS' and listing_type == 'free' and len(poi.category_ids) > 1:
             raise HTTPException(status_code=400, detail="Free business listings are limited to 1 category")
 
     # Add secondary categories via poi_categories table with is_main=False.
@@ -567,20 +578,20 @@ def update_poi(db: Session, *, db_obj: models.PointOfInterest, obj_in: schemas.P
             if not main_category:
                 raise HTTPException(status_code=400, detail="Invalid main category")
 
-            # Determine the effective category membership for validation.
+            # Enforce "main ∈ selected" ONLY when category_ids is being set in THIS
+            # request (consistency check, mirroring the create path). A main-only
+            # update is allowed to introduce a NEW main category — it is added to the
+            # membership as is_main=True in the block below — so it must not be
+            # rejected for not already being a selected category. (Issue #42 was
+            # over-strict here: it 422'd every partial {"main_category_id": ...} PUT,
+            # contradicting the very insert logic that follows.)
             if 'category_ids' in update_data:
                 effective_category_ids = set(update_data.get('category_ids') or [])
-            else:
-                existing_rows = db.execute(poi_category_association.select().where(
-                    poi_category_association.c.poi_id == db_obj.id
-                )).fetchall()
-                effective_category_ids = {row.category_id for row in existing_rows}
-
-            if effective_category_ids and main_category_id not in effective_category_ids:
-                raise HTTPException(
-                    status_code=422,
-                    detail="main_category_id must be one of the POI's selected category_ids",
-                )
+                if effective_category_ids and main_category_id not in effective_category_ids:
+                    raise HTTPException(
+                        status_code=422,
+                        detail="main_category_id must be one of the POI's selected category_ids",
+                    )
 
             # Check if this category already exists for this POI
             existing = db.execute(poi_category_association.select().where(
@@ -606,9 +617,16 @@ def update_poi(db: Session, *, db_obj: models.PointOfInterest, obj_in: schemas.P
     if 'category_ids' in update_data:
         category_ids = update_data.pop('category_ids')
 
-        # Validate free business category limit
+        # Validate free business category limit. Evaluate the poi_type / listing_type
+        # being SAVED in this request (falling back to the stored values), NOT the
+        # stale stored type — otherwise changing a free business into a park/trail/
+        # event, or upgrading it to a paid tier, in the same save is wrongly blocked
+        # by the old type. Only a FREE BUSINESS is capped at one category; paid
+        # business and every other POI type may have multiple.
+        effective_type = update_data.get('poi_type', poi_type_str)
+        effective_type = effective_type.value if hasattr(effective_type, 'value') else str(effective_type)
         listing_type = update_data.get('listing_type', getattr(db_obj, 'listing_type', 'free'))
-        if listing_type == 'free' and poi_type_str == 'BUSINESS' and len(category_ids) > 1:
+        if effective_type == 'BUSINESS' and listing_type == 'free' and len(category_ids) > 1:
             raise HTTPException(status_code=400, detail="Free business listings are limited to 1 category")
 
         from app.models.category import poi_category_association

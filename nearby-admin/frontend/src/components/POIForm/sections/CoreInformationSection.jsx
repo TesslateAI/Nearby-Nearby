@@ -5,7 +5,7 @@ import {
 import RichTextEditor from '../../RichTextEditor';
 import { DebouncedTextInput } from '../../DebouncedTextInput';
 import { getDebouncedInputProps } from '../constants/helpers';
-import { getStatusOptions } from '../../../utils/constants'; // KEY_FACILITIES removed (Migration A #34)
+import { getStatusOptions, LISTING_TYPES } from '../../../utils/constants'; // KEY_FACILITIES removed (Migration A #34)
 import {
   FeaturedImageUpload,
   shouldUseImageUpload
@@ -36,18 +36,17 @@ export const CoreInformationSection = React.memo(function CoreInformationSection
           ]}
           {...form.getInputProps('poi_type')}
         />
+        {/* Listing Type is the BILLING TIER only (free / paid / paid_founding /
+            community_comped) — these are the only values the backend schema +
+            DB CHECK constraint accept. "Sponsor" is a SEPARATE, orthogonal flag
+            set ONLY by the admin-only Sponsor toggle (is_sponsor + sponsor_level)
+            in the Admin Only accordion (see _shared.jsx AdminOnlyAccordionItem).
+            The old sponsor_* listing_type values were retired in migration
+            p1_001_phase1_additive. */}
         <Select
           label="Listing Type"
           placeholder="Select Listing Type"
-          data={[
-            { value: 'free', label: 'Free' },
-            { value: 'paid', label: 'Paid' },
-            { value: 'sponsor_platform', label: 'Sponsor – Platform' },
-            { value: 'sponsor_state', label: 'Sponsor – State' },
-            { value: 'sponsor_county', label: 'Sponsor – County' },
-            { value: 'sponsor_town', label: 'Sponsor – Town' },
-            { value: 'community_comped', label: 'Community Comped' }
-          ]}
+          data={LISTING_TYPES}
           {...form.getInputProps('listing_type')}
         />
       </SimpleGrid>

@@ -152,6 +152,19 @@ resource "aws_security_group" "ecs" {
     security_groups = [aws_security_group.alb.id]
   }
 
+  # Intra-ECS traffic between tasks in this SG: Service Connect Envoy proxying
+  # AND direct internal services (the embedding server on :80). Declared INLINE
+  # with self=true so it belongs to this SG's authoritative rule set. A separate
+  # aws_security_group_rule conflicts with these inline blocks and gets silently
+  # wiped on every SG apply — which is exactly what left embedding unreachable.
+  ingress {
+    description = "All traffic between ECS tasks (self)"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    self        = true
+  }
+
   egress {
     from_port   = 0
     to_port     = 0
@@ -162,19 +175,6 @@ resource "aws_security_group" "ecs" {
   tags = { Name = "${var.project}-${var.environment}-ecs-sg" }
 
   lifecycle { create_before_destroy = true }
-}
-
-# Self-referencing rule so ECS tasks (app/admin) can reach the internal
-# embedding service on the TEI port (80) over Service Connect / private DNS.
-# Declared separately to avoid a self-reference cycle inside the SG block.
-resource "aws_security_group_rule" "ecs_internal_embedding" {
-  type                     = "ingress"
-  description              = "TEI embedding service (port 80) from ECS tasks"
-  from_port                = 80
-  to_port                  = 80
-  protocol                 = "tcp"
-  security_group_id        = aws_security_group.ecs.id
-  source_security_group_id = aws_security_group.ecs.id
 }
 
 resource "aws_security_group" "rds" {
