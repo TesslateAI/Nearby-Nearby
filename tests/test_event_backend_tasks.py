@@ -301,8 +301,8 @@ class TestEventSponsors:
             event={
                 "start_datetime": "2026-12-01T10:00:00Z",
                 "sponsors": [
-                    {"name": "Acme Corp", "url": "https://acme.com"},
-                    {"name": "Local Bank", "url": "https://localbank.com"},
+                    {"name": "Acme Corp", "url": "https://acme.com", "tier": "Tier 1"},
+                    {"name": "Local Bank", "url": "https://localbank.com", "tier": "Tier 2"},
                 ],
             },
         )
@@ -319,7 +319,7 @@ class TestEventSponsors:
             json={
                 "event": {
                     "sponsors": [
-                        {"name": "New Sponsor", "url": "https://newsponsor.com"},
+                        {"name": "New Sponsor", "url": "https://newsponsor.com", "tier": "Tier 1"},
                     ],
                 },
             },
@@ -745,7 +745,7 @@ class TestAllNewFieldsRoundtrip:
                     {"name": "GA", "url": "https://tickets.com/ga"},
                 ],
                 "sponsors": [
-                    {"name": "Sponsor A", "url": "https://sponsora.com"},
+                    {"name": "Sponsor A", "url": "https://sponsora.com", "tier": "Tier 1"},
                 ],
             },
         }
