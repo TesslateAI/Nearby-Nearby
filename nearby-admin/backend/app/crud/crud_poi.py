@@ -568,20 +568,20 @@ def update_poi(db: Session, *, db_obj: models.PointOfInterest, obj_in: schemas.P
             if not main_category:
                 raise HTTPException(status_code=400, detail="Invalid main category")
 
-            # Determine the effective category membership for validation.
+            # Enforce "main ∈ selected" ONLY when category_ids is being set in THIS
+            # request (consistency check, mirroring the create path). A main-only
+            # update is allowed to introduce a NEW main category — it is added to the
+            # membership as is_main=True in the block below — so it must not be
+            # rejected for not already being a selected category. (Issue #42 was
+            # over-strict here: it 422'd every partial {"main_category_id": ...} PUT,
+            # contradicting the very insert logic that follows.)
             if 'category_ids' in update_data:
                 effective_category_ids = set(update_data.get('category_ids') or [])
-            else:
-                existing_rows = db.execute(poi_category_association.select().where(
-                    poi_category_association.c.poi_id == db_obj.id
-                )).fetchall()
-                effective_category_ids = {row.category_id for row in existing_rows}
-
-            if effective_category_ids and main_category_id not in effective_category_ids:
-                raise HTTPException(
-                    status_code=422,
-                    detail="main_category_id must be one of the POI's selected category_ids",
-                )
+                if effective_category_ids and main_category_id not in effective_category_ids:
+                    raise HTTPException(
+                        status_code=422,
+                        detail="main_category_id must be one of the POI's selected category_ids",
+                    )
 
             # Check if this category already exists for this POI
             existing = db.execute(poi_category_association.select().where(
