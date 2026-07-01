@@ -447,7 +447,11 @@ class PointOfInterestBase(EmptyStringToNoneMixin, BaseModel):
     admin_notes: Optional[str] = None
     accessible_parking_details: Optional[List[str]] = None
     accessible_restroom: Optional[bool] = False
-    accessible_restroom_details: Optional[Dict[str, Any]] = None
+    # Current shape is a list of checklist labels (like accessible_parking_details /
+    # playground_ada_checklist); legacy rows may still hold the old {label: bool}
+    # dict. Accept BOTH so the admin list response never fails validation — a strict
+    # Dict here 500s the whole /api/admin/pois/ list on any list-shaped row.
+    accessible_restroom_details: Optional[Union[List[str], Dict[str, Any]]] = None
     playground_age_groups: Optional[List[str]] = None
     playground_ada_checklist: Optional[List[str]] = None
     inclusive_playground: Optional[bool] = False
@@ -768,7 +772,11 @@ class PointOfInterestUpdate(EmptyStringToNoneMixin, BaseModel):
     admin_notes: Optional[str] = None
     accessible_parking_details: Optional[List[str]] = None
     accessible_restroom: Optional[bool] = None
-    accessible_restroom_details: Optional[Dict[str, Any]] = None
+    # Current shape is a list of checklist labels (like accessible_parking_details /
+    # playground_ada_checklist); legacy rows may still hold the old {label: bool}
+    # dict. Accept BOTH so the admin list response never fails validation — a strict
+    # Dict here 500s the whole /api/admin/pois/ list on any list-shaped row.
+    accessible_restroom_details: Optional[Union[List[str], Dict[str, Any]]] = None
     playground_age_groups: Optional[List[str]] = None
     playground_ada_checklist: Optional[List[str]] = None
     inclusive_playground: Optional[bool] = None
