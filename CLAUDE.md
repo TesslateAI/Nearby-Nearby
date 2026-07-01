@@ -6,6 +6,19 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 
 ---
 
+## Working Principles
+
+Guardrails to cut common LLM coding mistakes. They bias toward caution over speed; use judgment on trivial tasks.
+
+1. **Think before coding.** State assumptions; if uncertain, ask. If multiple interpretations exist, surface them instead of silently picking one. If a simpler approach exists, say so and push back when warranted. If something is unclear, stop, name what's confusing, and ask.
+2. **Simplicity first.** Write the minimum code that solves the problem, nothing speculative: no unrequested features, no abstractions for single-use code, no configurability nobody asked for, no error handling for impossible cases. If 200 lines could be 50, rewrite it. If a senior engineer would call it overcomplicated, simplify.
+3. **Surgical changes.** Touch only what the request requires; every changed line should trace directly to it. Match existing style even if you'd do it differently. Don't "improve" adjacent code, refactor what isn't broken, or reformat working code. Remove only the imports/vars/functions your own change orphaned; mention pre-existing dead code, don't delete it unless asked.
+4. **Goal-driven execution.** Turn tasks into verifiable goals ("fix the bug" becomes "write a test that reproduces it, then make it pass"; "refactor X" becomes "tests pass before and after"). For multi-step work, state a brief numbered plan with a verify check per step, then loop until verified.
+5. **Be concise.** Keep prose, comments, commit messages, and docs as short as the content allows. Cut filler; don't pad.
+6. **No em dashes.** Do not use em dashes in prose, comments, commit messages, or docs. Use commas, parentheses, colons, or separate sentences instead.
+
+---
+
 ## Documentation Reference (Source of Truth)
 
 The `docs/` folder contains the authoritative documentation for each system:
@@ -266,7 +279,9 @@ Internet → Cloudflare (HTTPS) → ALB (HTTP port 80) → ECS Fargate
 
 ### How to Deploy
 
-**Automatic**: Push code changes to `main` branch. GitHub Actions builds, tests, and deploys.
+> **⚠️ CI auto-deploy is BROKEN (repo moved to `NearbyNearby/Nearby-Nearby` on 2026-07-01); deploy manually until you update Terraform `github_repo`→new org + `terraform apply` + re-add the `AWS_ROLE_TO_ASSUME` secret. AWS unaffected.**
+
+**Automatic** (once CI OIDC is re-enabled): Push code changes to `main` branch. GitHub Actions builds, tests, and deploys.
 - `nearby-app/**` or `shared/**` changes → triggers app workflow
 - `nearby-admin/**` or `shared/**` changes → triggers admin workflow
 
