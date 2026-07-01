@@ -371,11 +371,12 @@ def create_poi(db: Session, poi: schemas.PointOfInterestCreate):
             is_main=True
         ))
 
-    # Validate free business category limit
+    # Validate free business category limit. Only a FREE BUSINESS is capped at one
+    # category; paid business and every other POI type may have multiple.
     if poi.category_ids:
-        poi_type_str = poi.poi_type if isinstance(poi.poi_type, str) else poi.poi_type
+        poi_type_str = poi.poi_type.value if hasattr(poi.poi_type, 'value') else str(poi.poi_type)
         listing_type = poi_data.get('listing_type', 'free')
-        if listing_type == 'free' and poi_type_str == 'BUSINESS' and len(poi.category_ids) > 1:
+        if poi_type_str == 'BUSINESS' and listing_type == 'free' and len(poi.category_ids) > 1:
             raise HTTPException(status_code=400, detail="Free business listings are limited to 1 category")
 
     # Add secondary categories via poi_categories table with is_main=False.
@@ -606,9 +607,16 @@ def update_poi(db: Session, *, db_obj: models.PointOfInterest, obj_in: schemas.P
     if 'category_ids' in update_data:
         category_ids = update_data.pop('category_ids')
 
-        # Validate free business category limit
+        # Validate free business category limit. Evaluate the poi_type / listing_type
+        # being SAVED in this request (falling back to the stored values), NOT the
+        # stale stored type — otherwise changing a free business into a park/trail/
+        # event, or upgrading it to a paid tier, in the same save is wrongly blocked
+        # by the old type. Only a FREE BUSINESS is capped at one category; paid
+        # business and every other POI type may have multiple.
+        effective_type = update_data.get('poi_type', poi_type_str)
+        effective_type = effective_type.value if hasattr(effective_type, 'value') else str(effective_type)
         listing_type = update_data.get('listing_type', getattr(db_obj, 'listing_type', 'free'))
-        if listing_type == 'free' and poi_type_str == 'BUSINESS' and len(category_ids) > 1:
+        if effective_type == 'BUSINESS' and listing_type == 'free' and len(category_ids) > 1:
             raise HTTPException(status_code=400, detail="Free business listings are limited to 1 category")
 
         from app.models.category import poi_category_association

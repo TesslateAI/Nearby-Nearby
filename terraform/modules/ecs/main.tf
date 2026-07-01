@@ -112,6 +112,9 @@ resource "aws_ecs_task_definition" "app" {
         { name = "AWS_REGION", value = var.aws_region },
         { name = "ALLOWED_ORIGINS", value = var.app_allowed_origins },
         { name = "EMBEDDING_SERVICE_URL", value = var.embedding_service_url },
+        { name = "EMBEDDING_BACKEND", value = "openai" },
+        { name = "EMBEDDING_MODEL", value = "embeddinggemma" },
+        { name = "EMBEDDING_TIMEOUT", value = "30" },
       ]
 
       secrets = [
@@ -261,6 +264,9 @@ resource "aws_ecs_task_definition" "admin" {
         { name = "ALLOWED_ORIGINS", value = var.admin_allowed_origins },
         { name = "PRODUCTION_DOMAIN", value = var.admin_domain },
         { name = "EMBEDDING_SERVICE_URL", value = var.embedding_service_url },
+        { name = "EMBEDDING_BACKEND", value = "openai" },
+        { name = "EMBEDDING_MODEL", value = "embeddinggemma" },
+        { name = "EMBEDDING_TIMEOUT", value = "30" },
       ]
 
       secrets = [
@@ -407,13 +413,25 @@ resource "aws_ecs_task_definition" "embedding" {
       image     = var.embedding_image
       essential = true
 
-      # TEI serves on port 80; "embedding" is the Service Connect port name.
-      command = ["--model-id", var.embedding_model_id, "--port", "80"]
+      # llama.cpp server: serve the ungated EmbeddingGemma Q8_0 GGUF and expose
+      # the OpenAI-compatible /v1/embeddings endpoint. --host 0.0.0.0 is required
+      # so Service Connect peers can reach it; -ub/-c sized so a full-length doc
+      # embeds in one pass. "embedding" is the Service Connect port name (80).
+      command = [
+        "--hf-repo", "unsloth/embeddinggemma-300m-GGUF",
+        "--hf-file", "embeddinggemma-300M-Q8_0.gguf",
+        "--embeddings", "--host", "0.0.0.0", "--port", "80",
+        "-c", "2048", "-ub", "2048", "-b", "2048",
+      ]
 
       portMappings = [{
         name          = "embedding"
         containerPort = 80
         protocol      = "tcp"
+        # appProtocol is required for Service Connect to set up a proper L7 (HTTP)
+        # proxy; without it SC falls back to a TCP listener that resets the
+        # app/admin client connections before they reach llama.cpp.
+        appProtocol = "http"
       }]
 
       # No container-level healthCheck: the minimal HF text-embeddings-inference

@@ -12,8 +12,12 @@ import { notifications } from '@mantine/notifications';
 import { IconMapPin, IconWorld } from '@tabler/icons-react';
 import { api } from '../../../utils/api';
 
-// Same regex the backend enforces for what3words on /api/utils/what3words-to-coords
-const W3W_PATTERN = /^[a-z]+\.[a-z]+\.[a-z]+$/;
+// Same shape the backend enforces for what3words on /api/utils/what3words-to-coords.
+// Accepts the canonical "///word.word.word" users copy/paste from what3words.com
+// as well as the bare "word.word.word" form; the "///" is stripped before use.
+const W3W_PATTERN = /^(?:\/\/\/)?[a-z]+\.[a-z]+\.[a-z]+$/;
+const stripW3WPrefix = (s) =>
+  (typeof s === 'string' ? s.trim().replace(/^\/+/, '').trim() : '');
 
 /**
  * <CoordinateInput>
@@ -66,7 +70,7 @@ export default function CoordinateInput({
     setBusy(true);
     try {
       const resp = await api.post('/utils/what3words-to-coords', {
-        words: w3w.trim(),
+        words: stripW3WPrefix(w3w),
       });
       if (!resp.ok) {
         const body = await resp.json().catch(() => ({}));
@@ -149,10 +153,15 @@ export default function CoordinateInput({
 
       <TextInput
         label="what3words Address"
-        placeholder="word1.word2.word3"
-        description='Three lowercase words separated by dots, e.g. "filled.count.soap"'
+        placeholder="///filled.count.soap"
+        description='Three lowercase words separated by dots. The "///" prefix copied from what3words.com is accepted.'
         value={w3w}
         onChange={(e) => emit({ w3w: e.currentTarget.value })}
+        onBlur={() => {
+          const cleaned = stripW3WPrefix(w3w);
+          if (cleaned !== w3w) emit({ w3w: cleaned });
+        }}
+        error={w3w && !w3wValid ? 'Enter three dot-separated words, e.g. filled.count.soap' : null}
         disabled={disabled}
       />
 

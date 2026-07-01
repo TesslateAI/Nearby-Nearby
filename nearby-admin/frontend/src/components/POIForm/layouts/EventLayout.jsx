@@ -30,7 +30,7 @@ import { FeaturedImageUpload, shouldUseImageUpload } from '../ImageIntegration';
 
 import ServiceAnimalAlert from '../components/ServiceAnimalAlert';
 import {
-  AdminOnlyAccordionItem, IdealForGrouped, ArrivalMethodsGroup,
+  AdminOnlyAccordionItem, IdealForGrouped, FeaturedIdealForChips, ArrivalMethodsGroup,
   FullAmenitiesBlock,
 } from './_shared';
 import {
@@ -104,6 +104,8 @@ export default function EventLayout({ form, userRole, poiId }) {
             <CategoriesSection form={form} isPaidListing isFreeListing={false} />
             <Divider my="sm" />
             <IdealForGrouped form={form} listingType="Event" />
+            <Divider my="sm" />
+            <FeaturedIdealForChips form={form} />
           </Stack>
         </Accordion.Panel>
       </Accordion.Item>

@@ -1,12 +1,11 @@
 import React from 'react';
 import {
-  Stack, Alert, Divider, Text
+  Stack, Alert, Text
 } from '@mantine/core';
 import { MainCategorySelector } from '../../MainCategorySelector';
 import { TreeCategorySelector } from '../../TreeCategorySelector';
 import { PrimaryTypeSelector } from '../../PrimaryTypeSelector';
 import { getLegacyFieldsForListingType as getFieldsForListingType } from '../../../utils/constants';
-import { FeaturedIdealForChips } from '../layouts/_shared';
 
 export const CategoriesSection = React.memo(function CategoriesSection({
   form,
@@ -55,12 +54,9 @@ export const CategoriesSection = React.memo(function CategoriesSection({
         </Alert>
       )}
 
-      {/* Issue #43: Featured Ideal For chips (read-only, surfaces what's
-          selected in IdealForGrouped). The old flat 75-checkbox "Key Ideal For"
-          block and the legacy <IdealForSelector /> stack are removed.
-          IdealForGrouped is rendered by the layout, not here. */}
-      <Divider my="md" label="Featured Ideal For" />
-      <FeaturedIdealForChips form={form} />
+      {/* Featured Ideal For (the "Key Ideal For" top-3 picker) now renders in
+          each layout AFTER IdealForGrouped — see FeaturedIdealForChips in
+          _shared.jsx. It is intentionally NOT here, and NOT on Park/Trail. */}
     </Stack>
   );
 });

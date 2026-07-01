@@ -1,6 +1,6 @@
 import React, { lazy, Suspense } from 'react';
 import {
-  Stack, SimpleGrid, Select, NumberInput, Button, Divider,
+  Stack, SimpleGrid, Select, Autocomplete, NumberInput, Button, Divider,
   Checkbox, Radio, Card, Group, ActionIcon, Alert, Text, TextInput, Switch
 } from '@mantine/core';
 import { IconPlus, IconTrash, IconMapPin, IconInfoCircle } from '@tabler/icons-react';
@@ -90,10 +90,15 @@ export const LocationSection = React.memo(function LocationSection({
           nothingFoundMessage="Type to enter a custom city"
           {...form.getInputProps('address_city')}
         />
-        <DebouncedTextInput
+        <Autocomplete
           label="County"
-          placeholder="County name"
-          {...getDebouncedInputProps(form, 'address_county')}
+          placeholder="Start typing a county..."
+          data={[
+            'Chatham County', 'Randolph County', 'Lee County', 'Wake County',
+            'Orange County', 'Durham County', 'Alamance County', 'Moore County',
+            'Harnett County', 'Guilford County'
+          ]}
+          {...form.getInputProps('address_county')}
         />
         <Select
           label="State"

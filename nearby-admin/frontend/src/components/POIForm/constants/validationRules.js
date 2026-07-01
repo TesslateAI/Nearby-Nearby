@@ -1,4 +1,4 @@
-import { getLegacyFieldsForListingType, PARKING_OPTIONS } from '../../../utils/constants';
+import { PARKING_OPTIONS } from '../../../utils/constants';
 
 // First PARKING_OPTIONS entry is the "Accessible Parking" option whose selection
 // reveals — and now requires — the ADA accessible-parking sub-checklist.
@@ -41,13 +41,17 @@ export const getValidationRules = () => ({
   address_state: (value) => (!value ? 'State is required' : null),
   main_category_id: (value) => (!value ? 'Main category is required' : null),
   category_ids: (value, values) => {
-    // Secondary categories are optional for all POI types
-    if (values?.poi_type === 'BUSINESS') {
-      return null;
+    // Rule: only a FREE BUSINESS is limited to a single category. Paid business
+    // and every other POI type (park / trail / event) may have multiple. Mirrors
+    // the backend check in crud_poi.py so the limit shows inline instead of
+    // surfacing as a save-time 400.
+    const isFreeBusiness =
+      values?.poi_type === 'BUSINESS' &&
+      (values?.listing_type === 'free' || !values?.listing_type);
+    if (isFreeBusiness && (value?.length || 0) > 1) {
+      return 'Free business listings are limited to 1 category';
     }
-    const fieldConfig = getLegacyFieldsForListingType(values?.listing_type, values?.poi_type);
-    const maxCategories = fieldConfig?.maxCategories || 3;
-    return value?.length > maxCategories ? `Maximum ${maxCategories} categories allowed` : null;
+    return null;
   },
   'event.start_datetime': (value, values) => {
     if (values?.poi_type === 'EVENT' && !value) {

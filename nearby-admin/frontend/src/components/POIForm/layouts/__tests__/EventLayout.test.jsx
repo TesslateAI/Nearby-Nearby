@@ -81,6 +81,7 @@ vi.mock('../_shared', () => ({
     </Accordion.Item>
   ),
   IdealForGrouped: () => <div data-testid="stub-ideal-for" />,
+  FeaturedIdealForChips: () => <div data-testid="stub-featured-ideal-for" />,
   FullAmenitiesBlock: () => <div data-testid="stub-amenities-block" />,
   ConnectivityRow: () => <div data-testid="stub-connectivity" />,
   ArrivalMethodsGroup: () => <div data-testid="stub-arrival" />,

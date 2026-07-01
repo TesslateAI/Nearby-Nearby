@@ -75,9 +75,10 @@ describe('IdealForGrouped (Issue #43 unified checkbox grid)', () => {
     expect(screen.queryByTestId('ideal-for-cap-counter')).not.toBeInTheDocument();
   });
 
-  // #76/#77 — Ideal For + Key Ideal For are now enabled for Park & Trail
+  // #76/#77 — the Ideal For checkbox GROUPS are enabled for Park & Trail
   // (IDEAL_FOR_RULES.Park/Trail visible:true). Previously these asserted the
   // groups were hidden; the foundation pass intentionally reversed that.
+  // (The separate "Featured Ideal For" top-3 picker is Business + Event only.)
   it('renders all 5 groups when listingType="Park" (#76 enables Ideal For)', () => {
     render(<TestWrapper listingType="Park" />);
     expectAllGroupsPresent();

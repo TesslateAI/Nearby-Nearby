@@ -17,7 +17,7 @@ import { RestroomLocationGroup } from '../components/RestroomLocationGroup';
 import { FeaturedImageUpload, shouldUseImageUpload } from '../ImageIntegration';
 
 import ServiceAnimalAlert from '../components/ServiceAnimalAlert';
-import { AdminOnlyAccordionItem, IdealForGrouped } from './_shared';
+import { AdminOnlyAccordionItem, IdealForGrouped, FeaturedIdealForChips } from './_shared';
 import {
   getFieldsForListingType, PRICE_RANGE_OPTIONS,
   PARKING_OPTIONS, PARKING_ADA_CHECKLIST,
@@ -91,6 +91,8 @@ export default function BusinessFreeLayout({ form, userRole, poiId }) {
           <Stack>
             <CategoriesSection form={form} isFreeListing isPaidListing={false} />
             <IdealForGrouped form={form} listingType="Business Free" totalCap={fields.maxIdealFor} />
+            <Divider my="sm" />
+            <FeaturedIdealForChips form={form} />
           </Stack>
         </Accordion.Panel>
       </Accordion.Item>

@@ -19,7 +19,7 @@ export const emptyInitialValues = {
   address_city: 'Pittsboro',
   address_state: 'NC',
   address_zip: '',
-  address_county: 'Chatham',
+  address_county: 'Chatham County',
   // Front door coordinates
   front_door_latitude: null,
   front_door_longitude: null,

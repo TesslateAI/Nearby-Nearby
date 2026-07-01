@@ -184,8 +184,8 @@ export default function TrailLayout({ form, userRole, poiId }) {
         </Accordion.Panel>
       </Accordion.Item>
 
-      {/* 3. Categories + Discovery — ADD Ideal For (5 groups) + Key Ideal For
-              (Featured chips render inside CategoriesSection). */}
+      {/* 3. Categories + Discovery — Ideal For (5 groups). Trails do NOT get the
+              "Featured Ideal For" top-3 picker (Business + Event only). */}
       <Accordion.Item value="s3-categories">
         <Accordion.Control><Text fw={600}>Categories + Discovery</Text></Accordion.Control>
         <Accordion.Panel>
